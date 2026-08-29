@@ -27,11 +27,12 @@ app = FastAPI(title=settings.app_name)
 
 # Desarrollo: acepta cualquier puerto de localhost (Vite salta al siguiente
 # puerto libre — 5174, 5175... — si 5173 ya está ocupado por otro proyecto,
-# así que fijar un solo puerto rompe el CORS en silencio). Antes de
-# producción, reemplazar por la URL real desplegada con allow_origins.
+# así que fijar un solo puerto rompe el CORS en silencio). En producción se
+# suma la URL real del frontend desplegado vía la variable FRONTEND_URL.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+    allow_origins=[settings.frontend_url] if settings.frontend_url else [],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -9,6 +9,7 @@ import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { Ambientes } from '../pages/Ambientes'
 import { Instructores } from '../pages/Instructores'
 import { Fichas } from '../pages/Fichas'
+import { Usuarios } from '../pages/Usuarios'
 import { ProtectedRoute } from './ProtectedRoute'
 
 /**
@@ -70,6 +71,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <Fichas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/usuarios"
+        element={
+          <ProtectedRoute>
+            <Usuarios />
           </ProtectedRoute>
         }
       />

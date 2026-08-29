@@ -4,17 +4,18 @@
 
 import type { BloqueClase, GridAsignaciones } from '../pages/horario/tipos'
 
+export interface Rol {
+  idRol: number
+  nombre: string
+}
+
 export interface Usuario {
   idUsuario: string
   nombre: string
   email: string
   estado: 'activo' | 'inactivo'
   fechaRegistro: string
-}
-
-export interface Rol {
-  idRol: number
-  nombre: string
+  roles: Rol[]
 }
 
 export interface Jornada {

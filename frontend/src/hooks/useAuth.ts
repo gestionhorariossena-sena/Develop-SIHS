@@ -1,5 +1,5 @@
 import { useContext } from 'react'
-import { AuthContext } from '../context/AuthContext'
+import { AuthContext } from '../context/auth-context'
 
 /** Acceso corto al contexto de sesión: `const { session, signOut } = useAuth()` */
 export function useAuth() {

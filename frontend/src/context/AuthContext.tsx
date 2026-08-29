@@ -1,15 +1,7 @@
-import { createContext, useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../services/supabaseClient'
-
-interface AuthContextValue {
-  session: Session | null
-  /** true mientras se está revisando si ya había una sesión guardada */
-  loading: boolean
-  signOut: () => Promise<void>
-}
-
-export const AuthContext = createContext<AuthContextValue | undefined>(undefined)
+import { AuthContext } from './auth-context'
 
 /**
  * Envuelve toda la app (ver App.tsx) y mantiene la sesión de Supabase
