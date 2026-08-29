@@ -21,6 +21,7 @@ const NAV: ItemNav[] = [
   { etiqueta: 'Instructores', ruta: '/instructores' },
   { etiqueta: 'Fichas', ruta: '/fichas' },
   { etiqueta: 'Usuarios', ruta: '/usuarios' },
+  { etiqueta: 'Aprobar solicitudes de registro', ruta: '/aprobar-solicitudes' },
   { etiqueta: 'Reportes' },
 ]
 
