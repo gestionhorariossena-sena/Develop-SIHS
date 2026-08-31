@@ -34,9 +34,6 @@ export function AprobarlicitarSolicitudes() {
 
   // Cargar usuarios sin rol y lista de roles
   useEffect(() => {
-    setCargando(true)
-    setError(null)
-
     Promise.all([apiGet<Usuario[]>('/usuarios/'), apiGet<Rol[]>('/roles/')])
       .then(([listaUsuarios, listaRoles]) => {
         // Filtrar solo usuarios sin rol
