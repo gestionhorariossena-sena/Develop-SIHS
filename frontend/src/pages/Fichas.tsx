@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { AppShell } from '../components/AppShell'
 
 interface FilaFicha {
@@ -31,6 +32,10 @@ const FICHAS: FilaFicha[] = [
   { codigo: '2712880', programa: 'Técnico en Sistemas Teleinformáticos', nivel: 'Técnico', trimestre: 2, jornada: 'Noche', aprendices: 30 },
   { codigo: '2766142', programa: 'Seguridad Digital', nivel: 'Técnico', trimestre: 1, jornada: 'Noche', aprendices: 30 },
   { codigo: '3068356', programa: 'Tecnología en Coordinación de Procesos Logísticos', nivel: 'Tecnólogo', trimestre: 6, jornada: 'Tarde', aprendices: 30 },
+  { codigo: '2799412', programa: 'Técnico en Cocina', nivel: 'Técnico', trimestre: 2, jornada: 'Mañana', aprendices: 25 },
+  { codigo: '2831190', programa: 'Gestión Logística', nivel: 'Tecnólogo', trimestre: 5, jornada: 'Tarde', aprendices: 30 },
+  { codigo: '2745560', programa: 'Análisis y Desarrollo de Software', nivel: 'Tecnólogo', trimestre: 1, jornada: 'Mañana', aprendices: 33 },
+  { codigo: '2718904', programa: 'Contabilización de Operaciones Comerciales', nivel: 'Técnico', trimestre: 3, jornada: 'Noche', aprendices: 28 },
 ]
 
 const estiloNivel: Record<FilaFicha['nivel'], string> = {
@@ -38,7 +43,24 @@ const estiloNivel: Record<FilaFicha['nivel'], string> = {
   Técnico: 'bg-sky-50 text-sky-700',
 }
 
+const FICHAS_POR_PAGINA = 10
+
 export function Fichas() {
+  const [pagina, setPagina] = useState(1)
+  const [expandidas, setExpandidas] = useState<Set<string>>(new Set())
+  const totalPaginas = Math.max(1, Math.ceil(FICHAS.length / FICHAS_POR_PAGINA))
+  const inicio = (pagina - 1) * FICHAS_POR_PAGINA
+  const fichasPagina = FICHAS.slice(inicio, inicio + FICHAS_POR_PAGINA)
+
+  function alternarExpandida(codigo: string) {
+    setExpandidas((prev) => {
+      const siguiente = new Set(prev)
+      if (siguiente.has(codigo)) siguiente.delete(codigo)
+      else siguiente.add(codigo)
+      return siguiente
+    })
+  }
+
   return (
     <AppShell activo="Fichas">
       <div className="mb-6">
@@ -52,35 +74,73 @@ export function Fichas() {
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Ficha</th>
-              <th className="px-4 py-3">Programa</th>
-              <th className="px-4 py-3">Nivel</th>
-              <th className="px-4 py-3">Trimestre</th>
-              <th className="px-4 py-3">Jornada</th>
-              <th className="px-4 py-3">Aprendices</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {FICHAS.map((f) => (
-              <tr key={f.codigo} className="hover:bg-slate-50">
-                <td className="px-4 py-3 font-medium text-slate-900">{f.codigo}</td>
-                <td className="px-4 py-3 text-slate-600">{f.programa}</td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estiloNivel[f.nivel]}`}>
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="grid grid-cols-2 items-start gap-3 sm:grid-cols-3 md:grid-cols-5">
+          {fichasPagina.map((f) => {
+            const expandida = expandidas.has(f.codigo)
+            return (
+              <button
+                key={f.codigo}
+                type="button"
+                onClick={() => alternarExpandida(f.codigo)}
+                className={`flex flex-col rounded-xl border p-3 text-left transition hover:border-sena-300 hover:shadow-sm ${
+                  expandida ? 'border-sena-300 shadow-sm' : 'aspect-square justify-between border-slate-200'
+                }`}
+              >
+                <div className="mb-1.5">
+                  <p className="truncate text-sm font-bold leading-tight text-slate-900">{f.codigo}</p>
+                  <span className={`mt-1 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${estiloNivel[f.nivel]}`}>
                     {f.nivel}
                   </span>
-                </td>
-                <td className="px-4 py-3 text-slate-600">{f.trimestre}°</td>
-                <td className="px-4 py-3 text-slate-600">{f.jornada}</td>
-                <td className="px-4 py-3 text-slate-600">{f.aprendices}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+                <p className={`text-xs text-slate-600 ${expandida ? '' : 'line-clamp-2'}`}>{f.programa}</p>
+
+                {expandida && (
+                  <div className="mt-2 grid grid-cols-3 gap-1 border-t border-slate-100 pt-2 text-center">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{f.trimestre}°</p>
+                      <p className="text-[10px] uppercase text-slate-400">Trim.</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{f.jornada}</p>
+                      <p className="text-[10px] uppercase text-slate-400">Jornada</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{f.aprendices}</p>
+                      <p className="text-[10px] uppercase text-slate-400">Aprend.</p>
+                    </div>
+                  </div>
+                )}
+              </button>
+            )
+          })}
+        </div>
+
+        {totalPaginas > 1 && (
+          <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
+            <p className="text-slate-500">
+              Página {pagina} de {totalPaginas} · {FICHAS.length} fichas
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPagina((p) => Math.max(1, p - 1))}
+                disabled={pagina === 1}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
+                disabled={pagina === totalPaginas}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </AppShell>
   )

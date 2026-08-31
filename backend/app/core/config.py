@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     # Secreta: solo para tareas admin del backend, jamás se expone al frontend
     supabase_service_role_key: str = ""
 
+    # URL del frontend desplegado (ej. https://sihs.vercel.app), para permitirle
+    # llamar al backend por CORS además de localhost. Vacía en desarrollo local.
+    frontend_url: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 

@@ -110,6 +110,9 @@ export function NotificacionesPanel({ onCerrar }: NotificacionesPanelProps) {
       </div>
 
       <div className="max-h-80 overflow-y-auto">
+        {NOTIFICACIONES.length === 0 && (
+          <p className="px-4 py-6 text-center text-sm text-slate-400">No tienes notificaciones.</p>
+        )}
         {GRUPOS.map((grupo) => {
           const items = NOTIFICACIONES.filter((n) => n.grupo === grupo)
           if (items.length === 0) return null

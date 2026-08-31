@@ -20,17 +20,19 @@ from app.api.v1.guias import router as guias_router
 from app.api.v1.competencias_formacion import router as competencias_formacion_router
 from app.api.v1.resultados_aprendizaje import router as resultados_aprendizaje_router
 from app.api.v1.horarios import router as horarios_router
+from app.api.v1.actividades_aprendizaje import router as actividades_aprendizaje_router
 
 
 app = FastAPI(title=settings.app_name)
 
 # Desarrollo: acepta cualquier puerto de localhost (Vite salta al siguiente
 # puerto libre — 5174, 5175... — si 5173 ya está ocupado por otro proyecto,
-# así que fijar un solo puerto rompe el CORS en silencio). Antes de
-# producción, reemplazar por la URL real desplegada con allow_origins.
+# así que fijar un solo puerto rompe el CORS en silencio). En producción se
+# suma la URL real del frontend desplegado vía la variable FRONTEND_URL.
 app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+    allow_origins=[settings.frontend_url] if settings.frontend_url else [],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -54,3 +56,4 @@ app.include_router(guias_router, prefix="/api/v1")
 app.include_router(competencias_formacion_router, prefix="/api/v1")
 app.include_router(resultados_aprendizaje_router, prefix="/api/v1")
 app.include_router(horarios_router, prefix="/api/v1")
+app.include_router(actividades_aprendizaje_router, prefix="/api/v1")
