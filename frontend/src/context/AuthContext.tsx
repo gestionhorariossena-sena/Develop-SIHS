@@ -43,8 +43,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /** Inicia los temporizadores de inactividad (SCRUM-17: RNF-07) */
-  const reiniciarTemporizadores = useCallback(() => {
-    if (!session) return
+  const reiniciarTemporizadores = useCallback((sesionActiva = session) => {
+    if (!sesionActiva) return
 
     cancelarTemporizadores()
     ultimaActividadRef.current = Date.now()
@@ -78,14 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session)
       setLoading(false)
       if (data.session) {
-        reiniciarTemporizadores()
+        reiniciarTemporizadores(data.session)
       }
     })
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
       if (newSession) {
-        reiniciarTemporizadores()
+        reiniciarTemporizadores(newSession)
       } else {
         cancelarTemporizadores()
       }
