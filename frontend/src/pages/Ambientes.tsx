@@ -50,10 +50,10 @@ export function Ambientes() {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
             <tr>
-              <th className="px-4 py-3">Ambiente</th>
-              <th className="px-4 py-3">Sede</th>
-              <th className="px-4 py-3">Coordinación</th>
-              <th className="px-4 py-3">Estado</th>
+              <th scope="col" className="px-4 py-3">Ambiente</th>
+              <th scope="col" className="px-4 py-3">Sede</th>
+              <th scope="col" className="px-4 py-3">Coordinación</th>
+              <th scope="col" className="px-4 py-3">Estado</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">

@@ -41,14 +41,14 @@ export function PanelBloques({
         <button
           type="button"
           onClick={onNuevo}
-          className="shrink-0 rounded-lg bg-sena-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sena-700"
+          className="shrink-0 rounded-lg bg-sena-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sena-800"
         >
           + Nuevo
         </button>
       </div>
 
       {bloques.length === 0 ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-xs text-slate-400">
+        <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">
           Todavía no hay bloques. Crea el primero con "+ Nuevo".
         </p>
       ) : (
@@ -116,7 +116,7 @@ export function PanelBloques({
                         onClick={() => onEditar(bloque.id)}
                         aria-label={`Editar ${bloque.tematica}`}
                         title="Editar"
-                        className="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
                       >
                         ✎
                       </button>
@@ -125,7 +125,7 @@ export function PanelBloques({
                         onClick={() => setConfirmandoId(bloque.id)}
                         aria-label={`Eliminar ${bloque.tematica}`}
                         title="Eliminar"
-                        className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        className="shrink-0 rounded p-1 text-slate-500 hover:bg-red-50 hover:text-red-600"
                       >
                         ✕
                       </button>

@@ -65,7 +65,7 @@ export function RecuperarContrasena() {
           <button
             type="button"
             onClick={() => navigate('/restablecer-contrasena', { state: { email } })}
-            className="w-full rounded-lg bg-sena-600 py-3 font-semibold text-white transition hover:bg-sena-700"
+            className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800"
           >
             Ya tengo mi código
           </button>
@@ -82,19 +82,23 @@ export function RecuperarContrasena() {
             required
           />
 
-          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+          {error && (
+          <p role="alert" className="mb-4 text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-sena-600 py-3 font-semibold text-white transition hover:bg-sena-700 disabled:opacity-60"
+            className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
           >
             {loading ? 'Enviando…' : 'Enviar instrucciones'}
           </button>
         </form>
       )}
 
-      <p className="mt-5 text-center text-xs text-slate-400">
+      <p className="mt-5 text-center text-xs text-slate-500">
         El código es válido por 30 minutos y de un solo uso.
       </p>
 

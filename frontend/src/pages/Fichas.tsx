@@ -99,15 +99,15 @@ export function Fichas() {
                   <div className="mt-2 grid grid-cols-3 gap-1 border-t border-slate-100 pt-2 text-center">
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{f.trimestre}°</p>
-                      <p className="text-[10px] uppercase text-slate-400">Trim.</p>
+                      <p className="text-[10px] uppercase text-slate-500">Trim.</p>
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{f.jornada}</p>
-                      <p className="text-[10px] uppercase text-slate-400">Jornada</p>
+                      <p className="text-[10px] uppercase text-slate-500">Jornada</p>
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-slate-900">{f.aprendices}</p>
-                      <p className="text-[10px] uppercase text-slate-400">Aprend.</p>
+                      <p className="text-[10px] uppercase text-slate-500">Aprend.</p>
                     </div>
                   </div>
                 )}

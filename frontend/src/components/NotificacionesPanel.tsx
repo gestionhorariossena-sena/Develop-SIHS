@@ -100,7 +100,8 @@ export function NotificacionesPanel({ onCerrar }: NotificacionesPanelProps) {
             type="button"
             onClick={onCerrar}
             title="Cerrar"
-            className="flex h-5 w-5 items-center justify-center rounded text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+            aria-label="Cerrar notificaciones"
+            className="flex h-5 w-5 items-center justify-center rounded text-slate-500 hover:bg-slate-50 hover:text-slate-600"
           >
             <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18 18 6M6 6l12 12" />
@@ -111,7 +112,7 @@ export function NotificacionesPanel({ onCerrar }: NotificacionesPanelProps) {
 
       <div className="max-h-80 overflow-y-auto">
         {NOTIFICACIONES.length === 0 && (
-          <p className="px-4 py-6 text-center text-sm text-slate-400">No tienes notificaciones.</p>
+          <p className="px-4 py-6 text-center text-sm text-slate-500">No tienes notificaciones.</p>
         )}
         {GRUPOS.map((grupo) => {
           const items = NOTIFICACIONES.filter((n) => n.grupo === grupo)
@@ -119,7 +120,7 @@ export function NotificacionesPanel({ onCerrar }: NotificacionesPanelProps) {
 
           return (
             <div key={grupo}>
-              <p className="px-4 pt-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-slate-400">
+              <p className="px-4 pt-3 pb-1 text-[11px] font-medium uppercase tracking-wide text-slate-500">
                 {grupo}
               </p>
               {items.map((n) => (
@@ -139,7 +140,7 @@ export function NotificacionesPanel({ onCerrar }: NotificacionesPanelProps) {
                       <p className={`text-sm ${n.leida ? 'font-medium text-slate-700' : 'font-semibold text-slate-900'}`}>
                         {n.titulo}
                       </p>
-                      <span className="shrink-0 text-[11px] text-slate-400">{n.hora}</span>
+                      <span className="shrink-0 text-[11px] text-slate-500">{n.hora}</span>
                     </div>
                     <p className="mt-0.5 line-clamp-2 text-xs text-slate-500">{n.descripcion}</p>
                   </div>

@@ -149,12 +149,16 @@ export function Login() {
           </Link>
         </div>
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="mb-4 text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
           disabled={loading || bloqueado}
-          className="w-full rounded-lg bg-sena-600 py-3 font-semibold text-white transition hover:bg-sena-700 disabled:opacity-60"
+          className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
         >
           {loading ? 'Ingresando…' : bloqueado ? 'Cuenta bloqueada temporalmente' : 'Iniciar sesión'}
         </button>
