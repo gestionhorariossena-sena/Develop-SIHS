@@ -74,6 +74,18 @@ class HorarioRepository:
         return query.first()
 
     @staticmethod
+    def obtener_por_instructor(
+        db: Session, id_instructor, excluir_id: int | None = None
+    ) -> list[Horario]:
+        """Todos los horarios ya asignados a un instructor, sin filtrar por
+        día/hora — HorarioService los usa para sumar horas semanales y
+        detectar centro/jornada (RF-011), esa decisión no es de acá."""
+        query = db.query(Horario).filter(Horario.idInstructor == id_instructor)
+        if excluir_id is not None:
+            query = query.filter(Horario.idHorario != excluir_id)
+        return query.all()
+
+    @staticmethod
     def buscar_resultado_en_ficha(
         db: Session,
         id_ficha: int,
