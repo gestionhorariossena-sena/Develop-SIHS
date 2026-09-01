@@ -30,14 +30,14 @@ patrón que ya está armado para `roles`/`usuarios`/`usuario_rol` (ver
 | Autenticación | `auth.users` (Supabase) | ✅ Hecho | Login, registro, recuperación de contraseña — vía Supabase Auth |
 | Usuarios / Roles | `usuarios`, `roles`, `usuario_rol` | ✅ Hecho | Perfil, control de acceso por rol |
 | Especialidades | `especialidades`, `usuario_especialidad` | ✅ Hecho | Catálogo de especialidades de instructores (un instructor puede tener varias) |
-| Estructura académica | `coordinaciones`, `programas`, `trimestres`, `fichas` | ✅ Hecho (falta `ficha_usuario` — matrícula, ver Sección de estudiantes) | Base para poder crear fichas |
+| Estructura académica | `coordinaciones`, `programas`, `trimestres`, `fichas` | ✅ Hecho | Base para poder crear fichas |
 | Sedes y ambientes | `sedes`, `ambientes` | ✅ Hecho | Dónde puede dictarse una clase — necesario antes de `horarios` |
 | Jornadas y días | `jornadas`, `diasDeLaSemana` | ✅ Hecho | Catálogos simples, casi sin lógica — buen punto de entrada para alguien nuevo en el backend |
 | Guías | `guias` (tabla nueva, 2026-08-26) | ✅ Hecho | Agrupa resultados de aprendizaje y los ubica en un trimestre — ver `PLAN_INTEGRACION_LOGICA_Y_BD.md` §2.1 |
 | **Horarios** | `horarios`, `horario_dia` | ✅ **Hecho — detección de cruces probada en vivo contra Supabase** | Crear/editar horarios **detectando cruces** de instructor, ambiente, ficha y resultado repetido |
 | Competencias / resultados | `competencias_formacion`, `resultados_aprendizaje` | ✅ Hecho | Lo que se enseña en cada bloque de horario |
 | Actividades de aprendizaje | `actividades_aprendizaje` | ❌ Falta | Desglose fino de un resultado — no bloquea `horarios`, se puede hacer después |
-| Matrícula de fichas | `ficha_usuario` | ❌ Falta | Necesaria para la Sección de estudiantes, no para `horarios` |
+| Matrícula de fichas | `ficha_usuario` | ✅ Hecho | Vincula un aprendiz a una ficha existente — endpoints `POST /ficha-usuario/vincular` y `GET /ficha-usuario/mi-ficha`, ambos `require_aprendiz` |
 
 ## Orden recomendado para programar lo que falta
 
@@ -69,8 +69,8 @@ resultado repetido en la misma ficha con `409` y el mensaje correspondiente
   módulo `horarios` real (selects contra los catálogos reales) — ver
   `PLAN_INTEGRACION_LOGICA_Y_BD.md` §5. Es el trabajo de frontend más
   importante que queda.
-- `ficha_usuario` y `actividades_aprendizaje` — no bloquean nada, se pueden
-  hacer cuando haga falta la Sección de estudiantes.
+- `actividades_aprendizaje` — no bloquea nada, se puede hacer cuando haga
+  falta.
 - El `EXCLUDE` constraint de Postgres sigue comentado en `01_creacion.sql`
   (segunda barrera a nivel de base de datos) — sigue bloqueado por lo mismo:
   exige que el día viva en `horarios` en vez de en `horario_dia` aparte. La

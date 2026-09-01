@@ -55,9 +55,10 @@ prueba usando `POST /usuario-rol/asignar`.
   las tablas, que RLS no restringe. Solo importa el día que el frontend use
   `supabase-js` para leer una tabla directamente sin pasar por el backend —
   ahí sí hace falta escribir políticas primero.
-- **Sin tests** para `roles`/`usuarios`/`usuario_rol` — solo existe el test
-  de `/health`. Escribir tests de estos módulos requiere simular la
-  respuesta de Supabase Auth (no pegarle a la real en cada test run).
+- ~~Sin tests para `roles`/`usuarios`/`usuario_rol`~~ — resuelto:
+  `backend/tests/test_roles.py`, `test_usuarios.py` y `test_usuario_rol.py`
+  simulan la respuesta de Supabase Auth (mock de `httpx.get`, sin red real) y
+  corren contra SQLite en memoria en vez de Supabase.
 - **Módulos de negocio (horarios, fichas, ambientes, etc.) no existen en
   código** — las tablas ya están creadas por el script SQL, pero no hay
   modelos/servicios/rutas todavía. Es la Fase 2/3 del roadmap general, fuera

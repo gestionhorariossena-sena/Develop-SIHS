@@ -13,6 +13,10 @@ class FichaRepository:
         return db.query(Ficha).filter(Ficha.idFicha == id_ficha).first()
 
     @staticmethod
+    def obtener_por_codigo(db: Session, codigo_ficha: str):
+        return db.query(Ficha).filter(Ficha.codigoFicha == codigo_ficha).first()
+
+    @staticmethod
     def crear(db: Session, ficha: Ficha):
         db.add(ficha)
         db.commit()
