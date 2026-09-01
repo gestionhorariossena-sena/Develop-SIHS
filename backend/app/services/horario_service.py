@@ -1,6 +1,19 @@
-from app.models.horario import Horario
+from app.models.ambiente import Ambiente
 from app.models.dia_semana import DiaSemana
+from app.models.horario import Horario
+from app.models.jornada import Jornada
+from app.models.usuario import Usuario
 from app.repositories.horario_repository import HorarioRepository
+
+# RF-011 (Requisitos Funcionales V4.pdf, pág. 15-16): "Los instructores de
+# planta podrán estar asignados máximo 32 horas a la semana, mientras que
+# para los de contrato serán un máximo de 40."
+HORAS_MAX_PLANTA = 32
+HORAS_MAX_CONTRATO = 40
+
+# Orden de las jornadas en un mismo día, para decidir si dos son
+# "continuas" (adyacentes) — ver _validar_reglas_instructor.
+ORDEN_JORNADA = {"Mañana": 1, "Tarde": 2, "Noche": 3}
 
 
 class CruceHorarioError(Exception):
@@ -113,6 +126,90 @@ class HorarioService:
                 "El ambiente ya está ocupado en ese horario: "
                 f"{HorarioService._describir(db, ambiente_existente)}."
             )
+
+        errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
+
+        return errores
+
+    @staticmethod
+    def _duracion_horas(hora_inicio, hora_fin) -> float:
+        inicio = hora_inicio.hour + hora_inicio.minute / 60
+        fin = hora_fin.hour + hora_fin.minute / 60
+        return fin - inicio
+
+    @staticmethod
+    def _validar_reglas_instructor(db, data, excluir_id: int | None) -> list[str]:
+        """RF-011: tope de horas/semana según tipo de contrato, jornada
+        Noche vedada para instructores de planta, y no repetir centro de
+        formación (acá, `Sede`, que es lo único que el esquema tiene para
+        eso) en jornadas continuas del mismo día. La tercera regla choca
+        con un hallazgo de entrevista en REGLAS_DE_NEGOCIO_CONOCIDAS.md
+        (un instructor real programado mañana en una sede y tarde en
+        otra) — se implementa igual porque así quedó escrito en el
+        requisito formal (RF-011), no en la entrevista; si el equipo
+        confirma que la entrevista manda, hay que revisar/quitar esto."""
+        errores: list[str] = []
+
+        instructor = db.get(Usuario, data.idInstructor)
+        if not instructor:
+            return errores
+
+        jornada_nueva = db.get(Jornada, data.idJornada)
+        ambiente_nuevo = db.get(Ambiente, data.idAmbiente)
+        horarios_instructor = HorarioRepository.obtener_por_instructor(
+            db, data.idInstructor, excluir_id
+        )
+        duracion_nueva = HorarioService._duracion_horas(data.horaInicio, data.horaFin)
+
+        if instructor.tipoContrato:
+            limite = (
+                HORAS_MAX_PLANTA if instructor.tipoContrato == "planta" else HORAS_MAX_CONTRATO
+            )
+            horas_existentes = sum(
+                HorarioService._duracion_horas(h.horaInicio, h.horaFin)
+                * len(HorarioRepository.obtener_dias(db, h.idHorario))
+                for h in horarios_instructor
+            )
+            horas_totales = horas_existentes + duracion_nueva * len(data.dias)
+            if horas_totales > limite:
+                errores.append(
+                    f"El instructor {instructor.nombre} ({instructor.tipoContrato}) superaría "
+                    f"el máximo de {limite}h/semana: quedaría en {horas_totales:.1f}h."
+                )
+
+        if instructor.tipoContrato == "planta" and jornada_nueva and jornada_nueva.nombreJornada == "Noche":
+            errores.append(
+                f"El instructor {instructor.nombre} es de planta y no puede programarse en jornada Noche."
+            )
+
+        if ambiente_nuevo and jornada_nueva:
+            orden_nueva = ORDEN_JORNADA.get(jornada_nueva.nombreJornada)
+            dias_nuevos = set(data.dias)
+
+            for h in horarios_instructor:
+                if h.idAmbiente == data.idAmbiente:
+                    continue
+
+                if not (set(HorarioRepository.obtener_dias(db, h.idHorario)) & dias_nuevos):
+                    continue
+
+                jornada_h = db.get(Jornada, h.idJornada)
+                orden_h = ORDEN_JORNADA.get(jornada_h.nombreJornada) if jornada_h else None
+                # <= 1 (no == 1): dos bloques de la MISMA jornada (ej. dos
+                # sub-bloques de "Tarde") en sedes distintas el mismo día
+                # también son físicamente imposibles, no solo jornadas
+                # adyacentes — == 1 dejaba pasar ese caso sin detectarlo.
+                if orden_nueva is None or orden_h is None or abs(orden_nueva - orden_h) > 1:
+                    continue
+
+                if not h.ambiente or h.ambiente.sede_id == ambiente_nuevo.sede_id:
+                    continue
+
+                errores.append(
+                    f"El instructor {instructor.nombre} ya está asignado a otro centro de "
+                    f"formación en una jornada continua ese día: {HorarioService._describir(db, h)}."
+                )
+                break
 
         return errores
 
