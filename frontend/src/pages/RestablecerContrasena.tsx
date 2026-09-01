@@ -123,18 +123,22 @@ export function RestablecerContrasena() {
               required
             />
 
-            {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+            {error && (
+              <p role="alert" className="mb-4 text-sm text-red-600">
+                {error}
+              </p>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-sena-600 py-3 font-semibold text-white transition hover:bg-sena-700 disabled:opacity-60"
+              className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
             >
               {loading ? 'Verificando…' : 'Verificar código'}
             </button>
           </form>
 
-          <p className="mt-5 text-center text-xs text-slate-400">
+          <p className="mt-5 text-center text-xs text-slate-500">
             ¿No te llegó nada?{' '}
             <Link to="/recuperar-contrasena" className="font-medium text-sena-700 hover:underline">
               Solicita un código nuevo
@@ -172,12 +176,16 @@ export function RestablecerContrasena() {
               required
             />
 
-            {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+            {error && (
+              <p role="alert" className="mb-4 text-sm text-red-600">
+                {error}
+              </p>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-sena-600 py-3 font-semibold text-white transition hover:bg-sena-700 disabled:opacity-60"
+              className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
             >
               {loading ? 'Guardando…' : 'Guardar contraseña'}
             </button>

@@ -57,11 +57,11 @@ export function Instructores() {
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
             <tr>
-              <th className="px-4 py-3">Instructor</th>
-              <th className="px-4 py-3">Sigla</th>
-              <th className="px-4 py-3">Especialidad</th>
-              <th className="px-4 py-3">Jornada habitual</th>
-              <th className="px-4 py-3">Tipo</th>
+              <th scope="col" className="px-4 py-3">Instructor</th>
+              <th scope="col" className="px-4 py-3">Sigla</th>
+              <th scope="col" className="px-4 py-3">Especialidad</th>
+              <th scope="col" className="px-4 py-3">Jornada habitual</th>
+              <th scope="col" className="px-4 py-3">Tipo</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">

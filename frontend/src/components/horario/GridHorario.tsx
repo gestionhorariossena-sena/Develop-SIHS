@@ -88,13 +88,13 @@ export function GridHorario({
 
                 {posicion === 0 && (
                   <div className="grid gap-px bg-slate-200" style={ESTILO_COLUMNAS}>
-                    <div className="truncate bg-slate-100 px-2 py-1 text-center text-[11px] font-semibold uppercase text-slate-400">
+                    <div className="truncate bg-slate-100 px-2 py-1 text-center text-[11px] font-semibold uppercase text-slate-500">
                       Receso
                     </div>
                     {DIAS.map((dia) => (
                       <div
                         key={dia}
-                        className="truncate bg-slate-100 px-1.5 py-1 text-center text-[11px] font-semibold uppercase text-slate-400"
+                        className="truncate bg-slate-100 px-1.5 py-1 text-center text-[11px] font-semibold uppercase text-slate-500"
                       >
                         Receso
                       </div>

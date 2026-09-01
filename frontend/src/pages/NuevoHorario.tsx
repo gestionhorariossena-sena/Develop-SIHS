@@ -229,7 +229,7 @@ export function NuevoHorario() {
             onClick={() => void guardarHorario()}
             disabled={guardando || !catalogos}
             title={!catalogos ? 'Cargando catálogos…' : undefined}
-            className="rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {guardando ? 'Guardando…' : 'Guardar horario'}
           </button>
@@ -322,7 +322,7 @@ export function NuevoHorario() {
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-xs text-slate-400 print:hidden">
+        <p className="mt-3 text-xs text-slate-500 print:hidden">
           Plantilla base:{' '}
           <code className="rounded bg-slate-100 px-1.5 py-0.5">
             _Docs/Diseño/plantillas-institucionales/disponibilidad-ficha-3228973B.pdf
@@ -338,7 +338,7 @@ export function NuevoHorario() {
 function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
         {etiqueta}
       </span>
       {children}

@@ -182,10 +182,10 @@ export function AprobarlicitarSolicitudes() {
           <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
               <tr>
-                <th className="px-4 py-3">Usuario</th>
-                <th className="px-4 py-3">Solicitado</th>
-                <th className="px-4 py-3">Estado</th>
-                <th className="px-4 py-3 text-right">Acciones</th>
+                <th scope="col" className="px-4 py-3">Usuario</th>
+                <th scope="col" className="px-4 py-3">Solicitado</th>
+                <th scope="col" className="px-4 py-3">Estado</th>
+                <th scope="col" className="px-4 py-3 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -213,7 +213,7 @@ export function AprobarlicitarSolicitudes() {
                     <button
                       onClick={() => abrirModalAsignar(usuario)}
                       disabled={procesandoId === usuario.idUsuario}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-sena-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-500 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-sena-700 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3M12 12a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5ZM3 19.5a6.5 6.5 0 0 1 11.34-4.33" />
@@ -279,7 +279,7 @@ export function AprobarlicitarSolicitudes() {
               <button
                 onClick={asignarRol}
                 disabled={!rolSeleccionado || procesandoId !== null}
-                className="flex-1 rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {procesandoId ? 'Asignando…' : 'Asignar'}
               </button>

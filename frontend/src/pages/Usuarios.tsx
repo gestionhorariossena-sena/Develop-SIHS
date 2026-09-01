@@ -137,7 +137,7 @@ export function Usuarios() {
               <button
                 type="button"
                 onClick={generarCodigoInstructor}
-                className="rounded-lg bg-sena-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sena-700"
+                className="rounded-lg bg-sena-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sena-800"
               >
                 Generar código
               </button>
@@ -181,22 +181,22 @@ export function Usuarios() {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
                 <tr>
-                  <th className="px-4 py-3">Nombre</th>
-                  <th className="px-4 py-3">Correo</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Rol</th>
+                  <th scope="col" className="px-4 py-3">Nombre</th>
+                  <th scope="col" className="px-4 py-3">Correo</th>
+                  <th scope="col" className="px-4 py-3">Estado</th>
+                  <th scope="col" className="px-4 py-3">Rol</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {usuarios === null ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
                       Cargando…
                     </td>
                   </tr>
                 ) : usuarios.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
                       No hay usuarios registrados todavía.
                     </td>
                   </tr>
