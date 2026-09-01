@@ -4,7 +4,9 @@ def test_listar_roles_requiere_autenticacion(client):
     assert respuesta.status_code == 401
 
 
-def test_listar_roles_rechaza_token_invalido(client):
+def test_listar_roles_rechaza_token_invalido(client, fake_supabase):
+    """Sin `fake_supabase` como parámetro el monkeypatch no se activa y este
+    test termina golpeando el Supabase real — en CI eso da 503, no 401."""
     respuesta = client.get(
         "/api/v1/roles/", headers={"Authorization": "Bearer token-que-no-existe"}
     )
