@@ -9,14 +9,24 @@ export interface Rol {
   nombre: string
 }
 
+export interface Especialidad {
+  idEspecialidad: number
+  nombre: string
+  descripcion: string | null
+  activo: boolean
+}
+
 export interface Usuario {
   idUsuario: string
   nombre: string
   email: string
   estado: 'activo' | 'inactivo'
   fechaRegistro: string
+  tipoContrato?: string | null
+  horasContratadasSemana?: number | null
   codigoInstructor?: string | null
   roles: Rol[]
+  especialidades: Especialidad[]
 }
 
 export interface Jornada {

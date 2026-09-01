@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.usuario import Usuario
 
@@ -8,7 +8,7 @@ from app.models.usuario import Usuario
 class UsuarioRepository:
     @staticmethod
     def obtener_todos(db: Session):
-        return db.query(Usuario).all()
+        return db.query(Usuario).options(selectinload(Usuario.roles), selectinload(Usuario.especialidades)).all()
 
     @staticmethod
     def obtener_por_id(db: Session, id_usuario: UUID):
