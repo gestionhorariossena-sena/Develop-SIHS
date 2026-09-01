@@ -140,13 +140,8 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
       onKeyDown={manejarTeclado}
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
     >
-<<<<<<< HEAD
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
+      <div ref={contenidoRef} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
         <h2 id="modal-bloque-titulo" className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">
-=======
-      <div ref={contenidoRef} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 id="modal-bloque-titulo" className="mb-4 text-lg font-bold text-slate-900">
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
           {esEdicion ? 'Editar bloque de clase' : 'Nuevo bloque de clase'}
         </h2>
 
@@ -299,11 +294,7 @@ function CampoModal({
 }) {
   return (
     <div className="mb-3">
-<<<<<<< HEAD
-      <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-400">
-=======
-      <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+      <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {etiqueta}
       </label>
       {children}

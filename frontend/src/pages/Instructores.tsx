@@ -51,44 +51,10 @@ export function Instructores() {
         <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {instructores.length} instructores</p>
       </div>
 
-<<<<<<< HEAD
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Instructores activos</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.estado === 'activo').length}</p></div>
         <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Con especialidad</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.especialidades.length > 0).length}</p></div>
         <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Especialidades</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{especialidades.length}</p></div>
-=======
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
-            <tr>
-              <th scope="col" className="px-4 py-3">Instructor</th>
-              <th scope="col" className="px-4 py-3">Sigla</th>
-              <th scope="col" className="px-4 py-3">Especialidad</th>
-              <th scope="col" className="px-4 py-3">Jornada habitual</th>
-              <th scope="col" className="px-4 py-3">Tipo</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {INSTRUCTORES.map((i) => (
-              <tr key={i.sigla + i.nombre} className="hover:bg-slate-50">
-                <td className="px-4 py-3 font-medium text-slate-900">{i.nombre}</td>
-                <td className="px-4 py-3">
-                  <span className="rounded bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700">
-                    {i.sigla}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-slate-600">{i.especialidad}</td>
-                <td className="px-4 py-3 text-slate-600">{i.jornada}</td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estiloTipo[i.tipo]}`}>
-                    {i.tipo}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
       </div>
 
       <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de instructores">

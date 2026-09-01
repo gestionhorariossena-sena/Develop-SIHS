@@ -322,11 +322,7 @@ export function NuevoHorario() {
             </li>
           ))}
         </ul>
-<<<<<<< HEAD
-        <p className="mt-3 text-xs text-slate-400 print:hidden dark:text-slate-400">
-=======
-        <p className="mt-3 text-xs text-slate-500 print:hidden">
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+        <p className="mt-3 text-xs text-slate-500 print:hidden dark:text-slate-400">
           Plantilla base:{' '}
           <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">
             _Docs/Diseño/plantillas-institucionales/disponibilidad-ficha-3228973B.pdf

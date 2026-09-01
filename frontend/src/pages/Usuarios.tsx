@@ -134,7 +134,6 @@ export function Usuarios() {
                 </p>
               </div>
 
-<<<<<<< HEAD
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                 <label className="sr-only" htmlFor="instructor-codigo">
                   Instructor para el código
@@ -163,20 +162,11 @@ export function Usuarios() {
                   type="button"
                   onClick={generarCodigoInstructor}
                   disabled={!idInstructorSeleccionado}
-                  className="rounded-lg bg-sena-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-lg bg-sena-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Generar código
                 </button>
               </div>
-=======
-              <button
-                type="button"
-                onClick={generarCodigoInstructor}
-                className="rounded-lg bg-sena-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sena-800"
-              >
-                Generar código
-              </button>
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
             </div>
 
             {codigoActual && (

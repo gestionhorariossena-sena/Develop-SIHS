@@ -355,11 +355,7 @@ export function HistorialHorarios() {
               />
             </div>
           ) : (
-<<<<<<< HEAD
-            <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-sm text-slate-400 dark:bg-slate-800 dark:text-slate-400">
-=======
-            <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+            <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">
               {formatearHora(seleccionadoReal.horaInicio)}–{formatearHora(seleccionadoReal.horaFin)} no coincide con
               ninguno de los 6 bloques institucionales, así que no se puede dibujar en la grilla.
             </p>
@@ -373,13 +369,8 @@ export function HistorialHorarios() {
 function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
     <div>
-<<<<<<< HEAD
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-400">{etiqueta}</span>
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{etiqueta}</span>
       <p className="text-sm text-slate-900 dark:text-slate-100">{children}</p>
-=======
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">{etiqueta}</span>
-      <p className="text-sm text-slate-900">{children}</p>
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
     </div>
   )
 }

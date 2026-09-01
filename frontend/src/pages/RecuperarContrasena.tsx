@@ -98,11 +98,7 @@ export function RecuperarContrasena() {
         </form>
       )}
 
-<<<<<<< HEAD
-      <p className="mt-5 text-center text-xs text-slate-400 dark:text-slate-400">
-=======
-      <p className="mt-5 text-center text-xs text-slate-500">
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+      <p className="mt-5 text-center text-xs text-slate-500 dark:text-slate-400">
         El código es válido por 30 minutos y de un solo uso.
       </p>
 

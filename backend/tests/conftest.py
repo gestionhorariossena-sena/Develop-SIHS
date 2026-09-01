@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,9 +12,13 @@ from sqlalchemy.pool import StaticPool
 from app.core.database import Base, get_db
 from app.main import app
 from app.models.auditoria import Auditoria
+from app.models.coordinacion import Coordinacion
+from app.models.especialidad import Especialidad, usuario_especialidad
 from app.models.ficha import Ficha
 from app.models.ficha_usuario import FichaUsuario
+from app.models.programa import Programa
 from app.models.rol import Rol
+from app.models.trimestre import Trimestre
 from app.models.usuario import Usuario
 from app.models.usuario_rol import UsuarioRol
 
@@ -61,8 +66,13 @@ def db_session():
             Rol.__table__,
             UsuarioRol.__table__,
             Auditoria.__table__,
+            Coordinacion.__table__,
+            Programa.__table__,
+            Trimestre.__table__,
             Ficha.__table__,
             FichaUsuario.__table__,
+            Especialidad.__table__,
+            usuario_especialidad,
         ],
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -161,11 +171,36 @@ def crear_usuario(db_session):
 
 @pytest.fixture()
 def crear_ficha(db_session):
-    def _crear(*, codigo: str | None = None, id_programa: int = 1, id_trimestre: int = 1) -> Ficha:
+    """FichaResponse exige programa/trimestre (no son opcionales), así que
+    esta fixture arma toda la cadena coordinación -> programa -> trimestre
+    en vez de solo la ficha con un idPrograma/idTrimestre colgando — si no,
+    la serialización de la respuesta revienta buscando filas que no existen."""
+
+    def _crear(*, codigo: str | None = None) -> Ficha:
+        coordinacion = Coordinacion(nombreCoordinacion="Teleinformática")
+        db_session.add(coordinacion)
+        db_session.commit()
+
+        programa = Programa(
+            codigoPrograma=f"PROG-{uuid.uuid4().hex[:6]}",
+            nombrePrograma=f"Programa {uuid.uuid4().hex[:6]}",
+            nivelFormacion="Tecnólogo",
+            idCoordinacion=coordinacion.idCoordinacion,
+        )
+        db_session.add(programa)
+
+        trimestre = Trimestre(
+            nombre="Trimestre 1",
+            fechaInicio=date(2026, 1, 1),
+            fechaFin=date(2026, 3, 31),
+        )
+        db_session.add(trimestre)
+        db_session.commit()
+
         ficha = Ficha(
             codigoFicha=codigo or f"FICHA-{uuid.uuid4().hex[:8]}",
-            idPrograma=id_programa,
-            idTrimestre=id_trimestre,
+            idPrograma=programa.idPrograma,
+            idTrimestre=trimestre.idTrimestre,
         )
         db_session.add(ficha)
         db_session.commit()
