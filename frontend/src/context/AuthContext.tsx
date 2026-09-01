@@ -43,9 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /** Inicia los temporizadores de inactividad (SCRUM-17: RNF-07) */
-  const reiniciarTemporizadores = useCallback((sesionActiva = session) => {
-    if (!sesionActiva) return
-
+  const reiniciarTemporizadores = useCallback(() => {
     cancelarTemporizadores()
     ultimaActividadRef.current = Date.now()
 
@@ -59,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn('Sesión expirada por inactividad (15 min)')
       await supabase.auth.signOut()
     }, INACTIVIDAD_TIMEOUT_MS)
-  }, [session, cancelarTemporizadores])
+  }, [cancelarTemporizadores])
 
   /** Detecta actividad del usuario (mouse, keyboard, touch) */
   const manejarActividad = useCallback(() => {
@@ -77,22 +75,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session)
       setLoading(false)
-      if (data.session) {
-        reiniciarTemporizadores(data.session)
-      }
     })
 
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession)
-      if (newSession) {
-        reiniciarTemporizadores(newSession)
-      } else {
-        cancelarTemporizadores()
-      }
     })
 
     return () => subscription.subscription.unsubscribe()
-  }, [reiniciarTemporizadores, cancelarTemporizadores])
+  }, [])
+
+  useEffect(() => {
+    if (!session) {
+      cancelarTemporizadores()
+      return
+    }
+
+    reiniciarTemporizadores()
+    return cancelarTemporizadores
+  }, [session, reiniciarTemporizadores, cancelarTemporizadores])
 
   /** Listeners de actividad: detectan mouse, keyboard y touch (SCRUM-17) */
   useEffect(() => {
