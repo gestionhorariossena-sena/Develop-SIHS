@@ -30,6 +30,7 @@ class Usuario(Base):
     # _Docs/Documentación general/PLAN_INTEGRACION_LOGICA_Y_BD.md §2.2.
     tipoContrato = Column(String(20))
     horasContratadasSemana = Column(Integer)
+    codigoInstructor = Column(String(20), unique=True, nullable=True)
 
     roles = relationship(
         "Rol",

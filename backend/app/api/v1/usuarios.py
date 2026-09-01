@@ -4,9 +4,18 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import get_current_user, require_admin, require_lectura_catalogo
+from app.core.supabase_auth import (
+    get_current_user,
+    require_admin,
+    require_admin_o_coordinador,
+    require_lectura_catalogo,
+)
 from app.models.usuario import Usuario
-from app.schemas.usuario import UsuarioResponse
+from app.schemas.usuario import (
+    UsuarioCodigoInstructorRequest,
+    UsuarioCodigoInstructorValidacionRequest,
+    UsuarioResponse,
+)
 from app.services.usuario_service import UsuarioService
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
@@ -39,3 +48,25 @@ def obtener_usuario(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     return encontrado
+
+
+@router.post("/instructor/codigo/generar")
+def generar_codigo_instructor(
+    data: UsuarioCodigoInstructorRequest,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_admin_o_coordinador),
+):
+    generado = UsuarioService.generar_codigo_instructor(db, data.idUsuario)
+
+    if generado is None:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    return generado
+
+
+@router.post("/instructor/codigo/validar")
+def validar_codigo_instructor(
+    data: UsuarioCodigoInstructorValidacionRequest,
+    db: Session = Depends(get_db),
+):
+    return UsuarioService.validar_codigo_instructor(db, data.codigo)

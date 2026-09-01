@@ -15,6 +15,7 @@ export interface Usuario {
   email: string
   estado: 'activo' | 'inactivo'
   fechaRegistro: string
+  codigoInstructor?: string | null
   roles: Rol[]
 }
 
