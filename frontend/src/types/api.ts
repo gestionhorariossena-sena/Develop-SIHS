@@ -52,6 +52,19 @@ export interface Ficha {
   codigoFicha: string
   idPrograma: number
   idTrimestre: number
+  programa: Programa
+  trimestre: Trimestre
+  aprendicesTotales: number
+  jornadas: string[]
+}
+
+export interface Programa {
+  idPrograma: number
+  codigoPrograma: string
+  nombrePrograma: string
+  nivelFormacion: string | null
+  activo: boolean
+  idCoordinacion: number
 }
 
 export interface Ambiente {

@@ -1,147 +1,59 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { apiGet, ApiError } from '../services/api'
+import type { Ficha } from '../types/api'
 
-interface FilaFicha {
-  codigo: string
-  programa: string
-  nivel: 'Tecnólogo' | 'Técnico'
-  trimestre: number
-  jornada: string
-  aprendices: number
+type Orden = 'codigo' | 'programa' | 'trimestre'
+
+function nivel(ficha: Ficha) {
+  return ficha.programa.nivelFormacion || 'Sin definir'
 }
-
-/**
- * Datos de ejemplo — el código y el programa de la primera fila son los
- * mismos que ya usa `NuevoHorario.tsx` (ficha 3228973 B, Análisis y
- * Desarrollo de Software) para que el demo sea consistente. La mayoría de
- * programas sale de los 14 que mencionó el coordinador de Teleinformática
- * (8 tecnólogos + 6 técnicos); la ficha 3068356 es la que usó como ejemplo
- * el coordinador de Logística (6° trimestre, tarde, Coordinación de
- * Procesos Logísticos — programa con 18 guías y 91 resultados de
- * aprendizaje en 7 trimestres). Backend: `coordinaciones` → `programas` →
- * `trimestres` → `fichas` todavía no existe en código (siguiente paso
- * desbloqueado del roadmap) — ver
- * `_Docs/Documentación general/REGLAS_DE_NEGOCIO_CONOCIDAS.md`.
- */
-const FICHAS: FilaFicha[] = [
-  { codigo: '3228973 B', programa: 'Análisis y Desarrollo de Software', nivel: 'Tecnólogo', trimestre: 3, jornada: 'Mañana', aprendices: 30 },
-  { codigo: '2758431', programa: 'Análisis y Desarrollo de Software', nivel: 'Tecnólogo', trimestre: 3, jornada: 'Noche', aprendices: 32 },
-  { codigo: '2691205', programa: 'Gestión de Redes de Datos', nivel: 'Tecnólogo', trimestre: 2, jornada: 'Tarde', aprendices: 28 },
-  { codigo: '2744309', programa: 'Implementación de Infraestructura', nivel: 'Tecnólogo', trimestre: 4, jornada: 'Mañana', aprendices: 30 },
-  { codigo: '2803577', programa: 'Técnico en Programación de Software', nivel: 'Técnico', trimestre: 1, jornada: 'Tarde', aprendices: 35 },
-  { codigo: '2712880', programa: 'Técnico en Sistemas Teleinformáticos', nivel: 'Técnico', trimestre: 2, jornada: 'Noche', aprendices: 30 },
-  { codigo: '2766142', programa: 'Seguridad Digital', nivel: 'Técnico', trimestre: 1, jornada: 'Noche', aprendices: 30 },
-  { codigo: '3068356', programa: 'Tecnología en Coordinación de Procesos Logísticos', nivel: 'Tecnólogo', trimestre: 6, jornada: 'Tarde', aprendices: 30 },
-  { codigo: '2799412', programa: 'Técnico en Cocina', nivel: 'Técnico', trimestre: 2, jornada: 'Mañana', aprendices: 25 },
-  { codigo: '2831190', programa: 'Gestión Logística', nivel: 'Tecnólogo', trimestre: 5, jornada: 'Tarde', aprendices: 30 },
-  { codigo: '2745560', programa: 'Análisis y Desarrollo de Software', nivel: 'Tecnólogo', trimestre: 1, jornada: 'Mañana', aprendices: 33 },
-  { codigo: '2718904', programa: 'Contabilización de Operaciones Comerciales', nivel: 'Técnico', trimestre: 3, jornada: 'Noche', aprendices: 28 },
-]
-
-const estiloNivel: Record<FilaFicha['nivel'], string> = {
-  Tecnólogo: 'bg-sena-50 text-sena-700 dark:bg-sena-950/50',
-  Técnico: 'bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300',
-}
-
-const FICHAS_POR_PAGINA = 10
 
 export function Fichas() {
-  const [pagina, setPagina] = useState(1)
-  const [expandidas, setExpandidas] = useState<Set<string>>(new Set())
-  const totalPaginas = Math.max(1, Math.ceil(FICHAS.length / FICHAS_POR_PAGINA))
-  const inicio = (pagina - 1) * FICHAS_POR_PAGINA
-  const fichasPagina = FICHAS.slice(inicio, inicio + FICHAS_POR_PAGINA)
+  const [fichas, setFichas] = useState<Ficha[]>([])
+  const [busqueda, setBusqueda] = useState('')
+  const [programa, setPrograma] = useState('todos')
+  const [nivelFormacion, setNivelFormacion] = useState('todos')
+  const [jornada, setJornada] = useState('todas')
+  const [orden, setOrden] = useState<Orden>('codigo')
+  const [seleccionada, setSeleccionada] = useState<Ficha | null>(null)
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  function alternarExpandida(codigo: string) {
-    setExpandidas((prev) => {
-      const siguiente = new Set(prev)
-      if (siguiente.has(codigo)) siguiente.delete(codigo)
-      else siguiente.add(codigo)
-      return siguiente
-    })
-  }
+  useEffect(() => {
+    apiGet<Ficha[]>('/fichas/')
+      .then(setFichas)
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de fichas.'))
+      .finally(() => setCargando(false))
+  }, [])
+
+  const programas = [...new Set(fichas.map((ficha) => ficha.programa.nombrePrograma))].sort()
+  const niveles = [...new Set(fichas.map(nivel))].sort()
+  const jornadas = [...new Set(fichas.flatMap((ficha) => ficha.jornadas))].sort()
+  const texto = busqueda.trim().toLocaleLowerCase('es-CO')
+  const filtrosActivos = Number(Boolean(busqueda.trim())) + Number(programa !== 'todos') + Number(nivelFormacion !== 'todos') + Number(jornada !== 'todas')
+  const visibles = fichas.filter((ficha) => {
+    const coincideTexto = !texto || `${ficha.codigoFicha} ${ficha.programa.nombrePrograma} ${ficha.programa.codigoPrograma}`.toLocaleLowerCase('es-CO').includes(texto)
+    const coincideJornada = jornada === 'todas' || ficha.jornadas.includes(jornada)
+    return coincideTexto && coincideJornada && (programa === 'todos' || ficha.programa.nombrePrograma === programa) && (nivelFormacion === 'todos' || nivel(ficha) === nivelFormacion)
+  }).sort((primera, segunda) => {
+    if (orden === 'programa') return primera.programa.nombrePrograma.localeCompare(segunda.programa.nombrePrograma, 'es-CO')
+    if (orden === 'trimestre') return primera.trimestre.nombre.localeCompare(segunda.trimestre.nombre, 'es-CO')
+    return primera.codigoFicha.localeCompare(segunda.codigoFicha, 'es-CO', { numeric: true })
+  })
 
   return (
     <AppShell activo="Fichas">
-      <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Fichas</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
-          Datos de ejemplo — pendiente el listado real por trimestre. Ver{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800 dark:text-slate-300">
-            _Docs/Documentación general/REGLAS_DE_NEGOCIO_CONOCIDAS.md
-          </code>
-          .
-        </p>
-      </div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Fichas</h1><p className="text-sm text-slate-500 dark:text-slate-400">Fichas de formación registradas por programa y trimestre.</p></div><p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {fichas.length} fichas</p></div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-        <div className="grid grid-cols-2 items-start gap-3 sm:grid-cols-3 md:grid-cols-5">
-          {fichasPagina.map((f) => {
-            const expandida = expandidas.has(f.codigo)
-            return (
-              <button
-                key={f.codigo}
-                type="button"
-                onClick={() => alternarExpandida(f.codigo)}
-                className={`flex flex-col rounded-xl border p-3 text-left transition hover:border-sena-300 hover:shadow-sm ${
-                  expandida ? 'border-sena-300 shadow-sm dark:bg-slate-700/50' : 'aspect-square justify-between border-slate-200 dark:border-slate-700 dark:hover:bg-slate-700/50'
-                }`}
-              >
-                <div className="mb-1.5">
-                  <p className="truncate text-sm font-bold leading-tight text-slate-900 dark:text-slate-100">{f.codigo}</p>
-                  <span className={`mt-1 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${estiloNivel[f.nivel]}`}>
-                    {f.nivel}
-                  </span>
-                </div>
-                <p className={`text-xs text-slate-600 dark:text-slate-300 ${expandida ? '' : 'line-clamp-2'}`}>{f.programa}</p>
+      <div className="mb-6 grid gap-4 sm:grid-cols-3"><div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Fichas activas</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{fichas.filter((ficha) => ficha.trimestre.estado === 'activo').length}</p></div><div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Aprendices totales</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{fichas.reduce((total, ficha) => total + ficha.aprendicesTotales, 0)}</p></div><div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Programas</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{programas.length}</p></div></div>
 
-                {expandida && (
-                  <div className="mt-2 grid grid-cols-3 gap-1 border-t border-slate-100 pt-2 text-center dark:border-slate-700">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{f.trimestre}°</p>
-                      <p className="text-[10px] uppercase text-slate-400">Trim.</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{f.jornada}</p>
-                      <p className="text-[10px] uppercase text-slate-400">Jornada</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{f.aprendices}</p>
-                      <p className="text-[10px] uppercase text-slate-400">Aprend.</p>
-                    </div>
-                  </div>
-                )}
-              </button>
-            )
-          })}
-        </div>
+      <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de fichas"><div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div className="flex items-center gap-2"><p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Filtrar fichas</p>{filtrosActivos > 0 && <span className="rounded-full bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}</div>{filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setPrograma('todos'); setNivelFormacion('todos'); setJornada('todas') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Limpiar filtros</button>}</div><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_14rem_11rem_10rem_10rem]"><div className="md:col-span-2 xl:col-span-1"><label htmlFor="buscar-ficha" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Buscar</label><input id="buscar-ficha" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Código o programa" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></div><div><label htmlFor="filtro-programa" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Programa</label><select id="filtro-programa" value={programa} onChange={(evento) => setPrograma(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{programas.map((item) => <option key={item}>{item}</option>)}</select></div><div><label htmlFor="filtro-nivel" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Nivel</label><select id="filtro-nivel" value={nivelFormacion} onChange={(evento) => setNivelFormacion(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{niveles.map((item) => <option key={item}>{item}</option>)}</select></div><div><label htmlFor="filtro-jornada" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Jornada</label><select id="filtro-jornada" value={jornada} onChange={(evento) => setJornada(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todas">Todas</option>{jornadas.map((item) => <option key={item}>{item}</option>)}</select></div><div><label htmlFor="orden-ficha" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Ordenar por</label><select id="orden-ficha" value={orden} onChange={(evento) => setOrden(evento.target.value as Orden)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="codigo">Código</option><option value="programa">Programa</option><option value="trimestre">Trimestre</option></select></div></div></section>
 
-        {totalPaginas > 1 && (
-          <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm dark:border-slate-700">
-            <p className="text-slate-500 dark:text-slate-400">
-              Página {pagina} de {totalPaginas} · {FICHAS.length} fichas
-            </p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setPagina((p) => Math.max(1, p - 1))}
-                disabled={pagina === 1}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-              >
-                Anterior
-              </button>
-              <button
-                type="button"
-                onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
-                disabled={pagina === totalPaginas}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
+      {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Nivel</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Aprendices</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visibles.map((ficha) => <tr key={ficha.idFicha} onClick={() => setSeleccionada(ficha)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-slate-400">{ficha.programa.codigoPrograma}</p></td><td className="px-4 py-3"><span className="rounded-full bg-sena-50 px-2.5 py-1 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{nivel(ficha)}</span></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{ficha.jornadas.length ? ficha.jornadas.map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-slate-400">Sin horario</span>}</div></td><td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">{ficha.aprendicesTotales}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{ficha.trimestre.nombre}</td><td className="px-4 py-3"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{ficha.trimestre.estado}</span></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}</div>}
+
+      {seleccionada && <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40" onClick={() => setSeleccionada(null)}><aside className="h-full w-full max-w-md bg-white p-6 shadow-2xl dark:bg-slate-800" onClick={(evento) => evento.stopPropagation()}><div className="mb-6 flex items-start justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-wide text-sena-700 dark:text-sena-400">Ficha</p><h2 className="mt-1 text-xl font-semibold text-slate-900 dark:text-slate-100">{seleccionada.codigoFicha}</h2></div><button type="button" onClick={() => setSeleccionada(null)} className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Cerrar</button></div><dl className="space-y-4 text-sm"><div><dt className="text-slate-500 dark:text-slate-400">Programa</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionada.programa.nombrePrograma}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Nivel de formación</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{nivel(seleccionada)}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Jornadas programadas</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionada.jornadas.length ? seleccionada.jornadas.join(', ') : 'Sin horario'}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Aprendices matriculados</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionada.aprendicesTotales}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Trimestre</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionada.trimestre.nombre}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Estado del trimestre</dt><dd className="mt-1 font-medium capitalize text-slate-900 dark:text-slate-100">{seleccionada.trimestre.estado}</dd></div></dl></aside></div>}
     </AppShell>
   )
 }
