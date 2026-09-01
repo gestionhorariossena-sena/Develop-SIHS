@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
 from app.main import app
+from app.models.auditoria import Auditoria
 from app.models.rol import Rol
 from app.models.usuario import Usuario
 from app.models.usuario_rol import UsuarioRol
@@ -48,12 +49,13 @@ def db_session():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    # Solo las tablas de roles/usuarios/usuario_rol: crear TODO Base.metadata
-    # falla en SQLite porque otros módulos (ej. horarios_guardados) usan
-    # tipos específicos de Postgres (JSONB) que SQLite no sabe compilar.
+    # Solo las tablas de roles/usuarios/usuario_rol/auditoria: crear TODO
+    # Base.metadata falla en SQLite porque otros módulos (ej.
+    # horarios_guardados) usan tipos específicos de Postgres (JSONB) que
+    # SQLite no sabe compilar.
     Base.metadata.create_all(
         bind=engine,
-        tables=[Usuario.__table__, Rol.__table__, UsuarioRol.__table__],
+        tables=[Usuario.__table__, Rol.__table__, UsuarioRol.__table__, Auditoria.__table__],
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = TestingSessionLocal()

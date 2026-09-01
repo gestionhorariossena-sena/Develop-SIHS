@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.core.supabase_auth import require_admin, require_lectura_catalogo
 from app.schemas.ambiente import AmbienteCreate, AmbienteResponse, AmbienteUpdate
 from app.services.ambiente_service import AmbienteService
+from app.services.auditoria_service import AuditoriaService
 
 router = APIRouter(prefix="/ambientes", tags=["ambientes"])
 service = AmbienteService()
@@ -22,15 +23,20 @@ def get_ambiente(ambiente_id: int, db: Session = Depends(get_db), usuario=Depend
 
 @router.post("", response_model=AmbienteResponse, status_code=status.HTTP_201_CREATED)
 def create_ambiente(data: AmbienteCreate, db: Session = Depends(get_db), usuario=Depends(require_admin)):
-    return service.create(db, data)
+    ambiente = service.create(db, data)
+    AuditoriaService.registrar(db, usuario=usuario, accion="CREAR", entidad="ambientes", id_entidad=ambiente.id)
+    return ambiente
 
 
 @router.put("/{ambiente_id}", response_model=AmbienteResponse)
 def update_ambiente(ambiente_id: int, data: AmbienteUpdate, db: Session = Depends(get_db), usuario=Depends(require_admin)):
-    return service.update(db, ambiente_id, data)
+    ambiente = service.update(db, ambiente_id, data)
+    AuditoriaService.registrar(db, usuario=usuario, accion="ACTUALIZAR", entidad="ambientes", id_entidad=ambiente_id)
+    return ambiente
 
 
 @router.delete("/{ambiente_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_ambiente(ambiente_id: int, db: Session = Depends(get_db), usuario=Depends(require_admin)) -> Response:
     service.delete(db, ambiente_id)
+    AuditoriaService.registrar(db, usuario=usuario, accion="ELIMINAR", entidad="ambientes", id_entidad=ambiente_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

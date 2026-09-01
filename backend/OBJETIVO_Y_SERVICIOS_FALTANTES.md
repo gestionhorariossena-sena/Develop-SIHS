@@ -38,6 +38,7 @@ patrón que ya está armado para `roles`/`usuarios`/`usuario_rol` (ver
 | Competencias / resultados | `competencias_formacion`, `resultados_aprendizaje` | ✅ Hecho | Lo que se enseña en cada bloque de horario |
 | Actividades de aprendizaje | `actividades_aprendizaje` | ❌ Falta | Desglose fino de un resultado — no bloquea `horarios`, se puede hacer después |
 | Matrícula de fichas | `ficha_usuario` | ✅ Hecho | Vincula un aprendiz a una ficha existente — endpoints `POST /ficha-usuario/vincular` y `GET /ficha-usuario/mi-ficha`, ambos `require_aprendiz` |
+| Auditoría / trazabilidad | `auditoria` (tabla nueva, 2026-08-31) | ✅ Hecho en código — ⚠️ **falta aplicar el `CREATE TABLE` a Supabase**, no se corrió todavía contra el proyecto compartido | RNF-26/RNF-27: registra usuarios/horarios/ambientes/fichas modificados e intentos fallidos de login (`POST /auditoria/intento-fallido-login`, pública) — base que necesita SCRUM-17 para bloquear tras 3 intentos |
 
 ## Orden recomendado para programar lo que falta
 
