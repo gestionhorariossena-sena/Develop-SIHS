@@ -11,6 +11,8 @@ from sqlalchemy.pool import StaticPool
 from app.core.database import Base, get_db
 from app.main import app
 from app.models.auditoria import Auditoria
+from app.models.ficha import Ficha
+from app.models.ficha_usuario import FichaUsuario
 from app.models.rol import Rol
 from app.models.usuario import Usuario
 from app.models.usuario_rol import UsuarioRol
@@ -49,13 +51,19 @@ def db_session():
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    # Solo las tablas de roles/usuarios/usuario_rol/auditoria: crear TODO
-    # Base.metadata falla en SQLite porque otros módulos (ej.
-    # horarios_guardados) usan tipos específicos de Postgres (JSONB) que
-    # SQLite no sabe compilar.
+    # Solo las tablas que los tests necesitan: crear TODO Base.metadata
+    # falla en SQLite porque otros módulos (ej. horarios_guardados) usan
+    # tipos específicos de Postgres (JSONB) que SQLite no sabe compilar.
     Base.metadata.create_all(
         bind=engine,
-        tables=[Usuario.__table__, Rol.__table__, UsuarioRol.__table__, Auditoria.__table__],
+        tables=[
+            Usuario.__table__,
+            Rol.__table__,
+            UsuarioRol.__table__,
+            Auditoria.__table__,
+            Ficha.__table__,
+            FichaUsuario.__table__,
+        ],
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = TestingSessionLocal()
@@ -147,6 +155,22 @@ def crear_usuario(db_session):
         db_session.commit()
         db_session.refresh(usuario)
         return usuario
+
+    return _crear
+
+
+@pytest.fixture()
+def crear_ficha(db_session):
+    def _crear(*, codigo: str | None = None, id_programa: int = 1, id_trimestre: int = 1) -> Ficha:
+        ficha = Ficha(
+            codigoFicha=codigo or f"FICHA-{uuid.uuid4().hex[:8]}",
+            idPrograma=id_programa,
+            idTrimestre=id_trimestre,
+        )
+        db_session.add(ficha)
+        db_session.commit()
+        db_session.refresh(ficha)
+        return ficha
 
     return _crear
 
