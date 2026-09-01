@@ -17,10 +17,12 @@ horario_dia = Table(
 
 class Horario(Base):
     """El módulo objetivo del proyecto: crear esto detectando cruces de
-    ficha/instructor/ambiente/resultado-repetido. Ver
+    ficha/instructor/ambiente solapados, más las reglas de RF-011 (tope de
+    horas/semana por tipo de contrato, jornada Noche vedada para planta,
+    y centro de formación en jornadas continuas). Ver
     _Docs/Documentación general/REGLAS_DE_NEGOCIO_CONOCIDAS.md y
-    PLAN_INTEGRACION_LOGICA_Y_BD.md §3 para las 4 validaciones — viven en
-    HorarioService, no acá."""
+    _Docs/Informes de requisitos/Requisitos Funcionales V4.pdf (RF-011) —
+    las validaciones viven en HorarioService, no acá."""
 
     __tablename__ = "horarios"
     __table_args__ = (
