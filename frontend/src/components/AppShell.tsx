@@ -7,6 +7,7 @@ import { apiGet } from '../services/api'
 import type { Usuario } from '../types/api'
 import { NotificacionesPanel } from './NotificacionesPanel'
 import { NOTIFICACIONES } from '../data/notificacionesEjemplo'
+import { ThemeSelector } from './ThemeSelector'
 
 interface ItemNav {
   etiqueta: string
@@ -164,7 +165,7 @@ export function AppShell({ activo, children }: AppShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
       {!navAbierta && (
         <div
           onMouseEnter={alEntrarBordeHover}
@@ -177,7 +178,7 @@ export function AppShell({ activo, children }: AppShellProps) {
       <aside
         onMouseEnter={alEntrarPanel}
         onMouseLeave={alSalirPanel}
-        className={`fixed left-0 top-0 z-50 flex h-screen w-60 shrink-0 flex-col justify-between border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform duration-200 print:hidden ${
+        className={`fixed left-0 top-0 z-50 flex h-screen w-60 shrink-0 flex-col justify-between border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform duration-200 print:hidden dark:border-slate-700 dark:bg-slate-800 ${
           navAbierta ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -186,15 +187,15 @@ export function AppShell({ activo, children }: AppShellProps) {
             <div className="flex items-center gap-2.5">
               <img src={senaLogo} alt="SENA" className="h-9 w-9 rounded-lg object-cover" />
               <div>
-                <p className="text-sm font-bold text-slate-900">SIHS</p>
-                <p className="text-xs text-slate-500">CGMLTI</p>
+                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">SIHS</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">CGMLTI</p>
               </div>
             </div>
             <button
               type="button"
               onClick={cerrarManual}
               title="Ocultar menú"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M4 12h16" />
@@ -202,7 +203,7 @@ export function AppShell({ activo, children }: AppShellProps) {
             </button>
           </div>
 
-          <p className="mb-2 text-xs font-semibold tracking-wide text-slate-400">GESTIÓN</p>
+          <p className="mb-2 text-xs font-semibold tracking-wide text-slate-400 dark:text-slate-400">GESTIÓN</p>
           <nav className="space-y-1">
             {nav.map((item) => {
               const esActivo = item.etiqueta === activo
@@ -214,13 +215,13 @@ export function AppShell({ activo, children }: AppShellProps) {
                     to={item.ruta}
                     className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
                       esActivo
-                        ? 'bg-sena-50 text-sena-700'
-                        : 'text-slate-600 hover:bg-slate-50'
+                        ? 'bg-sena-50 text-sena-700 dark:bg-sena-950/50'
+                        : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
                     }`}
                   >
                     <span
                       className={`h-3.5 w-3.5 shrink-0 rounded ${
-                        esActivo ? 'bg-sena-600' : 'border border-slate-300'
+                        esActivo ? 'bg-sena-600' : 'border border-slate-300 dark:border-slate-600'
                       }`}
                     />
                     {item.etiqueta}
@@ -232,9 +233,9 @@ export function AppShell({ activo, children }: AppShellProps) {
                 <span
                   key={item.etiqueta}
                   title="Módulo aún no implementado en el backend"
-                  className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400"
+                  className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500"
                 >
-                  <span className="h-3.5 w-3.5 shrink-0 rounded border border-slate-300" />
+                  <span className="h-3.5 w-3.5 shrink-0 rounded border border-slate-300 dark:border-slate-600" />
                   {item.etiqueta}
                 </span>
               )
@@ -242,20 +243,20 @@ export function AppShell({ activo, children }: AppShellProps) {
           </nav>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-          <p className="text-sm font-semibold text-slate-900">Trimestre 3 · 2026</p>
-          <p className="mt-1 text-xs text-slate-500">Programación abierta hasta el 12 de septiembre.</p>
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Trimestre 3 · 2026</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Programación abierta hasta el 12 de septiembre.</p>
         </div>
       </aside>
 
       <div>
-        <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-3 print:hidden">
+        <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-3 print:hidden dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => (navAbierta ? cerrarManual() : abrirManual())}
               title={navAbierta ? 'Ocultar menú' : 'Mostrar menú (o deja el cursor en el borde izquierdo)'}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -276,13 +277,15 @@ export function AppShell({ activo, children }: AppShellProps) {
                 type="search"
                 placeholder="Buscar ficha, instructor o ambiente…"
                 disabled
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-400 placeholder:text-slate-400"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-400 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:placeholder:text-slate-500"
               />
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700">
+            <ThemeSelector />
+
+            <span className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-300">
               Trimestre 3 · 2026
             </span>
 
@@ -291,7 +294,7 @@ export function AppShell({ activo, children }: AppShellProps) {
                 type="button"
                 onClick={() => setNotifAbiertas((abiertas) => !abiertas)}
                 title="Notificaciones"
-                className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600"
+                className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
@@ -314,16 +317,16 @@ export function AppShell({ activo, children }: AppShellProps) {
                 {miPerfil ? letraInicial(miPerfil.nombre) : '·'}
               </span>
               <div className="text-right">
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {miPerfil ? miPerfil.nombre : 'Cargando…'}
                 </p>
-                <p className="text-xs text-slate-500">{miPerfil?.email ?? ''}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{miPerfil?.email ?? ''}</p>
               </div>
             </div>
 
             <button
               onClick={() => void signOut()}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               Cerrar sesión
             </button>

@@ -208,8 +208,8 @@ export function NuevoHorario() {
     <AppShell activo="Horarios">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-slate-900">Nuevo horario</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Nuevo horario</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Define un bloque de clase eligiendo de los catálogos reales y reutilízalo en el grid —
             al guardar, el sistema revisa cruces de ficha, instructor, ambiente y resultado
             repetido antes de crear cada clase.
@@ -219,7 +219,7 @@ export function NuevoHorario() {
         <div className="flex items-center gap-3 print:hidden">
           <Link
             to="/dashboard"
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             Cancelar
           </Link>
@@ -259,27 +259,27 @@ export function NuevoHorario() {
         </p>
       )}
 
-      <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-4">
+      <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-4 dark:border-slate-700 dark:bg-slate-800">
         <Campo etiqueta="Ficha (referencia del formulario)">
           <input
             value={ficha}
             onChange={(e) => setFicha(e.target.value)}
             placeholder="Ej. 3228973 B"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
           />
         </Campo>
         <Campo etiqueta="Aprendices en formación a la fecha">
           <input
             value={aprendices}
             onChange={(e) => setAprendices(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
           />
         </Campo>
         <Campo etiqueta="Horas asignadas trimestre">
           <input
             value={horasTrimestre}
             onChange={(e) => setHorasTrimestre(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900"
+            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
           />
         </Campo>
         <Campo etiqueta="Inicio / fin de trimestre">
@@ -288,13 +288,13 @@ export function NuevoHorario() {
               type="date"
               value={fechaInicio}
               onChange={(e) => setFechaInicio(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-900"
+              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
             <input
               type="date"
               value={fechaFin}
               onChange={(e) => setFechaFin(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 px-2 py-2 text-xs text-slate-900"
+              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             />
           </div>
         </Campo>
@@ -313,22 +313,22 @@ export function NuevoHorario() {
         )}
       </div>
 
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
-        <p className="mb-2 font-semibold text-slate-900">Dirección sede principal y sedes</p>
+      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+        <p className="mb-2 font-semibold text-slate-900 dark:text-slate-100">Dirección sede principal y sedes</p>
         <ul className="space-y-0.5">
           {SEDES.map((sede) => (
             <li key={sede.nombre}>
-              <span className="font-medium text-slate-700">{sede.nombre}:</span> {sede.direccion}
+              <span className="font-medium text-slate-700 dark:text-slate-300">{sede.nombre}:</span> {sede.direccion}
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-xs text-slate-400 print:hidden">
+        <p className="mt-3 text-xs text-slate-400 print:hidden dark:text-slate-400">
           Plantilla base:{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5">
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">
             _Docs/Diseño/plantillas-institucionales/disponibilidad-ficha-3228973B.pdf
           </code>
           . Reglas de color/tipografía en{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5">_Docs/Diseño/GUIA_DE_MARCA.md</code>.
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">_Docs/Diseño/GUIA_DE_MARCA.md</code>.
         </p>
       </div>
     </AppShell>

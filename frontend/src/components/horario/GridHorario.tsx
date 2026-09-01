@@ -37,7 +37,7 @@ export function GridHorario({
   return (
     <div>
       <div
-        className="grid gap-px overflow-hidden rounded-t-lg bg-slate-200 text-xs font-semibold uppercase text-white"
+        className="grid gap-px overflow-hidden rounded-t-lg bg-slate-200 text-xs font-semibold uppercase text-white dark:bg-slate-700"
         style={ESTILO_COLUMNAS}
       >
         <div className="truncate bg-slate-900 px-2 py-2">Hora</div>
@@ -60,8 +60,8 @@ export function GridHorario({
 
             {indices.map((bloqueIdx, posicion) => (
               <div key={bloqueIdx}>
-                <div className="grid gap-px bg-slate-200" style={ESTILO_COLUMNAS}>
-                  <div className={`${fondos.celda} flex flex-col justify-center px-2 py-2 text-xs font-semibold text-slate-700`}>
+                <div className="grid gap-px bg-slate-200 dark:bg-slate-700" style={ESTILO_COLUMNAS}>
+                  <div className={`${fondos.celda} flex flex-col justify-center px-2 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200`}>
                     <span className="truncate">{BLOQUES[bloqueIdx].horaInicio}</span>
                     <span className="truncate">– {BLOQUES[bloqueIdx].horaFin}</span>
                   </div>
@@ -87,14 +87,14 @@ export function GridHorario({
                 </div>
 
                 {posicion === 0 && (
-                  <div className="grid gap-px bg-slate-200" style={ESTILO_COLUMNAS}>
-                    <div className="truncate bg-slate-100 px-2 py-1 text-center text-[11px] font-semibold uppercase text-slate-400">
+                  <div className="grid gap-px bg-slate-200 dark:bg-slate-700" style={ESTILO_COLUMNAS}>
+                    <div className="truncate bg-slate-100 px-2 py-1 text-center text-[11px] font-semibold uppercase text-slate-400 dark:bg-slate-800 dark:text-slate-400">
                       Receso
                     </div>
                     {DIAS.map((dia) => (
                       <div
                         key={dia}
-                        className="truncate bg-slate-100 px-1.5 py-1 text-center text-[11px] font-semibold uppercase text-slate-400"
+                        className="truncate bg-slate-100 px-1.5 py-1 text-center text-[11px] font-semibold uppercase text-slate-400 dark:bg-slate-800 dark:text-slate-400"
                       >
                         Receso
                       </div>

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Verde institucional SENA — usarlo como `bg-sena-600`, `text-sena-600`, etc. */
 @theme {
   --color-sena-50: #f0f9ec;
@@ -17,6 +19,10 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 /* Sin esto, los navegadores quitan los fondos de color al imprimir/exportar

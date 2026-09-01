@@ -39,8 +39,8 @@ const FICHAS: FilaFicha[] = [
 ]
 
 const estiloNivel: Record<FilaFicha['nivel'], string> = {
-  Tecnólogo: 'bg-sena-50 text-sena-700',
-  Técnico: 'bg-sky-50 text-sky-700',
+  Tecnólogo: 'bg-sena-50 text-sena-700 dark:bg-sena-950/50',
+  Técnico: 'bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300',
 }
 
 const FICHAS_POR_PAGINA = 10
@@ -64,17 +64,17 @@ export function Fichas() {
   return (
     <AppShell activo="Fichas">
       <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900">Fichas</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Fichas</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Datos de ejemplo — pendiente el listado real por trimestre. Ver{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5">
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800 dark:text-slate-300">
             _Docs/Documentación general/REGLAS_DE_NEGOCIO_CONOCIDAS.md
           </code>
           .
         </p>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
         <div className="grid grid-cols-2 items-start gap-3 sm:grid-cols-3 md:grid-cols-5">
           {fichasPagina.map((f) => {
             const expandida = expandidas.has(f.codigo)
@@ -84,29 +84,29 @@ export function Fichas() {
                 type="button"
                 onClick={() => alternarExpandida(f.codigo)}
                 className={`flex flex-col rounded-xl border p-3 text-left transition hover:border-sena-300 hover:shadow-sm ${
-                  expandida ? 'border-sena-300 shadow-sm' : 'aspect-square justify-between border-slate-200'
+                  expandida ? 'border-sena-300 shadow-sm dark:bg-slate-700/50' : 'aspect-square justify-between border-slate-200 dark:border-slate-700 dark:hover:bg-slate-700/50'
                 }`}
               >
                 <div className="mb-1.5">
-                  <p className="truncate text-sm font-bold leading-tight text-slate-900">{f.codigo}</p>
+                  <p className="truncate text-sm font-bold leading-tight text-slate-900 dark:text-slate-100">{f.codigo}</p>
                   <span className={`mt-1 inline-block rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${estiloNivel[f.nivel]}`}>
                     {f.nivel}
                   </span>
                 </div>
-                <p className={`text-xs text-slate-600 ${expandida ? '' : 'line-clamp-2'}`}>{f.programa}</p>
+                <p className={`text-xs text-slate-600 dark:text-slate-300 ${expandida ? '' : 'line-clamp-2'}`}>{f.programa}</p>
 
                 {expandida && (
-                  <div className="mt-2 grid grid-cols-3 gap-1 border-t border-slate-100 pt-2 text-center">
+                  <div className="mt-2 grid grid-cols-3 gap-1 border-t border-slate-100 pt-2 text-center dark:border-slate-700">
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{f.trimestre}°</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{f.trimestre}°</p>
                       <p className="text-[10px] uppercase text-slate-400">Trim.</p>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{f.jornada}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{f.jornada}</p>
                       <p className="text-[10px] uppercase text-slate-400">Jornada</p>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{f.aprendices}</p>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{f.aprendices}</p>
                       <p className="text-[10px] uppercase text-slate-400">Aprend.</p>
                     </div>
                   </div>
@@ -117,8 +117,8 @@ export function Fichas() {
         </div>
 
         {totalPaginas > 1 && (
-          <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm">
-            <p className="text-slate-500">
+          <div className="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-sm dark:border-slate-700">
+            <p className="text-slate-500 dark:text-slate-400">
               Página {pagina} de {totalPaginas} · {FICHAS.length} fichas
             </p>
             <div className="flex gap-2">
@@ -126,7 +126,7 @@ export function Fichas() {
                 type="button"
                 onClick={() => setPagina((p) => Math.max(1, p - 1))}
                 disabled={pagina === 1}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Anterior
               </button>
@@ -134,7 +134,7 @@ export function Fichas() {
                 type="button"
                 onClick={() => setPagina((p) => Math.min(totalPaginas, p + 1))}
                 disabled={pagina === totalPaginas}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+                className="rounded-lg border border-slate-300 px-3 py-1.5 font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Siguiente
               </button>

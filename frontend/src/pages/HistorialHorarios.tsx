@@ -131,8 +131,8 @@ export function HistorialHorarios() {
   return (
     <AppShell activo="Historial de horarios">
       <div className="mb-6 print:hidden">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900">Historial de horarios</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Historial de horarios</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Todo lo guardado desde el editor — clases individuales y horarios completos, en la misma lista.
           Borrar una clase libera ese instructor/ambiente/ficha/resultado para volver a programarlo.
         </p>
@@ -155,9 +155,9 @@ export function HistorialHorarios() {
           )}
 
           {hayFilas && (
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+                <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                   <tr>
                     <th className="px-4 py-3">Ficha</th>
                     <th className="px-4 py-3">Detalle</th>
@@ -166,16 +166,16 @@ export function HistorialHorarios() {
                     <th className="px-4 py-3" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                   {horariosReales?.map((h) => (
-                    <tr key={`real-${h.idHorario}`} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">
+                    <tr key={`real-${h.idHorario}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
                         {h.fichaCodigo ?? '—'}
                         <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
                           Clase
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-600">
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
                         {h.instructorNombre ?? '—'} · {h.ambienteNombre ?? '—'} ·{' '}
                         {h.dias.map((d) => diasPorId[d] ?? d).join(', ')} · {formatearHora(h.horaInicio)}–
                         {formatearHora(h.horaFin)}
@@ -228,18 +228,18 @@ export function HistorialHorarios() {
                   ))}
 
                   {horarios?.map((h) => (
-                    <tr key={`snap-${h.idHorarioGuardado}`} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">
+                    <tr key={`snap-${h.idHorarioGuardado}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
                         {h.ficha}
                         <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-sky-700">
                           Horario completo
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-600">
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
                         {h.bloques.length} bloque{h.bloques.length === 1 ? '' : 's'}
                       </td>
-                      <td className="px-4 py-3 text-slate-600">{h.creadorNombre ?? '—'}</td>
-                      <td className="px-4 py-3 text-slate-600">{formatearFecha(h.fechaCreacion)}</td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{h.creadorNombre ?? '—'}</td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatearFecha(h.fechaCreacion)}</td>
                       <td className="px-4 py-3 text-right">
                         {confirmandoSnapshotId === h.idHorarioGuardado ? (
                           <div className="flex items-center justify-end gap-1.5">
@@ -304,7 +304,7 @@ export function HistorialHorarios() {
             <ExportarPdfButton />
           </div>
 
-          <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-4">
+          <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-4 dark:border-slate-700 dark:bg-slate-800">
             <Campo etiqueta="Ficha">{seleccionado.ficha}</Campo>
             <Campo etiqueta="Aprendices en formación">{seleccionado.aprendices ?? '—'}</Campo>
             <Campo etiqueta="Horas asignadas trimestre">{seleccionado.horasTrimestre ?? '—'}</Campo>
@@ -313,7 +313,7 @@ export function HistorialHorarios() {
             </Campo>
           </div>
 
-          <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5">
+          <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
             <GridHorario
               bloques={seleccionado.bloques}
               grid={seleccionado.grid}
@@ -336,7 +336,7 @@ export function HistorialHorarios() {
             </button>
           </div>
 
-          <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-4">
+          <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-4 dark:border-slate-700 dark:bg-slate-800">
             <Campo etiqueta="Ficha">{seleccionadoReal.fichaCodigo ?? '—'}</Campo>
             <Campo etiqueta="Instructor">{seleccionadoReal.instructorNombre ?? '—'}</Campo>
             <Campo etiqueta="Ambiente">{seleccionadoReal.ambienteNombre ?? '—'}</Campo>
@@ -346,7 +346,7 @@ export function HistorialHorarios() {
           </div>
 
           {vistaClaseReal ? (
-            <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5">
+            <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
               <GridHorario
                 bloques={vistaClaseReal.bloques}
                 grid={vistaClaseReal.grid}
@@ -355,7 +355,7 @@ export function HistorialHorarios() {
               />
             </div>
           ) : (
-            <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-sm text-slate-400">
+            <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-sm text-slate-400 dark:bg-slate-800 dark:text-slate-400">
               {formatearHora(seleccionadoReal.horaInicio)}–{formatearHora(seleccionadoReal.horaFin)} no coincide con
               ninguno de los 6 bloques institucionales, así que no se puede dibujar en la grilla.
             </p>
@@ -369,8 +369,8 @@ export function HistorialHorarios() {
 function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
     <div>
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">{etiqueta}</span>
-      <p className="text-sm text-slate-900">{children}</p>
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-400">{etiqueta}</span>
+      <p className="text-sm text-slate-900 dark:text-slate-100">{children}</p>
     </div>
   )
 }

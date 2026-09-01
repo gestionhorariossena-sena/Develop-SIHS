@@ -104,8 +104,8 @@ export function Usuarios() {
   return (
     <AppShell activo="Usuarios">
       <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900">Usuarios</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Usuarios</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Usuarios registrados en el sistema y su rol asignado. El rol pedido al registrarse queda
           como solicitud — acá se asigna el rol real.
         </p>
@@ -125,11 +125,11 @@ export function Usuarios() {
 
       {!noAutorizado && (
         <>
-          <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5">
+          <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Generar código único de instructor</h2>
-                <p className="text-sm text-slate-500">
+                <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Generar código único de instructor</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Este código se usa al registrar al instructor en el formulario de acceso.
                 </p>
               </div>
@@ -144,16 +144,16 @@ export function Usuarios() {
             </div>
 
             {codigoActual && (
-              <div className="mt-4 flex flex-col gap-3 rounded-xl border border-sena-200 bg-sena-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-4 flex flex-col gap-3 rounded-xl border border-sena-200 bg-sena-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-sena-700 dark:bg-sena-950/50">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-sena-700">Código generado</p>
-                  <p className="mt-1 text-2xl font-bold tracking-[0.18em] text-slate-900">{codigoActual}</p>
+                  <p className="mt-1 text-2xl font-bold tracking-[0.18em] text-slate-900 dark:text-slate-100">{codigoActual}</p>
                 </div>
 
                 <button
                   type="button"
                   onClick={copiarCodigo}
-                  className="rounded-lg border border-sena-300 bg-white px-3 py-2 text-sm font-medium text-sena-700 hover:bg-sena-100"
+                  className="rounded-lg border border-sena-300 bg-white px-3 py-2 text-sm font-medium text-sena-700 hover:bg-sena-100 dark:border-sena-700 dark:bg-slate-800 dark:hover:bg-sena-950/50"
                 >
                   Copiar
                 </button>
@@ -162,12 +162,12 @@ export function Usuarios() {
 
             {codigosInstructor.length > 0 && (
               <div className="mt-4">
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Códigos emitidos</p>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Códigos emitidos</p>
                 <div className="flex flex-wrap gap-2">
                   {codigosInstructor.map((codigo) => (
                     <span
                       key={codigo}
-                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700"
+                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
                     >
                       {codigo}
                     </span>
@@ -177,9 +177,9 @@ export function Usuarios() {
             )}
           </div>
 
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+              <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                 <tr>
                   <th className="px-4 py-3">Nombre</th>
                   <th className="px-4 py-3">Correo</th>
@@ -187,7 +187,7 @@ export function Usuarios() {
                   <th className="px-4 py-3">Rol</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {usuarios === null ? (
                   <tr>
                     <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
@@ -202,9 +202,9 @@ export function Usuarios() {
                   </tr>
                 ) : (
                   usuarios.map((usuario) => (
-                    <tr key={usuario.idUsuario} className="hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900">{usuario.nombre}</td>
-                      <td className="px-4 py-3 text-slate-600">{usuario.email}</td>
+                    <tr key={usuario.idUsuario} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{usuario.nombre}</td>
+                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{usuario.email}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estiloEstado[usuario.estado]}`}
@@ -217,7 +217,7 @@ export function Usuarios() {
                           value={usuario.roles[0]?.idRol ?? ''}
                           disabled={guardandoId === usuario.idUsuario}
                           onChange={(e) => cambiarRol(usuario, Number(e.target.value))}
-                          className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 disabled:opacity-60"
+                          className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
                         >
                           <option value="" disabled>
                             Sin rol asignado

@@ -113,8 +113,8 @@ export function Registro() {
 
   return (
     <AuthLayout>
-      <h1 className="mb-2 text-2xl font-bold text-slate-900">Crear cuenta</h1>
-      <p className="mb-6 text-sm text-slate-500">
+      <h1 className="mb-2 text-2xl font-bold text-slate-900 dark:text-slate-100">Crear cuenta</h1>
+      <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
         Tu solicitud será validada por la coordinación académica del centro.
       </p>
 
@@ -140,14 +140,14 @@ export function Registro() {
 
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label htmlFor="tipoDocumento" className="mb-1.5 block text-sm font-medium text-slate-700">
+            <label htmlFor="tipoDocumento" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
               Tipo de documento
             </label>
             <select
               id="tipoDocumento"
               value={tipoDocumento}
               onChange={(e) => setTipoDocumento(e.target.value as TipoDocumento)}
-              className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             >
               <option value="CC">Cédula de ciudadanía</option>
               <option value="CE">Cédula de extranjería</option>
@@ -204,7 +204,7 @@ export function Registro() {
         </div>
 
         <div className="mb-4">
-          <p className="mb-2 text-sm font-medium text-slate-700">Selecciona tu rol</p>
+          <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Selecciona tu rol</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {(['Coordinador', 'Instructor', 'Aprendiz'] as const).map((opcion) => (
               <button
@@ -213,12 +213,12 @@ export function Registro() {
                 onClick={() => setRol(opcion)}
                 className={`rounded-xl border px-4 py-3 text-left transition-all ${
                   rol === opcion
-                    ? 'border-sena-600 bg-sena-50 shadow-sm ring-1 ring-sena-600'
-                    : 'border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50'
+                    ? 'border-sena-600 bg-sena-50 shadow-sm ring-1 ring-sena-600 dark:bg-sena-950/50'
+                    : 'border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'
                 }`}
               >
-                <span className="block text-base font-semibold text-slate-900">{opcion}</span>
-                <span className="mt-1 block text-xs text-slate-500">
+                <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">{opcion}</span>
+                <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
                   {opcion === 'Coordinador'
                     ? 'Programa y aprueba'
                     : opcion === 'Instructor'

@@ -33,29 +33,29 @@ const INSTRUCTORES: FilaInstructor[] = [
 ]
 
 const estiloTipo: Record<FilaInstructor['tipo'], string> = {
-  Planta: 'bg-emerald-50 text-emerald-700',
-  Contratista: 'bg-sky-50 text-sky-700',
-  Vacante: 'bg-orange-50 text-orange-700',
+  Planta: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+  Contratista: 'bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300',
+  Vacante: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
 }
 
 export function Instructores() {
   return (
     <AppShell activo="Instructores">
       <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900">Instructores</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Instructores</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Datos de ejemplo — pendiente el listado real (nombre, especialidad, sigla, planta o
           contratista) de la coordinación. Ver{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5">
+          <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-800 dark:text-slate-300">
             _Docs/Documentación general/REGLAS_DE_NEGOCIO_CONOCIDAS.md
           </code>
           .
         </p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
+          <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
             <tr>
               <th className="px-4 py-3">Instructor</th>
               <th className="px-4 py-3">Sigla</th>
@@ -64,17 +64,17 @@ export function Instructores() {
               <th className="px-4 py-3">Tipo</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
             {INSTRUCTORES.map((i) => (
-              <tr key={i.sigla + i.nombre} className="hover:bg-slate-50">
-                <td className="px-4 py-3 font-medium text-slate-900">{i.nombre}</td>
+              <tr key={i.sigla + i.nombre} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{i.nombre}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700">
+                  <span className="rounded bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">
                     {i.sigla}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-600">{i.especialidad}</td>
-                <td className="px-4 py-3 text-slate-600">{i.jornada}</td>
+                <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{i.especialidad}</td>
+                <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{i.jornada}</td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estiloTipo[i.tipo]}`}>
                     {i.tipo}
