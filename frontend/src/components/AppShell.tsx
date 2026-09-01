@@ -64,11 +64,13 @@ export function AppShell({ activo, children }: AppShellProps) {
   const [notifAbiertas, setNotifAbiertas] = useState(false)
   const notifRef = useRef<HTMLDivElement>(null)
   const hayNoLeidas = NOTIFICACIONES.some((n) => !n.leida)
-  const esAdministrador = miPerfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
-  // "Usuarios" administra roles de todo el sistema — solo tiene sentido
-  // mostrárselo a un Administrador (el backend igual lo protege con
-  // require_admin, esto es solo para no ofrecer un enlace que va a fallar).
-  const nav = NAV.filter((item) => item.etiqueta !== 'Usuarios' || esAdministrador)
+  const puedeGestionarUsuarios =
+    miPerfil?.roles.some(
+      (rol) => rol.nombre === 'Administrador' || rol.nombre === 'Coordinador',
+    ) ?? false
+  // "Usuarios" administra roles y códigos de instructor del sistema — solo
+  // tiene sentido mostrárselo a un Administrador o Coordinador.
+  const nav = NAV.filter((item) => item.etiqueta !== 'Usuarios' || puedeGestionarUsuarios)
 
   useEffect(() => {
     apiGet<Usuario>('/usuarios/me')

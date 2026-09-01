@@ -17,3 +17,13 @@ class UsuarioRepository:
     @staticmethod
     def obtener_por_email(db: Session, email: str):
         return db.query(Usuario).filter(Usuario.email == email).first()
+
+    @staticmethod
+    def obtener_por_codigo_instructor(db: Session, codigo: str):
+        return db.query(Usuario).filter(Usuario.codigoInstructor == codigo).first()
+
+    @staticmethod
+    def actualizar(db: Session, usuario: Usuario):
+        db.commit()
+        db.refresh(usuario)
+        return usuario

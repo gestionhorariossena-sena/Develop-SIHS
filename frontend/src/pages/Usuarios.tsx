@@ -23,6 +23,44 @@ export function Usuarios() {
   const [error, setError] = useState<string | null>(null)
   const [noAutorizado, setNoAutorizado] = useState(false)
   const [guardandoId, setGuardandoId] = useState<string | null>(null)
+  const [codigosInstructor, setCodigosInstructor] = useState<string[]>([])
+  const [codigoActual, setCodigoActual] = useState<string | null>(null)
+
+  async function generarCodigoInstructor() {
+    const instructor = usuarios?.find((usuario) =>
+      usuario.roles.some((rol) => rol.nombre === 'Instructor'),
+    )
+
+    if (!instructor) {
+      setError('Debe existir al menos un instructor en la lista para generar su código.')
+      return
+    }
+
+    try {
+      const resultado = await apiPost<{ codigo: string; idUsuario: string }>(
+        '/usuarios/instructor/codigo/generar',
+        { idUsuario: instructor.idUsuario },
+      )
+
+      setCodigosInstructor((previo) =>
+        previo.includes(resultado.codigo) ? previo : [...previo, resultado.codigo],
+      )
+      setCodigoActual(resultado.codigo)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo generar el código del instructor.')
+    }
+  }
+
+  async function copiarCodigo() {
+    if (!codigoActual) return
+
+    try {
+      await navigator.clipboard.writeText(codigoActual)
+    } catch {
+      // No bloquea la experiencia si el navegador no permite copiar.
+    }
+  }
 
   useEffect(() => {
     Promise.all([apiGet<Usuario[]>('/usuarios/'), apiGet<Rol[]>('/roles/')])
@@ -31,7 +69,7 @@ export function Usuarios() {
         setRoles(listaRoles)
       })
       .catch((err: unknown) => {
-        if (err instanceof ApiError && err.status === 403) {
+        if (err instanceof ApiError && (err.status === 403 || err.status === 401)) {
           setNoAutorizado(true)
           return
         }
@@ -86,64 +124,118 @@ export function Usuarios() {
       )}
 
       {!noAutorizado && (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Nombre</th>
-                <th className="px-4 py-3">Correo</th>
-                <th className="px-4 py-3">Estado</th>
-                <th className="px-4 py-3">Rol</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {usuarios === null ? (
+        <>
+          <div className="mb-6 rounded-xl border border-slate-200 bg-white p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">Generar código único de instructor</h2>
+                <p className="text-sm text-slate-500">
+                  Este código se usa al registrar al instructor en el formulario de acceso.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={generarCodigoInstructor}
+                className="rounded-lg bg-sena-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sena-700"
+              >
+                Generar código
+              </button>
+            </div>
+
+            {codigoActual && (
+              <div className="mt-4 flex flex-col gap-3 rounded-xl border border-sena-200 bg-sena-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-sena-700">Código generado</p>
+                  <p className="mt-1 text-2xl font-bold tracking-[0.18em] text-slate-900">{codigoActual}</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={copiarCodigo}
+                  className="rounded-lg border border-sena-300 bg-white px-3 py-2 text-sm font-medium text-sena-700 hover:bg-sena-100"
+                >
+                  Copiar
+                </button>
+              </div>
+            )}
+
+            {codigosInstructor.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Códigos emitidos</p>
+                <div className="flex flex-wrap gap-2">
+                  {codigosInstructor.map((codigo) => (
+                    <span
+                      key={codigo}
+                      className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700"
+                    >
+                      {codigo}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                    Cargando…
-                  </td>
+                  <th className="px-4 py-3">Nombre</th>
+                  <th className="px-4 py-3">Correo</th>
+                  <th className="px-4 py-3">Estado</th>
+                  <th className="px-4 py-3">Rol</th>
                 </tr>
-              ) : usuarios.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
-                    No hay usuarios registrados todavía.
-                  </td>
-                </tr>
-              ) : (
-                usuarios.map((usuario) => (
-                  <tr key={usuario.idUsuario} className="hover:bg-slate-50">
-                    <td className="px-4 py-3 font-medium text-slate-900">{usuario.nombre}</td>
-                    <td className="px-4 py-3 text-slate-600">{usuario.email}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estiloEstado[usuario.estado]}`}
-                      >
-                        {usuario.estado}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <select
-                        value={usuario.roles[0]?.idRol ?? ''}
-                        disabled={guardandoId === usuario.idUsuario}
-                        onChange={(e) => cambiarRol(usuario, Number(e.target.value))}
-                        className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 disabled:opacity-60"
-                      >
-                        <option value="" disabled>
-                          Sin rol asignado
-                        </option>
-                        {roles.map((rol) => (
-                          <option key={rol.idRol} value={rol.idRol}>
-                            {rol.nombre}
-                          </option>
-                        ))}
-                      </select>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {usuarios === null ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                      Cargando…
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : usuarios.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                      No hay usuarios registrados todavía.
+                    </td>
+                  </tr>
+                ) : (
+                  usuarios.map((usuario) => (
+                    <tr key={usuario.idUsuario} className="hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium text-slate-900">{usuario.nombre}</td>
+                      <td className="px-4 py-3 text-slate-600">{usuario.email}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estiloEstado[usuario.estado]}`}
+                        >
+                          {usuario.estado}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <select
+                          value={usuario.roles[0]?.idRol ?? ''}
+                          disabled={guardandoId === usuario.idUsuario}
+                          onChange={(e) => cambiarRol(usuario, Number(e.target.value))}
+                          className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 disabled:opacity-60"
+                        >
+                          <option value="" disabled>
+                            Sin rol asignado
+                          </option>
+                          {roles.map((rol) => (
+                            <option key={rol.idRol} value={rol.idRol}>
+                              {rol.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </AppShell>
   )
