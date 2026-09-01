@@ -2,11 +2,11 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.ficha import Ficha
+from app.models.ficha_usuario import FichaUsuario
 from app.models.horario import Horario
 from app.models.jornada import Jornada
 from app.models.rol import Rol
 from app.models.usuario_rol import UsuarioRol
-from app.models.ficha import ficha_usuario
 
 
 class FichaRepository:
@@ -17,11 +17,11 @@ class FichaRepository:
             return fichas
 
         aprendices_por_ficha = dict(
-            db.query(ficha_usuario.c.idFicha, func.count(ficha_usuario.c.idUsuario))
-            .join(UsuarioRol, UsuarioRol.idUsuario == ficha_usuario.c.idUsuario)
+            db.query(FichaUsuario.idFicha, func.count(FichaUsuario.idUsuario))
+            .join(UsuarioRol, UsuarioRol.idUsuario == FichaUsuario.idUsuario)
             .join(Rol, Rol.idRol == UsuarioRol.idRol)
             .filter(Rol.nombre == "Aprendiz")
-            .group_by(ficha_usuario.c.idFicha)
+            .group_by(FichaUsuario.idFicha)
             .all()
         )
         jornadas_por_ficha = {}

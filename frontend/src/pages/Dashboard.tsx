@@ -88,11 +88,7 @@ export function Dashboard() {
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
         <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-3 flex items-center justify-between">
-<<<<<<< HEAD
-            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase dark:text-slate-400">
-=======
-            <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+            <p className="text-xs font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
               Horarios activos
             </p>
             <span className="h-6 w-6 rounded-md bg-emerald-50 dark:bg-emerald-950/50" />
@@ -105,11 +101,7 @@ export function Dashboard() {
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-3 flex items-center justify-between">
-<<<<<<< HEAD
-            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase dark:text-slate-400">
-=======
-            <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+            <p className="text-xs font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
               Cruces detectados
             </p>
             <span className="h-6 w-6 rounded-md bg-orange-50 dark:bg-orange-950/50" />
@@ -125,22 +117,13 @@ export function Dashboard() {
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-3 flex items-center justify-between">
-<<<<<<< HEAD
-            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase dark:text-slate-400">
-=======
-            <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+            <p className="text-xs font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
               Ambientes disponibles
             </p>
             <span className="h-6 w-6 rounded-md bg-slate-100 dark:bg-slate-700" />
           </div>
-<<<<<<< HEAD
           <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">
-            19 <span className="text-lg font-medium text-slate-400 dark:text-slate-400">/ 34</span>
-=======
-          <p className="text-3xl font-bold text-slate-900">
-            19 <span className="text-lg font-medium text-slate-500">/ 34</span>
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+            19 <span className="text-lg font-medium text-slate-500 dark:text-slate-400">/ 34</span>
           </p>
           <div className="mt-3 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-700">
             <div className="h-1.5 rounded-full bg-sena-600" style={{ width: '56%' }} />
@@ -177,23 +160,13 @@ export function Dashboard() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-<<<<<<< HEAD
-              <tr className="border-b border-slate-200 text-xs uppercase text-slate-400 dark:border-slate-700 dark:text-slate-400">
-                <th className="py-2 pr-4 font-medium">Hora</th>
-                <th className="py-2 pr-4 font-medium">Ficha</th>
-                <th className="py-2 pr-4 font-medium">Programa</th>
-                <th className="py-2 pr-4 font-medium">Instructor</th>
-                <th className="py-2 pr-4 font-medium">Ambiente</th>
-                <th className="py-2 font-medium">Estado</th>
-=======
-              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500 dark:border-slate-700 dark:text-slate-400">
                 <th scope="col" className="py-2 pr-4 font-medium">Hora</th>
                 <th scope="col" className="py-2 pr-4 font-medium">Ficha</th>
                 <th scope="col" className="py-2 pr-4 font-medium">Programa</th>
                 <th scope="col" className="py-2 pr-4 font-medium">Instructor</th>
                 <th scope="col" className="py-2 pr-4 font-medium">Ambiente</th>
                 <th scope="col" className="py-2 font-medium">Estado</th>
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
               </tr>
             </thead>
             <tbody>

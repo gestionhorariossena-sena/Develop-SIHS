@@ -27,10 +27,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const temporizadorInactividadRef = useRef<number | null>(null)
   const temporizadorAdvertenciaRef = useRef<number | null>(null)
-  const ultimaActividadRef = useRef<number>(Date.now())
+  const ultimaActividadRef = useRef<number | null>(null)
 
-  /** Cancela los temporizadores de inactividad */
-  const cancelarTemporizadores = useCallback(() => {
+  /** Solo limpia los timers (refs) — sin tocar estado, para poder llamarla
+   * desde el cuerpo de un efecto sin disparar un setState sincrónico ahí. */
+  const limpiarTimers = useCallback(() => {
     if (temporizadorInactividadRef.current) {
       window.clearTimeout(temporizadorInactividadRef.current)
       temporizadorInactividadRef.current = null
@@ -39,12 +40,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(temporizadorAdvertenciaRef.current)
       temporizadorAdvertenciaRef.current = null
     }
-    setMostrarAdvertencia(false)
   }, [])
+
+  /** Cancela los temporizadores de inactividad y oculta la advertencia si
+   * estaba visible — usar desde manejadores de evento o limpiezas de
+   * efecto, nunca directo en el cuerpo de un efecto. */
+  const cancelarTemporizadores = useCallback(() => {
+    limpiarTimers()
+    setMostrarAdvertencia(false)
+  }, [limpiarTimers])
 
   /** Inicia los temporizadores de inactividad (SCRUM-17: RNF-07) */
   const reiniciarTemporizadores = useCallback(() => {
-    cancelarTemporizadores()
+    limpiarTimers()
     ultimaActividadRef.current = Date.now()
 
     // Mostrar advertencia después de 13 minutos (2 min antes del logout)
@@ -57,11 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.warn('Sesión expirada por inactividad (15 min)')
       await supabase.auth.signOut()
     }, INACTIVIDAD_TIMEOUT_MS)
-  }, [cancelarTemporizadores])
+  }, [limpiarTimers])
 
-  /** Detecta actividad del usuario (mouse, keyboard, touch) */
+  /** Detecta actividad del usuario (mouse, keyboard, touch) — corre desde un
+   * listener de evento, no desde un efecto, así que el setState de acá
+   * adentro es seguro. */
   const manejarActividad = useCallback(() => {
     if (!session) return
+    setMostrarAdvertencia(false)
     reiniciarTemporizadores()
   }, [session, reiniciarTemporizadores])
 
@@ -85,10 +96,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    if (!session) {
-      cancelarTemporizadores()
-      return
-    }
+    // Sin sesión no hay nada que iniciar — si venía de una sesión activa,
+    // la limpieza del efecto anterior (el `return` de abajo) ya canceló
+    // los temporizadores al desmontar/cambiar `session`.
+    if (!session) return
 
     reiniciarTemporizadores()
     return cancelarTemporizadores

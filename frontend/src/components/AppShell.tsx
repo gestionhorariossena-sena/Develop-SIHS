@@ -195,12 +195,8 @@ export function AppShell({ activo, children }: AppShellProps) {
               type="button"
               onClick={cerrarManual}
               title="Ocultar menú"
-<<<<<<< HEAD
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
-=======
               aria-label="Ocultar menú"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-600"
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M4 12h16" />
@@ -208,11 +204,7 @@ export function AppShell({ activo, children }: AppShellProps) {
             </button>
           </div>
 
-<<<<<<< HEAD
-          <p className="mb-2 text-xs font-semibold tracking-wide text-slate-400 dark:text-slate-400">GESTIÓN</p>
-=======
-          <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500">GESTIÓN</p>
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+          <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">GESTIÓN</p>
           <nav className="space-y-1">
             {nav.map((item) => {
               const esActivo = item.etiqueta === activo
@@ -265,13 +257,9 @@ export function AppShell({ activo, children }: AppShellProps) {
               type="button"
               onClick={() => (navAbierta ? cerrarManual() : abrirManual())}
               title={navAbierta ? 'Ocultar menú' : 'Mostrar menú (o deja el cursor en el borde izquierdo)'}
-<<<<<<< HEAD
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700"
-=======
               aria-label={navAbierta ? 'Ocultar menú' : 'Mostrar menú'}
               aria-expanded={navAbierta}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -293,11 +281,7 @@ export function AppShell({ activo, children }: AppShellProps) {
                 aria-label="Buscar ficha, instructor o ambiente"
                 placeholder="Buscar ficha, instructor o ambiente…"
                 disabled
-<<<<<<< HEAD
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-400 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:placeholder:text-slate-500"
-=======
-                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400"
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
           </div>
@@ -314,14 +298,10 @@ export function AppShell({ activo, children }: AppShellProps) {
                 type="button"
                 onClick={() => setNotifAbiertas((abiertas) => !abiertas)}
                 title="Notificaciones"
-<<<<<<< HEAD
-                className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
-=======
                 aria-label="Notificaciones"
                 aria-haspopup="true"
                 aria-expanded={notifAbiertas}
-                className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-600"
->>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
+                className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path

@@ -1,14 +1,7 @@
-from sqlalchemy import Column, ForeignKey, Integer, String, Table
+from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship
 
 from app.core.database import Base
-
-ficha_usuario = Table(
-    "ficha_usuario",
-    Base.metadata,
-    Column("idFicha", Integer, ForeignKey("fichas.idFicha", ondelete="CASCADE"), primary_key=True),
-    Column("idUsuario", ForeignKey("usuarios.idUsuario", ondelete="CASCADE"), primary_key=True),
-)
 
 
 class Ficha(Base):
