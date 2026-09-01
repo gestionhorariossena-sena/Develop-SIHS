@@ -25,21 +25,21 @@ export function Usuarios() {
   const [guardandoId, setGuardandoId] = useState<string | null>(null)
   const [codigosInstructor, setCodigosInstructor] = useState<string[]>([])
   const [codigoActual, setCodigoActual] = useState<string | null>(null)
+  const [idInstructorSeleccionado, setIdInstructorSeleccionado] = useState('')
+  const instructores = usuarios?.filter((usuario) =>
+    usuario.roles.some((rol) => rol.nombre === 'Instructor'),
+  ) ?? []
 
   async function generarCodigoInstructor() {
-    const instructor = usuarios?.find((usuario) =>
-      usuario.roles.some((rol) => rol.nombre === 'Instructor'),
-    )
-
-    if (!instructor) {
-      setError('Debe existir al menos un instructor en la lista para generar su código.')
+    if (!idInstructorSeleccionado) {
+      setError('Selecciona el instructor para quien deseas generar el código.')
       return
     }
 
     try {
       const resultado = await apiPost<{ codigo: string; idUsuario: string }>(
         '/usuarios/instructor/codigo/generar',
-        { idUsuario: instructor.idUsuario },
+        { idUsuario: idInstructorSeleccionado },
       )
 
       setCodigosInstructor((previo) =>
@@ -130,17 +130,43 @@ export function Usuarios() {
               <div>
                 <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Generar código único de instructor</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Este código se usa al registrar al instructor en el formulario de acceso.
+                  Selecciona el instructor que recibirá el código para registrarse en el formulario de acceso.
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={generarCodigoInstructor}
-                className="rounded-lg bg-sena-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sena-700"
-              >
-                Generar código
-              </button>
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                <label className="sr-only" htmlFor="instructor-codigo">
+                  Instructor para el código
+                </label>
+                <select
+                  id="instructor-codigo"
+                  value={idInstructorSeleccionado}
+                  onChange={(evento) => setIdInstructorSeleccionado(evento.target.value)}
+                  disabled={usuarios === null || instructores.length === 0}
+                  className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-700 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                >
+                  <option value="">
+                    {usuarios === null
+                      ? 'Cargando instructores…'
+                      : instructores.length === 0
+                        ? 'No hay instructores disponibles'
+                        : 'Selecciona un instructor'}
+                  </option>
+                  {instructores.map((instructor) => (
+                    <option key={instructor.idUsuario} value={instructor.idUsuario}>
+                      {instructor.nombre} · {instructor.email}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={generarCodigoInstructor}
+                  disabled={!idInstructorSeleccionado}
+                  className="rounded-lg bg-sena-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Generar código
+                </button>
+              </div>
             </div>
 
             {codigoActual && (
