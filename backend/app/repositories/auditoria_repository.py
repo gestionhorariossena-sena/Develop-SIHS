@@ -34,3 +34,21 @@ class AuditoriaRepository:
             )
             .count()
         )
+
+    @staticmethod
+    def obtener_ultimo_login_fallido_desde(
+        db: Session, identificador: str, desde: datetime
+    ) -> Auditoria | None:
+        """El intento fallido más reciente de ese identificador dentro de
+        la ventana — para calcular desde cuándo contar el tiempo de
+        bloqueo (RF-001/RNF-06)."""
+        return (
+            db.query(Auditoria)
+            .filter(
+                Auditoria.accion == "LOGIN_FALLIDO",
+                Auditoria.identificador == identificador,
+                Auditoria.fecha >= desde,
+            )
+            .order_by(Auditoria.fecha.desc())
+            .first()
+        )

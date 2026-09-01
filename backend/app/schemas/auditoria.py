@@ -10,6 +10,13 @@ class IntentoLoginFallido(BaseModel):
     identificador: str
 
 
+class EstadoLoginResponse(BaseModel):
+    bloqueado: bool
+    intentos: int
+    intentosRestantes: int
+    segundosParaDesbloqueo: int | None = None
+
+
 class AuditoriaResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

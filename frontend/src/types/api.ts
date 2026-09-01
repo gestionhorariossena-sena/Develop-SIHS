@@ -19,6 +19,13 @@ export interface Usuario {
   roles: Rol[]
 }
 
+export interface EstadoLogin {
+  bloqueado: boolean
+  intentos: number
+  intentosRestantes: number
+  segundosParaDesbloqueo: number | null
+}
+
 export interface Jornada {
   idJornada: number
   nombreJornada: string
