@@ -134,6 +134,7 @@ export function Usuarios() {
                 </p>
               </div>
 
+<<<<<<< HEAD
               <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                 <label className="sr-only" htmlFor="instructor-codigo">
                   Instructor para el código
@@ -167,6 +168,15 @@ export function Usuarios() {
                   Generar código
                 </button>
               </div>
+=======
+              <button
+                type="button"
+                onClick={generarCodigoInstructor}
+                className="rounded-lg bg-sena-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-sena-800"
+              >
+                Generar código
+              </button>
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
             </div>
 
             {codigoActual && (
@@ -207,22 +217,22 @@ export function Usuarios() {
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                 <tr>
-                  <th className="px-4 py-3">Nombre</th>
-                  <th className="px-4 py-3">Correo</th>
-                  <th className="px-4 py-3">Estado</th>
-                  <th className="px-4 py-3">Rol</th>
+                  <th scope="col" className="px-4 py-3">Nombre</th>
+                  <th scope="col" className="px-4 py-3">Correo</th>
+                  <th scope="col" className="px-4 py-3">Estado</th>
+                  <th scope="col" className="px-4 py-3">Rol</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                 {usuarios === null ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
                       Cargando…
                     </td>
                   </tr>
                 ) : usuarios.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-400">
+                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
                       No hay usuarios registrados todavía.
                     </td>
                   </tr>

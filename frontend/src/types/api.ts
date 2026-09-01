@@ -29,6 +29,13 @@ export interface Usuario {
   especialidades: Especialidad[]
 }
 
+export interface EstadoLogin {
+  bloqueado: boolean
+  intentos: number
+  intentosRestantes: number
+  segundosParaDesbloqueo: number | null
+}
+
 export interface Jornada {
   idJornada: number
   nombreJornada: string

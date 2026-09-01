@@ -31,7 +31,11 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         </div>
       </main>
 
+<<<<<<< HEAD
       <footer className="flex flex-col items-center gap-1 px-4 pb-6 text-xs text-slate-400 dark:text-slate-400 sm:flex-row sm:justify-between sm:px-8">
+=======
+      <footer className="flex flex-col items-center gap-1 px-4 pb-6 text-xs text-slate-500 sm:flex-row sm:justify-between sm:px-8">
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
         <span>Servicio Nacional de Aprendizaje · Regional Distrito Capital</span>
         <div className="flex items-center gap-3">
           <ThemeSelector />

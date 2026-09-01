@@ -204,12 +204,21 @@ export function Registro() {
         </div>
 
         <div className="mb-4">
+<<<<<<< HEAD
           <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Selecciona tu rol</p>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+=======
+          <p id="rol-label" className="mb-2 text-sm font-medium text-slate-700">
+            Selecciona tu rol
+          </p>
+          <div role="radiogroup" aria-labelledby="rol-label" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
             {(['Coordinador', 'Instructor', 'Aprendiz'] as const).map((opcion) => (
               <button
                 key={opcion}
                 type="button"
+                role="radio"
+                aria-checked={rol === opcion}
                 onClick={() => setRol(opcion)}
                 className={`rounded-xl border px-4 py-3 text-left transition-all ${
                   rol === opcion
@@ -289,12 +298,16 @@ export function Registro() {
           SENA.
         </label>
 
-        {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+        {error && (
+          <p role="alert" className="mb-4 text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-sena-600 py-3 font-semibold text-white transition hover:bg-sena-700 disabled:opacity-60"
+          className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
         >
           {loading ? 'Enviando…' : 'Registrarme'}
         </button>

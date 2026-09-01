@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 import type { BloqueClase } from '../../pages/horario/tipos'
 import type { Ambiente, Ficha, ResultadoAprendizaje, Usuario } from '../../types/api'
 
@@ -67,6 +67,37 @@ function etiquetaResultado(r: ResultadoAprendizaje): string {
 export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }: ModalBloqueProps) {
   const [datos, setDatos] = useState<DatosBloque>(() => datosVacios(bloqueInicial))
   const esEdicion = bloqueInicial !== undefined
+  const contenidoRef = useRef<HTMLDivElement>(null)
+
+  // Foco inicial dentro del modal (WCAG 2.4.3, requisito de navegación por
+  // teclado de RNF-14) — sin esto, al abrir el modal el foco se queda en
+  // el botón que lo abrió, detrás del overlay.
+  useEffect(() => {
+    contenidoRef.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus()
+  }, [])
+
+  function manejarTeclado(evento: KeyboardEvent<HTMLDivElement>) {
+    if (evento.key === 'Escape') {
+      onCancelar()
+      return
+    }
+
+    if (evento.key !== 'Tab' || !contenidoRef.current) return
+
+    const focables = contenidoRef.current.querySelectorAll<HTMLElement>('input, select, textarea, button')
+    if (focables.length === 0) return
+
+    const primero = focables[0]
+    const ultimo = focables[focables.length - 1]
+
+    if (evento.shiftKey && document.activeElement === primero) {
+      evento.preventDefault()
+      ultimo.focus()
+    } else if (!evento.shiftKey && document.activeElement === ultimo) {
+      evento.preventDefault()
+      primero.focus()
+    }
+  }
 
   function actualizarCampo(campo: keyof DatosBloque, valor: string) {
     setDatos((anterior) => ({ ...anterior, [campo]: valor }))
@@ -106,10 +137,16 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-bloque-titulo"
+      onKeyDown={manejarTeclado}
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
     >
+<<<<<<< HEAD
       <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
         <h2 id="modal-bloque-titulo" className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">
+=======
+      <div ref={contenidoRef} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+        <h2 id="modal-bloque-titulo" className="mb-4 text-lg font-bold text-slate-900">
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
           {esEdicion ? 'Editar bloque de clase' : 'Nuevo bloque de clase'}
         </h2>
 
@@ -240,7 +277,7 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700"
+              className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800"
             >
               Guardar bloque
             </button>
@@ -262,7 +299,11 @@ function CampoModal({
 }) {
   return (
     <div className="mb-3">
+<<<<<<< HEAD
       <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-400">
+=======
+      <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
         {etiqueta}
       </label>
       {children}

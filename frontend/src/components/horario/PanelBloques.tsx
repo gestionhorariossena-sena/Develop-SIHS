@@ -41,14 +41,18 @@ export function PanelBloques({
         <button
           type="button"
           onClick={onNuevo}
-          className="shrink-0 rounded-lg bg-sena-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sena-700"
+          className="shrink-0 rounded-lg bg-sena-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sena-800"
         >
           + Nuevo
         </button>
       </div>
 
       {bloques.length === 0 ? (
+<<<<<<< HEAD
         <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-xs text-slate-400 dark:bg-slate-900 dark:text-slate-400">
+=======
+        <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
           Todavía no hay bloques. Crea el primero con "+ Nuevo".
         </p>
       ) : (
@@ -116,7 +120,11 @@ export function PanelBloques({
                         onClick={() => onEditar(bloque.id)}
                         aria-label={`Editar ${bloque.tematica}`}
                         title="Editar"
+<<<<<<< HEAD
                         className="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+=======
+                        className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
                       >
                         ✎
                       </button>
@@ -125,7 +133,11 @@ export function PanelBloques({
                         onClick={() => setConfirmandoId(bloque.id)}
                         aria-label={`Eliminar ${bloque.tematica}`}
                         title="Eliminar"
+<<<<<<< HEAD
                         className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-950/50"
+=======
+                        className="shrink-0 rounded p-1 text-slate-500 hover:bg-red-50 hover:text-red-600"
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
                       >
                         ✕
                       </button>

@@ -159,11 +159,11 @@ export function HistorialHorarios() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
                   <tr>
-                    <th className="px-4 py-3">Ficha</th>
-                    <th className="px-4 py-3">Detalle</th>
-                    <th className="px-4 py-3">Creado por</th>
-                    <th className="px-4 py-3">Fecha</th>
-                    <th className="px-4 py-3" />
+                    <th scope="col" className="px-4 py-3">Ficha</th>
+                    <th scope="col" className="px-4 py-3">Detalle</th>
+                    <th scope="col" className="px-4 py-3">Creado por</th>
+                    <th scope="col" className="px-4 py-3">Fecha</th>
+                    <th scope="col" className="px-4 py-3" />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
@@ -180,8 +180,8 @@ export function HistorialHorarios() {
                         {h.dias.map((d) => diasPorId[d] ?? d).join(', ')} · {formatearHora(h.horaInicio)}–
                         {formatearHora(h.horaFin)}
                       </td>
-                      <td className="px-4 py-3 text-slate-400">—</td>
-                      <td className="px-4 py-3 text-slate-400">—</td>
+                      <td className="px-4 py-3 text-slate-500">—</td>
+                      <td className="px-4 py-3 text-slate-500">—</td>
                       <td className="px-4 py-3 text-right">
                         {confirmandoId === h.idHorario ? (
                           <div className="flex items-center justify-end gap-1.5">
@@ -355,7 +355,11 @@ export function HistorialHorarios() {
               />
             </div>
           ) : (
+<<<<<<< HEAD
             <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-sm text-slate-400 dark:bg-slate-800 dark:text-slate-400">
+=======
+            <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-sm text-slate-500">
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
               {formatearHora(seleccionadoReal.horaInicio)}–{formatearHora(seleccionadoReal.horaFin)} no coincide con
               ninguno de los 6 bloques institucionales, así que no se puede dibujar en la grilla.
             </p>
@@ -369,8 +373,13 @@ export function HistorialHorarios() {
 function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
     <div>
+<<<<<<< HEAD
       <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-400">{etiqueta}</span>
       <p className="text-sm text-slate-900 dark:text-slate-100">{children}</p>
+=======
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">{etiqueta}</span>
+      <p className="text-sm text-slate-900">{children}</p>
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
     </div>
   )
 }

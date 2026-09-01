@@ -45,8 +45,13 @@ export function CeldaHorario({
         type="button"
         onClick={manejarClic}
         aria-label={hayBloqueActivo ? `Asignar bloque activo a ${etiqueta}` : `${etiqueta}, vacía`}
+<<<<<<< HEAD
         className={`flex h-full min-h-16 w-full select-none flex-col items-center justify-center gap-1 border border-dashed border-transparent px-2 py-2 text-[11px] text-slate-400 transition dark:text-slate-400 ${fondoVacio} ${
           hayBloqueActivo ? 'cursor-pointer hover:border-slate-400 hover:text-slate-500 dark:hover:border-slate-500 dark:hover:text-slate-300' : 'cursor-default'
+=======
+        className={`flex h-full min-h-16 w-full select-none flex-col items-center justify-center gap-1 border border-dashed border-transparent px-2 py-2 text-[11px] text-slate-500 transition ${fondoVacio} ${
+          hayBloqueActivo ? 'cursor-pointer hover:border-slate-400 hover:text-slate-500' : 'cursor-default'
+>>>>>>> 461bee0a210f8809cd946fb23cdfc26f619e3089
         }`}
       >
         {hayBloqueActivo && <span aria-hidden="true">+ asignar</span>}
