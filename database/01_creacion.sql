@@ -25,6 +25,11 @@
 --     solo aplica a instructores) para la regla "planta se programa
 --     primero, debe llegar a 32h/semana".
 --
+-- v4 (2026-08-31): tabla "auditoria" nueva (RNF-26/RNF-27) — registro
+-- mínimo de acciones sensibles (usuarios, horarios, ambientes, fichas) e
+-- intentos fallidos de login, base para el bloqueo tras 3 intentos de
+-- SCRUM-17.
+--
 -- Las columnas están en camelCase y comilladas ("idUsuario") porque así las
 -- genera SQLAlchemy en Postgres. Si consultas a mano con psql, usa las
 -- comillas: SELECT "idUsuario" FROM usuarios;
@@ -293,3 +298,33 @@ CREATE TABLE horarios_guardados (
 );
 
 CREATE INDEX "idxHorarioGuardadoUsuario" ON horarios_guardados ("idUsuario");
+
+-- =========================================================
+-- AUDITORÍA (RNF-26/RNF-27 — Requisitos No Funcionales V1.pdf, sección 9)
+-- Registro mínimo de acciones sensibles: modificación de usuarios,
+-- cambios en horarios/ambientes/fichas, e intentos fallidos de login.
+-- Esto último es lo que necesita SCRUM-17 para poder contar intentos por
+-- usuario y bloquear tras el tercero.
+-- "idUsuario" es nullable a propósito: un intento de login fallido puede
+-- no llegar a resolver a un usuario real (ej. email que no existe en el
+-- sistema) — "identificador" guarda igual el dato con el que se intentó
+-- (email o documento) para no perder trazabilidad en ese caso, cumpliendo
+-- RNF-27 ("ID o número de documento"; acá no hay columna de documento en
+-- "usuarios" todavía, así que se usa "idUsuario"/email como identificador
+-- único disponible).
+-- =========================================================
+CREATE TABLE auditoria (
+    "idAuditoria"   SERIAL PRIMARY KEY,
+    "idUsuario"     UUID REFERENCES usuarios("idUsuario") ON DELETE SET NULL,
+    "identificador" VARCHAR(150),
+    "accion"        VARCHAR(50) NOT NULL,
+    "entidad"       VARCHAR(50) NOT NULL,
+    "idEntidad"     VARCHAR(50),
+    "detalle"       TEXT,
+    "fecha"         TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Índices pensados para lo que necesita SCRUM-17: contar intentos fallidos
+-- recientes por identificador, y filtrar el log por tipo de acción/fecha.
+CREATE INDEX "idxAuditoriaUsuario" ON auditoria ("idUsuario");
+CREATE INDEX "idxAuditoriaIdentificadorAccion" ON auditoria ("identificador", "accion", "fecha");

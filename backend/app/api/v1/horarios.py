@@ -5,6 +5,7 @@ from app.core.database import get_db
 from app.core.supabase_auth import require_roles
 from app.repositories.horario_repository import HorarioRepository
 from app.schemas.horario import HorarioCreate, HorarioResponse, HorarioUpdate
+from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import CruceHorarioError, HorarioService
 
 router = APIRouter(prefix="/horarios", tags=["horarios"])
@@ -44,6 +45,10 @@ def crear_horario(
         horario = HorarioService.crear(db, data)
     except CruceHorarioError as error:
         raise HTTPException(status_code=409, detail={"mensajes": error.mensajes}) from error
+
+    AuditoriaService.registrar(
+        db, usuario=usuario, accion="CREAR", entidad="horarios", id_entidad=horario.idHorario
+    )
 
     return _a_response(db, horario)
 
@@ -85,6 +90,10 @@ def actualizar_horario(
     if not horario:
         raise HTTPException(status_code=404, detail="Horario no encontrado")
 
+    AuditoriaService.registrar(
+        db, usuario=usuario, accion="ACTUALIZAR", entidad="horarios", id_entidad=id_horario
+    )
+
     return _a_response(db, horario)
 
 
@@ -98,5 +107,9 @@ def eliminar_horario(
 
     if not eliminado:
         raise HTTPException(status_code=404, detail="Horario no encontrado")
+
+    AuditoriaService.registrar(
+        db, usuario=usuario, accion="ELIMINAR", entidad="horarios", id_entidad=id_horario
+    )
 
     return {"mensaje": "Horario eliminado"}
