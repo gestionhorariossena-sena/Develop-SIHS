@@ -46,10 +46,18 @@ prueba usando `POST /usuario-rol/asignar`.
 
 ## Pendiente real (no bloquea el demo, pero hay que saberlo)
 
-- **Alembic no está configurado todavía.** El esquema se aplicó directo con
-  `psql` sobre `database/01_creacion.sql`. Cualquier cambio de esquema desde
-  ahora debería pasar por Alembic, no por editar el SQL a mano — si no,
-  perdemos el historial que justamente nos faltaba en el proyecto anterior.
+- ~~Alembic no está configurado todavía~~ — resuelto: `backend/alembic/`
+  configurado (`env.py` usa `ALEMBIC_DATABASE_URL` y conoce todos los
+  modelos), con una migración baseline vacía que marca el punto de partida
+  sin ejecutar DDL (`alembic stamp head`, no `upgrade`) — ver
+  `database/README.md` §Alembic para el flujo de cambios nuevos. Pendiente
+  real que quedó documentado en la propia migración baseline: los modelos
+  de SQLAlchemy no declaran `ondelete="CASCADE"` en varias FKs que sí lo
+  tienen en `01_creacion.sql` (`actividades_aprendizaje`, `ficha_usuario`,
+  `resultados_aprendizaje`, `usuario_rol`) — un `--autogenerate` normal
+  intenta "corregir" eso quitando el CASCADE de la base real, así que hay
+  que decidir a propósito si se actualiza el modelo o se acepta la
+  diferencia antes de aceptar ese diff a ciegas.
 - **RLS está activo pero sin políticas** en las 19 tablas (verificado). Esto
   **no afecta al backend actual**: la conexión de FastAPI usa el rol dueño de
   las tablas, que RLS no restringe. Solo importa el día que el frontend use

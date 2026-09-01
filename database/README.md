@@ -95,9 +95,37 @@ con cualquiera de esos emails).
   correr una sola vez.
 - `02_datos_prueba.sql` — datos de ejemplo para desarrollo, ya corrido
   contra el proyecto del equipo (ver tabla de usuarios arriba).
-- `migrations/` — aquí van los cambios de esquema futuros, gestionados con
-  **Alembic** (se configura en la Fase 0 del proyecto, ver
-  [`AUDITORIA_TECNICA.md`](../_Docs/Documentación%20general/AUDITORIA_TECNICA.md)).
+- `migrations/` — cambios de esquema aplicados a mano **antes** de que
+  Alembic existiera en el proyecto (2026-08 a 2026-09). Quedan como
+  historial, no se vuelven a correr. **Los cambios de esquema nuevos van en
+  `backend/alembic/versions/`** (ver más abajo), no acá.
+
+### Alembic (cambios de esquema desde 2026-09-01)
+
+Ya configurado — `backend/alembic/env.py` usa `ALEMBIC_DATABASE_URL` (el
+pooler de sesión, puerto 5432, necesario para DDL) y conoce todos los
+modelos de `backend/app/models/`.
+
+Flujo para un cambio de esquema nuevo:
+
+```bash
+cd backend
+source .venv/bin/activate
+# 1. Cambia el modelo en app/models/ primero.
+# 2. Genera la migración comparando modelos vs. la BD real:
+alembic revision --autogenerate -m "descripción corta"
+# 3. ABRE el archivo generado en alembic/versions/ y revísalo a mano —
+#    autogenerate no siempre acierta (ver el comentario en la migración
+#    baseline sobre por qué el ON DELETE CASCADE hay que vigilarlo).
+```
+
+Aplicar la migración contra la base compartida de Supabase es un cambio de
+esquema, así que sigue la misma regla que cualquier otro: no lo corre
+Claude por su cuenta, lo corre quien esté en la sesión con `!`:
+
+```
+!cd backend && source .venv/bin/activate && alembic upgrade head
+```
 - `seeds/` — carpeta original del esqueleto, sin usar todavía (los datos de
   prueba quedaron en `02_datos_prueba.sql` en su lugar).
 
