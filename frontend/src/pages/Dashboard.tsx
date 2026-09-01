@@ -38,9 +38,9 @@ const FILTROS = [
 ] as const
 
 const badgeEstado: Record<Estado, string> = {
-  Confirmado: 'bg-emerald-50 text-emerald-700',
-  Cruce: 'bg-orange-50 text-orange-700',
-  'Por confirmar': 'bg-slate-100 text-slate-600',
+  Confirmado: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+  Cruce: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
+  'Por confirmar': 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
 }
 
 const fechaHoy = (() => {
@@ -94,14 +94,14 @@ export function Dashboard() {
             <span className="h-6 w-6 rounded-md bg-emerald-50 dark:bg-emerald-950/50" />
           </div>
           <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">128</p>
-          <p className="mt-1 text-sm font-medium text-emerald-600">
+          <p className="mt-1 text-sm font-medium text-emerald-600 dark:text-emerald-300">
             +6 respecto al trimestre anterior
           </p>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
+            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase dark:text-slate-400">
               Cruces detectados
             </p>
             <span className="h-6 w-6 rounded-md bg-orange-50 dark:bg-orange-950/50" />
@@ -117,7 +117,7 @@ export function Dashboard() {
 
         <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
+            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase dark:text-slate-400">
               Ambientes disponibles
             </p>
             <span className="h-6 w-6 rounded-md bg-slate-100 dark:bg-slate-700" />
