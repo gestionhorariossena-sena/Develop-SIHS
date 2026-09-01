@@ -4,6 +4,17 @@ from app.models.auditoria import Auditoria
 from app.repositories.auditoria_repository import AuditoriaRepository
 from app.repositories.usuario_repository import UsuarioRepository
 
+# RF-001/RNF-06: "El sistema solo permitirá 3 intentos de inicio de sesión
+# antes de bloquear el usuario." El requisito no dice cuánto dura el
+# bloqueo ni cómo se levanta (no hay flujo de desbloqueo por admin en
+# ningún lado de la documentación) — se asume una ventana deslizante: se
+# está bloqueado mientras haya 3+ intentos fallidos en los últimos
+# LOGIN_VENTANA_MINUTOS, y se desbloquea solo cuando pasa ese tiempo desde
+# el último intento. Confirmar con el equipo si el negocio quiere en
+# cambio un bloqueo permanente que solo un Administrador pueda levantar.
+LOGIN_LIMITE_INTENTOS = 3
+LOGIN_VENTANA_MINUTOS = 15
+
 
 class AuditoriaService:
     @staticmethod
@@ -51,8 +62,40 @@ class AuditoriaService:
 
     @staticmethod
     def contar_intentos_fallidos_recientes(db, identificador: str, minutos: int = 15) -> int:
-        """Lo que necesita SCRUM-17 para decidir si bloquear tras 3
-        intentos: cuenta LOGIN_FALLIDO de ese identificador en la ventana
-        de tiempo dada."""
+        """Cuenta LOGIN_FALLIDO de ese identificador en la ventana de
+        tiempo dada."""
         desde = datetime.now(timezone.utc) - timedelta(minutes=minutos)
         return AuditoriaRepository.contar_login_fallido_desde(db, identificador, desde)
+
+    @staticmethod
+    def verificar_bloqueo(db, identificador: str) -> dict:
+        """RF-001/RNF-06: si el identificador acumuló 3+ intentos
+        fallidos de login en los últimos LOGIN_VENTANA_MINUTOS, está
+        bloqueado. El frontend llama esto ANTES de intentar
+        supabase.auth.signInWithPassword (ver Login.tsx) para no dejar
+        seguir si ya se gastaron los intentos."""
+        ahora = datetime.now(timezone.utc)
+        desde = ahora - timedelta(minutes=LOGIN_VENTANA_MINUTOS)
+
+        ultimo = AuditoriaRepository.obtener_ultimo_login_fallido_desde(db, identificador, desde)
+        intentos = AuditoriaRepository.contar_login_fallido_desde(db, identificador, desde)
+        bloqueado = intentos >= LOGIN_LIMITE_INTENTOS
+
+        segundos_para_desbloqueo = None
+        if bloqueado and ultimo:
+            # Postgres (TIMESTAMPTZ) devuelve datetimes con tzinfo, pero no
+            # asumimos que siempre sea así (ej. SQLite en tests no lo
+            # preserva) — se normaliza a UTC antes de restar para no
+            # romper con "offset-naive and offset-aware datetimes".
+            fecha_ultimo = ultimo.fecha
+            if fecha_ultimo.tzinfo is None:
+                fecha_ultimo = fecha_ultimo.replace(tzinfo=timezone.utc)
+            desbloqueo = fecha_ultimo + timedelta(minutes=LOGIN_VENTANA_MINUTOS)
+            segundos_para_desbloqueo = max(0, int((desbloqueo - ahora).total_seconds()))
+
+        return {
+            "bloqueado": bloqueado,
+            "intentos": intentos,
+            "intentosRestantes": max(0, LOGIN_LIMITE_INTENTOS - intentos),
+            "segundosParaDesbloqueo": segundos_para_desbloqueo,
+        }
