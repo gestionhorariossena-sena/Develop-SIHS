@@ -3,8 +3,10 @@ import { AppShell } from '../components/AppShell'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
+import { SeccionAmbientesAsignados, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
+import { SeccionInstructoresAsignados } from '../components/relacionados/SeccionesFicha'
 import { apiGet, ApiError } from '../services/api'
-import type { Ficha, Horario } from '../types/api'
+import type { DiaSemana, Ficha, Horario } from '../types/api'
 
 type Orden = 'codigo' | 'programa' | 'trimestre'
 
@@ -28,12 +30,20 @@ export function Fichas() {
   // solo al abrir el drawer, mismo patrón que Instructores.tsx.
   const [horariosFicha, setHorariosFicha] = useState<{ idFicha: number; datos: Horario[] } | null>(null)
   const [errorHorariosPara, setErrorHorariosPara] = useState<number | null>(null)
+  const [diasPorId, setDiasPorId] = useState<Record<number, string>>({})
 
   useEffect(() => {
     apiGet<Ficha[]>('/fichas/')
       .then(setFichas)
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de fichas.'))
       .finally(() => setCargando(false))
+
+    // Sin .catch dedicado no rompe nada visible (nombresDias cae a "?" por
+    // día si falta el mapa), pero deja una unhandled rejection en tests —
+    // mismo patrón que Instructores.tsx.
+    apiGet<DiaSemana[]>('/dias-semana/')
+      .then((dias) => setDiasPorId(Object.fromEntries(dias.map((d) => [d.idDia, d.nombreDia]))))
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -91,15 +101,24 @@ export function Fichas() {
             <div><dt className="text-slate-500 dark:text-slate-400">Estado del trimestre</dt><dd className="mt-1 font-medium capitalize text-slate-900 dark:text-slate-100">{seleccionada.trimestre.estado}</dd></div>
           </dl>
 
-          <SeccionDrawer titulo="Horario semanal">
-            {cargandoHorarios ? (
+          {cargandoHorarios ? (
+            <SeccionDrawer titulo="Horario semanal">
               <p className="text-sm text-slate-500 dark:text-slate-400">Cargando horarios…</p>
-            ) : errorHorarios ? (
+            </SeccionDrawer>
+          ) : errorHorarios ? (
+            <SeccionDrawer titulo="Horario semanal">
               <p className="text-sm text-slate-500 dark:text-slate-400">No se pudieron cargar los horarios de la ficha.</p>
-            ) : (
-              <GridHorario bloques={bloquesGrid} grid={grid} hayBloqueActivo={false} soloLectura />
-            )}
-          </SeccionDrawer>
+            </SeccionDrawer>
+          ) : (
+            <>
+              <SeccionDrawer titulo="Horario semanal">
+                <GridHorario bloques={bloquesGrid} grid={grid} hayBloqueActivo={false} soloLectura />
+              </SeccionDrawer>
+              <SeccionInstructoresAsignados horarios={horariosVigentes ?? []} diasPorId={diasPorId} />
+              <SeccionTemasQueDicta horarios={horariosVigentes ?? []} />
+              <SeccionAmbientesAsignados horarios={horariosVigentes ?? []} />
+            </>
+          )}
         </DrawerRelacionados>
       )}
     </AppShell>
