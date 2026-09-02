@@ -25,6 +25,7 @@ export interface Usuario {
   tipoContrato?: string | null
   horasContratadasSemana?: number | null
   codigoInstructor?: string | null
+  sigla?: string | null
   roles: Rol[]
   especialidades: Especialidad[]
 }
@@ -71,6 +72,10 @@ export interface Ficha {
   idPrograma: number
   idTrimestre: number
   idSede: number | null
+  fechaInicioLectiva?: string | null
+  fechaFinLectiva?: string | null
+  fechaInicioProductiva?: string | null
+  fechaFinProductiva?: string | null
   programa: Programa
   trimestre: Trimestre
   sede: Sede | null
