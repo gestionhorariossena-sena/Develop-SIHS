@@ -11,6 +11,10 @@ class Ficha(Base):
     codigoFicha = Column(String(50), unique=True, nullable=False)
     idPrograma = Column(Integer, ForeignKey("programas.idPrograma"), nullable=False)
     idTrimestre = Column(Integer, ForeignKey("trimestres.idTrimestre"), nullable=False)
+    # Nullable: las fichas existentes no traen sede todavía — se completa con
+    # el import real (ver SCRUM-76, que depende de este grupo F).
+    idSede = Column(Integer, ForeignKey("sedes.idSede"), nullable=True)
 
     programa = relationship("Programa")
     trimestre = relationship("Trimestre")
+    sede = relationship("Sede")
