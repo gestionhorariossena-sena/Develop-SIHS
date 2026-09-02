@@ -217,5 +217,9 @@ export interface HorarioGuardado {
   fechaFin: string | null
   bloques: BloqueClase[]
   grid: GridAsignaciones
+  // idHorario de cada fila real en `horarios` creada junto con este
+  // snapshot — permite que borrar el "Horario completo" también libere
+  // esas clases reales (ver backend/app/services/horario_guardado_service.py).
+  idsHorarios?: number[]
   fechaCreacion: string
 }
