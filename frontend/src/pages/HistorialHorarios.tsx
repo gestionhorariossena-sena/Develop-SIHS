@@ -79,7 +79,12 @@ export function HistorialHorarios() {
   const [borrandoSnapshotId, setBorrandoSnapshotId] = useState<number | null>(null)
 
   useEffect(() => {
-    apiGet<HorarioGuardado[]>('/horarios-guardados')
+    // Con "/" al final a propósito: sin él, FastAPI responde 307 hacia la
+    // ruta con slash — en el backend desplegado (Railway, detrás de un
+    // proxy TLS) ese redirect sale como http:// en vez de https://, y el
+    // navegador lo bloquea por contenido mixto (bug reportado 2026-09-02:
+    // en el desplegado de producción esta llamada nunca llegaba a responder).
+    apiGet<HorarioGuardado[]>('/horarios-guardados/')
       .then(setHorarios)
       .catch((err) =>
         setError(err instanceof ApiError ? err.message : 'No se pudo cargar el historial de horarios.'),
