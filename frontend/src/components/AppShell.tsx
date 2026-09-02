@@ -58,6 +58,7 @@ interface AppShellProps {
 export function AppShell({ activo, children }: AppShellProps) {
   const { signOut } = useAuth()
   const [miPerfil, setMiPerfil] = useState<Usuario | null>(null)
+  const [errorPerfil, setErrorPerfil] = useState<string | null>(null)
   const [navAbierta, setNavAbierta] = useState(false)
   const abiertaPorHoverRef = useRef(false)
   const temporizadorAperturaRef = useRef<number | null>(null)
@@ -75,8 +76,14 @@ export function AppShell({ activo, children }: AppShellProps) {
 
   useEffect(() => {
     apiGet<Usuario>('/usuarios/me')
-      .then(setMiPerfil)
-      .catch((err) => console.error('No se pudo cargar /usuarios/me:', err))
+      .then((perfil) => {
+        setMiPerfil(perfil)
+        setErrorPerfil(null)
+      })
+      .catch((err) => {
+        const mensaje = err instanceof Error ? err.message : 'No se pudo cargar tu perfil.'
+        setErrorPerfil(mensaje)
+      })
   }, [])
 
   useEffect(() => {
@@ -170,10 +177,18 @@ export function AppShell({ activo, children }: AppShellProps) {
         <div
           onMouseEnter={alEntrarBordeHover}
           onMouseLeave={alSalirBordeHover}
-          className="fixed left-0 top-0 z-40 h-screen w-4 print:hidden"
+          className="fixed left-0 top-0 z-40 hidden h-screen w-4 print:hidden sm:block"
           aria-hidden="true"
         />
       )}
+
+      <div
+        className={`fixed inset-0 z-40 bg-slate-900/40 transition-opacity duration-200 sm:hidden ${
+          navAbierta ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        aria-hidden="true"
+        onClick={cerrarManual}
+      />
 
       <aside
         onMouseEnter={alEntrarPanel}
@@ -214,6 +229,7 @@ export function AppShell({ activo, children }: AppShellProps) {
                   <Link
                     key={item.etiqueta}
                     to={item.ruta}
+                    onClick={cerrarManual}
                     className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
                       esActivo
                         ? 'bg-sena-50 text-sena-700 dark:bg-sena-950/50'
@@ -251,6 +267,12 @@ export function AppShell({ activo, children }: AppShellProps) {
       </aside>
 
       <div>
+        {errorPerfil && (
+          <div className="border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 print:hidden">
+            {errorPerfil}
+          </div>
+        )}
+
         <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-3 print:hidden dark:border-slate-700 dark:bg-slate-800">
           <div className="flex items-center gap-3">
             <button
@@ -259,7 +281,20 @@ export function AppShell({ activo, children }: AppShellProps) {
               title={navAbierta ? 'Ocultar menú' : 'Mostrar menú (o deja el cursor en el borde izquierdo)'}
               aria-label={navAbierta ? 'Ocultar menú' : 'Mostrar menú'}
               aria-expanded={navAbierta}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700"
+              className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 sm:flex"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => (navAbierta ? cerrarManual() : abrirManual())}
+              title={navAbierta ? 'Ocultar menú' : 'Abrir menú'}
+              aria-label={navAbierta ? 'Ocultar menú' : 'Abrir menú'}
+              aria-expanded={navAbierta}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 sm:hidden"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
