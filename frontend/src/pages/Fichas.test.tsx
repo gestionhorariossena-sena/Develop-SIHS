@@ -11,6 +11,8 @@ const FICHAS: Ficha[] = [
     codigoFicha: '3228973 B',
     idPrograma: 1,
     idTrimestre: 1,
+    idSede: null,
+    sede: null,
     programa: {
       idPrograma: 1,
       codigoPrograma: 'ADSO',
@@ -28,6 +30,8 @@ const FICHAS: Ficha[] = [
     codigoFicha: '2758431',
     idPrograma: 2,
     idTrimestre: 2,
+    idSede: null,
+    sede: null,
     programa: {
       idPrograma: 2,
       codigoPrograma: 'COCI',

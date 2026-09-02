@@ -59,8 +59,10 @@ export interface Ficha {
   codigoFicha: string
   idPrograma: number
   idTrimestre: number
+  idSede: number | null
   programa: Programa
   trimestre: Trimestre
+  sede: Sede | null
   aprendicesTotales: number
   jornadas: string[]
 }
@@ -72,6 +74,13 @@ export interface Programa {
   nivelFormacion: string | null
   activo: boolean
   idCoordinacion: number
+}
+
+export interface Sede {
+  idSede: number
+  nombreSede: string
+  direccion: string | null
+  tipoSede: 'principal' | 'secundaria' | 'alterna' | null
 }
 
 export interface Ambiente {
@@ -130,6 +139,49 @@ export interface HorarioCreate {
 // (HTTP 409) — ver backend/app/services/horario_service.py CruceHorarioError.
 export interface ErrorCruceHorario {
   mensajes: string[]
+}
+
+// Espejo de HorarioDryRunRequest (backend/app/schemas/horario.py) —
+// POST /horarios/validar, para revisar cruces ANTES de guardar de verdad.
+export interface HorarioDryRunRequest {
+  horaInicio: string
+  horaFin: string
+  idJornada: number
+  idTrimestre: number
+  idAmbiente: number
+  idInstructor: string
+  idFicha: number
+  idResultado: number
+  dias: number[]
+  excluirIdHorario?: number | null
+}
+
+// "tipo" distingue los 4 cruces FÍSICOS (overridables con forzar=true)
+// de "regla_instructor" (RF-011, bloqueo duro — nunca se puede forzar).
+// Ver ModalCruce.tsx y HorarioService._validar_reglas_instructor.
+export type TipoConflictoHorario =
+  | 'cruce_ficha'
+  | 'cruce_instructor'
+  | 'cruce_ambiente'
+  | 'resultado_repetido'
+  | 'regla_instructor'
+
+export interface HorarioDryRunConflict {
+  tipo: TipoConflictoHorario
+  mensaje: string
+  idHorarioExistente?: number | null
+  idInstructor?: string | null
+  idFicha?: number | null
+  idAmbiente?: number | null
+  idResultado?: number | null
+}
+
+export interface HorarioDryRunResponse {
+  ok: boolean
+  puedeGuardar: boolean
+  mensaje: string
+  conflictos: HorarioDryRunConflict[]
+  resumen: { totalCruces: number; tipos: string[] }
 }
 
 // Espejo de HorarioGuardadoResponse (backend/app/schemas/horario_guardado.py).

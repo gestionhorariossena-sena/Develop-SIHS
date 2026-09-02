@@ -1,10 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.supabase_auth import require_roles
 from app.repositories.horario_repository import HorarioRepository
-from app.schemas.horario import HorarioCreate, HorarioResponse, HorarioUpdate
+from app.schemas.horario import (
+    HorarioCreate,
+    HorarioDryRunRequest,
+    HorarioDryRunResponse,
+    HorarioResponse,
+    HorarioUpdate,
+)
 from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import CruceHorarioError, HorarioService
 
@@ -35,25 +43,56 @@ def _a_response(db: Session, horario) -> dict:
     }
 
 
+@router.post("/validar", response_model=HorarioDryRunResponse)
+@router.post("/dry-run", response_model=HorarioDryRunResponse, include_in_schema=False)
+def validar_dry_run_horario(
+    data: HorarioDryRunRequest,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_puede_programar),
+):
+    conflictos = HorarioService.validar_dry_run(db, data, data.excluirIdHorario)
+
+    if conflictos:
+        payload = {
+            "ok": False,
+            "puedeGuardar": False,
+            "mensaje": "La programación presenta conflictos.",
+            "conflictos": conflictos,
+            "resumen": {
+                "totalCruces": len(conflictos),
+                "tipos": sorted({c["tipo"] for c in conflictos}),
+            },
+        }
+        return JSONResponse(status_code=409, content=jsonable_encoder(payload))
+
+    return {
+        "ok": True,
+        "puedeGuardar": True,
+        "mensaje": "No se detectaron cruces.",
+        "conflictos": [],
+        "resumen": {
+            "totalCruces": 0,
+            "tipos": [],
+        },
+    }
+
+
 @router.post("/", response_model=HorarioResponse, status_code=201)
 def crear_horario(
     data: HorarioCreate,
     db: Session = Depends(get_db),
     usuario=Depends(require_puede_programar),
 ):
+    forzar = getattr(data, "forzar", False)
     try:
-        horario, conflictos = HorarioService.crear(db, data, data.forzar)
+        horario, conflictos = HorarioService.crear(db, data, forzar=forzar)
     except CruceHorarioError as error:
         raise HTTPException(status_code=409, detail={"mensajes": error.mensajes}) from error
 
-    accion = "FORZAR_CRUCE" if data.forzar and conflictos else "CREAR"
+    accion = "FORZAR_CRUCE" if (forzar and conflictos) else "CREAR"
+    detalle = "; ".join(conflictos) if conflictos else None
     AuditoriaService.registrar(
-        db,
-        usuario=usuario,
-        accion=accion,
-        entidad="horarios",
-        id_entidad=horario.idHorario,
-        detalle="; ".join(conflictos) if conflictos else None,
+        db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=horario.idHorario, detalle=detalle
     )
 
     return _a_response(db, horario)
@@ -88,22 +127,19 @@ def actualizar_horario(
     db: Session = Depends(get_db),
     usuario=Depends(require_puede_programar),
 ):
+    forzar = getattr(data, "forzar", False)
     try:
-        horario, conflictos = HorarioService.actualizar(db, id_horario, data, data.forzar)
+        horario, conflictos = HorarioService.actualizar(db, id_horario, data, forzar=forzar)
     except CruceHorarioError as error:
         raise HTTPException(status_code=409, detail={"mensajes": error.mensajes}) from error
 
     if not horario:
         raise HTTPException(status_code=404, detail="Horario no encontrado")
 
-    accion = "FORZAR_CRUCE" if data.forzar and conflictos else "ACTUALIZAR"
+    accion = "FORZAR_CRUCE" if (forzar and conflictos) else "ACTUALIZAR"
+    detalle = "; ".join(conflictos) if conflictos else None
     AuditoriaService.registrar(
-        db,
-        usuario=usuario,
-        accion=accion,
-        entidad="horarios",
-        id_entidad=id_horario,
-        detalle="; ".join(conflictos) if conflictos else None,
+        db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=id_horario, detalle=detalle
     )
 
     return _a_response(db, horario)

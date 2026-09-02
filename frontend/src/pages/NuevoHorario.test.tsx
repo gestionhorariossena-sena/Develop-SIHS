@@ -69,7 +69,18 @@ describe('NuevoHorario', () => {
   it('al pulsar Programar de todas formas reintenta el guardado con forzar=true', async () => {
     configurarCatalogos()
     mocks.apiPost
-      .mockRejectedValueOnce(new mocks.ApiError(409, 'Conflicto', { mensajes: ['Cruce de ambiente'] }))
+      .mockRejectedValueOnce(new mocks.ApiError(409, 'Conflicto', {
+        ok: false,
+        puedeGuardar: false,
+        mensaje: 'La programación presenta conflictos.',
+        conflictos: [{
+          tipo: 'cruce_ambiente',
+          mensaje: 'El ambiente ya está ocupado en ese horario.',
+          idHorarioExistente: 100,
+          idAmbiente: 1,
+        }],
+        resumen: { totalCruces: 1, tipos: ['cruce_ambiente'] },
+      }))
       .mockResolvedValueOnce({})
     const usuario = userEvent.setup()
 
@@ -81,7 +92,10 @@ describe('NuevoHorario', () => {
     await usuario.click(screen.getByRole('button', { name: 'Programar de todas formas' }))
 
     await waitFor(() => {
-      expect(mocks.apiPost).toHaveBeenCalledTimes(2)
+      expect(mocks.apiPost).toHaveBeenCalledWith(
+        '/horarios/',
+        expect.objectContaining({ forzar: true }),
+      )
     })
     expect(mocks.apiPost).toHaveBeenNthCalledWith(
       2,

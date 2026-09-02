@@ -5,6 +5,7 @@ import { AppShell } from '../components/AppShell'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { HorarioEditor } from '../components/horario/HorarioEditor'
 import type { CatalogosBloque } from '../components/horario/ModalBloque'
+import { ModalCruce } from '../components/horario/ModalCruce'
 import { apiGet, apiPost, ApiError } from '../services/api'
 import { BLOQUES, DIAS } from './horario/tipos'
 import type { BloqueClase, GridAsignaciones, Jornada as JornadaGrid } from './horario/tipos'
@@ -14,6 +15,8 @@ import type {
   DiaSemana,
   Ficha,
   HorarioCreate,
+  HorarioDryRunConflict,
+  HorarioDryRunResponse,
   Jornada,
   ResultadoAprendizaje,
   Usuario,
@@ -57,6 +60,41 @@ function agruparCeldas(grid: GridAsignaciones): GrupoCelda[] {
   return [...grupos.values()]
 }
 
+/** POST /horarios/validar — revisa cruces sin persistir nada. Si hay
+ * conflictos, el backend responde 409 con el mismo cuerpo (ok/
+ * puedeGuardar/conflictos/resumen) — apiPost lo lanza como ApiError, así
+ * que acá se recupera desde `err.detail` en vez de tratarlo como falla.
+ * Si el dry-run falla por otra razón (red, 500), devuelve null y
+ * guardarHorario sigue directo al POST real — el dry-run es una ayuda
+ * para decidir antes, no un requisito para poder guardar. */
+async function validarDryRun(datos: HorarioCreate): Promise<HorarioDryRunResponse | null> {
+  try {
+    return await apiPost<HorarioDryRunResponse>('/horarios/validar', {
+      horaInicio: datos.horaInicio,
+      horaFin: datos.horaFin,
+      idJornada: datos.idJornada,
+      idTrimestre: datos.idTrimestre,
+      idAmbiente: datos.idAmbiente,
+      idInstructor: datos.idInstructor,
+      idFicha: datos.idFicha,
+      idResultado: datos.idResultado,
+      dias: datos.dias,
+      excluirIdHorario: null,
+    })
+  } catch (err) {
+    if (
+      err instanceof ApiError &&
+      err.status === 409 &&
+      err.detail &&
+      typeof err.detail === 'object' &&
+      'conflictos' in err.detail
+    ) {
+      return err.detail as HorarioDryRunResponse
+    }
+    return null
+  }
+}
+
 export function NuevoHorario() {
   const [ficha, setFicha] = useState('')
   const [aprendices, setAprendices] = useState('0')
@@ -65,11 +103,34 @@ export function NuevoHorario() {
   const [fechaFin, setFechaFin] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [erroresGuardar, setErroresGuardar] = useState<string[]>([])
-  const [horariosPendientesForzar, setHorariosPendientesForzar] = useState<HorarioCreate[]>([])
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
 
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null)
   const [errorCatalogos, setErrorCatalogos] = useState<string | null>(null)
+
+  // Cuando el dry-run (POST /horarios/validar) encuentra conflictos, se
+  // pausa el guardado de ESE bloque y se muestra ModalCruce — el
+  // coordinador decide cancelar o forzar. resolverDecisionRef guarda el
+  // resolve() de la promesa que el loop de guardarHorario está esperando
+  // (ver pedirDecision más abajo).
+  const [conflictoPendiente, setConflictoPendiente] = useState<{
+    bloqueResumen: string
+    conflictos: HorarioDryRunConflict[]
+  } | null>(null)
+  const resolverDecisionRef = useRef<((forzar: boolean) => void) | null>(null)
+
+  function pedirDecision(bloqueResumen: string, conflictos: HorarioDryRunConflict[]): Promise<boolean> {
+    return new Promise((resolve) => {
+      resolverDecisionRef.current = resolve
+      setConflictoPendiente({ bloqueResumen, conflictos })
+    })
+  }
+
+  function resolverConflictoPendiente(forzar: boolean) {
+    setConflictoPendiente(null)
+    resolverDecisionRef.current?.(forzar)
+    resolverDecisionRef.current = null
+  }
 
   // El grid arranca vacío — a diferencia de la versión anterior (con datos
   // ficticios), ahora cada bloque de clase se elige de catálogos reales
@@ -112,7 +173,6 @@ export function NuevoHorario() {
 
     setGuardando(true)
     setErroresGuardar([])
-    setHorariosPendientesForzar([])
     setMensajeExito(null)
 
     const { bloques: bloquesActuales, grid: gridActual } = estadoActualRef.current
@@ -125,7 +185,6 @@ export function NuevoHorario() {
     // sí habían quedado guardadas en `horarios`.
     const gridExitoso: GridAsignaciones = gridVacio()
     const idsBloquesExitosos = new Set<string>()
-    const pendientesForzar: HorarioCreate[] = []
 
     for (const grupo of grupos) {
       const bloque = bloquesActuales.find((b) => b.id === grupo.bloqueId)
@@ -155,6 +214,31 @@ export function NuevoHorario() {
         dias: grupo.diasIdx.map((diaIdx) => catalogos.diaIdPorNombre[DIAS[diaIdx]]),
       }
 
+      const diasTexto = grupo.diasIdx.map((diaIdx) => DIAS[diaIdx]).join(' y ')
+      const etiquetaBloque = `${bloque.tematica} (${diasTexto} ${bloqueHorario.horaInicio})`
+
+      // Dry-run antes de guardar de verdad: si el backend no responde (o
+      // devuelve algo que no es el contrato esperado), no se bloquea el
+      // guardado por eso — se sigue directo al POST real, igual que
+      // antes de que existiera el dry-run.
+      const dryRun = await validarDryRun(datos)
+
+      if (dryRun && !dryRun.puedeGuardar) {
+        const bloqueResumen = `${diasTexto} ${bloqueHorario.horaInicio} – ${bloqueHorario.horaFin} · ${bloque.tematica} · ${bloque.instructor} · Ficha ${bloque.ficha} · ${bloque.ambiente}`
+        const forzar = await pedirDecision(bloqueResumen, dryRun.conflictos)
+
+        if (!forzar) {
+          // RF-011 sigue el mismo patrón que un cruce físico (§7.2 de
+          // PLAN_INTEGRACION_LOGICA_Y_BD.md, corregido 2026-09-02) — no
+          // es "imposible de programar", el coordinador simplemente
+          // decidió no forzarlo.
+          errores.push(`${etiquetaBloque}: cruce detectado — no se guardó (cancelado).`)
+          continue
+        }
+
+        datos.forzar = true
+      }
+
       try {
         await apiPost('/horarios/', datos)
         idsBloquesExitosos.add(grupo.bloqueId)
@@ -165,8 +249,7 @@ export function NuevoHorario() {
         if (err instanceof ApiError && err.status === 409) {
           const detalle = err.detail as { mensajes?: string[] } | null
           const mensajes = detalle?.mensajes ?? [err.message]
-          errores.push(`${bloque.tematica} (${DIAS[grupo.diasIdx[0]]} ${bloqueHorario.horaInicio}): ${mensajes.join(' ')}`)
-          pendientesForzar.push(datos)
+          errores.push(`${etiquetaBloque}: ${mensajes.join(' ')}`)
         } else {
           errores.push(`${bloque.tematica}: ${err instanceof ApiError ? err.message : 'error al guardar'}`)
         }
@@ -205,28 +288,6 @@ export function NuevoHorario() {
     }
 
     setErroresGuardar(errores)
-    setHorariosPendientesForzar(pendientesForzar)
-    setGuardando(false)
-  }
-
-  async function guardarDeTodasFormas() {
-    setGuardando(true)
-    setErroresGuardar([])
-
-    const errores: string[] = []
-    for (const horario of horariosPendientesForzar) {
-      try {
-        await apiPost('/horarios/', { ...horario, forzar: true })
-      } catch (err) {
-        errores.push(err instanceof ApiError ? err.message : 'Error al guardar el horario forzado.')
-      }
-    }
-
-    setHorariosPendientesForzar([])
-    setErroresGuardar(errores)
-    if (errores.length === 0) {
-      setMensajeExito('Las clases con cruces permitidos se guardaron correctamente.')
-    }
     setGuardando(false)
   }
 
@@ -276,16 +337,6 @@ export function NuevoHorario() {
               <li key={e}>{e}</li>
             ))}
           </ul>
-          {horariosPendientesForzar.length > 0 && (
-            <button
-              type="button"
-              onClick={() => void guardarDeTodasFormas()}
-              disabled={guardando}
-              className="mt-3 rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800"
-            >
-              {guardando ? 'Programando…' : 'Programar de todas formas'}
-            </button>
-          )}
         </div>
       )}
 
@@ -367,6 +418,15 @@ export function NuevoHorario() {
           <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">_Docs/Diseño/GUIA_DE_MARCA.md</code>.
         </p>
       </div>
+
+      {conflictoPendiente && (
+        <ModalCruce
+          bloqueResumen={conflictoPendiente.bloqueResumen}
+          conflictos={conflictoPendiente.conflictos}
+          onCancelar={() => resolverConflictoPendiente(false)}
+          onForzar={() => resolverConflictoPendiente(true)}
+        />
+      )}
     </AppShell>
   )
 }

@@ -1,7 +1,7 @@
 from datetime import time
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class HorarioBase(BaseModel):
@@ -24,6 +24,37 @@ class HorarioCreate(HorarioBase):
 
 class HorarioUpdate(HorarioCreate):
     pass
+
+
+class HorarioDryRunRequest(HorarioBase):
+    dias: list[int]
+    excluirIdHorario: int | None = None
+
+    @field_validator("horaFin")
+    @classmethod
+    def valida_rango(cls, hora_fin: time, info):
+        hora_inicio = info.data.get("horaInicio")
+        if hora_inicio is not None and hora_fin <= hora_inicio:
+            raise ValueError("La hora de fin debe ser mayor que la de inicio.")
+        return hora_fin
+
+
+class HorarioDryRunConflict(BaseModel):
+    tipo: str
+    mensaje: str
+    idHorarioExistente: int | None = None
+    idInstructor: UUID | None = None
+    idFicha: int | None = None
+    idAmbiente: int | None = None
+    idResultado: int | None = None
+
+
+class HorarioDryRunResponse(BaseModel):
+    ok: bool
+    puedeGuardar: bool
+    mensaje: str
+    conflictos: list[HorarioDryRunConflict] = []
+    resumen: dict[str, object]
 
 
 class HorarioResponse(HorarioBase):

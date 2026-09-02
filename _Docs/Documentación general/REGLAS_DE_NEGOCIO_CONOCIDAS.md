@@ -4,7 +4,19 @@ Este documento junta lo que ya sabemos del dominio real (sacado de las
 entrevistas con los coordinadores de Teleinformática y de Logística, y del
 resto de `_Docs/`) para no tener que releer las transcripciones cada vez, y
 deja aparte, sin inventar nada, lo que sigue pendiente de confirmar con la
-coordinación antes de programarlo. Última actualización: 2026-08-26.
+coordinación antes de programarlo. Última actualización: 2026-09-01.
+
+**2026-09-01:** análisis de `nuevo_alcance/PROGRAMACIÓN CGMLTI I TRM
+2026.xlsx` (macro Excel real de la coordinación) confirmó cómo detecta
+cruces hoy: formato condicional de Excel (`duplicateValues`) por
+columna, donde cada columna es un bloque fijo (día × jornada ×
+sub-bloque) — equivale a `UNIQUE(instructor, día, jornada)` /
+`UNIQUE(ambiente, día, jornada)`, no a un solapamiento de horas
+arbitrario. Esto **confirma**, no contradice, la consulta de
+solapamiento de abajo (es más general y sigue siendo correcta). Detalle
+completo, gaps de esquema encontrados (sede/fechas en `fichas`, sigla
+en `usuarios`) y el backlog resultante: ver
+`PLAN_INTEGRACION_LOGICA_Y_BD.md` §7.
 
 Fuentes:
 - `_Docs/Elicitacion/Entrevistas/Entrevista 1 transcrita - Coordinador de

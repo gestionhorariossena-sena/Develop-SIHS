@@ -39,17 +39,10 @@ class HorarioService:
     @staticmethod
     def crear(db, data, forzar: bool = False) -> tuple:
         """Crea horario. Si forzar=False, lanza excepción si hay cruces.
-        Si forzar=True, ignora solo cruces físicos, pero RF-011 sigue siendo
-        bloqueante porque es una regla de negocio dura."""
-        errores_fisicos = HorarioService._detectar_cruces_fisicos(db, data)
-        errores_rf011 = HorarioService._validar_reglas_instructor(db, data, None)
-
-        if not forzar:
-            errores = errores_fisicos + errores_rf011
-            if errores:
-                raise CruceHorarioError(errores)
-        elif errores_rf011:
-            raise CruceHorarioError(errores_rf011)
+        Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
+        errores = HorarioService._detectar_cruces(db, data)
+        if errores and not forzar:
+            raise CruceHorarioError(errores)
 
         nuevo_horario = Horario(
             horaInicio=data.horaInicio,
@@ -62,27 +55,20 @@ class HorarioService:
             idResultado=data.idResultado,
         )
         horario = HorarioRepository.crear(db, nuevo_horario, data.dias)
-        return horario, errores_fisicos if forzar else []
+        return horario, errores if forzar else []
 
     @staticmethod
     def actualizar(db, id_horario, data, forzar: bool = False) -> tuple:
         """Actualiza horario. Si forzar=False, lanza excepción si hay cruces.
-        Si forzar=True, ignora solo cruces físicos, pero RF-011 sigue siendo
-        bloqueante porque es una regla de negocio dura."""
+        Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
         horario = HorarioRepository.obtener_por_id(db, id_horario)
 
         if not horario:
             return None, []
 
-        errores_fisicos = HorarioService._detectar_cruces_fisicos(db, data, excluir_id=id_horario)
-        errores_rf011 = HorarioService._validar_reglas_instructor(db, data, id_horario)
-
-        if not forzar:
-            errores = errores_fisicos + errores_rf011
-            if errores:
-                raise CruceHorarioError(errores)
-        elif errores_rf011:
-            raise CruceHorarioError(errores_rf011)
+        errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
+        if errores and not forzar:
+            raise CruceHorarioError(errores)
 
         horario.horaInicio = data.horaInicio
         horario.horaFin = data.horaFin
@@ -94,7 +80,7 @@ class HorarioService:
         horario.idResultado = data.idResultado
 
         actualizado = HorarioRepository.actualizar(db, horario, data.dias)
-        return actualizado, errores_fisicos if forzar else []
+        return actualizado, errores if forzar else []
 
     @staticmethod
     def eliminar(db, id_horario):
@@ -107,10 +93,14 @@ class HorarioService:
         return True
 
     @staticmethod
-    def _detectar_cruces_fisicos(db, data, excluir_id: int | None = None) -> list[str]:
-        """Cruces físicos por solape de horario: misma ficha, mismo instructor o
-        mismo ambiente ya ocupados en ese día/hora. RF-011 se valida por separado
-        porque es una regla dura y no debe ser bypassada por forzar=true."""
+    def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
+        """Cruces por solape de horario: misma ficha, mismo instructor o
+        mismo ambiente ya ocupados en ese día/hora — ver
+        REGLAS_DE_NEGOCIO_CONOCIDAS.md. También valida que una misma ficha
+        no repita un resultado de aprendizaje. Cada mensaje describe CONTRA
+        QUÉ horario existente choca (día, hora, y quién/qué ya lo tiene) —
+        no solo la regla que se violó, para que se entienda de un vistazo
+        sin tener que ir a buscarlo a mano."""
         errores: list[str] = []
 
         ficha_existente = HorarioRepository.buscar_solape(
@@ -140,14 +130,86 @@ class HorarioService:
                 f"{HorarioService._describir(db, ambiente_existente)}."
             )
 
+        resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
+            db, data.idFicha, data.idResultado, excluir_id
+        )
+        if resultado_existente:
+            errores.append(
+                "La ficha ya tiene este resultado de aprendizaje programado: "
+                f"{HorarioService._describir(db, resultado_existente)}."
+            )
+
+        errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
         return errores
 
     @staticmethod
-    def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
-        """Compatibilidad con llamadas existentes: combina cruces físicos y RF-011."""
-        errores = HorarioService._detectar_cruces_fisicos(db, data, excluir_id)
-        errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
-        return errores
+    def validar_dry_run(db, data, excluir_id: int | None = None) -> list[dict]:
+        conflictos: list[dict] = []
+
+        ficha_existente = HorarioRepository.buscar_solape(
+            db, "idFicha", data.idFicha, data.dias, data.horaInicio, data.horaFin, excluir_id
+        )
+        if ficha_existente:
+            conflictos.append(
+                {
+                    "tipo": "cruce_ficha",
+                    "mensaje": "La ficha ya tiene otra clase programada en ese horario: "
+                    f"{HorarioService._describir(db, ficha_existente)}.",
+                    "idHorarioExistente": ficha_existente.idHorario,
+                    "idFicha": ficha_existente.idFicha,
+                }
+            )
+
+        instructor_existente = HorarioRepository.buscar_solape(
+            db, "idInstructor", data.idInstructor, data.dias, data.horaInicio, data.horaFin, excluir_id
+        )
+        if instructor_existente:
+            conflictos.append(
+                {
+                    "tipo": "cruce_instructor",
+                    "mensaje": "El instructor ya tiene otra clase programada en ese horario: "
+                    f"{HorarioService._describir(db, instructor_existente)}.",
+                    "idHorarioExistente": instructor_existente.idHorario,
+                    "idInstructor": instructor_existente.idInstructor,
+                }
+            )
+
+        ambiente_existente = HorarioRepository.buscar_solape(
+            db, "idAmbiente", data.idAmbiente, data.dias, data.horaInicio, data.horaFin, excluir_id
+        )
+        if ambiente_existente:
+            conflictos.append(
+                {
+                    "tipo": "cruce_ambiente",
+                    "mensaje": "El ambiente ya está ocupado en ese horario: "
+                    f"{HorarioService._describir(db, ambiente_existente)}.",
+                    "idHorarioExistente": ambiente_existente.idHorario,
+                    "idAmbiente": ambiente_existente.idAmbiente,
+                }
+            )
+
+        resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
+            db, data.idFicha, data.idResultado, excluir_id
+        )
+        if resultado_existente:
+            conflictos.append(
+                {
+                    "tipo": "resultado_repetido",
+                    "mensaje": "La ficha ya tiene este resultado de aprendizaje programado: "
+                    f"{HorarioService._describir(db, resultado_existente)}.",
+                    "idHorarioExistente": resultado_existente.idHorario,
+                    "idFicha": resultado_existente.idFicha,
+                    "idResultado": resultado_existente.idResultado,
+                }
+            )
+
+        for error in HorarioService._validar_reglas_instructor(db, data, excluir_id):
+            conflictos.append({
+                "tipo": "regla_instructor",
+                "mensaje": error,
+            })
+
+        return conflictos
 
     @staticmethod
     def _duracion_horas(hora_inicio, hora_fin) -> float:

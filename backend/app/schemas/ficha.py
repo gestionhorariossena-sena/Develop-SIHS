@@ -1,6 +1,7 @@
 from pydantic import BaseModel, ConfigDict
 
 from app.schemas.programa import ProgramaResponse
+from app.schemas.sede import SedeResponse
 from app.schemas.trimestre import TrimestreResponse
 
 
@@ -8,6 +9,7 @@ class FichaBase(BaseModel):
     codigoFicha: str
     idPrograma: int
     idTrimestre: int
+    idSede: int | None = None
 
 
 class FichaCreate(FichaBase):
@@ -24,5 +26,6 @@ class FichaResponse(FichaBase):
     idFicha: int
     programa: ProgramaResponse
     trimestre: TrimestreResponse
+    sede: SedeResponse | None = None
     aprendicesTotales: int = 0
     jornadas: list[str] = []
