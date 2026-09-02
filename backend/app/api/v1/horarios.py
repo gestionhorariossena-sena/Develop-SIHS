@@ -84,7 +84,7 @@ def crear_horario(
     usuario=Depends(require_puede_programar),
 ):
     try:
-        horario = HorarioService.crear(db, data)
+        horario = HorarioService.crear(db, data, forzar=getattr(data, "forzar", False))
     except CruceHorarioError as error:
         raise HTTPException(status_code=409, detail={"mensajes": error.mensajes}) from error
 

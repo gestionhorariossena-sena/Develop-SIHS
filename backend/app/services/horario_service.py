@@ -37,10 +37,11 @@ class HorarioService:
         return HorarioRepository.obtener_por_id(db, id_horario)
 
     @staticmethod
-    def crear(db, data):
-        errores = HorarioService._detectar_cruces(db, data)
-        if errores:
-            raise CruceHorarioError(errores)
+    def crear(db, data, forzar: bool = False):
+        if not forzar:
+            errores = HorarioService._detectar_cruces(db, data)
+            if errores:
+                raise CruceHorarioError(errores)
 
         nuevo_horario = Horario(
             horaInicio=data.horaInicio,
