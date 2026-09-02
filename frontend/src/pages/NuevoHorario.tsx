@@ -14,6 +14,7 @@ import type {
   Ambiente,
   DiaSemana,
   Ficha,
+  Horario,
   HorarioCreate,
   HorarioDryRunConflict,
   HorarioDryRunResponse,
@@ -185,6 +186,11 @@ export function NuevoHorario() {
     // sí habían quedado guardadas en `horarios`.
     const gridExitoso: GridAsignaciones = gridVacio()
     const idsBloquesExitosos = new Set<string>()
+    // idHorario real (tabla `horarios`) de cada bloque que sí se creó — se
+    // manda junto con el snapshot para que borrar el "Horario completo" en
+    // Historial de horarios también libere estas clases reales, no solo
+    // el resumen (bug reportado 2026-09-02: quedaban huérfanas).
+    const idsHorariosCreados: number[] = []
 
     for (const grupo of grupos) {
       const bloque = bloquesActuales.find((b) => b.id === grupo.bloqueId)
@@ -240,8 +246,9 @@ export function NuevoHorario() {
       }
 
       try {
-        await apiPost('/horarios/', datos)
+        const horarioCreado = await apiPost<Horario>('/horarios/', datos)
         idsBloquesExitosos.add(grupo.bloqueId)
+        idsHorariosCreados.push(horarioCreado.idHorario)
         for (const diaIdx of grupo.diasIdx) {
           gridExitoso[grupo.bloqueIdx][diaIdx] = grupo.bloqueId
         }
@@ -273,6 +280,7 @@ export function NuevoHorario() {
           fechaFin: fechaFin || null,
           bloques: bloquesActuales.filter((b) => idsBloquesExitosos.has(b.id)),
           grid: gridExitoso,
+          idsHorarios: idsHorariosCreados,
         })
       } catch (err) {
         // Las clases reales ya quedaron creadas — esto solo afecta al

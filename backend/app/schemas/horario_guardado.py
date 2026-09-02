@@ -25,6 +25,10 @@ class HorarioGuardadoBase(BaseModel):
     # Espejo de GridAsignaciones: fila = bloque horario, columna = día,
     # valor = id de BloqueClase asignado a esa celda (o null si está vacía).
     grid: list[list[str | None]]
+    # idHorario de cada fila real en `horarios` creada por este guardado —
+    # ver comentario en el modelo. El frontend los junta a medida que cada
+    # POST /horarios/ del batch responde con éxito.
+    idsHorarios: list[int] = []
 
 
 class HorarioGuardadoCreate(HorarioGuardadoBase):
