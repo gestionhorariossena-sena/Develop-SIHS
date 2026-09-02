@@ -128,7 +128,7 @@ def test_dry_run_detecta_conflictos(client, db_session, autenticar_como):
         "excluirIdHorario": None,
     }
 
-    response = client.post("/api/v1/horarios/dry-run", json=payload, headers=headers)
+    response = client.post("/api/v1/horarios/validar", json=payload, headers=headers)
 
     assert response.status_code == 409
     body = response.json()
@@ -212,7 +212,7 @@ def test_dry_run_permite_horario_sin_conflictos(client, db_session, autenticar_c
         "excluirIdHorario": None,
     }
 
-    response = client.post("/api/v1/horarios/dry-run", json=payload, headers=headers)
+    response = client.post("/api/v1/horarios/validar", json=payload, headers=headers)
 
     assert response.status_code == 200
     body = response.json()

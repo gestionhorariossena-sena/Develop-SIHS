@@ -43,7 +43,8 @@ def _a_response(db: Session, horario) -> dict:
     }
 
 
-@router.post("/dry-run", response_model=HorarioDryRunResponse)
+@router.post("/validar", response_model=HorarioDryRunResponse)
+@router.post("/dry-run", response_model=HorarioDryRunResponse, include_in_schema=False)
 def validar_dry_run_horario(
     data: HorarioDryRunRequest,
     db: Session = Depends(get_db),
