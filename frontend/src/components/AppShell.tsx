@@ -167,15 +167,23 @@ export function AppShell({ activo, children }: AppShellProps) {
         <div
           onMouseEnter={alEntrarBordeHover}
           onMouseLeave={alSalirBordeHover}
-          className="fixed left-0 top-0 z-40 h-screen w-4 print:hidden"
+          className="fixed left-0 top-0 z-40 hidden h-screen w-4 print:hidden sm:block"
           aria-hidden="true"
         />
       )}
 
+      <div
+        className={`fixed inset-0 z-40 bg-slate-900/40 transition-opacity duration-200 sm:hidden ${
+          navAbierta ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        aria-hidden="true"
+        onClick={cerrarManual}
+      />
+
       <aside
         onMouseEnter={alEntrarPanel}
         onMouseLeave={alSalirPanel}
-        className={`fixed left-0 top-0 z-50 flex h-screen w-60 shrink-0 flex-col justify-between border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform duration-200 print:hidden ${
+        className={`fixed left-0 top-0 z-50 flex h-screen w-60 shrink-0 flex-col justify-between border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform duration-200 print:hidden sm:shadow-2xl ${
           navAbierta ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -210,6 +218,7 @@ export function AppShell({ activo, children }: AppShellProps) {
                   <Link
                     key={item.etiqueta}
                     to={item.ruta}
+                    onClick={cerrarManual}
                     className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
                       esActivo
                         ? 'bg-sena-50 text-sena-700'
@@ -259,7 +268,19 @@ export function AppShell({ activo, children }: AppShellProps) {
               type="button"
               onClick={() => (navAbierta ? cerrarManual() : abrirManual())}
               title={navAbierta ? 'Ocultar menú' : 'Mostrar menú (o deja el cursor en el borde izquierdo)'}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+              className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 sm:flex"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => (navAbierta ? cerrarManual() : abrirManual())}
+              title={navAbierta ? 'Ocultar menú' : 'Abrir menú'}
+              aria-label={navAbierta ? 'Ocultar menú' : 'Abrir menú'}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 sm:hidden"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
