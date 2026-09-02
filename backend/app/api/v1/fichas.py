@@ -4,8 +4,10 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.supabase_auth import require_admin, require_lectura_catalogo
 from app.schemas.ficha import FichaCreate, FichaResponse, FichaUpdate
+from app.schemas.horario import HorarioResponse
 from app.services.auditoria_service import AuditoriaService
 from app.services.ficha_service import FichaService
+from app.services.horario_service import HorarioService
 
 router = APIRouter(prefix="/fichas", tags=["fichas"])
 
@@ -41,6 +43,20 @@ def obtener_ficha(
         raise HTTPException(status_code=404, detail="Ficha no encontrada")
 
     return ficha
+
+
+@router.get("/{id_ficha}/horarios", response_model=list[HorarioResponse])
+def obtener_horarios_ficha(
+    id_ficha: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_lectura_catalogo),
+):
+    """Horarios de una ficha — alimenta el grid semanal del drawer de
+    relacionados en Fichas.tsx (SCRUM-47)."""
+    if not FichaService.obtener_por_id(db, id_ficha):
+        raise HTTPException(status_code=404, detail="Ficha no encontrada")
+
+    return HorarioService.obtener_por_ficha(db, id_ficha)
 
 
 @router.put("/{id_ficha}", response_model=FichaResponse)

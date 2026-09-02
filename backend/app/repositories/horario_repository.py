@@ -86,6 +86,16 @@ class HorarioRepository:
         return query.all()
 
     @staticmethod
+    def obtener_por_ficha(db: Session, id_ficha: int) -> list[Horario]:
+        """GET /fichas/{id}/horarios (SCRUM-47) — grid/relacionados de una ficha."""
+        return db.query(Horario).filter(Horario.idFicha == id_ficha).all()
+
+    @staticmethod
+    def obtener_por_ambiente(db: Session, id_ambiente: int) -> list[Horario]:
+        """GET /ambientes/{id}/horarios (SCRUM-48) — relacionados de un ambiente."""
+        return db.query(Horario).filter(Horario.idAmbiente == id_ambiente).all()
+
+    @staticmethod
     def buscar_resultado_en_ficha(
         db: Session,
         id_ficha: int,

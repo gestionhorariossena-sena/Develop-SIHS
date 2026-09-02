@@ -37,6 +37,53 @@ class HorarioService:
         return HorarioRepository.obtener_por_id(db, id_horario)
 
     @staticmethod
+    def a_response(db, horario) -> dict:
+        """Serializa un Horario a la forma de HorarioResponse, enriquecido
+        con los nombres/códigos de instructor/ficha/ambiente/resultado —
+        movido acá desde api/v1/horarios.py (`_a_response`) para
+        reutilizarlo también en los GET por instructor/ficha/ambiente que
+        alimentan el drawer de relacionados (SCRUM-46/47/48)."""
+        return {
+            "idHorario": horario.idHorario,
+            "horaInicio": horario.horaInicio,
+            "horaFin": horario.horaFin,
+            "idJornada": horario.idJornada,
+            "idTrimestre": horario.idTrimestre,
+            "idAmbiente": horario.idAmbiente,
+            "idInstructor": horario.idInstructor,
+            "idFicha": horario.idFicha,
+            "idResultado": horario.idResultado,
+            "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
+            "instructorNombre": horario.instructor.nombre if horario.instructor else None,
+            "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
+            "ambienteNombre": horario.ambiente.nombre if horario.ambiente else None,
+            "resultadoCodigo": horario.resultado.codigo if horario.resultado else None,
+            "resultadoDescripcion": horario.resultado.descripcion if horario.resultado else None,
+        }
+
+    @staticmethod
+    def obtener_por_instructor(db, id_instructor) -> list[dict]:
+        """GET /usuarios/{id}/horarios (SCRUM-46) — horarios asignados a un
+        instructor, para la mini-grid/grid del drawer de relacionados."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_instructor(db, id_instructor)
+        ]
+
+    @staticmethod
+    def obtener_por_ficha(db, id_ficha) -> list[dict]:
+        """GET /fichas/{id}/horarios (SCRUM-47) — horarios de una ficha."""
+        return [HorarioService.a_response(db, h) for h in HorarioRepository.obtener_por_ficha(db, id_ficha)]
+
+    @staticmethod
+    def obtener_por_ambiente(db, id_ambiente) -> list[dict]:
+        """GET /ambientes/{id}/horarios (SCRUM-48) — horarios de un ambiente."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_ambiente(db, id_ambiente)
+        ]
+
+    @staticmethod
     def crear(db, data, forzar: bool = False) -> tuple:
         """Crea horario. Si forzar=False, lanza excepción si hay cruces.
         Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
