@@ -14,9 +14,12 @@ export function getUserFriendlyApiMessage(status: number, fallback?: string, det
     case 404:
       return 'No se encontró la información solicitada.'
     case 409:
-      return fallback ?? 'Hay un conflicto con los datos actuales. Revisa la información e inténtalo otra vez.'
+      // `fallback` puede venir de `response.statusText`, que HTTP/2 deja
+      // vacío por spec — `??` no lo captura (solo null/undefined), así que
+      // sin el `||` un 409/422 por HTTP/2 mostraba mensaje en blanco.
+      return fallback || 'Hay un conflicto con los datos actuales. Revisa la información e inténtalo otra vez.'
     case 422:
-      return fallback ?? 'Los datos enviados no son válidos. Revisa la información antes de guardar.'
+      return fallback || 'Los datos enviados no son válidos. Revisa la información antes de guardar.'
     case 500:
       return 'El servidor tuvo un problema. Inténtalo de nuevo en unos segundos.'
     case 502:
@@ -24,7 +27,7 @@ export function getUserFriendlyApiMessage(status: number, fallback?: string, det
     case 504:
       return 'La respuesta del servidor tardó demasiado o no está disponible en este momento. Verifica tu conexión e inténtalo otra vez.'
     default:
-      return fallback ?? 'No se pudo completar la solicitud. Inténtalo nuevamente.'
+      return fallback || 'No se pudo completar la solicitud. Inténtalo nuevamente.'
   }
 }
 
@@ -83,13 +86,9 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       // horarios (POST /horarios/validar) devuelve el cuerpo entero al
       // nivel raíz (ok/puedeGuardar/conflictos/...), sin esa clave. Sin
       // este fallback, `detail` quedaba `undefined` y se perdían los
-      // conflictos que el ModalCruce necesita mostrar.
+      // conflictos que ModalCruce necesita mostrar.
       const detail = body && typeof body === 'object' && 'detail' in body ? body.detail : body
-      // `response.statusText` puede venir vacío (típico en HTTP/2) — si
-      // se usa tal cual como fallback, `getUserFriendlyApiMessage` lo
-      // toma como "hay fallback" (string vacío no es null/undefined) y
-      // el usuario ve un mensaje en blanco en vez del texto por defecto.
-      const fallback = typeof detail === 'string' && detail.trim() ? detail : response.statusText || undefined
+      const fallback = typeof detail === 'string' ? detail : response.statusText
       throw new ApiError(response.status, getUserFriendlyApiMessage(response.status, fallback, detail), detail)
     }
 

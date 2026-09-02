@@ -228,14 +228,11 @@ export function NuevoHorario() {
         const forzar = await pedirDecision(bloqueResumen, dryRun.conflictos)
 
         if (!forzar) {
-          const huboBloqueoDuro = dryRun.conflictos.some((c) => c.tipo === 'regla_instructor')
-          errores.push(
-            `${etiquetaBloque}: ${
-              huboBloqueoDuro
-                ? 'viola una regla institucional (RF-011), no se puede programar.'
-                : 'cruce detectado — no se guardó (cancelado).'
-            }`,
-          )
+          // RF-011 sigue el mismo patrón que un cruce físico (§7.2 de
+          // PLAN_INTEGRACION_LOGICA_Y_BD.md, corregido 2026-09-02) — no
+          // es "imposible de programar", el coordinador simplemente
+          // decidió no forzarlo.
+          errores.push(`${etiquetaBloque}: cruce detectado — no se guardó (cancelado).`)
           continue
         }
 

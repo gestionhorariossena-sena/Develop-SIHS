@@ -1,9 +1,9 @@
-"""RF-011 es bloqueo duro (§7.2 de PLAN_INTEGRACION_LOGICA_Y_BD.md): a
-diferencia de los cruces físicos (ficha/instructor/ambiente/resultado
-repetido), nunca se puede saltar con `forzar=True`. Backlog "Nuevo
-alcance" épica A, tarea 9 ("Test: RF-011 sigue bloqueando duro aunque
-forzar=true") — faltaba, los tests existentes de forzar solo cubrían
-cruces físicos."""
+"""SCRUM-44: falta el test explícito de que `forzar=True` también salta
+las reglas RF-011, no solo los cruces físicos — ver §7.2 de
+PLAN_INTEGRACION_LOGICA_Y_BD.md ("Corregido 2026-09-02": RF-011 sigue el
+mismo patrón que los cruces físicos, no es una excepción de bloqueo
+duro). `HorarioService.crear`/`actualizar` ya lo hacían bien (no
+distinguen tipo de error al aplicar `forzar`); solo faltaba el test."""
 
 import uuid
 from datetime import date, time
@@ -76,12 +76,18 @@ def _poblar_catalogos_basicos(db_session):
     )
     db_session.commit()
 
-    return {"idAmbiente": ambiente.id, "idJornadaNoche": jornada_noche.idJornada, "idDiaLunes": dia_lunes.idDia, "idFicha": ficha.idFicha}
+    return {
+        "idAmbiente": ambiente.id,
+        "idJornadaNoche": jornada_noche.idJornada,
+        "idDiaLunes": dia_lunes.idDia,
+        "idFicha": ficha.idFicha,
+    }
 
 
-def test_crear_con_forzar_no_salta_rf011_planta_en_noche(client, db_session, autenticar_como):
-    """RF-011: un instructor de planta no puede programarse en jornada
-    Noche — ni siquiera con forzar=True."""
+def test_crear_con_forzar_salta_tambien_rf011_planta_en_noche(client, db_session, autenticar_como):
+    """Sin forzar, un instructor de planta en jornada Noche se rechaza
+    (RF-011); con forzar=True, se guarda igual — mismo patrón que un
+    cruce físico."""
     _crear_tablas_extra(db_session)
     catalogos = _poblar_catalogos_basicos(db_session)
 
@@ -96,7 +102,7 @@ def test_crear_con_forzar_no_salta_rf011_planta_en_noche(client, db_session, aut
     db_session.add(instructor_planta)
     db_session.commit()
 
-    payload = {
+    payload_base = {
         "idJornada": catalogos["idJornadaNoche"],
         "idTrimestre": 1,
         "idAmbiente": catalogos["idAmbiente"],
@@ -106,18 +112,24 @@ def test_crear_con_forzar_no_salta_rf011_planta_en_noche(client, db_session, aut
         "horaInicio": "18:00:00",
         "horaFin": "20:00:00",
         "dias": [catalogos["idDiaLunes"]],
-        "forzar": True,
     }
 
-    respuesta = client.post("/api/v1/horarios/", json=payload, headers=headers)
-
-    assert respuesta.status_code == 409
-    mensajes = respuesta.json()["detail"]["mensajes"]
-    assert any("Noche" in m and "planta" in m for m in mensajes)
+    # Sin forzar: se rechaza.
+    respuesta_sin_forzar = client.post(
+        "/api/v1/horarios/", json={**payload_base, "forzar": False}, headers=headers
+    )
+    assert respuesta_sin_forzar.status_code == 409
     assert db_session.query(Horario).count() == 0
 
+    # Con forzar=True: se guarda igual.
+    respuesta_forzada = client.post(
+        "/api/v1/horarios/", json={**payload_base, "forzar": True}, headers=headers
+    )
+    assert respuesta_forzada.status_code == 201
+    assert db_session.query(Horario).count() == 1
 
-def test_actualizar_con_forzar_no_salta_rf011_planta_en_noche(client, db_session, autenticar_como):
+
+def test_actualizar_con_forzar_salta_tambien_rf011_planta_en_noche(client, db_session, autenticar_como):
     _crear_tablas_extra(db_session)
     catalogos = _poblar_catalogos_basicos(db_session)
 
@@ -163,66 +175,4 @@ def test_actualizar_con_forzar_no_salta_rf011_planta_en_noche(client, db_session
 
     respuesta = client.put(f"/api/v1/horarios/{horario_existente.idHorario}", json=payload, headers=headers)
 
-    assert respuesta.status_code == 409
-    mensajes = respuesta.json()["detail"]["mensajes"]
-    assert any("Noche" in m and "planta" in m for m in mensajes)
-
-
-def test_crear_con_forzar_permite_fisico_pero_bloquea_si_tambien_hay_rf011(client, db_session, autenticar_como):
-    """Si un mismo intento tiene un cruce físico Y una violación RF-011 a
-    la vez, forzar=True debe seguir bloqueando (RF-011 manda) — no basta
-    con que exista *algún* cruce físico forzable."""
-    _crear_tablas_extra(db_session)
-    catalogos = _poblar_catalogos_basicos(db_session)
-
-    _, headers = autenticar_como("Coordinador")
-
-    instructor_planta = Usuario(
-        idUsuario=uuid.uuid4(),
-        nombre="Sergio Planta",
-        email="sergio@example.com",
-        tipoContrato="planta",
-    )
-    otro_instructor = Usuario(
-        idUsuario=uuid.uuid4(),
-        nombre="Otro Instructor",
-        email="otro@example.com",
-        tipoContrato="planta",
-    )
-    db_session.add_all([instructor_planta, otro_instructor])
-    db_session.commit()
-
-    # Cruce físico: el mismo ambiente ya está ocupado en ese horario por
-    # otro instructor.
-    horario_existente = Horario(
-        idHorario=1,
-        horaInicio=time(18, 0),
-        horaFin=time(20, 0),
-        idJornada=catalogos["idJornadaNoche"],
-        idTrimestre=1,
-        idAmbiente=catalogos["idAmbiente"],
-        idInstructor=otro_instructor.idUsuario,
-        idFicha=catalogos["idFicha"],
-        idResultado=1,
-    )
-    db_session.add(horario_existente)
-    db_session.commit()
-    db_session.execute(horario_dia.insert().values(idHorario=1, idDia=catalogos["idDiaLunes"]))
-    db_session.commit()
-
-    payload = {
-        "idJornada": catalogos["idJornadaNoche"],
-        "idTrimestre": 1,
-        "idAmbiente": catalogos["idAmbiente"],  # mismo ambiente -> cruce físico
-        "idInstructor": str(instructor_planta.idUsuario),  # planta + Noche -> RF-011
-        "idFicha": catalogos["idFicha"],
-        "idResultado": 1,
-        "horaInicio": "18:00:00",
-        "horaFin": "20:00:00",
-        "dias": [catalogos["idDiaLunes"]],
-        "forzar": True,
-    }
-
-    respuesta = client.post("/api/v1/horarios/", json=payload, headers=headers)
-
-    assert respuesta.status_code == 409
+    assert respuesta.status_code == 200

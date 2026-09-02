@@ -9,8 +9,6 @@ interface ModalCruceProps {
   bloqueResumen: string
   conflictos: HorarioDryRunConflict[]
   onCancelar: () => void
-  /** No se pasa (o no se llama) cuando hay algún conflicto RF-011 — esos
-   * son bloqueo duro, ver puedeForzar más abajo. */
   onForzar: () => void
 }
 
@@ -23,14 +21,16 @@ const TITULO_POR_TIPO: Record<TipoConflictoHorario, string> = {
 }
 
 /**
- * Distingue dos tipos de conflicto (§7.2 de PLAN_INTEGRACION_LOGICA_Y_BD.md):
- * - FÍSICO (cruce_ficha/instructor/ambiente, resultado_repetido): el
- *   coordinador puede decidir programar igual — "Programar de todas
- *   formas" reintenta con forzar=true y queda auditado.
- * - RF-011 (tope de horas, jornada Noche vetada para planta, jornadas
- *   continuas en otro centro): regla institucional, bloqueo duro — el
- *   backend la rechaza aunque se mande forzar=true (ver
- *   HorarioService.crear/actualizar), así que acá ni se ofrece el botón.
+ * Distingue dos tipos de conflicto solo para EXPLICARLOS mejor (§7.2 de
+ * PLAN_INTEGRACION_LOGICA_Y_BD.md, corregido 2026-09-02 — David, product
+ * owner, revirtió la primera versión de esta sección): RF-011 (tope de
+ * horas, jornada Noche vetada para planta, jornadas continuas) sigue el
+ * MISMO patrón que los cruces físicos (ficha/instructor/ambiente,
+ * resultado repetido) — el coordinador puede programar de todas formas
+ * en ambos casos, y queda auditado. No es una excepción de bloqueo
+ * duro; el tratamiento rojo de RF-011 es solo para que el coordinador
+ * note que es una regla institucional antes de forzarla, no para
+ * impedirlo.
  *
  * Mockup aprobado: _Docs/Diseño/mockups-nuevo-alcance/03-modal-cruce.png
  * (cubre el caso físico — el tratamiento rojo de RF-011 es una extensión
@@ -41,7 +41,7 @@ export function ModalCruce({ bloqueResumen, conflictos, onCancelar, onForzar }: 
 
   const conflictosDuros = conflictos.filter((c) => c.tipo === 'regla_instructor')
   const conflictosFisicos = conflictos.filter((c) => c.tipo !== 'regla_instructor')
-  const puedeForzar = conflictosDuros.length === 0 && conflictosFisicos.length > 0
+  const hayConflictos = conflictos.length > 0
 
   useEffect(() => {
     contenidoRef.current?.querySelector<HTMLElement>('button')?.focus()
@@ -104,12 +104,11 @@ export function ModalCruce({ bloqueResumen, conflictos, onCancelar, onForzar }: 
           </span>
           <div>
             <h2 id="modal-cruce-titulo" className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              {conflictosDuros.length > 0 ? 'No se puede programar así' : 'Se detectó un cruce de horario'}
+              Se detectó un cruce de horario
             </h2>
             <p id="modal-cruce-descripcion" className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-              {conflictosDuros.length > 0
-                ? 'El bloque que estás programando viola una regla institucional (RF-011). Ajusta el horario o el instructor para continuar.'
-                : 'El bloque que estás programando choca con horarios que ya existen. Revisa el detalle y decide si cancelar o programarlo de todas formas.'}
+              El bloque que estás programando choca con horarios que ya existen o con una regla
+              institucional. Revisa el detalle y decide si cancelar o programarlo de todas formas.
             </p>
           </div>
         </div>
@@ -132,7 +131,7 @@ export function ModalCruce({ bloqueResumen, conflictos, onCancelar, onForzar }: 
               </p>
               <p className="mt-0.5 text-sm text-red-700 dark:text-red-400">{conflicto.mensaje}</p>
               <p className="mt-1 text-xs text-red-600 dark:text-red-400">
-                Regla institucional — no se puede forzar.
+                Regla institucional — revísala antes de programar de todas formas.
               </p>
             </div>
           ))}
@@ -150,7 +149,7 @@ export function ModalCruce({ bloqueResumen, conflictos, onCancelar, onForzar }: 
           ))}
         </div>
 
-        {puedeForzar && (
+        {hayConflictos && (
           <p className="mb-1 mt-4 flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
             <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
@@ -172,7 +171,7 @@ export function ModalCruce({ bloqueResumen, conflictos, onCancelar, onForzar }: 
           >
             Cancelar
           </button>
-          {puedeForzar && (
+          {hayConflictos && (
             <button
               type="button"
               onClick={onForzar}
