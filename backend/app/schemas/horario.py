@@ -19,6 +19,7 @@ class HorarioCreate(HorarioBase):
     # Ids de "diasDeLaSemana" — un horario puede repetirse varios días
     # (ver horario_dia, tabla puente).
     dias: list[int]
+    forzar: bool = False
 
 
 class HorarioUpdate(HorarioCreate):
