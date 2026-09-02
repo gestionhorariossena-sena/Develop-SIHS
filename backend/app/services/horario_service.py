@@ -219,6 +219,38 @@ class HorarioService:
         return fin - inicio
 
     @staticmethod
+    def calcular_carga_semanal(db, id_instructor) -> dict | None:
+        """Horas ya asignadas por semana vs. el máximo de RF-011 (32
+        planta / 40 contrato) — mismo cálculo que usa
+        _validar_reglas_instructor para el tope, expuesto acá para el
+        GET /usuarios/{id}/carga-semanal que alimenta la sección "Carga
+        semanal" del drawer de instructor (backlog "Nuevo alcance",
+        épica B tarea 14). None si el usuario no existe."""
+        instructor = db.get(Usuario, id_instructor)
+        if not instructor:
+            return None
+
+        horarios_instructor = HorarioRepository.obtener_por_instructor(db, id_instructor)
+        horas_asignadas = sum(
+            HorarioService._duracion_horas(h.horaInicio, h.horaFin)
+            * len(HorarioRepository.obtener_dias(db, h.idHorario))
+            for h in horarios_instructor
+        )
+
+        horas_maximas = None
+        if instructor.tipoContrato:
+            horas_maximas = (
+                HORAS_MAX_PLANTA if instructor.tipoContrato == "planta" else HORAS_MAX_CONTRATO
+            )
+
+        return {
+            "idUsuario": instructor.idUsuario,
+            "tipoContrato": instructor.tipoContrato,
+            "horasAsignadas": horas_asignadas,
+            "horasMaximas": horas_maximas,
+        }
+
+    @staticmethod
     def _validar_reglas_instructor(db, data, excluir_id: int | None) -> list[str]:
         """RF-011: tope de horas/semana según tipo de contrato, jornada
         Noche vedada para instructores de planta, y no repetir centro de
