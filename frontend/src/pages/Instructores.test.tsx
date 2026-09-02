@@ -116,7 +116,24 @@ describe('Instructores', () => {
     expect(within(panel).getByText('3068356')).toBeInTheDocument()
     expect(within(panel).getByText('Lunes y Miércoles 12:00-15:00')).toBeInTheDocument()
     expect(within(panel).getByText('CPL18 — Gestión de inventarios')).toBeInTheDocument()
-    expect(within(panel).getByText('Ambiente 306')).toBeInTheDocument()
+    // "Ambiente 306" aparece dos veces: en la sección de ambientes y en la
+    // celda del mini-grid (SCRUM-65, GridHorario reusa el mismo texto).
+    expect(within(panel).getAllByText('Ambiente 306').length).toBeGreaterThan(0)
+  })
+
+  it('muestra el mini-grid semanal con el bloque del instructor', async () => {
+    mockeaUsuariosYPerfil(USUARIOS)
+    const usuario = userEvent.setup()
+    renderConProviders(<Instructores />)
+    await screen.findByText('Erick Granados')
+
+    await usuario.click(screen.getByText('Erick Granados'))
+
+    const panel = screen.getByRole('dialog', { name: 'Erick Granados' })
+    expect(await within(panel).findByText('Horario semanal')).toBeInTheDocument()
+    // El bloque de HORARIOS cae en Tarde 12:00-15:00, Lunes y Miércoles —
+    // aparece dos veces en el grid (una celda por día).
+    expect(within(panel).getAllByText('CPL18').length).toBe(2)
   })
 
   it('Escape cierra el drawer', async () => {
