@@ -236,20 +236,30 @@ esquema/docs actuales no cubrían todavía):
 
 ### 7.2 Decisión de diseño: cruces con advertencia, no bloqueo duro
 
-Hoy `HorarioService.crear`/`actualizar` bloquean duro cualquier cruce
-(409, sin opción de continuar). Se decidió cambiar **solo para los 3
-cruces físicos** (ficha/instructor/ambiente ya ocupados): pasan a ser
-una advertencia con el detalle de contra qué choca, y el coordinador
-decide si cancela o programa igual. **Las reglas RF-011 (tope de
-horas/semana, jornada Noche vetada para planta) se quedan como
-bloqueo duro** — son reglas institucionales/contractuales, no
-negociables en campo, no se tocan.
+**Corregido 2026-09-02** — la primera versión de esta sección (ver
+historial de git si hace falta el texto exacto) decía que RF-011 debía
+quedarse como bloqueo duro incondicional. David (product owner) lo
+corrigió en vivo: **RF-011 sigue el mismo patrón que los cruces
+físicos**, no es una excepción.
 
-Diseño concreto: nuevo endpoint dry-run (`POST /horarios/validar`) +
-flag `forzar` en crear/actualizar; cuando se fuerza un cruce físico,
-queda registrado en la tabla `auditoria` (ya existe, RNF-26/27) quién
-lo forzó y contra qué — sin esto, un override silencioso pierde el
-propósito de detectar el cruce en primer lugar.
+Hoy `HorarioService.crear`/`actualizar` bloquean duro cualquier cruce
+(409, sin opción de continuar). Se decidió cambiar **para todos los
+casos** (los 3 cruces físicos — ficha/instructor/ambiente ya
+ocupados/resultado repetido — y también las reglas RF-011 — tope de
+horas/semana, jornada Noche vetada para planta): pasan a ser una
+advertencia con el detalle de contra qué choca, el coordinador decide
+si cancela o programa igual, y **siempre se avisa antes de que ocurra
+el cruce** (dry-run / 409 inicial) — nunca se guarda un cruce sin que
+el coordinador lo haya visto y decidido forzarlo explícitamente.
+
+Diseño concreto: endpoint dry-run (`POST /horarios/validar`) + flag
+`forzar` en crear/actualizar; cuando se fuerza cualquier cruce
+(físico o RF-011), queda registrado en la tabla `auditoria` (ya
+existe, RNF-26/27) quién lo forzó y contra qué — sin esto, un override
+silencioso pierde el propósito de detectar el cruce en primer lugar.
+`HorarioService.crear`/`actualizar` ya implementan esto correctamente
+(no distinguen tipo de error, `forzar=true` salta cualquiera) — lo que
+falta es el test explícito para el caso RF-011 (ver SCRUM-44).
 
 ### 7.3 Decisión de UI: patrón único de "relacionados"
 
