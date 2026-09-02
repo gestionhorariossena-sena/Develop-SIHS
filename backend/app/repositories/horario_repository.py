@@ -100,11 +100,26 @@ class HorarioRepository:
         db: Session,
         id_ficha: int,
         id_resultado: int,
+        dias: list[int],
         excluir_id: int | None = None,
     ) -> Horario | None:
         """Cruce de contenido, no de horas — ver REGLAS_DE_NEGOCIO_CONOCIDAS.md.
-        Devuelve el horario existente que ya cubre ese resultado, o None."""
+        La regla original comparaba solo (idFicha, idResultado) sin mirar el
+        día, así que un mismo tema partido en dos bloques el mismo día (antes
+        y después del descanso) se rechazaba como si fuera un duplicado real
+        en otro día — bug reportado 2026-09-02. Un horario existente que
+        comparte al menos un día con el nuevo se trata como continuación de
+        la misma clase (no se marca); solo se marca si NO comparte ningún
+        día, que es el caso real de "este resultado ya se programó en otro
+        momento no relacionado". Devuelve el horario existente que choca, o
+        None."""
         query = db.query(Horario).filter(Horario.idFicha == id_ficha, Horario.idResultado == id_resultado)
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)
-        return query.first()
+
+        dias_nuevos = set(dias)
+        for horario in query.all():
+            dias_existentes = set(HorarioRepository.obtener_dias(db, horario.idHorario))
+            if not (dias_existentes & dias_nuevos):
+                return horario
+        return None

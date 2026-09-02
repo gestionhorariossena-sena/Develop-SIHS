@@ -54,6 +54,15 @@ la misma ficha** (en su matriz Excel lo marca con un punto rojo). Es una
 validación distinta a las tres de arriba — no compara horas, compara que
 `(idFicha, idResultado)` no se repita en `horarios`.
 
+⚠️ **Corrección 2026-09-02:** la regla original comparaba `(idFicha,
+idResultado)` sin mirar el día, así que partir una misma clase en dos
+bloques el mismo día (antes y después del descanso) se rechazaba como
+"resultado repetido" — falso positivo, no es el duplicado real que la
+regla quiere evitar. Ahora un horario existente que comparte al menos un
+día con el nuevo se trata como continuación de la misma clase (no se
+marca); solo se marca si el resultado ya se programó en un día
+completamente distinto, que sigue siendo el caso que hay que bloquear.
+
 - Entre bloques que cruzan de ambiente/sede hay un margen de traslado que
   hoy se negocia a mano con los instructores (ej. salir 11:30, recibir a
   la 1 o 2 pm en el otro sitio) — no es una regla dura del sistema, es

@@ -178,7 +178,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, excluir_id
+            db, data.idFicha, data.idResultado, data.dias, excluir_id
         )
         if resultado_existente:
             errores.append(
@@ -236,7 +236,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, excluir_id
+            db, data.idFicha, data.idResultado, data.dias, excluir_id
         )
         if resultado_existente:
             conflictos.append(
