@@ -3,7 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { Fichas } from './Fichas'
-import type { Ficha, Horario } from '../types/api'
+import type { DiaSemana, Ficha, Horario } from '../types/api'
 
 const FICHAS: Ficha[] = [
   {
@@ -71,10 +71,13 @@ const HORARIOS: Horario[] = [
   },
 ]
 
+const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }]
+
 function mockeaFichasConHorarios(fichas: unknown) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/fichas/') return Promise.resolve(fichas)
     if (path === '/fichas/1/horarios') return Promise.resolve(HORARIOS)
+    if (path === '/dias-semana/') return Promise.resolve(DIAS)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -154,8 +157,25 @@ describe('Fichas', () => {
     const panel = screen.getByRole('dialog', { name: '3228973 B' })
     expect(await within(panel).findByText('Horario semanal')).toBeInTheDocument()
     expect(within(panel).getByText('RA-9')).toBeInTheDocument()
-    expect(within(panel).getByText('Erick Granados')).toBeInTheDocument()
-    expect(within(panel).getByText('Ambiente 101')).toBeInTheDocument()
+    // "Erick Granados" y "Ambiente 101" aparecen dos veces: en la celda del
+    // grid y en las secciones de instructores/ambientes (SCRUM-68).
+    expect(within(panel).getAllByText('Erick Granados').length).toBeGreaterThan(0)
+    expect(within(panel).getAllByText('Ambiente 101').length).toBeGreaterThan(0)
+  })
+
+  it('muestra instructores/temas/ambientes derivados de los horarios de la ficha', async () => {
+    mockeaFichasConHorarios(FICHAS)
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    await screen.findByText('3228973 B')
+
+    await usuario.click(screen.getByText('3228973 B'))
+
+    const panel = screen.getByRole('dialog', { name: '3228973 B' })
+    expect(await within(panel).findByText('Instructores')).toBeInTheDocument()
+    expect(within(panel).getByText('Temas que dicta')).toBeInTheDocument()
+    expect(within(panel).getByText('Ambientes asignados')).toBeInTheDocument()
+    expect(within(panel).getByText('Lunes 06:15-09:00')).toBeInTheDocument()
   })
 
   it('muestra el error del backend si la carga falla', async () => {

@@ -1,13 +1,6 @@
 import type { Horario } from '../../types/api'
 import { SeccionDrawer } from './DrawerRelacionados'
-
-function formatoHora(hora: string) {
-  return hora.slice(0, 5)
-}
-
-function nombresDias(dias: number[], diasPorId: Record<number, string>) {
-  return dias.map((id) => diasPorId[id] ?? '?').join(' y ')
-}
+import { formatoHora, nombresDias } from './formatoBloque'
 
 /** SCRUM-62: fichas únicas derivadas de los horarios del instructor — cada
  * una con sus bloques (día(s) + hora), no solo el código. */
