@@ -70,8 +70,10 @@ export interface Ficha {
   codigoFicha: string
   idPrograma: number
   idTrimestre: number
+  idSede: number | null
   programa: Programa
   trimestre: Trimestre
+  sede: Sede | null
   aprendicesTotales: number
   jornadas: string[]
 }
@@ -83,6 +85,13 @@ export interface Programa {
   nivelFormacion: string | null
   activo: boolean
   idCoordinacion: number
+}
+
+export interface Sede {
+  idSede: number
+  nombreSede: string
+  direccion: string | null
+  tipoSede: 'principal' | 'secundaria' | 'alterna' | null
 }
 
 export interface Ambiente {
