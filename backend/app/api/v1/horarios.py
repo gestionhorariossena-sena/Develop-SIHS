@@ -125,7 +125,7 @@ def actualizar_horario(
     usuario=Depends(require_puede_programar),
 ):
     try:
-        horario = HorarioService.actualizar(db, id_horario, data)
+        horario = HorarioService.actualizar(db, id_horario, data, forzar=getattr(data, "forzar", False))
     except CruceHorarioError as error:
         raise HTTPException(status_code=409, detail={"mensajes": error.mensajes}) from error
 

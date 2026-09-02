@@ -56,15 +56,16 @@ class HorarioService:
         return HorarioRepository.crear(db, nuevo_horario, data.dias)
 
     @staticmethod
-    def actualizar(db, id_horario, data):
+    def actualizar(db, id_horario, data, forzar: bool = False):
         horario = HorarioRepository.obtener_por_id(db, id_horario)
 
         if not horario:
             return None
 
-        errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
-        if errores:
-            raise CruceHorarioError(errores)
+        if not forzar:
+            errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
+            if errores:
+                raise CruceHorarioError(errores)
 
         horario.horaInicio = data.horaInicio
         horario.horaFin = data.horaFin
