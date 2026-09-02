@@ -134,6 +134,35 @@ describe('Instructores', () => {
     // El bloque de HORARIOS cae en Tarde 12:00-15:00, Lunes y Miércoles —
     // aparece dos veces en el grid (una celda por día).
     expect(within(panel).getAllByText('CPL18').length).toBe(2)
+
+    // Solo la única fila con datos (Tarde 12:00-15:00) — nada de las otras
+    // 5 filas institucionales vacías, ni las jornadas Mañana/Noche sin
+    // ningún bloque, ni la fila "Receso".
+    expect(within(panel).getByText('Jornada Tarde')).toBeInTheDocument()
+    expect(within(panel).queryByText('Jornada Mañana')).not.toBeInTheDocument()
+    expect(within(panel).queryByText('Jornada Noche')).not.toBeInTheDocument()
+    expect(within(panel).queryByText('3:00 p.m')).not.toBeInTheDocument()
+    expect(within(panel).queryByText('Receso')).not.toBeInTheDocument()
+  })
+
+  it('muestra "sin horario asignado" cuando el instructor no tiene ningún bloque', async () => {
+    mockeaUsuariosYPerfil(USUARIOS)
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/') return Promise.resolve(USUARIOS)
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA)
+      if (path === '/usuarios/u1/horarios') return Promise.resolve([])
+      return Promise.reject(new Error('no mockeado en este test'))
+    })
+    const usuario = userEvent.setup()
+    renderConProviders(<Instructores />)
+    await screen.findByText('Erick Granados')
+
+    await usuario.click(screen.getByText('Erick Granados'))
+
+    const panel = screen.getByRole('dialog', { name: 'Erick Granados' })
+    expect(await within(panel).findByText('Sin horario asignado en el trimestre actual.')).toBeInTheDocument()
+    expect(within(panel).queryByText('Jornada Mañana')).not.toBeInTheDocument()
   })
 
   it('Escape cierra el drawer', async () => {

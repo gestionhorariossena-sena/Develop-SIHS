@@ -178,9 +178,13 @@ export function Instructores() {
           ) : (
             <>
               <SeccionDrawer titulo="Horario semanal">
-                <div className="text-[10px]">
-                  <GridHorario bloques={bloquesGridInstructor} grid={gridInstructor} hayBloqueActivo={false} soloLectura />
-                </div>
+                {bloquesGridInstructor.length === 0 ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Sin horario asignado en el trimestre actual.</p>
+                ) : (
+                  <div className="text-[10px]">
+                    <GridHorario bloques={bloquesGridInstructor} grid={gridInstructor} hayBloqueActivo={false} soloLectura ocultarFilasVacias />
+                  </div>
+                )}
               </SeccionDrawer>
               <SeccionFichasAsignadas horarios={horariosVigentes ?? []} diasPorId={diasPorId} />
               <SeccionTemasQueDicta horarios={horariosVigentes ?? []} />
