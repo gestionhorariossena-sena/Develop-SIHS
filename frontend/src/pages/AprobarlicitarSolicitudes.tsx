@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { KeyboardEvent } from 'react'
 import { AppShell } from '../components/AppShell'
 import { apiGet, apiPost, ApiError } from '../services/api'
 import type { Rol, Usuario } from '../types/api'
@@ -31,6 +32,7 @@ export function AprobarlicitarSolicitudes() {
   const [rolSeleccionado, setRolSeleccionado] = useState<number | null>(null)
   const [mostrarModal, setMostrarModal] = useState(false)
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
+  const contenidoModalRef = useRef<HTMLDivElement>(null)
 
   // Cargar usuarios sin rol y lista de roles
   useEffect(() => {
@@ -57,6 +59,40 @@ export function AprobarlicitarSolicitudes() {
     setUsuarioSeleccionado(usuario)
     setRolSeleccionado(null)
     setMostrarModal(true)
+  }
+
+  useEffect(() => {
+    if (!mostrarModal) return
+    contenidoModalRef.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus()
+  }, [mostrarModal])
+
+  function cerrarModalAsignar() {
+    setMostrarModal(false)
+    setUsuarioSeleccionado(null)
+    setRolSeleccionado(null)
+  }
+
+  function manejarTecladoModal(evento: KeyboardEvent<HTMLDivElement>) {
+    if (evento.key === 'Escape') {
+      cerrarModalAsignar()
+      return
+    }
+
+    if (evento.key !== 'Tab' || !contenidoModalRef.current) return
+
+    const focables = contenidoModalRef.current.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')
+    if (focables.length === 0) return
+
+    const primero = focables[0]
+    const ultimo = focables[focables.length - 1]
+
+    if (evento.shiftKey && document.activeElement === primero) {
+      evento.preventDefault()
+      ultimo.focus()
+    } else if (!evento.shiftKey && document.activeElement === ultimo) {
+      evento.preventDefault()
+      primero.focus()
+    }
   }
 
   // Asignar rol al usuario
@@ -230,14 +266,22 @@ export function AprobarlicitarSolicitudes() {
 
       {/* Modal para asignar rol */}
       {mostrarModal && usuarioSeleccionado && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="asignar-rol-titulo"
+          onKeyDown={manejarTecladoModal}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+        >
+          <div ref={contenidoModalRef} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
             <div className="mb-5 flex items-center gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sena-100 text-sm font-semibold text-sena-700">
                 {letraInicial(usuarioSeleccionado.nombre)}
               </span>
               <div>
-                <h2 className="font-bold text-slate-900 dark:text-slate-100">{usuarioSeleccionado.nombre}</h2>
+                <h2 id="asignar-rol-titulo" className="font-bold text-slate-900 dark:text-slate-100">
+                  Asignar rol a {usuarioSeleccionado.nombre}
+                </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">{usuarioSeleccionado.email}</p>
               </div>
             </div>
@@ -271,7 +315,7 @@ export function AprobarlicitarSolicitudes() {
 
             <div className="flex gap-3">
               <button
-                onClick={() => setMostrarModal(false)}
+                onClick={cerrarModalAsignar}
                 className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Cancelar

@@ -143,8 +143,6 @@ export interface HorarioCreate {
   idFicha: number
   idResultado: number
   dias: number[]
-  /** Si viene true, el backend salta los cruces FÍSICOS (no las reglas
-   * RF-011, esas nunca se saltan) — ver HorarioService.crear/actualizar. */
   forzar?: boolean
 }
 
