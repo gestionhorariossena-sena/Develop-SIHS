@@ -14,9 +14,12 @@ export function getUserFriendlyApiMessage(status: number, fallback?: string, det
     case 404:
       return 'No se encontró la información solicitada.'
     case 409:
-      return fallback ?? 'Hay un conflicto con los datos actuales. Revisa la información e inténtalo otra vez.'
+      // `fallback` puede venir de `response.statusText`, que HTTP/2 deja
+      // vacío por spec — `??` no lo captura (solo null/undefined), así que
+      // sin el `||` un 409/422 por HTTP/2 mostraba mensaje en blanco.
+      return fallback || 'Hay un conflicto con los datos actuales. Revisa la información e inténtalo otra vez.'
     case 422:
-      return fallback ?? 'Los datos enviados no son válidos. Revisa la información antes de guardar.'
+      return fallback || 'Los datos enviados no son válidos. Revisa la información antes de guardar.'
     case 500:
       return 'El servidor tuvo un problema. Inténtalo de nuevo en unos segundos.'
     case 502:
@@ -24,7 +27,7 @@ export function getUserFriendlyApiMessage(status: number, fallback?: string, det
     case 504:
       return 'La respuesta del servidor tardó demasiado o no está disponible en este momento. Verifica tu conexión e inténtalo otra vez.'
     default:
-      return fallback ?? 'No se pudo completar la solicitud. Inténtalo nuevamente.'
+      return fallback || 'No se pudo completar la solicitud. Inténtalo nuevamente.'
   }
 }
 
