@@ -29,6 +29,17 @@ export interface Usuario {
   especialidades: Especialidad[]
 }
 
+// Espejo de CargaSemanalResponse (backend/app/schemas/usuario.py) —
+// GET /usuarios/{id}/carga-semanal, para la sección "Carga semanal" del
+// drawer de instructor. horasMaximas es null cuando el usuario no tiene
+// tipoContrato definido (no hay tope de RF-011 que calcular).
+export interface CargaSemanal {
+  idUsuario: string
+  tipoContrato: string | null
+  horasAsignadas: number
+  horasMaximas: number | null
+}
+
 export interface EstadoLogin {
   bloqueado: boolean
   intentos: number
