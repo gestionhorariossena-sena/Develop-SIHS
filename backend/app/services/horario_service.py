@@ -38,11 +38,19 @@ class HorarioService:
 
     @staticmethod
     def crear(db, data, forzar: bool = False) -> tuple:
-        """Crea horario. Si forzar=False, lanza excepción si hay cruces.
-        Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
-        errores = HorarioService._detectar_cruces(db, data)
-        if errores and not forzar:
-            raise CruceHorarioError(errores)
+        """Crea horario. `forzar=True` solo puede saltarse los cruces
+        FÍSICOS (ficha/instructor/ambiente/resultado repetido) — las
+        reglas RF-011 son bloqueo duro y se revisan sin importar `forzar`
+        (§7.2 de PLAN_INTEGRACION_LOGICA_Y_BD.md: "son reglas
+        institucionales/contractuales, no negociables en campo")."""
+        errores_fisicos = HorarioService._detectar_cruces_fisicos(db, data)
+        errores_rf011 = HorarioService._validar_reglas_instructor(db, data, None)
+
+        if not forzar and (errores_fisicos or errores_rf011):
+            raise CruceHorarioError(errores_fisicos + errores_rf011)
+
+        if forzar and errores_rf011:
+            raise CruceHorarioError(errores_rf011)
 
         nuevo_horario = Horario(
             horaInicio=data.horaInicio,
@@ -55,20 +63,25 @@ class HorarioService:
             idResultado=data.idResultado,
         )
         horario = HorarioRepository.crear(db, nuevo_horario, data.dias)
-        return horario, errores if forzar else []
+        return horario, errores_fisicos if forzar else []
 
     @staticmethod
     def actualizar(db, id_horario, data, forzar: bool = False) -> tuple:
-        """Actualiza horario. Si forzar=False, lanza excepción si hay cruces.
-        Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
+        """Actualiza horario. Misma regla que `crear`: `forzar=True` solo
+        salta los cruces físicos, nunca las reglas RF-011."""
         horario = HorarioRepository.obtener_por_id(db, id_horario)
 
         if not horario:
             return None, []
 
-        errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
-        if errores and not forzar:
-            raise CruceHorarioError(errores)
+        errores_fisicos = HorarioService._detectar_cruces_fisicos(db, data, excluir_id=id_horario)
+        errores_rf011 = HorarioService._validar_reglas_instructor(db, data, excluir_id=id_horario)
+
+        if not forzar and (errores_fisicos or errores_rf011):
+            raise CruceHorarioError(errores_fisicos + errores_rf011)
+
+        if forzar and errores_rf011:
+            raise CruceHorarioError(errores_rf011)
 
         horario.horaInicio = data.horaInicio
         horario.horaFin = data.horaFin
@@ -80,7 +93,7 @@ class HorarioService:
         horario.idResultado = data.idResultado
 
         actualizado = HorarioRepository.actualizar(db, horario, data.dias)
-        return actualizado, errores if forzar else []
+        return actualizado, errores_fisicos if forzar else []
 
     @staticmethod
     def eliminar(db, id_horario):
@@ -93,14 +106,17 @@ class HorarioService:
         return True
 
     @staticmethod
-    def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
-        """Cruces por solape de horario: misma ficha, mismo instructor o
-        mismo ambiente ya ocupados en ese día/hora — ver
-        REGLAS_DE_NEGOCIO_CONOCIDAS.md. También valida que una misma ficha
-        no repita un resultado de aprendizaje. Cada mensaje describe CONTRA
-        QUÉ horario existente choca (día, hora, y quién/qué ya lo tiene) —
-        no solo la regla que se violó, para que se entienda de un vistazo
-        sin tener que ir a buscarlo a mano."""
+    def _detectar_cruces_fisicos(db, data, excluir_id: int | None = None) -> list[str]:
+        """Cruces FÍSICOS (overridables con `forzar=True`, ver crear/
+        actualizar): misma ficha, mismo instructor o mismo ambiente ya
+        ocupados en ese día/hora — ver REGLAS_DE_NEGOCIO_CONOCIDAS.md.
+        También valida que una misma ficha no repita un resultado de
+        aprendizaje. Cada mensaje describe CONTRA QUÉ horario existente
+        choca (día, hora, y quién/qué ya lo tiene) — no solo la regla que
+        se violó, para que se entienda de un vistazo sin tener que ir a
+        buscarlo a mano. Distinto de `_validar_reglas_instructor` (RF-011),
+        que nunca se puede forzar — ver §7.2 de
+        PLAN_INTEGRACION_LOGICA_Y_BD.md."""
         errores: list[str] = []
 
         ficha_existente = HorarioRepository.buscar_solape(
@@ -138,8 +154,6 @@ class HorarioService:
                 "La ficha ya tiene este resultado de aprendizaje programado: "
                 f"{HorarioService._describir(db, resultado_existente)}."
             )
-
-        errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
 
         return errores
 

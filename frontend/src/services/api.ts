@@ -78,8 +78,18 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
     if (!response.ok) {
       const body = await response.json().catch(() => null)
-      const detail = body?.detail
-      const fallback = typeof detail === 'string' ? detail : response.statusText
+      // No todos los 409 vienen envueltos en {"detail": ...} (el
+      // convencional de FastAPI vía HTTPException) — el dry-run de
+      // horarios (POST /horarios/validar) devuelve el cuerpo entero al
+      // nivel raíz (ok/puedeGuardar/conflictos/...), sin esa clave. Sin
+      // este fallback, `detail` quedaba `undefined` y se perdían los
+      // conflictos que el ModalCruce necesita mostrar.
+      const detail = body && typeof body === 'object' && 'detail' in body ? body.detail : body
+      // `response.statusText` puede venir vacío (típico en HTTP/2) — si
+      // se usa tal cual como fallback, `getUserFriendlyApiMessage` lo
+      // toma como "hay fallback" (string vacío no es null/undefined) y
+      // el usuario ve un mensaje en blanco en vez del texto por defecto.
+      const fallback = typeof detail === 'string' && detail.trim() ? detail : response.statusText || undefined
       throw new ApiError(response.status, getUserFriendlyApiMessage(response.status, fallback, detail), detail)
     }
 
