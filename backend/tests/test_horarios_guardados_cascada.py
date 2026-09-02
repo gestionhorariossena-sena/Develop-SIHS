@@ -109,3 +109,35 @@ def test_borrar_horario_completo_sin_idshorarios_no_falla_ni_borra_otras_clases(
     assert respuesta.status_code == 200
     assert db_session.query(HorarioGuardado).count() == 0
     assert db_session.query(Horario).filter(Horario.idHorario == catalogos["idHorario"]).first() is not None
+
+
+def test_listar_horarios_guardados_con_idshorarios_null_no_da_500(client, db_session, autenticar_como):
+    """Bug reportado 2026-09-02, segunda vuelta: snapshots creados ANTES
+    de que existiera la columna `idsHorarios` quedan con NULL en la BD
+    real (no `[]` — el default de Pydantic solo aplica cuando el cliente
+    omite el campo al crear, no a filas insertadas por fuera de la API).
+    GET /horarios-guardados/ tumbaba TODO el listado con
+    ResponseValidationError apenas topaba una fila así — en Historial de
+    horarios esto se veía como "solo cargan los horarios individuales,
+    nunca los completos"."""
+    _crear_tablas_extra(db_session)
+    _poblar(db_session)
+    usuario, headers = autenticar_como("Coordinador")
+
+    guardado_legado = HorarioGuardado(
+        idUsuario=usuario.idUsuario,
+        ficha="FICHA-VIEJA",
+        bloques=[{"id": "b1", "tematica": "Tema", "instructor": "Carlos López", "ficha": "FICHA-VIEJA", "ambiente": "Ambiente"}],
+        grid=[["b1"]],
+        # Sin idsHorarios: queda NULL en la BD, como cualquier fila creada
+        # antes de que este campo existiera.
+    )
+    db_session.add(guardado_legado)
+    db_session.commit()
+
+    respuesta = client.get("/api/v1/horarios-guardados/", headers=headers)
+
+    assert respuesta.status_code == 200
+    cuerpo = respuesta.json()
+    assert len(cuerpo) == 1
+    assert cuerpo[0]["idsHorarios"] == []
