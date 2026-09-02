@@ -2,7 +2,11 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.ficha import Ficha
+<<<<<<< HEAD
 from app.models.ficha_usuario import FichaUsuario
+=======
+from app.models.ficha_usuario import ficha_usuario
+>>>>>>> 8b8c2c7 (feat: dry-run de cruces horarios)
 from app.models.horario import Horario
 from app.models.jornada import Jornada
 from app.models.rol import Rol

@@ -1,10 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.supabase_auth import require_roles
 from app.repositories.horario_repository import HorarioRepository
-from app.schemas.horario import HorarioCreate, HorarioResponse, HorarioUpdate
+from app.schemas.horario import (
+    HorarioCreate,
+    HorarioDryRunRequest,
+    HorarioDryRunResponse,
+    HorarioResponse,
+    HorarioUpdate,
+)
 from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import CruceHorarioError, HorarioService
 
@@ -32,6 +40,39 @@ def _a_response(db: Session, horario) -> dict:
         "ambienteNombre": horario.ambiente.nombre if horario.ambiente else None,
         "resultadoCodigo": horario.resultado.codigo if horario.resultado else None,
         "resultadoDescripcion": horario.resultado.descripcion if horario.resultado else None,
+    }
+
+
+@router.post("/dry-run", response_model=HorarioDryRunResponse)
+def validar_dry_run_horario(
+    data: HorarioDryRunRequest,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_puede_programar),
+):
+    conflictos = HorarioService.validar_dry_run(db, data, data.excluirIdHorario)
+
+    if conflictos:
+        payload = {
+            "ok": False,
+            "puedeGuardar": False,
+            "mensaje": "La programación presenta conflictos.",
+            "conflictos": conflictos,
+            "resumen": {
+                "totalCruces": len(conflictos),
+                "tipos": sorted({c["tipo"] for c in conflictos}),
+            },
+        }
+        return JSONResponse(status_code=409, content=jsonable_encoder(payload))
+
+    return {
+        "ok": True,
+        "puedeGuardar": True,
+        "mensaje": "No se detectaron cruces.",
+        "conflictos": [],
+        "resumen": {
+            "totalCruces": 0,
+            "tipos": [],
+        },
     }
 
 

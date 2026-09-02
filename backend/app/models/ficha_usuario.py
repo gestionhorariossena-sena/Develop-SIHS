@@ -13,3 +13,6 @@ class FichaUsuario(Base):
 
     idFicha = Column(Integer, ForeignKey("fichas.idFicha"), primary_key=True)
     idUsuario = Column(UUID(as_uuid=True), ForeignKey("usuarios.idUsuario"), primary_key=True)
+
+
+ficha_usuario = FichaUsuario.__table__

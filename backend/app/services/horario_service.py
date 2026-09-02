@@ -90,14 +90,11 @@ class HorarioService:
     def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
         """Cruces por solape de horario: misma ficha, mismo instructor o
         mismo ambiente ya ocupados en ese día/hora — ver
-        REGLAS_DE_NEGOCIO_CONOCIDAS.md. (Antes existía un cuarto chequeo que
-        bloqueaba repetir un resultado en la misma ficha sin importar el
-        horario; se quitó porque un resultado normalmente se dicta en
-        varios bloques — antes/después del descanso, distintos días — no
-        una sola vez.) Cada mensaje dice CONTRA QUÉ horario existente choca
-        (día, hora, y quién/qué ya lo tiene) — no solo la regla que se
-        violó, para que se entienda de un vistazo sin tener que ir a
-        buscarlo a mano."""
+        REGLAS_DE_NEGOCIO_CONOCIDAS.md. También valida que una misma ficha
+        no repita un resultado de aprendizaje. Cada mensaje describe CONTRA
+        QUÉ horario existente choca (día, hora, y quién/qué ya lo tiene) —
+        no solo la regla que se violó, para que se entienda de un vistazo
+        sin tener que ir a buscarlo a mano."""
         errores: list[str] = []
 
         ficha_existente = HorarioRepository.buscar_solape(
@@ -127,9 +124,87 @@ class HorarioService:
                 f"{HorarioService._describir(db, ambiente_existente)}."
             )
 
+        resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
+            db, data.idFicha, data.idResultado, excluir_id
+        )
+        if resultado_existente:
+            errores.append(
+                "La ficha ya tiene este resultado de aprendizaje programado: "
+                f"{HorarioService._describir(db, resultado_existente)}."
+            )
+
         errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
 
         return errores
+
+    @staticmethod
+    def validar_dry_run(db, data, excluir_id: int | None = None) -> list[dict]:
+        conflictos: list[dict] = []
+
+        ficha_existente = HorarioRepository.buscar_solape(
+            db, "idFicha", data.idFicha, data.dias, data.horaInicio, data.horaFin, excluir_id
+        )
+        if ficha_existente:
+            conflictos.append(
+                {
+                    "tipo": "cruce_ficha",
+                    "mensaje": "La ficha ya tiene otra clase programada en ese horario: "
+                    f"{HorarioService._describir(db, ficha_existente)}.",
+                    "idHorarioExistente": ficha_existente.idHorario,
+                    "idFicha": ficha_existente.idFicha,
+                }
+            )
+
+        instructor_existente = HorarioRepository.buscar_solape(
+            db, "idInstructor", data.idInstructor, data.dias, data.horaInicio, data.horaFin, excluir_id
+        )
+        if instructor_existente:
+            conflictos.append(
+                {
+                    "tipo": "cruce_instructor",
+                    "mensaje": "El instructor ya tiene otra clase programada en ese horario: "
+                    f"{HorarioService._describir(db, instructor_existente)}.",
+                    "idHorarioExistente": instructor_existente.idHorario,
+                    "idInstructor": instructor_existente.idInstructor,
+                }
+            )
+
+        ambiente_existente = HorarioRepository.buscar_solape(
+            db, "idAmbiente", data.idAmbiente, data.dias, data.horaInicio, data.horaFin, excluir_id
+        )
+        if ambiente_existente:
+            conflictos.append(
+                {
+                    "tipo": "cruce_ambiente",
+                    "mensaje": "El ambiente ya está ocupado en ese horario: "
+                    f"{HorarioService._describir(db, ambiente_existente)}.",
+                    "idHorarioExistente": ambiente_existente.idHorario,
+                    "idAmbiente": ambiente_existente.idAmbiente,
+                }
+            )
+
+        resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
+            db, data.idFicha, data.idResultado, excluir_id
+        )
+        if resultado_existente:
+            conflictos.append(
+                {
+                    "tipo": "resultado_repetido",
+                    "mensaje": "La ficha ya tiene este resultado de aprendizaje programado: "
+                    f"{HorarioService._describir(db, resultado_existente)}.",
+                    "idHorarioExistente": resultado_existente.idHorario,
+                    "idFicha": resultado_existente.idFicha,
+                    "idResultado": resultado_existente.idResultado,
+                }
+            )
+
+        for error in HorarioService._validar_reglas_instructor(db, data, excluir_id):
+            conflictos.append({
+                "tipo": "regla_instructor",
+                "mensaje": error,
+            })
+
+        return conflictos
 
     @staticmethod
     def _duracion_horas(hora_inicio, hora_fin) -> float:
