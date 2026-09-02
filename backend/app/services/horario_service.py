@@ -37,11 +37,12 @@ class HorarioService:
         return HorarioRepository.obtener_por_id(db, id_horario)
 
     @staticmethod
-    def crear(db, data, forzar: bool = False):
-        if not forzar:
-            errores = HorarioService._detectar_cruces(db, data)
-            if errores:
-                raise CruceHorarioError(errores)
+    def crear(db, data, forzar: bool = False) -> tuple:
+        """Crea horario. Si forzar=False, lanza excepción si hay cruces.
+        Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
+        errores = HorarioService._detectar_cruces(db, data)
+        if errores and not forzar:
+            raise CruceHorarioError(errores)
 
         nuevo_horario = Horario(
             horaInicio=data.horaInicio,
@@ -53,19 +54,21 @@ class HorarioService:
             idFicha=data.idFicha,
             idResultado=data.idResultado,
         )
-        return HorarioRepository.crear(db, nuevo_horario, data.dias)
+        horario = HorarioRepository.crear(db, nuevo_horario, data.dias)
+        return horario, errores if forzar else []
 
     @staticmethod
-    def actualizar(db, id_horario, data, forzar: bool = False):
+    def actualizar(db, id_horario, data, forzar: bool = False) -> tuple:
+        """Actualiza horario. Si forzar=False, lanza excepción si hay cruces.
+        Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
         horario = HorarioRepository.obtener_por_id(db, id_horario)
 
         if not horario:
-            return None
+            return None, []
 
-        if not forzar:
-            errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
-            if errores:
-                raise CruceHorarioError(errores)
+        errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
+        if errores and not forzar:
+            raise CruceHorarioError(errores)
 
         horario.horaInicio = data.horaInicio
         horario.horaFin = data.horaFin
@@ -76,7 +79,8 @@ class HorarioService:
         horario.idFicha = data.idFicha
         horario.idResultado = data.idResultado
 
-        return HorarioRepository.actualizar(db, horario, data.dias)
+        actualizado = HorarioRepository.actualizar(db, horario, data.dias)
+        return actualizado, errores if forzar else []
 
     @staticmethod
     def eliminar(db, id_horario):

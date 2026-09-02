@@ -83,13 +83,16 @@ def crear_horario(
     db: Session = Depends(get_db),
     usuario=Depends(require_puede_programar),
 ):
+    forzar = getattr(data, "forzar", False)
     try:
-        horario = HorarioService.crear(db, data, forzar=getattr(data, "forzar", False))
+        horario, conflictos = HorarioService.crear(db, data, forzar=forzar)
     except CruceHorarioError as error:
         raise HTTPException(status_code=409, detail={"mensajes": error.mensajes}) from error
 
+    accion = "FORZAR_CRUCE" if (forzar and conflictos) else "CREAR"
+    detalle = "; ".join(conflictos) if conflictos else None
     AuditoriaService.registrar(
-        db, usuario=usuario, accion="CREAR", entidad="horarios", id_entidad=horario.idHorario
+        db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=horario.idHorario, detalle=detalle
     )
 
     return _a_response(db, horario)
@@ -124,16 +127,19 @@ def actualizar_horario(
     db: Session = Depends(get_db),
     usuario=Depends(require_puede_programar),
 ):
+    forzar = getattr(data, "forzar", False)
     try:
-        horario = HorarioService.actualizar(db, id_horario, data, forzar=getattr(data, "forzar", False))
+        horario, conflictos = HorarioService.actualizar(db, id_horario, data, forzar=forzar)
     except CruceHorarioError as error:
         raise HTTPException(status_code=409, detail={"mensajes": error.mensajes}) from error
 
     if not horario:
         raise HTTPException(status_code=404, detail="Horario no encontrado")
 
+    accion = "FORZAR_CRUCE" if (forzar and conflictos) else "ACTUALIZAR"
+    detalle = "; ".join(conflictos) if conflictos else None
     AuditoriaService.registrar(
-        db, usuario=usuario, accion="ACTUALIZAR", entidad="horarios", id_entidad=id_horario
+        db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=id_horario, detalle=detalle
     )
 
     return _a_response(db, horario)
