@@ -65,6 +65,7 @@ export function NuevoHorario() {
   const [fechaFin, setFechaFin] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [erroresGuardar, setErroresGuardar] = useState<string[]>([])
+  const [horariosPendientesForzar, setHorariosPendientesForzar] = useState<HorarioCreate[]>([])
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
 
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null)
@@ -111,6 +112,7 @@ export function NuevoHorario() {
 
     setGuardando(true)
     setErroresGuardar([])
+    setHorariosPendientesForzar([])
     setMensajeExito(null)
 
     const { bloques: bloquesActuales, grid: gridActual } = estadoActualRef.current
@@ -123,6 +125,7 @@ export function NuevoHorario() {
     // sí habían quedado guardadas en `horarios`.
     const gridExitoso: GridAsignaciones = gridVacio()
     const idsBloquesExitosos = new Set<string>()
+    const pendientesForzar: HorarioCreate[] = []
 
     for (const grupo of grupos) {
       const bloque = bloquesActuales.find((b) => b.id === grupo.bloqueId)
@@ -163,6 +166,7 @@ export function NuevoHorario() {
           const detalle = err.detail as { mensajes?: string[] } | null
           const mensajes = detalle?.mensajes ?? [err.message]
           errores.push(`${bloque.tematica} (${DIAS[grupo.diasIdx[0]]} ${bloqueHorario.horaInicio}): ${mensajes.join(' ')}`)
+          pendientesForzar.push(datos)
         } else {
           errores.push(`${bloque.tematica}: ${err instanceof ApiError ? err.message : 'error al guardar'}`)
         }
@@ -201,6 +205,28 @@ export function NuevoHorario() {
     }
 
     setErroresGuardar(errores)
+    setHorariosPendientesForzar(pendientesForzar)
+    setGuardando(false)
+  }
+
+  async function guardarDeTodasFormas() {
+    setGuardando(true)
+    setErroresGuardar([])
+
+    const errores: string[] = []
+    for (const horario of horariosPendientesForzar) {
+      try {
+        await apiPost('/horarios/', { ...horario, forzar: true })
+      } catch (err) {
+        errores.push(err instanceof ApiError ? err.message : 'Error al guardar el horario forzado.')
+      }
+    }
+
+    setHorariosPendientesForzar([])
+    setErroresGuardar(errores)
+    if (errores.length === 0) {
+      setMensajeExito('Las clases con cruces permitidos se guardaron correctamente.')
+    }
     setGuardando(false)
   }
 
@@ -250,6 +276,16 @@ export function NuevoHorario() {
               <li key={e}>{e}</li>
             ))}
           </ul>
+          {horariosPendientesForzar.length > 0 && (
+            <button
+              type="button"
+              onClick={() => void guardarDeTodasFormas()}
+              disabled={guardando}
+              className="mt-3 rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800"
+            >
+              {guardando ? 'Programando…' : 'Programar de todas formas'}
+            </button>
+          )}
         </div>
       )}
 
