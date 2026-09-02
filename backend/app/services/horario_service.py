@@ -140,7 +140,6 @@ class HorarioService:
             )
 
         errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
-
         return errores
 
     @staticmethod
