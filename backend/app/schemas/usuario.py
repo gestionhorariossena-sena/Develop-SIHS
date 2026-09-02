@@ -28,5 +28,18 @@ class UsuarioResponse(BaseModel):
     tipoContrato: str | None = None
     horasContratadasSemana: int | None = None
     codigoInstructor: str | None = None
+    sigla: str | None = None
     roles: list[RolResponse] = []
     especialidades: list[EspecialidadResponse] = []
+
+
+class CargaSemanalResponse(BaseModel):
+    """GET /usuarios/{id}/carga-semanal — horas ya asignadas vs. el tope
+    de RF-011, para la sección "Carga semanal" del drawer de instructor.
+    horasMaximas es None cuando el usuario no tiene tipoContrato definido
+    (no se puede calcular un tope sin saber si es planta o contrato)."""
+
+    idUsuario: UUID
+    tipoContrato: str | None
+    horasAsignadas: float
+    horasMaximas: int | None

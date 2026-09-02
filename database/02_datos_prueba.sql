@@ -70,6 +70,25 @@ SELECT 'Lab Sistemas 1', "idSede" FROM sedes WHERE "nombreSede" = 'Sede Principa
 INSERT INTO ambientes ("nombreAmbiente", "idSede")
 SELECT 'Taller Industrial', "idSede" FROM sedes WHERE "nombreSede" = 'Sede Norte';
 
+-- SCRUM-82: idSede/fechas de las fichas de prueba (columnas agregadas en
+-- SCRUM-77/78/79 — UPDATE porque las fichas ya se insertaron arriba, antes
+-- de que existieran las sedes).
+UPDATE fichas SET
+    "idSede" = (SELECT "idSede" FROM sedes WHERE "nombreSede" = 'Sede Principal'),
+    "fechaInicioLectiva" = '2026-01-15',
+    "fechaFinLectiva" = '2026-03-20',
+    "fechaInicioProductiva" = '2026-03-21',
+    "fechaFinProductiva" = '2026-06-30'
+WHERE "codigoFicha" = '2874521';
+
+UPDATE fichas SET
+    "idSede" = (SELECT "idSede" FROM sedes WHERE "nombreSede" = 'Sede Norte'),
+    "fechaInicioLectiva" = '2026-01-15',
+    "fechaFinLectiva" = '2026-03-20',
+    "fechaInicioProductiva" = '2026-03-21',
+    "fechaFinProductiva" = '2026-06-30'
+WHERE "codigoFicha" = '2874522';
+
 INSERT INTO jornadas ("nombreJornada") VALUES
 ('Mañana'), ('Tarde'), ('Noche');
 
@@ -161,6 +180,9 @@ WHERE u."email" = 'ana@mail.com' AND r."nombre" = 'Coordinador';
 INSERT INTO usuario_especialidad ("idUsuario", "idEspecialidad")
 SELECT u."idUsuario", e."idEspecialidad" FROM usuarios u, especialidades e
 WHERE u."email" = 'carlos@mail.com' AND e."nombre" = 'Programación';
+
+-- SCRUM-82: sigla del instructor de prueba (columna agregada en SCRUM-80)
+UPDATE usuarios SET "sigla" = 'CL' WHERE "email" = 'carlos@mail.com';
 
 -- Juan y Maria matriculados en la ficha de ADSO
 INSERT INTO ficha_usuario ("idFicha", "idUsuario")

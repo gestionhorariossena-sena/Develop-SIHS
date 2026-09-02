@@ -31,6 +31,10 @@ class Usuario(Base):
     tipoContrato = Column(String(20))
     horasContratadasSemana = Column(Integer)
     codigoInstructor = Column(String(20), unique=True, nullable=True)
+    # Sigla/iniciales cortas (ej. "DC", "LM") — así referencian instructores
+    # ambas coordinaciones en sus horarios reales, distinto de
+    # codigoInstructor (el código de registro que ya existía).
+    sigla = Column(String(10), nullable=True)
 
     roles = relationship(
         "Rol",

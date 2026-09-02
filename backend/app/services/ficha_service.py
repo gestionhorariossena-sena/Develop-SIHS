@@ -17,6 +17,7 @@ class FichaService:
             codigoFicha=data.codigoFicha,
             idPrograma=data.idPrograma,
             idTrimestre=data.idTrimestre,
+            idSede=data.idSede,
         )
         return FichaRepository.crear(db, nueva_ficha)
 
@@ -30,6 +31,7 @@ class FichaService:
         ficha.codigoFicha = data.codigoFicha
         ficha.idPrograma = data.idPrograma
         ficha.idTrimestre = data.idTrimestre
+        ficha.idSede = data.idSede
 
         return FichaRepository.actualizar(db, ficha)
 

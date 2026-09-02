@@ -37,6 +37,53 @@ class HorarioService:
         return HorarioRepository.obtener_por_id(db, id_horario)
 
     @staticmethod
+    def a_response(db, horario) -> dict:
+        """Serializa un Horario a la forma de HorarioResponse, enriquecido
+        con los nombres/códigos de instructor/ficha/ambiente/resultado —
+        movido acá desde api/v1/horarios.py (`_a_response`) para
+        reutilizarlo también en los GET por instructor/ficha/ambiente que
+        alimentan el drawer de relacionados (SCRUM-46/47/48)."""
+        return {
+            "idHorario": horario.idHorario,
+            "horaInicio": horario.horaInicio,
+            "horaFin": horario.horaFin,
+            "idJornada": horario.idJornada,
+            "idTrimestre": horario.idTrimestre,
+            "idAmbiente": horario.idAmbiente,
+            "idInstructor": horario.idInstructor,
+            "idFicha": horario.idFicha,
+            "idResultado": horario.idResultado,
+            "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
+            "instructorNombre": horario.instructor.nombre if horario.instructor else None,
+            "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
+            "ambienteNombre": horario.ambiente.nombre if horario.ambiente else None,
+            "resultadoCodigo": horario.resultado.codigo if horario.resultado else None,
+            "resultadoDescripcion": horario.resultado.descripcion if horario.resultado else None,
+        }
+
+    @staticmethod
+    def obtener_por_instructor(db, id_instructor) -> list[dict]:
+        """GET /usuarios/{id}/horarios (SCRUM-46) — horarios asignados a un
+        instructor, para la mini-grid/grid del drawer de relacionados."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_instructor(db, id_instructor)
+        ]
+
+    @staticmethod
+    def obtener_por_ficha(db, id_ficha) -> list[dict]:
+        """GET /fichas/{id}/horarios (SCRUM-47) — horarios de una ficha."""
+        return [HorarioService.a_response(db, h) for h in HorarioRepository.obtener_por_ficha(db, id_ficha)]
+
+    @staticmethod
+    def obtener_por_ambiente(db, id_ambiente) -> list[dict]:
+        """GET /ambientes/{id}/horarios (SCRUM-48) — horarios de un ambiente."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_ambiente(db, id_ambiente)
+        ]
+
+    @staticmethod
     def crear(db, data, forzar: bool = False) -> tuple:
         """Crea horario. Si forzar=False, lanza excepción si hay cruces.
         Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
@@ -131,7 +178,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, excluir_id
+            db, data.idFicha, data.idResultado, data.dias, excluir_id
         )
         if resultado_existente:
             errores.append(
@@ -140,7 +187,6 @@ class HorarioService:
             )
 
         errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
-
         return errores
 
     @staticmethod
@@ -190,7 +236,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, excluir_id
+            db, data.idFicha, data.idResultado, data.dias, excluir_id
         )
         if resultado_existente:
             conflictos.append(
@@ -217,6 +263,38 @@ class HorarioService:
         inicio = hora_inicio.hour + hora_inicio.minute / 60
         fin = hora_fin.hour + hora_fin.minute / 60
         return fin - inicio
+
+    @staticmethod
+    def calcular_carga_semanal(db, id_instructor) -> dict | None:
+        """Horas ya asignadas por semana vs. el máximo de RF-011 (32
+        planta / 40 contrato) — mismo cálculo que usa
+        _validar_reglas_instructor para el tope, expuesto acá para el
+        GET /usuarios/{id}/carga-semanal que alimenta la sección "Carga
+        semanal" del drawer de instructor (backlog "Nuevo alcance",
+        épica B tarea 14). None si el usuario no existe."""
+        instructor = db.get(Usuario, id_instructor)
+        if not instructor:
+            return None
+
+        horarios_instructor = HorarioRepository.obtener_por_instructor(db, id_instructor)
+        horas_asignadas = sum(
+            HorarioService._duracion_horas(h.horaInicio, h.horaFin)
+            * len(HorarioRepository.obtener_dias(db, h.idHorario))
+            for h in horarios_instructor
+        )
+
+        horas_maximas = None
+        if instructor.tipoContrato:
+            horas_maximas = (
+                HORAS_MAX_PLANTA if instructor.tipoContrato == "planta" else HORAS_MAX_CONTRATO
+            )
+
+        return {
+            "idUsuario": instructor.idUsuario,
+            "tipoContrato": instructor.tipoContrato,
+            "horasAsignadas": horas_asignadas,
+            "horasMaximas": horas_maximas,
+        }
 
     @staticmethod
     def _validar_reglas_instructor(db, data, excluir_id: int | None) -> list[str]:

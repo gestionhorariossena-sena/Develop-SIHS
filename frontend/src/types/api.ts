@@ -25,8 +25,20 @@ export interface Usuario {
   tipoContrato?: string | null
   horasContratadasSemana?: number | null
   codigoInstructor?: string | null
+  sigla?: string | null
   roles: Rol[]
   especialidades: Especialidad[]
+}
+
+// Espejo de CargaSemanalResponse (backend/app/schemas/usuario.py) —
+// GET /usuarios/{id}/carga-semanal, para la sección "Carga semanal" del
+// drawer de instructor. horasMaximas es null cuando el usuario no tiene
+// tipoContrato definido (no hay tope de RF-011 que calcular).
+export interface CargaSemanal {
+  idUsuario: string
+  tipoContrato: string | null
+  horasAsignadas: number
+  horasMaximas: number | null
 }
 
 export interface EstadoLogin {
@@ -59,8 +71,14 @@ export interface Ficha {
   codigoFicha: string
   idPrograma: number
   idTrimestre: number
+  idSede: number | null
+  fechaInicioLectiva?: string | null
+  fechaFinLectiva?: string | null
+  fechaInicioProductiva?: string | null
+  fechaFinProductiva?: string | null
   programa: Programa
   trimestre: Trimestre
+  sede: Sede | null
   aprendicesTotales: number
   jornadas: string[]
 }
@@ -72,6 +90,13 @@ export interface Programa {
   nivelFormacion: string | null
   activo: boolean
   idCoordinacion: number
+}
+
+export interface Sede {
+  idSede: number
+  nombreSede: string
+  direccion: string | null
+  tipoSede: 'principal' | 'secundaria' | 'alterna' | null
 }
 
 export interface Ambiente {
@@ -123,12 +148,56 @@ export interface HorarioCreate {
   idFicha: number
   idResultado: number
   dias: number[]
+  forzar?: boolean
 }
 
 // Mensaje de error que devuelve POST/PUT /horarios cuando hay un cruce
 // (HTTP 409) — ver backend/app/services/horario_service.py CruceHorarioError.
 export interface ErrorCruceHorario {
   mensajes: string[]
+}
+
+// Espejo de HorarioDryRunRequest (backend/app/schemas/horario.py) —
+// POST /horarios/validar, para revisar cruces ANTES de guardar de verdad.
+export interface HorarioDryRunRequest {
+  horaInicio: string
+  horaFin: string
+  idJornada: number
+  idTrimestre: number
+  idAmbiente: number
+  idInstructor: string
+  idFicha: number
+  idResultado: number
+  dias: number[]
+  excluirIdHorario?: number | null
+}
+
+// "tipo" distingue los 4 cruces FÍSICOS (overridables con forzar=true)
+// de "regla_instructor" (RF-011, bloqueo duro — nunca se puede forzar).
+// Ver ModalCruce.tsx y HorarioService._validar_reglas_instructor.
+export type TipoConflictoHorario =
+  | 'cruce_ficha'
+  | 'cruce_instructor'
+  | 'cruce_ambiente'
+  | 'resultado_repetido'
+  | 'regla_instructor'
+
+export interface HorarioDryRunConflict {
+  tipo: TipoConflictoHorario
+  mensaje: string
+  idHorarioExistente?: number | null
+  idInstructor?: string | null
+  idFicha?: number | null
+  idAmbiente?: number | null
+  idResultado?: number | null
+}
+
+export interface HorarioDryRunResponse {
+  ok: boolean
+  puedeGuardar: boolean
+  mensaje: string
+  conflictos: HorarioDryRunConflict[]
+  resumen: { totalCruces: number; tipos: string[] }
 }
 
 // Espejo de HorarioGuardadoResponse (backend/app/schemas/horario_guardado.py).
@@ -148,5 +217,9 @@ export interface HorarioGuardado {
   fechaFin: string | null
   bloques: BloqueClase[]
   grid: GridAsignaciones
+  // idHorario de cada fila real en `horarios` creada junto con este
+  // snapshot — permite que borrar el "Horario completo" también libere
+  // esas clases reales (ver backend/app/services/horario_guardado_service.py).
+  idsHorarios?: number[]
   fechaCreacion: string
 }

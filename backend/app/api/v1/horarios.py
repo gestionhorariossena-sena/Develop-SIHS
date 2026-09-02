@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.supabase_auth import require_roles
-from app.repositories.horario_repository import HorarioRepository
 from app.schemas.horario import (
     HorarioCreate,
     HorarioDryRunRequest,
@@ -24,23 +23,7 @@ require_puede_programar = require_roles("Coordinador", "Administrador")
 
 
 def _a_response(db: Session, horario) -> dict:
-    return {
-        "idHorario": horario.idHorario,
-        "horaInicio": horario.horaInicio,
-        "horaFin": horario.horaFin,
-        "idJornada": horario.idJornada,
-        "idTrimestre": horario.idTrimestre,
-        "idAmbiente": horario.idAmbiente,
-        "idInstructor": horario.idInstructor,
-        "idFicha": horario.idFicha,
-        "idResultado": horario.idResultado,
-        "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
-        "instructorNombre": horario.instructor.nombre if horario.instructor else None,
-        "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
-        "ambienteNombre": horario.ambiente.nombre if horario.ambiente else None,
-        "resultadoCodigo": horario.resultado.codigo if horario.resultado else None,
-        "resultadoDescripcion": horario.resultado.descripcion if horario.resultado else None,
-    }
+    return HorarioService.a_response(db, horario)
 
 
 @router.post("/validar", response_model=HorarioDryRunResponse)

@@ -21,6 +21,13 @@ interface GridHorarioProps {
   hayBloqueActivo: boolean
   /** Modo historial/exportación: celdas sin interacción, sin botón de quitar. */
   soloLectura?: boolean
+  /** Mini-grid del drawer de relacionados: oculta filas de bloque horario
+   * (y la fila "Receso" y el encabezado de jornada) que no tienen ninguna
+   * celda asignada en ningún día — para no mostrar toda la plantilla
+   * institucional vacía cuando solo interesa ver lo que sí está
+   * programado. El editor completo (con hayBloqueActivo) sigue mostrando
+   * todo, para poder hacer clic y asignar celdas vacías. */
+  ocultarFilasVacias?: boolean
   onClicCelda?: (posicion: PosicionCelda, shiftKey: boolean) => void
   onQuitarCelda?: (posicion: PosicionCelda) => void
 }
@@ -31,6 +38,7 @@ export function GridHorario({
   grid,
   hayBloqueActivo,
   soloLectura = false,
+  ocultarFilasVacias = false,
   onClicCelda,
   onQuitarCelda,
 }: GridHorarioProps) {
@@ -49,8 +57,13 @@ export function GridHorario({
       </div>
 
       {(['Mañana', 'Tarde', 'Noche'] as const).map((jornada) => {
-        const indices = BLOQUES.map((b, i) => (b.jornada === jornada ? i : -1)).filter((i) => i !== -1)
+        const indicesJornada = BLOQUES.map((b, i) => (b.jornada === jornada ? i : -1)).filter((i) => i !== -1)
+        const indices = ocultarFilasVacias
+          ? indicesJornada.filter((bloqueIdx) => grid[bloqueIdx].some(Boolean))
+          : indicesJornada
         const fondos = colorFondoJornada[jornada]
+
+        if (indices.length === 0) return null
 
         return (
           <div key={jornada}>
@@ -86,7 +99,7 @@ export function GridHorario({
                   })}
                 </div>
 
-                {posicion === 0 && (
+                {!ocultarFilasVacias && posicion === 0 && (
                   <div className="grid gap-px bg-slate-200 dark:bg-slate-700" style={ESTILO_COLUMNAS}>
                     <div className="truncate bg-slate-100 px-2 py-1 text-center text-[11px] font-semibold uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                       Receso

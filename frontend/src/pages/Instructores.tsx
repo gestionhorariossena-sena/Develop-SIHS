@@ -1,7 +1,11 @@
 import { useEffect, useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
+import { SeccionAmbientesAsignados, SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
+import { GridHorario } from '../components/horario/GridHorario'
+import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { apiGet, ApiError } from '../services/api'
-import type { Usuario } from '../types/api'
+import type { CargaSemanal, DiaSemana, Horario, Usuario } from '../types/api'
 
 type Orden = 'nombre' | 'especialidad' | 'contrato'
 
@@ -11,6 +15,12 @@ function iniciales(nombre: string) {
 
 function contrato(instructor: Usuario) {
   return instructor.tipoContrato?.trim() || 'Sin definir'
+}
+
+function colorBarraCarga(horasAsignadas: number, horasMaximas: number) {
+  if (horasAsignadas > horasMaximas) return 'bg-red-600 dark:bg-red-500'
+  if (horasAsignadas / horasMaximas >= 0.8) return 'bg-amber-500 dark:bg-amber-400'
+  return 'bg-emerald-600 dark:bg-emerald-500'
 }
 
 export function Instructores() {
@@ -23,12 +33,60 @@ export function Instructores() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
+  const [errorCarga, setErrorCarga] = useState(false)
+
+  // Fichas asignadas/temas que dicta/ambientes asignados (SCRUM-62/63/64)
+  // se derivan todos de los mismos horarios del instructor — un solo fetch.
+  // Guarda idUsuario junto con los datos (mismo patrón que cargaSemanal más
+  // abajo) para poder derivar "vigente" sin un setState síncrono en el
+  // efecto — eslint react-hooks/set-state-in-effect lo prohíbe.
+  const [horariosInstructor, setHorariosInstructor] = useState<{ idUsuario: string; datos: Horario[] } | null>(null)
+  const [errorHorariosPara, setErrorHorariosPara] = useState<string | null>(null)
+  const [diasPorId, setDiasPorId] = useState<Record<number, string>>({})
+
   useEffect(() => {
     apiGet<Usuario[]>('/usuarios/')
       .then((usuarios) => setInstructores(usuarios.filter((usuario) => usuario.roles.some((rol) => rol.nombre === 'Instructor'))))
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de instructores.'))
       .finally(() => setCargando(false))
+
+    // Sin .catch dedicado no rompe nada visible (nombresDias cae a "?" por
+    // día si falta el mapa), pero deja una unhandled rejection en tests.
+    apiGet<DiaSemana[]>('/dias-semana/')
+      .then((dias) => setDiasPorId(Object.fromEntries(dias.map((d) => [d.idDia, d.nombreDia]))))
+      .catch(() => {})
   }, [])
+
+  // La carga semanal (horas asignadas vs. tope de RF-011) y los horarios
+  // reales requieren consultar /usuarios/{id}/... aparte — no vienen en
+  // /usuarios/, se piden solo cuando se abre el drawer de ese instructor.
+  useEffect(() => {
+    if (!seleccionado) return
+
+    apiGet<CargaSemanal>(`/usuarios/${seleccionado.idUsuario}/carga-semanal`)
+      .then((datos) => {
+        setCargaSemanal(datos)
+        setErrorCarga(false)
+      })
+      .catch(() => setErrorCarga(true))
+
+    apiGet<Horario[]>(`/usuarios/${seleccionado.idUsuario}/horarios`)
+      .then((datos) => setHorariosInstructor({ idUsuario: seleccionado.idUsuario, datos }))
+      .catch(() => setErrorHorariosPara(seleccionado.idUsuario))
+  }, [seleccionado])
+
+  // Derivado en vez de un estado "cargando" aparte: comparar el
+  // idUsuario evita mostrar la carga del instructor anterior mientras se
+  // pide la del nuevo (y evita un setState síncrono en el cuerpo del
+  // efecto, que React desaconseja — ver react-hooks/set-state-in-effect).
+  const cargaVigente = seleccionado && cargaSemanal?.idUsuario === seleccionado.idUsuario ? cargaSemanal : null
+  const cargandoCarga = Boolean(seleccionado) && !cargaVigente && !errorCarga
+
+  const horariosVigentes = seleccionado && horariosInstructor?.idUsuario === seleccionado.idUsuario ? horariosInstructor.datos : null
+  const errorHorarios = seleccionado?.idUsuario === errorHorariosPara
+  const cargandoHorarios = Boolean(seleccionado) && horariosVigentes === null && !errorHorarios
+  const { bloques: bloquesGridInstructor, grid: gridInstructor } = convertirHorariosAGrid(horariosVigentes ?? [])
 
   const especialidades = [...new Set(instructores.flatMap((instructor) => instructor.especialidades.map((item) => item.nombre)))].sort()
   const contratos = [...new Set(instructores.map(contrato))].sort()
@@ -76,7 +134,65 @@ export function Instructores() {
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
       {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Carga semanal</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visibles.map((item) => <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-slate-900 dark:text-slate-100">{item.nombre}</p><p className="text-xs text-slate-500 dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}</div>}
 
-      {seleccionado && <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40" onClick={() => setSeleccionado(null)}><aside className="h-full w-full max-w-md bg-white p-6 shadow-2xl dark:bg-slate-800" onClick={(evento) => evento.stopPropagation()}><div className="mb-6 flex items-start justify-between gap-3"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-sena-100 font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(seleccionado.nombre)}</span><div><h2 className="font-semibold text-slate-900 dark:text-slate-100">{seleccionado.nombre}</h2><p className="text-sm text-slate-500 dark:text-slate-400">{seleccionado.email}</p></div></div><button type="button" onClick={() => setSeleccionado(null)} className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Cerrar</button></div><dl className="space-y-4 text-sm"><div><dt className="text-slate-500 dark:text-slate-400">Especialidades</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionado.especialidades.length ? seleccionado.especialidades.map((item) => item.nombre).join(', ') : 'Sin asignar'}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Tipo de contrato</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{contrato(seleccionado)}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Horas contratadas por semana</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionado.horasContratadasSemana ?? 'Sin definir'}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Estado</dt><dd className="mt-1 font-medium capitalize text-slate-900 dark:text-slate-100">{seleccionado.estado}</dd></div></dl></aside></div>}
+      {seleccionado && (
+        <DrawerRelacionados
+          iniciales={iniciales(seleccionado.nombre)}
+          titulo={seleccionado.nombre}
+          subtitulo={seleccionado.email}
+          etiquetas={[contrato(seleccionado), ...seleccionado.especialidades.map((item) => item.nombre)]}
+          onCerrar={() => setSeleccionado(null)}
+        >
+          <SeccionDrawer titulo="Carga semanal">
+            <div className="mb-1.5 flex items-center justify-between">
+              {cargaVigente?.horasMaximas != null && (
+                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  {cargaVigente.horasAsignadas}h / {cargaVigente.horasMaximas}h
+                </p>
+              )}
+            </div>
+            {cargandoCarga ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400">Calculando…</p>
+            ) : errorCarga ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400">No se pudo calcular la carga semanal.</p>
+            ) : cargaVigente?.horasMaximas != null ? (
+              <>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div
+                    className={`h-full rounded-full ${colorBarraCarga(cargaVigente.horasAsignadas, cargaVigente.horasMaximas)}`}
+                    style={{ width: `${Math.min(100, Math.round((cargaVigente.horasAsignadas / cargaVigente.horasMaximas) * 100))}%` }}
+                  />
+                </div>
+                {cargaVigente.horasAsignadas > cargaVigente.horasMaximas && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">Supera el máximo de RF-011.</p>
+                )}
+              </>
+            ) : (
+              <p className="text-xs text-slate-500 dark:text-slate-400">Sin tipo de contrato definido — no se puede calcular el tope de RF-011.</p>
+            )}
+          </SeccionDrawer>
+
+          {cargandoHorarios ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Cargando horarios…</p>
+          ) : errorHorarios ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">No se pudieron cargar los horarios del instructor.</p>
+          ) : (
+            <>
+              <SeccionDrawer titulo="Horario semanal">
+                {bloquesGridInstructor.length === 0 ? (
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Sin horario asignado en el trimestre actual.</p>
+                ) : (
+                  <div className="text-[10px]">
+                    <GridHorario bloques={bloquesGridInstructor} grid={gridInstructor} hayBloqueActivo={false} soloLectura ocultarFilasVacias />
+                  </div>
+                )}
+              </SeccionDrawer>
+              <SeccionFichasAsignadas horarios={horariosVigentes ?? []} diasPorId={diasPorId} />
+              <SeccionTemasQueDicta horarios={horariosVigentes ?? []} />
+              <SeccionAmbientesAsignados horarios={horariosVigentes ?? []} />
+            </>
+          )}
+        </DrawerRelacionados>
+      )}
     </AppShell>
   )
 }

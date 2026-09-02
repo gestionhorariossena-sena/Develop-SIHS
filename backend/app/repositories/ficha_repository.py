@@ -12,7 +12,9 @@ from app.models.usuario_rol import UsuarioRol
 class FichaRepository:
     @staticmethod
     def obtener_todos(db: Session):
-        fichas = db.query(Ficha).options(selectinload(Ficha.programa), selectinload(Ficha.trimestre)).all()
+        fichas = db.query(Ficha).options(
+            selectinload(Ficha.programa), selectinload(Ficha.trimestre), selectinload(Ficha.sede)
+        ).all()
         if not fichas:
             return fichas
 
