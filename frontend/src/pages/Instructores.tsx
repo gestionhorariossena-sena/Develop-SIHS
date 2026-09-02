@@ -1,90 +1,82 @@
+import { useEffect, useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { apiGet, ApiError } from '../services/api'
+import type { Usuario } from '../types/api'
 
-interface FilaInstructor {
-  nombre: string
-  sigla: string
-  especialidad: string
-  jornada: string
-  tipo: 'Planta' | 'Contratista' | 'Vacante'
+type Orden = 'nombre' | 'especialidad' | 'contrato'
+
+function iniciales(nombre: string) {
+  return nombre.trim().split(/\s+/).slice(0, 2).map((parte) => parte.charAt(0).toUpperCase()).join('')
 }
 
-/**
- * Datos de ejemplo, con los mismos nombres/temáticas usados en el grid de
- * `NuevoHorario.tsx` (para que el demo se vea consistente en toda la app),
- * más un par de Logística tomados de esa entrevista. La sigla es el
- * patrón que describieron ambos coordinadores ("este instructor, allá lo
- * conocen como UA" / "David Camelo es DC") — no son códigos reales.
- * La fila "Vacante" reproduce el patrón que describió Logística: un cupo
- * sin contratar todavía se programa con un placeholder que se renombra
- * después sin perder lo ya programado (ver `PLAN_INTEGRACION_LOGICA_Y_BD.md`
- * §2.3). Backend: `especialidades`/`usuario_especialidad` ya existen
- * (`backend/app/api/v1/especialidades.py`), falta el listado real de
- * instructores — ver
- * `_Docs/Documentación general/REGLAS_DE_NEGOCIO_CONOCIDAS.md`.
- */
-const INSTRUCTORES: FilaInstructor[] = [
-  { nombre: 'Claudia Pinzón', sigla: 'CP', especialidad: 'Comunicación · Investigación', jornada: 'Mañana', tipo: 'Contratista' },
-  { nombre: 'Sergio Garzón', sigla: 'SG', especialidad: 'Diseño de software', jornada: 'Noche', tipo: 'Contratista' },
-  { nombre: 'Erick Granados', sigla: 'EG', especialidad: 'Análisis · Verificación', jornada: 'Noche', tipo: 'Planta' },
-  { nombre: 'Fredy Ardila', sigla: 'FA', especialidad: 'Bases de datos', jornada: 'Noche', tipo: 'Contratista' },
-  { nombre: 'Vanessa Gualaco', sigla: 'VG', especialidad: 'Medio Ambiente y SST', jornada: 'Noche', tipo: 'Planta' },
-  { nombre: 'David Camelo', sigla: 'DC', especialidad: 'Logística general', jornada: 'Tarde', tipo: 'Planta' },
-  { nombre: 'Vacante Logística #7', sigla: '—', especialidad: 'Comercio exterior', jornada: 'Noche', tipo: 'Vacante' },
-]
-
-const estiloTipo: Record<FilaInstructor['tipo'], string> = {
-  Planta: 'bg-emerald-50 text-emerald-700',
-  Contratista: 'bg-sky-50 text-sky-700',
-  Vacante: 'bg-orange-50 text-orange-700',
+function contrato(instructor: Usuario) {
+  return instructor.tipoContrato?.trim() || 'Sin definir'
 }
 
 export function Instructores() {
+  const [instructores, setInstructores] = useState<Usuario[]>([])
+  const [busqueda, setBusqueda] = useState('')
+  const [especialidad, setEspecialidad] = useState('todas')
+  const [tipoContrato, setTipoContrato] = useState('todos')
+  const [orden, setOrden] = useState<Orden>('nombre')
+  const [seleccionado, setSeleccionado] = useState<Usuario | null>(null)
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    apiGet<Usuario[]>('/usuarios/')
+      .then((usuarios) => setInstructores(usuarios.filter((usuario) => usuario.roles.some((rol) => rol.nombre === 'Instructor'))))
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de instructores.'))
+      .finally(() => setCargando(false))
+  }, [])
+
+  const especialidades = [...new Set(instructores.flatMap((instructor) => instructor.especialidades.map((item) => item.nombre)))].sort()
+  const contratos = [...new Set(instructores.map(contrato))].sort()
+  const texto = busqueda.trim().toLocaleLowerCase('es-CO')
+  const filtrosActivos = Number(Boolean(busqueda.trim())) + Number(especialidad !== 'todas') + Number(tipoContrato !== 'todos')
+  const visibles = instructores.filter((instructor) => {
+    const coincideTexto = !texto || [instructor.nombre, instructor.email, ...instructor.especialidades.map((item) => item.nombre)].join(' ').toLocaleLowerCase('es-CO').includes(texto)
+    const coincideEspecialidad = especialidad === 'todas' || instructor.especialidades.some((item) => item.nombre === especialidad)
+    return coincideTexto && coincideEspecialidad && (tipoContrato === 'todos' || contrato(instructor) === tipoContrato)
+  }).sort((primero, segundo) => {
+    if (orden === 'especialidad') return (primero.especialidades[0]?.nombre ?? '').localeCompare(segundo.especialidades[0]?.nombre ?? '', 'es-CO')
+    if (orden === 'contrato') return contrato(primero).localeCompare(contrato(segundo), 'es-CO')
+    return primero.nombre.localeCompare(segundo.nombre, 'es-CO')
+  })
+
   return (
     <AppShell activo="Instructores">
-      <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900">Instructores</h1>
-        <p className="text-sm text-slate-500">
-          Datos de ejemplo — pendiente el listado real (nombre, especialidad, sigla, planta o
-          contratista) de la coordinación. Ver{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5">
-            _Docs/Documentación general/REGLAS_DE_NEGOCIO_CONOCIDAS.md
-          </code>
-          .
-        </p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div><h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Instructores</h1><p className="text-sm text-slate-500 dark:text-slate-400">Planta de instructores y especialidades asignadas.</p></div>
+        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {instructores.length} instructores</p>
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500">
-            <tr>
-              <th className="px-4 py-3">Instructor</th>
-              <th className="px-4 py-3">Sigla</th>
-              <th className="px-4 py-3">Especialidad</th>
-              <th className="px-4 py-3">Jornada habitual</th>
-              <th className="px-4 py-3">Tipo</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {INSTRUCTORES.map((i) => (
-              <tr key={i.sigla + i.nombre} className="hover:bg-slate-50">
-                <td className="px-4 py-3 font-medium text-slate-900">{i.nombre}</td>
-                <td className="px-4 py-3">
-                  <span className="rounded bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700">
-                    {i.sigla}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-slate-600">{i.especialidad}</td>
-                <td className="px-4 py-3 text-slate-600">{i.jornada}</td>
-                <td className="px-4 py-3">
-                  <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estiloTipo[i.tipo]}`}>
-                    {i.tipo}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Instructores activos</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.estado === 'activo').length}</p></div>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Con especialidad</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.especialidades.length > 0).length}</p></div>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Especialidades</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{especialidades.length}</p></div>
       </div>
+
+      <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de instructores">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Filtrar instructores</p>
+            {filtrosActivos > 0 && <span className="rounded-full bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
+          </div>
+          {filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setEspecialidad('todas'); setTipoContrato('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Limpiar filtros</button>}
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_12rem_11rem_10rem]">
+          <div className="md:col-span-2 xl:col-span-1"><label htmlFor="buscar-instructor" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Buscar</label><input id="buscar-instructor" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Nombre, correo o especialidad" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></div>
+          <div><label htmlFor="filtro-especialidad" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Especialidad</label><select id="filtro-especialidad" value={especialidad} onChange={(evento) => setEspecialidad(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todas">Todas</option>{especialidades.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="filtro-contrato" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Tipo de contrato</label><select id="filtro-contrato" value={tipoContrato} onChange={(evento) => setTipoContrato(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{contratos.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="orden-instructor" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Ordenar por</label><select id="orden-instructor" value={orden} onChange={(evento) => setOrden(evento.target.value as Orden)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="nombre">Nombre</option><option value="especialidad">Especialidad</option><option value="contrato">Contrato</option></select></div>
+        </div>
+      </section>
+
+      {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Carga semanal</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visibles.map((item) => <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-slate-900 dark:text-slate-100">{item.nombre}</p><p className="text-xs text-slate-500 dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}</div>}
+
+      {seleccionado && <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/40" onClick={() => setSeleccionado(null)}><aside className="h-full w-full max-w-md bg-white p-6 shadow-2xl dark:bg-slate-800" onClick={(evento) => evento.stopPropagation()}><div className="mb-6 flex items-start justify-between gap-3"><div className="flex items-center gap-3"><span className="flex h-11 w-11 items-center justify-center rounded-full bg-sena-100 font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(seleccionado.nombre)}</span><div><h2 className="font-semibold text-slate-900 dark:text-slate-100">{seleccionado.nombre}</h2><p className="text-sm text-slate-500 dark:text-slate-400">{seleccionado.email}</p></div></div><button type="button" onClick={() => setSeleccionado(null)} className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">Cerrar</button></div><dl className="space-y-4 text-sm"><div><dt className="text-slate-500 dark:text-slate-400">Especialidades</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionado.especialidades.length ? seleccionado.especialidades.map((item) => item.nombre).join(', ') : 'Sin asignar'}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Tipo de contrato</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{contrato(seleccionado)}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Horas contratadas por semana</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionado.horasContratadasSemana ?? 'Sin definir'}</dd></div><div><dt className="text-slate-500 dark:text-slate-400">Estado</dt><dd className="mt-1 font-medium capitalize text-slate-900 dark:text-slate-100">{seleccionado.estado}</dd></div></dl></aside></div>}
     </AppShell>
   )
 }

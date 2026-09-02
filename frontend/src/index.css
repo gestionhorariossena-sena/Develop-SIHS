@@ -1,12 +1,21 @@
 @import "tailwindcss";
 
-/* Verde institucional SENA — usarlo como `bg-sena-600`, `text-sena-600`, etc. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Verde institucional SENA — usarlo como `bg-sena-600`, `text-sena-600`, etc.
+ * sena-600 (#39a900, el verde oficial) da ~3.07:1 de contraste con texto
+ * blanco encima — pasa el mínimo de 3:1 para elementos no textuales (bordes,
+ * anillos de foco, checkboxes) pero NO alcanza el 4.5:1 que exige WCAG AA
+ * para texto normal (RNF-14). Por eso los botones con texto blanco usan
+ * sena-700 (4.64:1, si pasa) de reposo y sena-800 (6.6:1) en hover — ver
+ * cualquier botón "bg-sena-700 ... hover:bg-sena-800" en las páginas. */
 @theme {
   --color-sena-50: #f0f9ec;
   --color-sena-100: #ddf0d1;
   --color-sena-500: #4caf15;
   --color-sena-600: #39a900;
   --color-sena-700: #2e8600;
+  --color-sena-800: #256b00;
 }
 
 body {
@@ -17,6 +26,10 @@ body {
     'Segoe UI',
     Roboto,
     sans-serif;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 /* Sin esto, los navegadores quitan los fondos de color al imprimir/exportar

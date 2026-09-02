@@ -9,13 +9,31 @@ export interface Rol {
   nombre: string
 }
 
+export interface Especialidad {
+  idEspecialidad: number
+  nombre: string
+  descripcion: string | null
+  activo: boolean
+}
+
 export interface Usuario {
   idUsuario: string
   nombre: string
   email: string
   estado: 'activo' | 'inactivo'
   fechaRegistro: string
+  tipoContrato?: string | null
+  horasContratadasSemana?: number | null
+  codigoInstructor?: string | null
   roles: Rol[]
+  especialidades: Especialidad[]
+}
+
+export interface EstadoLogin {
+  bloqueado: boolean
+  intentos: number
+  intentosRestantes: number
+  segundosParaDesbloqueo: number | null
 }
 
 export interface Jornada {
@@ -41,6 +59,19 @@ export interface Ficha {
   codigoFicha: string
   idPrograma: number
   idTrimestre: number
+  programa: Programa
+  trimestre: Trimestre
+  aprendicesTotales: number
+  jornadas: string[]
+}
+
+export interface Programa {
+  idPrograma: number
+  codigoPrograma: string
+  nombrePrograma: string
+  nivelFormacion: string | null
+  activo: boolean
+  idCoordinacion: number
 }
 
 export interface Ambiente {

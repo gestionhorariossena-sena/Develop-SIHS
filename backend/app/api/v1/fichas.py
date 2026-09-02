@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.supabase_auth import require_admin, require_lectura_catalogo
 from app.schemas.ficha import FichaCreate, FichaResponse, FichaUpdate
+from app.services.auditoria_service import AuditoriaService
 from app.services.ficha_service import FichaService
 
 router = APIRouter(prefix="/fichas", tags=["fichas"])
@@ -15,7 +16,9 @@ def crear_ficha(
     db: Session = Depends(get_db),
     usuario=Depends(require_admin),
 ):
-    return FichaService.crear(db, data)
+    ficha = FichaService.crear(db, data)
+    AuditoriaService.registrar(db, usuario=usuario, accion="CREAR", entidad="fichas", id_entidad=ficha.idFicha)
+    return ficha
 
 
 @router.get("/", response_model=list[FichaResponse])
@@ -52,6 +55,8 @@ def actualizar_ficha(
     if not ficha:
         raise HTTPException(status_code=404, detail="Ficha no encontrada")
 
+    AuditoriaService.registrar(db, usuario=usuario, accion="ACTUALIZAR", entidad="fichas", id_entidad=id_ficha)
+
     return ficha
 
 
@@ -65,5 +70,7 @@ def eliminar_ficha(
 
     if not eliminado:
         raise HTTPException(status_code=404, detail="Ficha no encontrada")
+
+    AuditoriaService.registrar(db, usuario=usuario, accion="ELIMINAR", entidad="fichas", id_entidad=id_ficha)
 
     return {"mensaje": "Ficha eliminada"}

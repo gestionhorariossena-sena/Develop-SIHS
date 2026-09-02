@@ -1,6 +1,19 @@
-from app.models.horario import Horario
+from app.models.ambiente import Ambiente
 from app.models.dia_semana import DiaSemana
+from app.models.horario import Horario
+from app.models.jornada import Jornada
+from app.models.usuario import Usuario
 from app.repositories.horario_repository import HorarioRepository
+
+# RF-011 (Requisitos Funcionales V4.pdf, pág. 15-16): "Los instructores de
+# planta podrán estar asignados máximo 32 horas a la semana, mientras que
+# para los de contrato serán un máximo de 40."
+HORAS_MAX_PLANTA = 32
+HORAS_MAX_CONTRATO = 40
+
+# Orden de las jornadas en un mismo día, para decidir si dos son
+# "continuas" (adyacentes) — ver _validar_reglas_instructor.
+ORDEN_JORNADA = {"Mañana": 1, "Tarde": 2, "Noche": 3}
 
 
 class CruceHorarioError(Exception):
@@ -24,9 +37,11 @@ class HorarioService:
         return HorarioRepository.obtener_por_id(db, id_horario)
 
     @staticmethod
-    def crear(db, data):
+    def crear(db, data, forzar: bool = False) -> tuple:
+        """Crea horario. Si forzar=False, lanza excepción si hay cruces.
+        Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
         errores = HorarioService._detectar_cruces(db, data)
-        if errores:
+        if errores and not forzar:
             raise CruceHorarioError(errores)
 
         nuevo_horario = Horario(
@@ -39,17 +54,20 @@ class HorarioService:
             idFicha=data.idFicha,
             idResultado=data.idResultado,
         )
-        return HorarioRepository.crear(db, nuevo_horario, data.dias)
+        horario = HorarioRepository.crear(db, nuevo_horario, data.dias)
+        return horario, errores if forzar else []
 
     @staticmethod
-    def actualizar(db, id_horario, data):
+    def actualizar(db, id_horario, data, forzar: bool = False) -> tuple:
+        """Actualiza horario. Si forzar=False, lanza excepción si hay cruces.
+        Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
         horario = HorarioRepository.obtener_por_id(db, id_horario)
 
         if not horario:
-            return None
+            return None, []
 
         errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
-        if errores:
+        if errores and not forzar:
             raise CruceHorarioError(errores)
 
         horario.horaInicio = data.horaInicio
@@ -61,7 +79,8 @@ class HorarioService:
         horario.idFicha = data.idFicha
         horario.idResultado = data.idResultado
 
-        return HorarioRepository.actualizar(db, horario, data.dias)
+        actualizado = HorarioRepository.actualizar(db, horario, data.dias)
+        return actualizado, errores if forzar else []
 
     @staticmethod
     def eliminar(db, id_horario):
@@ -77,14 +96,11 @@ class HorarioService:
     def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
         """Cruces por solape de horario: misma ficha, mismo instructor o
         mismo ambiente ya ocupados en ese día/hora — ver
-        REGLAS_DE_NEGOCIO_CONOCIDAS.md. (Antes existía un cuarto chequeo que
-        bloqueaba repetir un resultado en la misma ficha sin importar el
-        horario; se quitó porque un resultado normalmente se dicta en
-        varios bloques — antes/después del descanso, distintos días — no
-        una sola vez.) Cada mensaje dice CONTRA QUÉ horario existente choca
-        (día, hora, y quién/qué ya lo tiene) — no solo la regla que se
-        violó, para que se entienda de un vistazo sin tener que ir a
-        buscarlo a mano."""
+        REGLAS_DE_NEGOCIO_CONOCIDAS.md. También valida que una misma ficha
+        no repita un resultado de aprendizaje. Cada mensaje describe CONTRA
+        QUÉ horario existente choca (día, hora, y quién/qué ya lo tiene) —
+        no solo la regla que se violó, para que se entienda de un vistazo
+        sin tener que ir a buscarlo a mano."""
         errores: list[str] = []
 
         ficha_existente = HorarioRepository.buscar_solape(
@@ -113,6 +129,168 @@ class HorarioService:
                 "El ambiente ya está ocupado en ese horario: "
                 f"{HorarioService._describir(db, ambiente_existente)}."
             )
+
+        resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
+            db, data.idFicha, data.idResultado, excluir_id
+        )
+        if resultado_existente:
+            errores.append(
+                "La ficha ya tiene este resultado de aprendizaje programado: "
+                f"{HorarioService._describir(db, resultado_existente)}."
+            )
+
+        errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
+
+        return errores
+
+    @staticmethod
+    def validar_dry_run(db, data, excluir_id: int | None = None) -> list[dict]:
+        conflictos: list[dict] = []
+
+        ficha_existente = HorarioRepository.buscar_solape(
+            db, "idFicha", data.idFicha, data.dias, data.horaInicio, data.horaFin, excluir_id
+        )
+        if ficha_existente:
+            conflictos.append(
+                {
+                    "tipo": "cruce_ficha",
+                    "mensaje": "La ficha ya tiene otra clase programada en ese horario: "
+                    f"{HorarioService._describir(db, ficha_existente)}.",
+                    "idHorarioExistente": ficha_existente.idHorario,
+                    "idFicha": ficha_existente.idFicha,
+                }
+            )
+
+        instructor_existente = HorarioRepository.buscar_solape(
+            db, "idInstructor", data.idInstructor, data.dias, data.horaInicio, data.horaFin, excluir_id
+        )
+        if instructor_existente:
+            conflictos.append(
+                {
+                    "tipo": "cruce_instructor",
+                    "mensaje": "El instructor ya tiene otra clase programada en ese horario: "
+                    f"{HorarioService._describir(db, instructor_existente)}.",
+                    "idHorarioExistente": instructor_existente.idHorario,
+                    "idInstructor": instructor_existente.idInstructor,
+                }
+            )
+
+        ambiente_existente = HorarioRepository.buscar_solape(
+            db, "idAmbiente", data.idAmbiente, data.dias, data.horaInicio, data.horaFin, excluir_id
+        )
+        if ambiente_existente:
+            conflictos.append(
+                {
+                    "tipo": "cruce_ambiente",
+                    "mensaje": "El ambiente ya está ocupado en ese horario: "
+                    f"{HorarioService._describir(db, ambiente_existente)}.",
+                    "idHorarioExistente": ambiente_existente.idHorario,
+                    "idAmbiente": ambiente_existente.idAmbiente,
+                }
+            )
+
+        resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
+            db, data.idFicha, data.idResultado, excluir_id
+        )
+        if resultado_existente:
+            conflictos.append(
+                {
+                    "tipo": "resultado_repetido",
+                    "mensaje": "La ficha ya tiene este resultado de aprendizaje programado: "
+                    f"{HorarioService._describir(db, resultado_existente)}.",
+                    "idHorarioExistente": resultado_existente.idHorario,
+                    "idFicha": resultado_existente.idFicha,
+                    "idResultado": resultado_existente.idResultado,
+                }
+            )
+
+        for error in HorarioService._validar_reglas_instructor(db, data, excluir_id):
+            conflictos.append({
+                "tipo": "regla_instructor",
+                "mensaje": error,
+            })
+
+        return conflictos
+
+    @staticmethod
+    def _duracion_horas(hora_inicio, hora_fin) -> float:
+        inicio = hora_inicio.hour + hora_inicio.minute / 60
+        fin = hora_fin.hour + hora_fin.minute / 60
+        return fin - inicio
+
+    @staticmethod
+    def _validar_reglas_instructor(db, data, excluir_id: int | None) -> list[str]:
+        """RF-011: tope de horas/semana según tipo de contrato, jornada
+        Noche vedada para instructores de planta, y no repetir centro de
+        formación (acá, `Sede`, que es lo único que el esquema tiene para
+        eso) en jornadas continuas del mismo día. La tercera regla choca
+        con un hallazgo de entrevista en REGLAS_DE_NEGOCIO_CONOCIDAS.md
+        (un instructor real programado mañana en una sede y tarde en
+        otra) — se implementa igual porque así quedó escrito en el
+        requisito formal (RF-011), no en la entrevista; si el equipo
+        confirma que la entrevista manda, hay que revisar/quitar esto."""
+        errores: list[str] = []
+
+        instructor = db.get(Usuario, data.idInstructor)
+        if not instructor:
+            return errores
+
+        jornada_nueva = db.get(Jornada, data.idJornada)
+        ambiente_nuevo = db.get(Ambiente, data.idAmbiente)
+        horarios_instructor = HorarioRepository.obtener_por_instructor(
+            db, data.idInstructor, excluir_id
+        )
+        duracion_nueva = HorarioService._duracion_horas(data.horaInicio, data.horaFin)
+
+        if instructor.tipoContrato:
+            limite = (
+                HORAS_MAX_PLANTA if instructor.tipoContrato == "planta" else HORAS_MAX_CONTRATO
+            )
+            horas_existentes = sum(
+                HorarioService._duracion_horas(h.horaInicio, h.horaFin)
+                * len(HorarioRepository.obtener_dias(db, h.idHorario))
+                for h in horarios_instructor
+            )
+            horas_totales = horas_existentes + duracion_nueva * len(data.dias)
+            if horas_totales > limite:
+                errores.append(
+                    f"El instructor {instructor.nombre} ({instructor.tipoContrato}) superaría "
+                    f"el máximo de {limite}h/semana: quedaría en {horas_totales:.1f}h."
+                )
+
+        if instructor.tipoContrato == "planta" and jornada_nueva and jornada_nueva.nombreJornada == "Noche":
+            errores.append(
+                f"El instructor {instructor.nombre} es de planta y no puede programarse en jornada Noche."
+            )
+
+        if ambiente_nuevo and jornada_nueva:
+            orden_nueva = ORDEN_JORNADA.get(jornada_nueva.nombreJornada)
+            dias_nuevos = set(data.dias)
+
+            for h in horarios_instructor:
+                if h.idAmbiente == data.idAmbiente:
+                    continue
+
+                if not (set(HorarioRepository.obtener_dias(db, h.idHorario)) & dias_nuevos):
+                    continue
+
+                jornada_h = db.get(Jornada, h.idJornada)
+                orden_h = ORDEN_JORNADA.get(jornada_h.nombreJornada) if jornada_h else None
+                # <= 1 (no == 1): dos bloques de la MISMA jornada (ej. dos
+                # sub-bloques de "Tarde") en sedes distintas el mismo día
+                # también son físicamente imposibles, no solo jornadas
+                # adyacentes — == 1 dejaba pasar ese caso sin detectarlo.
+                if orden_nueva is None or orden_h is None or abs(orden_nueva - orden_h) > 1:
+                    continue
+
+                if not h.ambiente or h.ambiente.sede_id == ambiente_nuevo.sede_id:
+                    continue
+
+                errores.append(
+                    f"El instructor {instructor.nombre} ya está asignado a otro centro de "
+                    f"formación en una jornada continua ese día: {HorarioService._describir(db, h)}."
+                )
+                break
 
         return errores
 

@@ -32,23 +32,23 @@ export function PanelBloques({
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null)
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Bloques de clase</p>
-          <p className="text-xs text-slate-500">Elige uno y haz clic en el grid para asignarlo.</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Bloques de clase</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400">Elige uno y haz clic en el grid para asignarlo.</p>
         </div>
         <button
           type="button"
           onClick={onNuevo}
-          className="shrink-0 rounded-lg bg-sena-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sena-700"
+          className="shrink-0 rounded-lg bg-sena-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sena-800"
         >
           + Nuevo
         </button>
       </div>
 
       {bloques.length === 0 ? (
-        <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-xs text-slate-400">
+        <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-xs text-slate-500 dark:bg-slate-900 dark:text-slate-400">
           Todavía no hay bloques. Crea el primero con "+ Nuevo".
         </p>
       ) : (
@@ -62,13 +62,13 @@ export function PanelBloques({
               <li key={bloque.id}>
                 <div
                   className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 transition ${
-                    activo ? 'border-sena-600 ring-1 ring-sena-600' : 'border-slate-200'
+                    activo ? 'border-sena-600 ring-1 ring-sena-600 dark:bg-slate-700/50' : 'border-slate-200 dark:border-slate-700'
                   }`}
                 >
                   {confirmando ? (
                     <div className="flex w-full items-center justify-between gap-2">
-                      <span className="min-w-0 truncate text-xs text-slate-600">
-                        ¿Eliminar <strong className="text-slate-800">{bloque.tematica}</strong>?
+                      <span className="min-w-0 truncate text-xs text-slate-600 dark:text-slate-300">
+                        ¿Eliminar <strong className="text-slate-800 dark:text-slate-100">{bloque.tematica}</strong>?
                       </span>
                       <div className="flex shrink-0 gap-1.5">
                         <button
@@ -86,7 +86,7 @@ export function PanelBloques({
                           type="button"
                           onClick={() => setConfirmandoId(null)}
                           aria-label={`Cancelar eliminar ${bloque.tematica}`}
-                          className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                          className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                         >
                           Cancelar
                         </button>
@@ -102,10 +102,10 @@ export function PanelBloques({
                       >
                         <span className={`h-3 w-3 shrink-0 rounded-full ${color.fondo} border ${color.borde}`} />
                         <span className="min-w-0">
-                          <span className="block truncate text-xs font-semibold text-slate-800">
+                          <span className="block truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
                             {bloque.tematica}
                           </span>
-                          <span className="block truncate text-[11px] text-slate-500">
+                          <span className="block truncate text-[11px] text-slate-500 dark:text-slate-400">
                             {bloque.instructor}
                           </span>
                         </span>
@@ -116,7 +116,7 @@ export function PanelBloques({
                         onClick={() => onEditar(bloque.id)}
                         aria-label={`Editar ${bloque.tematica}`}
                         title="Editar"
-                        className="shrink-0 rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                        className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
                       >
                         ✎
                       </button>
@@ -125,7 +125,7 @@ export function PanelBloques({
                         onClick={() => setConfirmandoId(bloque.id)}
                         aria-label={`Eliminar ${bloque.tematica}`}
                         title="Eliminar"
-                        className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
+                        className="shrink-0 rounded p-1 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-400 dark:hover:bg-red-950/50"
                       >
                         ✕
                       </button>

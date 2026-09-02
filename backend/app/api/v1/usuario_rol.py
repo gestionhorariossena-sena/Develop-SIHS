@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.supabase_auth import require_admin
 from app.schemas.usuario_rol import UsuarioRolCreate, UsuarioRolResponse
+from app.services.auditoria_service import AuditoriaService
 from app.services.usuario_rol_service import UsuarioRolService
 
 router = APIRouter(prefix="/usuario-rol", tags=["usuario-rol"])
@@ -28,6 +29,15 @@ def asignar_rol(
     if resultado == "YA_EXISTE":
         raise HTTPException(status_code=400, detail="El usuario ya tiene ese rol")
 
+    AuditoriaService.registrar(
+        db,
+        usuario=usuario,
+        accion="ASIGNAR_ROL",
+        entidad="usuarios",
+        id_entidad=data.idUsuario,
+        detalle=f"idRol={data.idRol}",
+    )
+
     return {"mensaje": "Rol asignado correctamente"}
 
 
@@ -41,6 +51,15 @@ def remover_rol(
 
     if not eliminado:
         raise HTTPException(status_code=404, detail="Relación no encontrada")
+
+    AuditoriaService.registrar(
+        db,
+        usuario=usuario,
+        accion="REMOVER_ROL",
+        entidad="usuarios",
+        id_entidad=data.idUsuario,
+        detalle=f"idRol={data.idRol}",
+    )
 
     return {"mensaje": "Rol removido correctamente"}
 

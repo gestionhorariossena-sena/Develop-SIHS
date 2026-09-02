@@ -36,7 +36,7 @@ export function RecuperarContrasena() {
   return (
     <AuthLayout>
       <div className="mb-5 flex justify-center">
-        <div className="grid h-14 w-14 place-items-center rounded-xl bg-sena-50 text-sena-700">
+        <div className="grid h-14 w-14 place-items-center rounded-xl bg-sena-50 text-sena-700 dark:bg-sena-950/50">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
@@ -50,22 +50,22 @@ export function RecuperarContrasena() {
         </div>
       </div>
 
-      <h1 className="mb-2 text-center text-2xl font-bold text-slate-900">Recuperar contraseña</h1>
-      <p className="mb-6 text-center text-sm text-slate-500">
+      <h1 className="mb-2 text-center text-2xl font-bold text-slate-900 dark:text-slate-100">Recuperar contraseña</h1>
+      <p className="mb-6 text-center text-sm text-slate-500 dark:text-slate-400">
         Ingresa tu correo institucional y te enviaremos las instrucciones para restablecer el
         acceso.
       </p>
 
       {enviado ? (
         <div>
-          <p className="mb-4 rounded-lg bg-sena-50 p-4 text-center text-sm text-sena-700">
+          <p className="mb-4 rounded-lg bg-sena-50 p-4 text-center text-sm text-sena-700 dark:bg-sena-950/50">
             Si el correo existe en el sistema, te llegará un código de verificación en unos
             minutos.
           </p>
           <button
             type="button"
             onClick={() => navigate('/restablecer-contrasena', { state: { email } })}
-            className="w-full rounded-lg bg-sena-600 py-3 font-semibold text-white transition hover:bg-sena-700"
+            className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800"
           >
             Ya tengo mi código
           </button>
@@ -82,23 +82,27 @@ export function RecuperarContrasena() {
             required
           />
 
-          {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+          {error && (
+          <p role="alert" className="mb-4 text-sm text-red-600">
+            {error}
+          </p>
+        )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-sena-600 py-3 font-semibold text-white transition hover:bg-sena-700 disabled:opacity-60"
+            className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
           >
             {loading ? 'Enviando…' : 'Enviar instrucciones'}
           </button>
         </form>
       )}
 
-      <p className="mt-5 text-center text-xs text-slate-400">
+      <p className="mt-5 text-center text-xs text-slate-500 dark:text-slate-400">
         El código es válido por 30 minutos y de un solo uso.
       </p>
 
-      <p className="mt-6 border-t border-slate-100 pt-5 text-center text-sm font-semibold text-sena-700">
+      <p className="mt-6 border-t border-slate-100 pt-5 text-center text-sm font-semibold text-sena-700 dark:border-slate-700">
         <Link to="/login" className="hover:underline">
           Volver al inicio de sesión
         </Link>

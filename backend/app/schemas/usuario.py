@@ -3,7 +3,16 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
+from app.schemas.especialidad import EspecialidadResponse
 from app.schemas.rol import RolResponse
+
+
+class UsuarioCodigoInstructorRequest(BaseModel):
+    idUsuario: UUID
+
+
+class UsuarioCodigoInstructorValidacionRequest(BaseModel):
+    codigo: str
 
 
 class UsuarioResponse(BaseModel):
@@ -18,4 +27,6 @@ class UsuarioResponse(BaseModel):
     # _Docs/Documentación general/PLAN_INTEGRACION_LOGICA_Y_BD.md §2.2.
     tipoContrato: str | None = None
     horasContratadasSemana: int | None = None
+    codigoInstructor: str | None = None
     roles: list[RolResponse] = []
+    especialidades: list[EspecialidadResponse] = []

@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import type { FormEvent } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 import type { BloqueClase } from '../../pages/horario/tipos'
 import type { Ambiente, Ficha, ResultadoAprendizaje, Usuario } from '../../types/api'
 
@@ -67,6 +67,37 @@ function etiquetaResultado(r: ResultadoAprendizaje): string {
 export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }: ModalBloqueProps) {
   const [datos, setDatos] = useState<DatosBloque>(() => datosVacios(bloqueInicial))
   const esEdicion = bloqueInicial !== undefined
+  const contenidoRef = useRef<HTMLDivElement>(null)
+
+  // Foco inicial dentro del modal (WCAG 2.4.3, requisito de navegación por
+  // teclado de RNF-14) — sin esto, al abrir el modal el foco se queda en
+  // el botón que lo abrió, detrás del overlay.
+  useEffect(() => {
+    contenidoRef.current?.querySelector<HTMLElement>('input, select, textarea, button')?.focus()
+  }, [])
+
+  function manejarTeclado(evento: KeyboardEvent<HTMLDivElement>) {
+    if (evento.key === 'Escape') {
+      onCancelar()
+      return
+    }
+
+    if (evento.key !== 'Tab' || !contenidoRef.current) return
+
+    const focables = contenidoRef.current.querySelectorAll<HTMLElement>('input, select, textarea, button')
+    if (focables.length === 0) return
+
+    const primero = focables[0]
+    const ultimo = focables[focables.length - 1]
+
+    if (evento.shiftKey && document.activeElement === primero) {
+      evento.preventDefault()
+      ultimo.focus()
+    } else if (!evento.shiftKey && document.activeElement === ultimo) {
+      evento.preventDefault()
+      primero.focus()
+    }
+  }
 
   function actualizarCampo(campo: keyof DatosBloque, valor: string) {
     setDatos((anterior) => ({ ...anterior, [campo]: valor }))
@@ -106,10 +137,11 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-bloque-titulo"
+      onKeyDown={manejarTeclado}
       className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
     >
-      <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-        <h2 id="modal-bloque-titulo" className="mb-4 text-lg font-bold text-slate-900">
+      <div ref={contenidoRef} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
+        <h2 id="modal-bloque-titulo" className="mb-4 text-lg font-bold text-slate-900 dark:text-slate-100">
           {esEdicion ? 'Editar bloque de clase' : 'Nuevo bloque de clase'}
         </h2>
 
@@ -122,7 +154,7 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
                   value={datos.idResultado ?? ''}
                   onChange={(e) => elegirResultado(Number(e.target.value))}
                   required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="" disabled>
                     Selecciona un resultado…
@@ -140,7 +172,7 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
                   value={datos.idInstructor ?? ''}
                   onChange={(e) => elegirInstructor(e.target.value)}
                   required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="" disabled>
                     Selecciona un instructor…
@@ -158,7 +190,7 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
                   value={datos.idFicha ?? ''}
                   onChange={(e) => elegirFicha(Number(e.target.value))}
                   required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="" disabled>
                     Selecciona una ficha…
@@ -176,7 +208,7 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
                   value={datos.idAmbiente ?? ''}
                   onChange={(e) => elegirAmbiente(Number(e.target.value))}
                   required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="" disabled>
                     Selecciona un ambiente…
@@ -197,7 +229,7 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
                   value={datos.tematica}
                   onChange={(e) => actualizarCampo('tematica', e.target.value)}
                   required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </CampoModal>
               <CampoModal etiqueta="Instructor" htmlFor="bloque-instructor">
@@ -206,7 +238,7 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
                   value={datos.instructor}
                   onChange={(e) => actualizarCampo('instructor', e.target.value)}
                   required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </CampoModal>
               <CampoModal etiqueta="Ficha" htmlFor="bloque-ficha">
@@ -215,7 +247,7 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
                   value={datos.ficha}
                   onChange={(e) => actualizarCampo('ficha', e.target.value)}
                   required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </CampoModal>
               <CampoModal etiqueta="Ambiente" htmlFor="bloque-ambiente">
@@ -224,7 +256,7 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
                   value={datos.ambiente}
                   onChange={(e) => actualizarCampo('ambiente', e.target.value)}
                   required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none"
+                  className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                 />
               </CampoModal>
             </>
@@ -234,13 +266,13 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
             <button
               type="button"
               onClick={onCancelar}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700"
+              className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800"
             >
               Guardar bloque
             </button>
@@ -262,7 +294,7 @@ function CampoModal({
 }) {
   return (
     <div className="mb-3">
-      <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-400">
+      <label htmlFor={htmlFor} className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {etiqueta}
       </label>
       {children}

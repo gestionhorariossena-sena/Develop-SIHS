@@ -38,9 +38,9 @@ const FILTROS = [
 ] as const
 
 const badgeEstado: Record<Estado, string> = {
-  Confirmado: 'bg-emerald-50 text-emerald-700',
-  Cruce: 'bg-orange-50 text-orange-700',
-  'Por confirmar': 'bg-slate-100 text-slate-600',
+  Confirmado: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+  Cruce: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
+  'Por confirmar': 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
 }
 
 const fechaHoy = (() => {
@@ -62,8 +62,8 @@ export function Dashboard() {
     <AppShell activo="Inicio">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-slate-900">Panel de programación</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Panel de programación</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Centro de Gestión de Mercados, Logística y TI · {fechaHoy}
           </p>
         </div>
@@ -72,13 +72,13 @@ export function Dashboard() {
           <button
             disabled
             title="Aún no implementado en el backend"
-            className="cursor-not-allowed rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700"
+            className="cursor-not-allowed rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-300"
           >
             Exportar
           </button>
           <Link
             to="/horarios/nuevo"
-            className="rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700"
+            className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800"
           >
             Nuevo horario
           </Link>
@@ -86,69 +86,69 @@ export function Dashboard() {
       </div>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
+            <p className="text-xs font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
               Horarios activos
             </p>
-            <span className="h-6 w-6 rounded-md bg-emerald-50" />
+            <span className="h-6 w-6 rounded-md bg-emerald-50 dark:bg-emerald-950/50" />
           </div>
-          <p className="text-3xl font-bold text-slate-900">128</p>
-          <p className="mt-1 text-sm font-medium text-emerald-600">
+          <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">128</p>
+          <p className="mt-1 text-sm font-medium text-emerald-600 dark:text-emerald-300">
             +6 respecto al trimestre anterior
           </p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
+            <p className="text-xs font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
               Cruces detectados
             </p>
-            <span className="h-6 w-6 rounded-md bg-orange-50" />
+            <span className="h-6 w-6 rounded-md bg-orange-50 dark:bg-orange-950/50" />
           </div>
           <div className="flex items-center gap-2">
-            <p className="text-3xl font-bold text-slate-900">7</p>
-            <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700">
+            <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">7</p>
+            <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
               Requiere revisión
             </span>
           </div>
-          <p className="mt-1 text-sm text-slate-500">4 por instructor · 3 por ambiente</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">4 por instructor · 3 por ambiente</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-medium tracking-wide text-slate-400 uppercase">
+            <p className="text-xs font-medium tracking-wide text-slate-500 uppercase dark:text-slate-400">
               Ambientes disponibles
             </p>
-            <span className="h-6 w-6 rounded-md bg-slate-100" />
+            <span className="h-6 w-6 rounded-md bg-slate-100 dark:bg-slate-700" />
           </div>
-          <p className="text-3xl font-bold text-slate-900">
-            19 <span className="text-lg font-medium text-slate-400">/ 34</span>
+          <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">
+            19 <span className="text-lg font-medium text-slate-500 dark:text-slate-400">/ 34</span>
           </p>
-          <div className="mt-3 h-1.5 w-full rounded-full bg-slate-100">
+          <div className="mt-3 h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-700">
             <div className="h-1.5 rounded-full bg-sena-600" style={{ width: '56%' }} />
           </div>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-lg font-semibold text-slate-900">Horario de hoy</p>
-            <p className="text-sm text-slate-500">
+            <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Horario de hoy</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {HORARIO_HOY.length} sesiones programadas · jornada mixta
             </p>
           </div>
 
-          <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
+          <div className="flex gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-900">
             {FILTROS.map((f) => (
               <button
                 key={f.id}
                 onClick={() => setFiltro(f.id)}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition ${
                   filtro === f.id
-                    ? 'bg-sena-50 text-sena-700'
-                    : 'text-slate-500 hover:text-slate-700'
+                    ? 'bg-sena-50 text-sena-700 dark:bg-sena-950/50'
+                    : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200'
                 }`}
               >
                 {f.etiqueta}
@@ -160,28 +160,28 @@ export function Dashboard() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase text-slate-400">
-                <th className="py-2 pr-4 font-medium">Hora</th>
-                <th className="py-2 pr-4 font-medium">Ficha</th>
-                <th className="py-2 pr-4 font-medium">Programa</th>
-                <th className="py-2 pr-4 font-medium">Instructor</th>
-                <th className="py-2 pr-4 font-medium">Ambiente</th>
-                <th className="py-2 font-medium">Estado</th>
+              <tr className="border-b border-slate-200 text-xs uppercase text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                <th scope="col" className="py-2 pr-4 font-medium">Hora</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Ficha</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Programa</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Instructor</th>
+                <th scope="col" className="py-2 pr-4 font-medium">Ambiente</th>
+                <th scope="col" className="py-2 font-medium">Estado</th>
               </tr>
             </thead>
             <tbody>
               {filas.map((fila) => (
                 <tr
                   key={fila.hora}
-                  className={`border-b border-slate-100 last:border-0 ${
-                    fila.estado === 'Cruce' ? 'bg-orange-50/40' : ''
+                  className={`border-b border-slate-100 last:border-0 dark:border-slate-700 ${
+                    fila.estado === 'Cruce' ? 'bg-orange-50/40 dark:bg-orange-950/30' : ''
                   }`}
                 >
-                  <td className="py-3 pr-4 font-semibold text-slate-900">{fila.hora}</td>
-                  <td className="py-3 pr-4 text-slate-700">{fila.ficha}</td>
-                  <td className="py-3 pr-4 text-slate-700">{fila.programa}</td>
-                  <td className="py-3 pr-4 text-slate-700">{fila.instructor}</td>
-                  <td className="py-3 pr-4 text-slate-700">{fila.ambiente}</td>
+                  <td className="py-3 pr-4 font-semibold text-slate-900 dark:text-slate-100">{fila.hora}</td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">{fila.ficha}</td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">{fila.programa}</td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">{fila.instructor}</td>
+                  <td className="py-3 pr-4 text-slate-700 dark:text-slate-300">{fila.ambiente}</td>
                   <td className="py-3">
                     <span
                       className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeEstado[fila.estado]}`}

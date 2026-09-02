@@ -11,7 +11,7 @@ export function FormField({ label, id, type, ...inputProps }: FormFieldProps) {
 
   return (
     <div className="mb-4">
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-slate-700">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
         {label}
       </label>
       <div className="relative">
@@ -19,14 +19,14 @@ export function FormField({ label, id, type, ...inputProps }: FormFieldProps) {
           id={id}
           type={isPassword && showPassword ? 'text' : type}
           {...inputProps}
-          className={`w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none ${isPassword ? 'pr-10' : ''}`}
+          className={`w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-slate-900 placeholder:text-slate-500 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none ${isPassword ? 'pr-10' : ''}`}
         />
         {isPassword && (
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-            className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-400 hover:text-slate-600"
+            className="absolute inset-y-0 right-0 flex items-center px-3 text-slate-500 hover:text-slate-600"
           >
             {showPassword ? (
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="h-5 w-5">

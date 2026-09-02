@@ -100,6 +100,7 @@ def require_roles(*roles_permitidos: str):
 
 require_admin = require_role("Administrador")
 require_coordinador = require_role("Coordinador")
+require_admin_o_coordinador = require_roles("Administrador", "Coordinador")
 require_instructor = require_role("Instructor")
 require_aprendiz = require_role("Aprendiz")
 

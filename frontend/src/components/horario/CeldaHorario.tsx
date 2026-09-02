@@ -45,8 +45,8 @@ export function CeldaHorario({
         type="button"
         onClick={manejarClic}
         aria-label={hayBloqueActivo ? `Asignar bloque activo a ${etiqueta}` : `${etiqueta}, vacía`}
-        className={`flex h-full min-h-16 w-full select-none flex-col items-center justify-center gap-1 border border-dashed border-transparent px-2 py-2 text-[11px] text-slate-400 transition ${fondoVacio} ${
-          hayBloqueActivo ? 'cursor-pointer hover:border-slate-400 hover:text-slate-500' : 'cursor-default'
+        className={`flex h-full min-h-16 w-full select-none flex-col items-center justify-center gap-1 border border-dashed border-transparent px-2 py-2 text-[11px] text-slate-500 transition dark:text-slate-400 ${fondoVacio} ${
+          hayBloqueActivo ? 'cursor-pointer hover:border-slate-400 hover:text-slate-500 dark:hover:border-slate-500 dark:hover:text-slate-300' : 'cursor-default'
         }`}
       >
         {hayBloqueActivo && <span aria-hidden="true">+ asignar</span>}
@@ -92,7 +92,7 @@ export function CeldaHorario({
         }}
         aria-label={`Quitar ${bloque.tematica} de esta celda`}
         title="Quitar de esta celda"
-        className="absolute right-0.5 top-0.5 hidden h-4 w-4 items-center justify-center rounded-full bg-white/90 text-[10px] leading-none text-slate-500 hover:bg-white hover:text-red-600 group-hover:flex"
+        className="absolute right-0.5 top-0.5 hidden h-4 w-4 items-center justify-center rounded-full bg-white/90 text-[10px] leading-none text-slate-500 hover:bg-white hover:text-red-600 group-hover:flex dark:bg-slate-800/90 dark:text-slate-300 dark:hover:bg-slate-700"
       >
         ✕
       </button>
