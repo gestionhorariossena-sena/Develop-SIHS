@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { AppShell } from '../components/AppShell'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { SeccionAmbientesAsignados, SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
+import { GridHorario } from '../components/horario/GridHorario'
+import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { apiGet, ApiError } from '../services/api'
 import type { CargaSemanal, DiaSemana, Horario, Usuario } from '../types/api'
 
@@ -84,6 +86,7 @@ export function Instructores() {
   const horariosVigentes = seleccionado && horariosInstructor?.idUsuario === seleccionado.idUsuario ? horariosInstructor.datos : null
   const errorHorarios = seleccionado?.idUsuario === errorHorariosPara
   const cargandoHorarios = Boolean(seleccionado) && horariosVigentes === null && !errorHorarios
+  const { bloques: bloquesGridInstructor, grid: gridInstructor } = convertirHorariosAGrid(horariosVigentes ?? [])
 
   const especialidades = [...new Set(instructores.flatMap((instructor) => instructor.especialidades.map((item) => item.nombre)))].sort()
   const contratos = [...new Set(instructores.map(contrato))].sort()
@@ -174,6 +177,11 @@ export function Instructores() {
             <p className="text-sm text-slate-500 dark:text-slate-400">No se pudieron cargar los horarios del instructor.</p>
           ) : (
             <>
+              <SeccionDrawer titulo="Horario semanal">
+                <div className="text-[10px]">
+                  <GridHorario bloques={bloquesGridInstructor} grid={gridInstructor} hayBloqueActivo={false} soloLectura />
+                </div>
+              </SeccionDrawer>
               <SeccionFichasAsignadas horarios={horariosVigentes ?? []} diasPorId={diasPorId} />
               <SeccionTemasQueDicta horarios={horariosVigentes ?? []} />
               <SeccionAmbientesAsignados horarios={horariosVigentes ?? []} />
