@@ -71,18 +71,6 @@ export function Login() {
     setError(null)
     setLoading(true)
 
-    const email = identificador.includes('@')
-      ? identificador.trim()
-      : await apiGet<{ email: string }>(`/usuarios/por-documento/${encodeURIComponent(identificador.trim())}`)
-        .then((respuesta) => respuesta.email)
-        .catch(() => null)
-
-    if (!email) {
-      setLoading(false)
-      setError('No se encontró una cuenta asociada a ese documento.')
-      return
-    }
-
     const estadoPrevio = await consultarEstadoLogin(identificador)
 
     if (estadoPrevio?.bloqueado) {
@@ -91,10 +79,30 @@ export function Login() {
       return
     }
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    let authError: { message: string } | null = null
+    if (identificador.includes('@')) {
+      const resultado = await supabase.auth.signInWithPassword({ email: identificador.trim(), password })
+      authError = resultado.error
+    } else {
+      const resultado = await apiPost<{ access_token: string; refresh_token: string; expires_in?: number; token_type?: string }>(
+        '/usuarios/login-documento',
+        { numeroDocumento: identificador.trim(), password },
+      ).catch((error: unknown) => ({ error: error instanceof Error ? error : new Error('Credenciales incorrectas.') }))
+      if ('error' in resultado) {
+        authError = { message: resultado.error.message }
+      } else {
+        const sesion = await supabase.auth.setSession({
+          access_token: resultado.access_token,
+          refresh_token: resultado.refresh_token,
+        })
+        authError = sesion.error
+      }
+    }
 
     if (authError) {
-      apiPost('/auditoria/intento-fallido-login', { identificador }).catch(() => {})
+      if (identificador.includes('@')) {
+        apiPost('/auditoria/intento-fallido-login', { identificador }).catch(() => {})
+      }
 
       const estadoActual = await consultarEstadoLogin(identificador)
       setLoading(false)

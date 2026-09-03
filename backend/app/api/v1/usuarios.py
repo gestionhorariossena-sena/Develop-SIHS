@@ -1,8 +1,10 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.supabase_auth import (
     get_current_user,
@@ -16,9 +18,11 @@ from app.schemas.usuario import (
     CargaSemanalResponse,
     UsuarioCodigoInstructorRequest,
     UsuarioCodigoInstructorValidacionRequest,
-    UsuarioEmailPorDocumentoResponse,
+    UsuarioLoginDocumentoRequest,
+    UsuarioLoginDocumentoResponse,
     UsuarioResponse,
 )
+from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import HorarioService
 from app.services.usuario_service import UsuarioService
 
@@ -32,15 +36,38 @@ def obtener_mi_perfil(usuario: Usuario = Depends(get_current_user)):
     return usuario
 
 
-@router.get("/por-documento/{numero}", response_model=UsuarioEmailPorDocumentoResponse)
-def obtener_email_por_documento(numero: str, db: Session = Depends(get_db)):
-    """Resuelve el identificador previo al login sin exponer el perfil."""
-    usuario = UsuarioService.obtener_por_numero_documento(db, numero.strip())
+@router.post("/login-documento", response_model=UsuarioLoginDocumentoResponse)
+def iniciar_sesion_por_documento(data: UsuarioLoginDocumentoRequest, db: Session = Depends(get_db)):
+    """Autentica documento y contraseña sin exponer el email asociado."""
+    identificador = data.numeroDocumento.strip()
+    estado = AuditoriaService.verificar_bloqueo(db, identificador)
+    if estado["bloqueado"]:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Demasiados intentos. Inténtalo más tarde.")
 
-    if not usuario:
-        raise HTTPException(status_code=404, detail="Documento no encontrado")
+    usuario = UsuarioService.obtener_por_numero_documento(db, identificador)
+    respuesta = None
+    if usuario:
+        try:
+            respuesta = httpx.post(
+                f"{settings.supabase_url}/auth/v1/token?grant_type=password",
+                headers={"apikey": settings.supabase_anon_key},
+                json={"email": usuario.email, "password": data.password},
+                timeout=10,
+            )
+        except httpx.HTTPError:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Servicio de autenticación no disponible.") from None
 
-    return {"email": usuario.email}
+    if respuesta is None or respuesta.status_code != 200:
+        AuditoriaService.registrar_login_fallido(db, identificador)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales incorrectas.")
+
+    datos = respuesta.json()
+    return {
+        "access_token": datos["access_token"],
+        "refresh_token": datos["refresh_token"],
+        "token_type": datos.get("token_type", "bearer"),
+        "expires_in": datos.get("expires_in"),
+    }
 
 
 @router.get("/me/horarios", response_model=list[HorarioResponse])

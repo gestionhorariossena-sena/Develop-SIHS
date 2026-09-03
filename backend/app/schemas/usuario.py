@@ -15,8 +15,16 @@ class UsuarioCodigoInstructorValidacionRequest(BaseModel):
     codigo: str
 
 
-class UsuarioEmailPorDocumentoResponse(BaseModel):
-    email: EmailStr
+class UsuarioLoginDocumentoRequest(BaseModel):
+    numeroDocumento: str
+    password: str
+
+
+class UsuarioLoginDocumentoResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+    expires_in: int | None = None
 
 
 class UsuarioResponse(BaseModel):
