@@ -43,7 +43,7 @@ const NAV: GrupoNav[] = [
       { etiqueta: 'Vista por fichas', ruta: '/vista-fichas' },
       { etiqueta: 'Vista por instructores', ruta: '/vista-instructores' },
       { etiqueta: 'Vista por ambientes', ruta: '/vista-ambientes' },
-      { etiqueta: 'Calendario general' },
+      { etiqueta: 'Calendario general', ruta: '/calendario' },
     ],
   },
   {
