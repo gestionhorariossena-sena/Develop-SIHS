@@ -2,6 +2,7 @@ import random
 import string
 from uuid import UUID
 
+from app.repositories.trimestre_repository import TrimestreRepository
 from app.repositories.usuario_repository import UsuarioRepository
 
 
@@ -15,6 +16,10 @@ class UsuarioService:
         return UsuarioRepository.obtener_por_id(db, id_usuario)
 
     @staticmethod
+    def obtener_por_numero_documento(db, numero: str):
+        return UsuarioRepository.obtener_por_numero_documento(db, numero)
+
+    @staticmethod
     def generar_codigo_instructor(db, id_usuario: UUID):
         usuario = UsuarioRepository.obtener_por_id(db, id_usuario)
 
@@ -25,6 +30,7 @@ class UsuarioService:
             return {
                 "idUsuario": usuario.idUsuario,
                 "codigo": usuario.codigoInstructor,
+                "idTrimestre": usuario.idTrimestre,
             }
 
         caracteres = string.ascii_uppercase + string.digits
@@ -35,12 +41,16 @@ class UsuarioService:
             codigo = "INS-" + "".join(random.choice(caracteres) for _ in range(6))
             intento += 1
 
+        trimestre_activo = TrimestreRepository.obtener_activo(db)
+
         usuario.codigoInstructor = codigo
+        usuario.idTrimestre = trimestre_activo.idTrimestre if trimestre_activo else None
         UsuarioRepository.actualizar(db, usuario)
 
         return {
             "idUsuario": usuario.idUsuario,
             "codigo": codigo,
+            "idTrimestre": usuario.idTrimestre,
         }
 
     @staticmethod

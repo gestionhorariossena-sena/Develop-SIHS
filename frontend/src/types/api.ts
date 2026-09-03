@@ -25,6 +25,7 @@ export interface Usuario {
   tipoContrato?: string | null
   horasContratadasSemana?: number | null
   codigoInstructor?: string | null
+  idTrimestre?: number | null
   sigla?: string | null
   roles: Rol[]
   especialidades: Especialidad[]

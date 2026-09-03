@@ -44,6 +44,10 @@ export function Registro() {
       setError('Las contraseñas no coinciden.')
       return
     }
+    if (!numeroDocumento.trim()) {
+      setError('El número de documento es obligatorio.')
+      return
+    }
     if (rol === 'Instructor' && (!codigoInstructor.trim() || !especialidad.trim())) {
       setError('Completa el código de instructor y la especialidad.')
       return

@@ -78,7 +78,7 @@ const NAV: GrupoNav[] = [
     items: [
       { etiqueta: 'Instructores', ruta: '/instructores', soloGestion: true },
       { etiqueta: 'Ambientes', ruta: '/ambientes', soloGestion: true },
-      { etiqueta: 'Sedes', soloGestion: true },
+      { etiqueta: 'Sedes', ruta: '/sedes', soloGestion: true },
     ],
   },
   {
@@ -93,6 +93,7 @@ const NAV: GrupoNav[] = [
     grupo: 'Administración',
     items: [
       { etiqueta: 'Usuarios', ruta: '/usuarios', soloGestion: true },
+      { etiqueta: 'Código de instructor', ruta: '/codigo-instructor', soloGestion: true },
       { etiqueta: 'Roles', ruta: '/roles', soloGestion: true },
       { etiqueta: 'Configuración', soloGestion: true },
     ],
