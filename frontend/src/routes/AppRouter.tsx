@@ -8,6 +8,7 @@ import { NuevoHorario } from '../pages/NuevoHorario'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { Ambientes } from '../pages/Ambientes'
 import { Instructores } from '../pages/Instructores'
+import { VistaInstructores } from '../pages/VistaInstructores'
 import { Fichas } from '../pages/Fichas'
 import { Usuarios } from '../pages/Usuarios'
 import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
@@ -64,6 +65,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <Instructores />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vista-instructores"
+        element={
+          <ProtectedRoute>
+            <VistaInstructores />
           </ProtectedRoute>
         }
       />

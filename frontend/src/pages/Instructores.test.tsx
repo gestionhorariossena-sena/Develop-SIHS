@@ -188,4 +188,11 @@ describe('Instructores', () => {
       expect(screen.getByText('No se pudo cargar el listado de instructores.')).toBeInTheDocument()
     })
   })
+
+  it('con ?id= en la URL, abre el drawer de ese instructor directo (deep link desde Vista por instructores)', async () => {
+    mockeaUsuariosYPerfil(USUARIOS)
+    renderConProviders(<Instructores />, ['/instructores?id=u1'])
+
+    expect(await screen.findByRole('dialog', { name: 'Erick Granados' })).toBeInTheDocument()
+  })
 })

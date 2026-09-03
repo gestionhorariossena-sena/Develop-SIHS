@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { SeccionAmbientesAsignados, SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
@@ -24,6 +25,8 @@ function colorBarraCarga(horasAsignadas: number, horasMaximas: number) {
 }
 
 export function Instructores() {
+  const [searchParams] = useSearchParams()
+  const idDesdeUrl = searchParams.get('id')
   const [instructores, setInstructores] = useState<Usuario[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [especialidad, setEspecialidad] = useState('todas')
@@ -47,7 +50,21 @@ export function Instructores() {
 
   useEffect(() => {
     apiGet<Usuario[]>('/usuarios/')
-      .then((usuarios) => setInstructores(usuarios.filter((usuario) => usuario.roles.some((rol) => rol.nombre === 'Instructor'))))
+      .then((usuarios) => {
+        const soloInstructores = usuarios.filter((usuario) => usuario.roles.some((rol) => rol.nombre === 'Instructor'))
+        setInstructores(soloInstructores)
+
+        // Deep link desde VistaInstructores.tsx ("Ver info" →
+        // /instructores?id=...): abre el drawer de ese instructor directo,
+        // sin que el usuario tenga que buscarlo de nuevo en la tabla. Va
+        // acá (dentro del .then) y no en un efecto reactivo aparte para no
+        // reabrirse solo si el usuario cierra el drawer manualmente
+        // después.
+        if (idDesdeUrl) {
+          const encontrado = soloInstructores.find((instructor) => instructor.idUsuario === idDesdeUrl)
+          if (encontrado) setSeleccionado(encontrado)
+        }
+      })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de instructores.'))
       .finally(() => setCargando(false))
 
@@ -56,6 +73,7 @@ export function Instructores() {
     apiGet<DiaSemana[]>('/dias-semana/')
       .then((dias) => setDiasPorId(Object.fromEntries(dias.map((d) => [d.idDia, d.nombreDia]))))
       .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar, igual que el resto del archivo; idDesdeUrl no cambia en la vida del componente.
   }, [])
 
   // La carga semanal (horas asignadas vs. tope de RF-011) y los horarios
