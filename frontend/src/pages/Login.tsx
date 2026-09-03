@@ -79,25 +79,24 @@ export function Login() {
       return
     }
 
-    let authError: { message: string } | null = null
-    if (identificador.includes('@')) {
-      const resultado = await supabase.auth.signInWithPassword({ email: identificador.trim(), password })
-      authError = resultado.error
-    } else {
+    const authError = await (async (): Promise<{ message: string } | null> => {
+      if (identificador.includes('@')) {
+        const resultado = await supabase.auth.signInWithPassword({ email: identificador.trim(), password })
+        return resultado.error
+      }
+
       const resultado = await apiPost<{ access_token: string; refresh_token: string; expires_in?: number; token_type?: string }>(
         '/usuarios/login-documento',
         { numeroDocumento: identificador.trim(), password },
       ).catch((error: unknown) => ({ error: error instanceof Error ? error : new Error('Credenciales incorrectas.') }))
-      if ('error' in resultado) {
-        authError = { message: resultado.error.message }
-      } else {
-        const sesion = await supabase.auth.setSession({
-          access_token: resultado.access_token,
-          refresh_token: resultado.refresh_token,
-        })
-        authError = sesion.error
-      }
-    }
+      if ('error' in resultado) return { message: resultado.error.message }
+
+      const sesion = await supabase.auth.setSession({
+        access_token: resultado.access_token,
+        refresh_token: resultado.refresh_token,
+      })
+      return sesion.error
+    })()
 
     if (authError) {
       if (identificador.includes('@')) {
