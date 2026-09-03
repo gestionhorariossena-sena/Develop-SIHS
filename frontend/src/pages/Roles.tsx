@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { AppShell } from '../components/AppShell'
 import { apiDelete, apiGet, apiPost, apiPut, ApiError } from '../services/api'
-import type { Rol } from '../types/api'
+import type { Rol, Usuario } from '../types/api'
 
 const POR_PAGINA = 10
 
@@ -18,11 +18,18 @@ export function Roles() {
   const [guardando, setGuardando] = useState(false)
   const [eliminandoId, setEliminandoId] = useState<number | null>(null)
   const [eliminacionPendiente, setEliminacionPendiente] = useState<Rol | null>(null)
+  // GET /roles/ es require_lectura_catalogo (Coordinador o Administrador),
+  // pero crear/editar/borrar sigue siendo require_admin — sin este chequeo
+  // propio, un Coordinador vería el formulario y los botones de
+  // Editar/Borrar y le fallarían recién al hacer clic. Mismo patrón que
+  // Sedes.tsx (puedeGestionarSedes).
+  const [perfil, setPerfil] = useState<Usuario | null>(null)
 
   useEffect(() => {
-    apiGet<Rol[]>('/roles/')
-      .then((datos) => {
+    Promise.all([apiGet<Rol[]>('/roles/'), apiGet<Usuario>('/usuarios/me')])
+      .then(([datos, perfilResponse]) => {
         setRoles(datos)
+        setPerfil(perfilResponse)
         setError(null)
       })
       .catch((err) => {
@@ -30,6 +37,8 @@ export function Roles() {
       })
       .finally(() => setCargando(false))
   }, [])
+
+  const esAdministrador = perfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
 
   function limpiarFormulario() {
     setNombre('')
@@ -120,18 +129,26 @@ export function Roles() {
       {mensaje && <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">{mensaje}</p>}
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
-      <form onSubmit={guardarRol} className="mb-6 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex-1">
-            <label htmlFor="nombre-rol" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">{editandoId === null ? 'Nuevo rol' : 'Editar rol'}</label>
-            <input id="nombre-rol" value={nombre} onChange={(evento) => setNombre(evento.target.value)} placeholder="Ej. Coordinador" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+      {esAdministrador ? (
+        <form onSubmit={guardarRol} className="mb-6 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label htmlFor="nombre-rol" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">{editandoId === null ? 'Nuevo rol' : 'Editar rol'}</label>
+              <input id="nombre-rol" value={nombre} onChange={(evento) => setNombre(evento.target.value)} placeholder="Ej. Coordinador" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+            </div>
+            <div className="flex gap-2">
+              <button type="submit" disabled={guardando} className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60">{guardando ? 'Guardando…' : editandoId === null ? 'Crear rol' : 'Guardar cambios'}</button>
+              {editandoId !== null && <button type="button" onClick={limpiarFormulario} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Cancelar</button>}
+            </div>
           </div>
-          <div className="flex gap-2">
-            <button type="submit" disabled={guardando} className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60">{guardando ? 'Guardando…' : editandoId === null ? 'Crear rol' : 'Guardar cambios'}</button>
-            {editandoId !== null && <button type="button" onClick={limpiarFormulario} className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Cancelar</button>}
-          </div>
-        </div>
-      </form>
+        </form>
+      ) : (
+        !cargando && (
+          <p className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+            Solo un Administrador puede crear, editar o borrar roles.
+          </p>
+        )
+      )}
 
       <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <div className="overflow-x-auto">
@@ -142,7 +159,7 @@ export function Roles() {
                 <tr key={rol.idRol} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
                   <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{rol.nombre}</td>
                   <td className="px-4 py-3 text-slate-500 dark:text-slate-400">#{rol.idRol}</td>
-                  <td className="px-4 py-3 text-right"><div className="flex justify-end gap-2"><button type="button" onClick={() => comenzarEdicion(rol)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button><button type="button" onClick={() => setEliminacionPendiente(rol)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40">Borrar</button></div></td>
+                  <td className="px-4 py-3 text-right">{esAdministrador ? <div className="flex justify-end gap-2"><button type="button" onClick={() => comenzarEdicion(rol)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button><button type="button" onClick={() => setEliminacionPendiente(rol)} className="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40">Borrar</button></div> : <span className="text-xs text-slate-400">—</span>}</td>
                 </tr>
               ))}
             </tbody>

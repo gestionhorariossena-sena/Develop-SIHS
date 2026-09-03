@@ -71,4 +71,21 @@ describe('Roles', () => {
     expect(screen.getByText(/Vas a eliminar el rol/)).toBeInTheDocument()
     expect(apiDeleteMock).not.toHaveBeenCalled()
   })
+
+  it('un Coordinador (no Administrador) ve el catálogo pero no el formulario ni los botones de Editar/Borrar', async () => {
+    const perfilCoordinador: Usuario = { ...PERFIL, idUsuario: 'coord-1', roles: [{ idRol: 2, nombre: 'Coordinador' }] }
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/roles/') return Promise.resolve(ROLES)
+      if (path === '/usuarios/me') return Promise.resolve(perfilCoordinador)
+      return Promise.reject(new Error('ruta no mockeada'))
+    })
+
+    renderConProviders(<Roles />)
+
+    expect(await screen.findByText('Administrador')).toBeInTheDocument()
+    expect(screen.getByText('Solo un Administrador puede crear, editar o borrar roles.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Nuevo rol')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Borrar' })).not.toBeInTheDocument()
+  })
 })
