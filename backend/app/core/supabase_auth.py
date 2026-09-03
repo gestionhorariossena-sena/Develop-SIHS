@@ -66,6 +66,7 @@ def get_current_user(
             idUsuario=supabase_user_id,
             nombre=(email or "usuario").split("@")[0],
             email=email,
+            numeroDocumento=(datos_supabase.get("user_metadata") or {}).get("numero_documento") or None,
         )
         db.add(usuario)
         db.commit()

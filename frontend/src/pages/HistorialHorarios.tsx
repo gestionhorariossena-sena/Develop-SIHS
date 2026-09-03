@@ -199,7 +199,7 @@ export function HistorialHorarios() {
                     <tr key={`snap-${h.idHorarioGuardado}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
                       <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
                         {h.ficha}
-                        <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-sky-700">
+                        <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
                           Horario completo
                         </span>
                       </td>
@@ -211,7 +211,7 @@ export function HistorialHorarios() {
                       <td className="px-4 py-3 text-right">
                         {confirmandoSnapshotId === h.idHorarioGuardado ? (
                           <div className="flex items-center justify-end gap-1.5">
-                            <span className="text-xs text-slate-500">¿Borrar?</span>
+                            <span className="text-xs text-slate-500 dark:text-slate-400">¿Borrar?</span>
                             <button
                               type="button"
                               onClick={() => void confirmarEliminarSnapshot(h.idHorarioGuardado)}
@@ -225,7 +225,7 @@ export function HistorialHorarios() {
                               type="button"
                               onClick={() => setConfirmandoSnapshotId(null)}
                               aria-label={`Cancelar borrar horario de ${h.ficha}`}
-                              className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                              className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                             >
                               Cancelar
                             </button>
@@ -235,7 +235,7 @@ export function HistorialHorarios() {
                             <button
                               type="button"
                               onClick={() => setSeleccionadoId(h.idHorarioGuardado)}
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                             >
                               Ver horario
                             </button>
@@ -249,7 +249,7 @@ export function HistorialHorarios() {
                               type="button"
                               onClick={() => setConfirmandoSnapshotId(h.idHorarioGuardado)}
                               aria-label={`Borrar horario de ${h.ficha}`}
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-red-50 hover:text-red-600"
+                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-red-950/50"
                             >
                               Borrar
                             </button>
@@ -272,7 +272,7 @@ export function HistorialHorarios() {
               <button
                 type="button"
                 onClick={() => setSeleccionadoId(null)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 ← Volver al historial
               </button>
@@ -371,7 +371,7 @@ export function HistorialHorarios() {
                     </div>
                     {confirmandoId === h.idHorario ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-500">¿Borrar?</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">¿Borrar?</span>
                         <button
                           type="button"
                           onClick={() => void confirmarEliminar(h.idHorario)}
@@ -385,7 +385,7 @@ export function HistorialHorarios() {
                           type="button"
                           onClick={() => setConfirmandoId(null)}
                           aria-label={`Cancelar borrar clase de ${h.fichaCodigo}`}
-                          className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                          className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                         >
                           Cancelar
                         </button>
@@ -397,7 +397,7 @@ export function HistorialHorarios() {
                           onClick={() => void cambiarEstado(h.idHorario, !h.activo)}
                           disabled={cambiandoEstadoId === h.idHorario}
                           aria-label={`${h.activo ? 'Desactivar' : 'Activar'} clase de ${h.fichaCodigo}`}
-                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300"
+                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                         >
                           {cambiandoEstadoId === h.idHorario ? '…' : h.activo ? 'Desactivar' : 'Activar'}
                         </button>
@@ -405,7 +405,7 @@ export function HistorialHorarios() {
                           type="button"
                           onClick={() => setConfirmandoId(h.idHorario)}
                           aria-label={`Borrar clase de ${h.fichaCodigo}`}
-                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-red-50 hover:text-red-600"
+                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-red-950/50"
                         >
                           Borrar
                         </button>

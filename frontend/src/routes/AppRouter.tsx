@@ -9,6 +9,7 @@ import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { CalendarioGeneral } from '../pages/CalendarioGeneral'
 import { HorariosCompletos } from '../pages/HorariosCompletos'
 import { Ambientes } from '../pages/Ambientes'
+import { Sedes } from '../pages/Sedes'
 import { Instructores } from '../pages/Instructores'
 import { VistaInstructores } from '../pages/VistaInstructores'
 import { Fichas } from '../pages/Fichas'
@@ -16,8 +17,11 @@ import { VistaFichas } from '../pages/VistaFichas'
 import { VistaAmbientes } from '../pages/VistaAmbientes'
 import { MiHorario } from '../pages/MiHorario'
 import { Usuarios } from '../pages/Usuarios'
+import { CodigoInstructor } from '../pages/CodigoInstructor'
+import { Roles } from '../pages/Roles'
 import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
 import { ProtectedRoute } from './ProtectedRoute'
+import { Programas } from '../pages/Programas'
 
 /**
  * Todas las rutas de la app viven acá. Para agregar una página nueva:
@@ -90,6 +94,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/sedes"
+        element={
+          <ProtectedRoute>
+            <Sedes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/instructores"
         element={
           <ProtectedRoute>
@@ -122,6 +134,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/programas"
+        element={
+          <ProtectedRoute>
+            <Programas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/vista-ambientes"
         element={
           <ProtectedRoute>
@@ -134,6 +154,22 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <Usuarios />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/codigo-instructor"
+        element={
+          <ProtectedRoute>
+            <CodigoInstructor />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/roles"
+        element={
+          <ProtectedRoute>
+            <Roles />
           </ProtectedRoute>
         }
       />

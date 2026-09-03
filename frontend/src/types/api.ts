@@ -25,6 +25,7 @@ export interface Usuario {
   tipoContrato?: string | null
   horasContratadasSemana?: number | null
   codigoInstructor?: string | null
+  idTrimestre?: number | null
   sigla?: string | null
   roles: Rol[]
   especialidades: Especialidad[]
@@ -231,4 +232,15 @@ export interface HorarioGuardado {
   // esas clases reales (ver backend/app/services/horario_guardado_service.py).
   idsHorarios?: number[]
   fechaCreacion: string
+}
+
+export interface Notificacion {
+  idNotificacion: number
+  idUsuario: string
+  tipo: 'cruce' | 'horario' | 'ambiente' | 'sistema'
+  mensaje: string
+  leida: boolean
+  fechaCreacion: string
+  entidadRelacionada: string | null
+  idEntidadRelacionada: string | null
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
@@ -60,9 +60,12 @@ const HORARIO_B: Horario = {
 
 const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }, { idDia: 2, nombreDia: 'Martes' }]
 
-const apiGetMock = vi.fn()
+const { apiGetMock, apiPostMock, apiPutMock } = vi.hoisted(() => ({ apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPutMock: vi.fn() }))
+const PERFIL_ADMIN = { idUsuario: 'admin', nombre: 'Administrador', email: 'admin@test.com', estado: 'activo', fechaRegistro: '2026-01-01', roles: [{ idRol: 1, nombre: 'Administrador' }], especialidades: [] }
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiPost: (...args: unknown[]) => apiPostMock(...args),
+  apiPut: (...args: unknown[]) => apiPutMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -71,6 +74,7 @@ vi.mock('../services/api', () => ({
  * que devuelva /ambientes. */
 function mockeaBase(ambientes: Ambiente[] = AMBIENTES, todosLosHorarios: Horario[] = [HORARIO_A, HORARIO_B]) {
   apiGetMock.mockImplementation((path: string) => {
+    if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
     if (path === '/ambientes') return Promise.resolve(ambientes)
     if (path === '/sedes') return Promise.resolve(SEDES)
     if (path === '/coordinaciones/') return Promise.resolve(COORDINACIONES)
@@ -84,6 +88,22 @@ function mockeaBase(ambientes: Ambiente[] = AMBIENTES, todosLosHorarios: Horario
 }
 
 describe('Ambientes', () => {
+  it('permite editar desde la fila con el payload del schema y refresca la lista', async () => {
+    mockeaBase()
+    apiPutMock.mockResolvedValue({ ...AMBIENTES[0], nombreAmbiente: 'Sala actualizada' })
+    const usuario = userEvent.setup()
+    renderConProviders(<Ambientes />)
+    await screen.findByText('Sala 101')
+
+    await usuario.click(screen.getAllByRole('button', { name: 'Editar' })[0])
+    await usuario.clear(screen.getByLabelText('Nombre'))
+    await usuario.type(screen.getByLabelText('Nombre'), 'Sala actualizada')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar ambiente' }))
+
+    await waitFor(() => expect(apiPutMock).toHaveBeenCalledWith('/ambientes/1', expect.objectContaining({ numeroAmbiente: 101, nombreAmbiente: 'Ambiente', idSede: 1 })))
+    expect(apiGetMock.mock.calls.filter(([path]) => path === '/ambientes').length).toBe(2)
+  })
+
   it('carga los ambientes desde el backend y los muestra en la tabla', async () => {
     mockeaBase()
     renderConProviders(<Ambientes />)
@@ -254,5 +274,74 @@ describe('Ambientes', () => {
     await usuario.selectOptions(screen.getByLabelText('Instructor'), 'Erick Granados')
     expect(screen.getByText('Sala 101')).toBeInTheDocument()
     expect(screen.queryByText('Sala 102')).not.toBeInTheDocument()
+  })
+
+  describe('SCRUM-89: carga masiva de ambientes por CSV', () => {
+    function archivoCsv(texto: string) {
+      return new File([texto], 'ambientes.csv', { type: 'text/csv' })
+    }
+
+    beforeEach(() => {
+      apiPostMock.mockClear()
+    })
+
+    it('sube un CSV, previsualiza y al confirmar crea cada ambiente resolviendo la sede a su id', async () => {
+      mockeaBase()
+      apiPostMock.mockResolvedValue({})
+      const usuario = userEvent.setup()
+      renderConProviders(<Ambientes />)
+      await screen.findByText('Sala 101')
+
+      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      const csv = 'numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente\n201,Sala 201,regular,Sede principal,'
+      await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
+
+      expect(await screen.findByText(/Se encontraron/)).toBeInTheDocument()
+      await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 1 fila' }))
+
+      await waitFor(() => expect(apiPostMock).toHaveBeenCalledWith('/ambientes', {
+        numeroAmbiente: 201,
+        nombreAmbiente: 'Sala 201',
+        tipoAmbiente: 'regular',
+        estadoAmbiente: 'disponible',
+        idSede: 1,
+      }))
+      // La etiqueta de cada fila del reporte usa la primera columna
+      // declarada (numeroAmbiente), no el nombre.
+      expect(await screen.findByText(/Fila 2 — 201: creada/)).toBeInTheDocument()
+    })
+
+    it('si tipoAmbiente no es válido, reporta el error de esa fila sin llamar al backend', async () => {
+      mockeaBase()
+      const usuario = userEvent.setup()
+      renderConProviders(<Ambientes />)
+      await screen.findByText('Sala 101')
+
+      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      const csv = 'numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente\n201,Sala 201,invalido,Sede principal,'
+      await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
+      await screen.findByText(/Se encontraron/)
+
+      await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 1 fila' }))
+
+      expect(await screen.findByText(/tipoAmbiente debe ser "regular" o "especial"/)).toBeInTheDocument()
+      expect(apiPostMock).not.toHaveBeenCalled()
+    })
+
+    it('si la sede del CSV no existe, reporta el error de esa fila', async () => {
+      mockeaBase()
+      const usuario = userEvent.setup()
+      renderConProviders(<Ambientes />)
+      await screen.findByText('Sala 101')
+
+      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      const csv = 'numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente\n201,Sala 201,regular,Sede fantasma,'
+      await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
+      await screen.findByText(/Se encontraron/)
+
+      await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 1 fila' }))
+
+      expect(await screen.findByText(/No existe la sede "Sede fantasma"\./)).toBeInTheDocument()
+    })
   })
 })

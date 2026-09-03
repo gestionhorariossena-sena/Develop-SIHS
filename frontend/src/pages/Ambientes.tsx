@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
@@ -7,12 +7,25 @@ import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { indexarPorAmbiente, opcionesFichaAmbiente, opcionesInstructor } from '../components/horario/indexarHorarios'
 import { SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
 import { SeccionInstructoresAsignados } from '../components/relacionados/SeccionesFicha'
-import { apiGet, ApiError } from '../services/api'
-import type { Ambiente, Coordinacion, DiaSemana, Ficha, Horario, Sede } from '../types/api'
+import { ImportarArchivo, type ColumnaImportar } from '../components/ImportarArchivo'
+import { apiGet, apiPost, apiPut, ApiError } from '../services/api'
+import type { Ambiente, Coordinacion, DiaSemana, Ficha, Horario, Sede, Usuario } from '../types/api'
+import type { FilaCsv } from '../utils/csv'
 
 type Orden = 'nombre' | 'sede' | 'estado'
 
 const POR_PAGINA = 10
+
+type AmbienteForm = { numeroAmbiente: string; nombreAmbiente: string; tipoAmbiente: Ambiente['tipoAmbiente']; estadoAmbiente: Ambiente['estadoAmbiente']; idSede: string }
+const FORM_VACIO: AmbienteForm = { numeroAmbiente: '', nombreAmbiente: '', tipoAmbiente: 'regular', estadoAmbiente: 'disponible', idSede: '' }
+
+const COLUMNAS_IMPORTAR_AMBIENTE: ColumnaImportar[] = [
+  { clave: 'numeroAmbiente', encabezado: 'numeroAmbiente' },
+  { clave: 'nombreAmbiente', encabezado: 'nombreAmbiente' },
+  { clave: 'tipoAmbiente', encabezado: 'tipoAmbiente' },
+  { clave: 'sede', encabezado: 'sede' },
+  { clave: 'estadoAmbiente', encabezado: 'estadoAmbiente', requerido: false },
+]
 
 const estiloEstado: Record<Ambiente['estadoAmbiente'], string> = {
   disponible: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
@@ -37,6 +50,14 @@ export function Ambientes() {
   const [seleccionado, setSeleccionado] = useState<Ambiente | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [perfil, setPerfil] = useState<Usuario | null>(null)
+  const [modalAbierto, setModalAbierto] = useState(false)
+  const [editandoId, setEditandoId] = useState<number | null>(null)
+  const [form, setForm] = useState<AmbienteForm>(FORM_VACIO)
+  const [guardando, setGuardando] = useState(false)
+  // SCRUM-89: carga masiva por CSV — reusa la lista de sedes que la página
+  // ya pide para el filtro/tabla, no hace falta pedirla de nuevo.
+  const [mostrarImportar, setMostrarImportar] = useState(false)
 
   // Horarios reales del ambiente seleccionado — alimenta el grid semanal y
   // las secciones del drawer (fichas/instructores/temas), mismo patrón que
@@ -49,8 +70,15 @@ export function Ambientes() {
   // uno por uno (mismo patrón que Instructores.tsx/Fichas.tsx).
   const [todosLosHorarios, setTodosLosHorarios] = useState<Horario[]>([])
 
+  async function cargarAmbientes() {
+    const datos = await apiGet<Ambiente[]>('/ambientes')
+    setAmbientes(datos)
+    return datos
+  }
+
   useEffect(() => {
-    apiGet<Ambiente[]>('/ambientes')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cargarAmbientes()
       .then((datos) => {
         setAmbientes(datos)
 
@@ -66,6 +94,7 @@ export function Ambientes() {
       .finally(() => setCargando(false))
 
     apiGet<Sede[]>('/sedes').then(setSedes).catch(() => {})
+    apiGet<Usuario>('/usuarios/me').then(setPerfil).catch(() => {})
     apiGet<Coordinacion[]>('/coordinaciones/').then(setCoordinaciones).catch(() => {})
     apiGet<Ficha[]>('/fichas/').then(setFichas).catch(() => {})
     apiGet<Horario[]>('/horarios/').then(setTodosLosHorarios).catch(() => {})
@@ -86,6 +115,36 @@ export function Ambientes() {
       .then((datos) => setHorariosAmbiente({ idAmbiente: seleccionado.idAmbiente, datos }))
       .catch(() => setErrorHorariosPara(seleccionado.idAmbiente))
   }, [seleccionado])
+
+  async function importarFilaAmbiente(fila: FilaCsv) {
+    const numeroTexto = fila.numeroAmbiente?.trim()
+    const nombreAmbiente = fila.nombreAmbiente?.trim()
+    const tipoTexto = fila.tipoAmbiente?.trim().toLocaleLowerCase('es-CO')
+    const nombreSede = fila.sede?.trim()
+    const estadoTexto = (fila.estadoAmbiente?.trim().toLocaleLowerCase('es-CO') || 'disponible') as Ambiente['estadoAmbiente']
+
+    const numeroAmbiente = Number(numeroTexto)
+    if (!numeroTexto || Number.isNaN(numeroAmbiente) || numeroAmbiente <= 0) throw new Error('numeroAmbiente debe ser un número mayor a 0.')
+    if (!nombreAmbiente) throw new Error('Falta nombreAmbiente.')
+    if (tipoTexto !== 'regular' && tipoTexto !== 'especial') throw new Error('tipoAmbiente debe ser "regular" o "especial".')
+    if (!['disponible', 'mantenimiento', 'inactivo'].includes(estadoTexto)) throw new Error('estadoAmbiente debe ser "disponible", "mantenimiento" o "inactivo".')
+    if (!nombreSede) throw new Error('Falta sede.')
+
+    const sedeEncontrada = sedes.find((item) => item.nombreSede.toLocaleUpperCase('es-CO') === nombreSede.toLocaleUpperCase('es-CO'))
+    if (!sedeEncontrada) throw new Error(`No existe la sede "${nombreSede}".`)
+
+    await apiPost('/ambientes', {
+      numeroAmbiente,
+      nombreAmbiente,
+      tipoAmbiente: tipoTexto,
+      estadoAmbiente: estadoTexto,
+      idSede: sedeEncontrada.idSede,
+    })
+  }
+
+  function refrescarAmbientesTrasImportar() {
+    apiGet<Ambiente[]>('/ambientes').then(setAmbientes).catch(() => {})
+  }
 
   const horariosVigentes = seleccionado && horariosAmbiente?.idAmbiente === seleccionado.idAmbiente ? horariosAmbiente.datos : null
   const errorHorarios = seleccionado?.idAmbiente === errorHorariosPara
@@ -121,6 +180,44 @@ export function Ambientes() {
   const paginaSegura = Math.min(paginaActual, totalPaginas)
   const inicioPagina = (paginaSegura - 1) * POR_PAGINA
   const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
+  const puedeGestionar = perfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
+
+  function abrirCrear() {
+    setEditandoId(null)
+    setForm({ ...FORM_VACIO, idSede: sedes[0] ? String(sedes[0].idSede) : '' })
+    setError(null)
+    setModalAbierto(true)
+  }
+
+  function abrirEditar(ambiente: Ambiente) {
+    setEditandoId(ambiente.idAmbiente)
+    setForm({ numeroAmbiente: String(ambiente.numeroAmbiente), nombreAmbiente: ambiente.nombreAmbiente, tipoAmbiente: ambiente.tipoAmbiente, estadoAmbiente: ambiente.estadoAmbiente, idSede: String(ambiente.idSede) })
+    setError(null)
+    setModalAbierto(true)
+  }
+
+  async function guardarAmbiente(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault()
+    const numeroAmbiente = Number(form.numeroAmbiente)
+    const idSede = Number(form.idSede)
+    if (!numeroAmbiente || !idSede || (form.tipoAmbiente === 'especial' && !form.nombreAmbiente.trim())) {
+      setError('Número, sede y nombre (para ambientes especiales) son obligatorios.')
+      return
+    }
+    const payload = { numeroAmbiente, nombreAmbiente: form.tipoAmbiente === 'regular' ? 'Ambiente' : form.nombreAmbiente.trim(), tipoAmbiente: form.tipoAmbiente, estadoAmbiente: form.estadoAmbiente, idSede }
+    try {
+      setGuardando(true)
+      setError(null)
+      const respuesta = editandoId === null ? await apiPost<Ambiente>('/ambientes', payload) : await apiPut<Ambiente>(`/ambientes/${editandoId}`, payload)
+      const datos = await cargarAmbientes()
+      setSeleccionado(datos.find((ambiente) => ambiente.idAmbiente === respuesta.idAmbiente) ?? respuesta)
+      setModalAbierto(false)
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo guardar el ambiente.')
+    } finally {
+      setGuardando(false)
+    }
+  }
 
   return (
     <AppShell activo="Ambientes">
@@ -129,8 +226,23 @@ export function Ambientes() {
           <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Ambientes</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">Ambientes de formación registrados por sede y coordinación.</p>
         </div>
-        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {ambientes.length} ambientes</p>
+        <div className="flex items-center gap-2">
+          {puedeGestionar && <button type="button" onClick={abrirCrear} className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800">Nuevo ambiente</button>}
+          <button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">
+            {mostrarImportar ? 'Ocultar carga de archivo' : 'Cargar archivo'}
+          </button>
+          <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {ambientes.length} ambientes</p>
+        </div>
       </div>
+
+      {mostrarImportar && (
+        <ImportarArchivo
+          columnas={COLUMNAS_IMPORTAR_AMBIENTE}
+          onImportarFila={importarFilaAmbiente}
+          onTerminado={refrescarAmbientesTrasImportar}
+          onCerrar={() => setMostrarImportar(false)}
+        />
+      )}
 
       <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de ambientes">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -200,7 +312,7 @@ export function Ambientes() {
       </section>
 
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando ambientes...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Sede</th><th className="px-4 py-3">Tipo</th><th className="px-4 py-3">Coordinación</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((ambiente) => {
+      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando ambientes...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[840px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Sede</th><th className="px-4 py-3">Tipo</th><th className="px-4 py-3">Coordinación</th><th className="px-4 py-3">Estado</th>{puedeGestionar && <th className="px-4 py-3">Acciones</th>}</tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((ambiente) => {
         const coordinacionesAmbiente = [...(indiceAsociaciones.get(ambiente.idAmbiente)?.coordinaciones ?? [])].map((id) => coordinacionesPorId.get(id)).filter((nombre): nombre is string => Boolean(nombre))
         return (
           <tr key={ambiente.idAmbiente} onClick={() => setSeleccionado(ambiente)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60">
@@ -208,7 +320,7 @@ export function Ambientes() {
             <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{sedesPorId.get(ambiente.idSede) ?? 'Sin definir'}</td>
             <td className="px-4 py-3"><span className="rounded-full bg-sena-50 px-2.5 py-1 text-xs font-semibold capitalize text-sena-700 dark:bg-sena-950/50">{ambiente.tipoAmbiente}</span></td>
             <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{coordinacionesAmbiente.length > 0 ? coordinacionesAmbiente.join(', ') : 'Sin asignar'}</td>
-            <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${estiloEstado[ambiente.estadoAmbiente]}`}>{ambiente.estadoAmbiente}</span></td>
+            <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${estiloEstado[ambiente.estadoAmbiente]}`}>{ambiente.estadoAmbiente}</span></td>{puedeGestionar && <td className="px-4 py-3"><button type="button" onClick={(evento) => { evento.stopPropagation(); abrirEditar(ambiente) }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button></td>}
           </tr>
         )
       })}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay ambientes que coincidan con los filtros.</p>}
@@ -240,6 +352,16 @@ export function Ambientes() {
         )}
       </div>}
 
+      {puedeGestionar && modalAbierto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" role="presentation">
+          <form onSubmit={guardarAmbiente} className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-slate-800" role="dialog" aria-modal="true" aria-labelledby="titulo-formulario-ambiente">
+            <div className="mb-5 flex items-center justify-between"><h2 id="titulo-formulario-ambiente" className="text-xl font-semibold text-slate-900 dark:text-slate-100">{editandoId === null ? 'Nuevo ambiente' : 'Editar ambiente'}</h2><button type="button" onClick={() => setModalAbierto(false)} className="text-sm text-slate-500">Cancelar</button></div>
+            <div className="space-y-3"><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Número de ambiente<input required type="number" min="1" value={form.numeroAmbiente} onChange={(evento) => setForm({ ...form, numeroAmbiente: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Nombre<input required={form.tipoAmbiente === 'especial'} value={form.nombreAmbiente} onChange={(evento) => setForm({ ...form, nombreAmbiente: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Tipo<select value={form.tipoAmbiente} onChange={(evento) => setForm({ ...form, tipoAmbiente: evento.target.value as Ambiente['tipoAmbiente'] })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"><option value="regular">Regular</option><option value="especial">Especial</option></select></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Estado<select value={form.estadoAmbiente} onChange={(evento) => setForm({ ...form, estadoAmbiente: evento.target.value as Ambiente['estadoAmbiente'] })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"><option value="disponible">Disponible</option><option value="mantenimiento">Mantenimiento</option><option value="inactivo">Inactivo</option></select></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Sede<select required value={form.idSede} onChange={(evento) => setForm({ ...form, idSede: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"><option value="">Selecciona una sede</option>{sedes.map((sede) => <option key={sede.idSede} value={sede.idSede}>{sede.nombreSede}</option>)}</select></label></div>
+            <button type="submit" disabled={guardando} className="mt-5 w-full rounded-lg bg-sena-700 py-2.5 font-semibold text-white hover:bg-sena-800 disabled:opacity-60">{guardando ? 'Guardando...' : 'Guardar ambiente'}</button>
+          </form>
+        </div>
+      )}
+
       {seleccionado && (
         <DrawerRelacionados
           iniciales={seleccionado.nombreAmbiente.slice(0, 2).toUpperCase()}
@@ -248,6 +370,7 @@ export function Ambientes() {
           etiquetas={[seleccionado.tipoAmbiente, seleccionado.estadoAmbiente]}
           onCerrar={() => setSeleccionado(null)}
         >
+          {puedeGestionar && <button type="button" onClick={() => abrirEditar(seleccionado)} className="mb-5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-300">Editar ambiente</button>}
           <dl className="space-y-4 text-sm">
             <div><dt className="text-slate-500 dark:text-slate-400">Número</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionado.numeroAmbiente}</dd></div>
             <div><dt className="text-slate-500 dark:text-slate-400">Tipo</dt><dd className="mt-1 font-medium capitalize text-slate-900 dark:text-slate-100">{seleccionado.tipoAmbiente}</dd></div>
