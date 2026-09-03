@@ -16,6 +16,7 @@ from app.schemas.usuario import (
     CargaSemanalResponse,
     UsuarioCodigoInstructorRequest,
     UsuarioCodigoInstructorValidacionRequest,
+    UsuarioEmailPorDocumentoResponse,
     UsuarioResponse,
 )
 from app.services.horario_service import HorarioService
@@ -29,6 +30,17 @@ def obtener_mi_perfil(usuario: Usuario = Depends(get_current_user)):
     """Perfil del usuario autenticado — confirma que Supabase Auth + la
     base de datos están conectados end-to-end."""
     return usuario
+
+
+@router.get("/por-documento/{numero}", response_model=UsuarioEmailPorDocumentoResponse)
+def obtener_email_por_documento(numero: str, db: Session = Depends(get_db)):
+    """Resuelve el identificador previo al login sin exponer el perfil."""
+    usuario = UsuarioService.obtener_por_numero_documento(db, numero.strip())
+
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Documento no encontrado")
+
+    return {"email": usuario.email}
 
 
 @router.get("/me/horarios", response_model=list[HorarioResponse])

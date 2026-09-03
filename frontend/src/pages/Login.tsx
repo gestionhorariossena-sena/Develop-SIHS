@@ -28,7 +28,7 @@ function formatearTiempoRestante(segundos: number): string {
  */
 export function Login() {
   const navigate = useNavigate()
-  const [email, setEmail] = useState('')
+  const [identificador, setIdentificador] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -71,7 +71,19 @@ export function Login() {
     setError(null)
     setLoading(true)
 
-    const estadoPrevio = await consultarEstadoLogin(email)
+    const email = identificador.includes('@')
+      ? identificador.trim()
+      : await apiGet<{ email: string }>(`/usuarios/por-documento/${encodeURIComponent(identificador.trim())}`)
+        .then((respuesta) => respuesta.email)
+        .catch(() => null)
+
+    if (!email) {
+      setLoading(false)
+      setError('No se encontró una cuenta asociada a ese documento.')
+      return
+    }
+
+    const estadoPrevio = await consultarEstadoLogin(identificador)
 
     if (estadoPrevio?.bloqueado) {
       marcarBloqueado(estadoPrevio)
@@ -82,9 +94,9 @@ export function Login() {
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (authError) {
-      apiPost('/auditoria/intento-fallido-login', { identificador: email }).catch(() => {})
+      apiPost('/auditoria/intento-fallido-login', { identificador }).catch(() => {})
 
-      const estadoActual = await consultarEstadoLogin(email)
+      const estadoActual = await consultarEstadoLogin(identificador)
       setLoading(false)
 
       if (estadoActual?.bloqueado) {
@@ -115,13 +127,13 @@ export function Login() {
 
       <form onSubmit={handleSubmit}>
         <FormField
-          id="email"
-          label="Correo institucional"
-          type="email"
-          placeholder="nombre.apellido@sena.edu.co"
-          value={email}
+          id="identificador"
+          label="Correo institucional o número de documento"
+          type="text"
+          placeholder="correo@sena.edu.co o número de documento"
+          value={identificador}
           onChange={(e) => {
-            setEmail(e.target.value)
+            setIdentificador(e.target.value)
             // Si cambia el correo, no tiene sentido seguir mostrando el
             // bloqueo del intento anterior — se vuelve a chequear en el
             // próximo submit.

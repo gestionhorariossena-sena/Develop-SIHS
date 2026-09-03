@@ -15,6 +15,10 @@ class UsuarioCodigoInstructorValidacionRequest(BaseModel):
     codigo: str
 
 
+class UsuarioEmailPorDocumentoResponse(BaseModel):
+    email: EmailStr
+
+
 class UsuarioResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
