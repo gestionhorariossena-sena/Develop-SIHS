@@ -15,6 +15,7 @@ import { Fichas } from '../pages/Fichas'
 import { VistaFichas } from '../pages/VistaFichas'
 import { VistaAmbientes } from '../pages/VistaAmbientes'
 import { Usuarios } from '../pages/Usuarios'
+import { CodigoInstructor } from '../pages/CodigoInstructor'
 import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
 import { ProtectedRoute } from './ProtectedRoute'
 import { Programas } from '../pages/Programas'
@@ -134,6 +135,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <Usuarios />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/codigo-instructor"
+        element={
+          <ProtectedRoute>
+            <CodigoInstructor />
           </ProtectedRoute>
         }
       />

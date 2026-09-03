@@ -28,6 +28,7 @@ class UsuarioResponse(BaseModel):
     tipoContrato: str | None = None
     horasContratadasSemana: int | None = None
     codigoInstructor: str | None = None
+    idTrimestre: int | None = None
     sigla: str | None = None
     roles: list[RolResponse] = []
     especialidades: list[EspecialidadResponse] = []
