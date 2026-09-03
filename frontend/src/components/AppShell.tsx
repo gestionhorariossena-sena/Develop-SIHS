@@ -51,7 +51,7 @@ const NAV: GrupoNav[] = [
     grupo: 'Formación',
     items: [
       { etiqueta: 'Fichas', ruta: '/fichas' },
-      { etiqueta: 'Programas' },
+      { etiqueta: 'Programas', ruta: '/programas' },
       { etiqueta: 'Temáticas' },
     ],
   },
