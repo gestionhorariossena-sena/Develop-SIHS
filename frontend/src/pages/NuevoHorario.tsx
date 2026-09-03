@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { HorarioEditor } from '../components/horario/HorarioEditor'
 import type { CatalogosBloque } from '../components/horario/ModalBloque'
 import { ModalCruce } from '../components/horario/ModalCruce'
-import { apiGet, apiPost, ApiError } from '../services/api'
+import { apiDelete, apiGet, apiPost, ApiError } from '../services/api'
 import { BLOQUES, DIAS } from './horario/tipos'
 import type { BloqueClase, GridAsignaciones, Jornada as JornadaGrid } from './horario/tipos'
 import { gridVacio } from './horario/useHorarioState'
@@ -18,6 +18,7 @@ import type {
   HorarioCreate,
   HorarioDryRunConflict,
   HorarioDryRunResponse,
+  HorarioGuardado,
   Jornada,
   ResultadoAprendizaje,
   Usuario,
@@ -97,6 +98,9 @@ async function validarDryRun(datos: HorarioCreate): Promise<HorarioDryRunRespons
 }
 
 export function NuevoHorario() {
+  const [searchParams] = useSearchParams()
+  const idEditar = searchParams.get('editar')
+
   const [ficha, setFicha] = useState('')
   const [aprendices, setAprendices] = useState('0')
   const [horasTrimestre, setHorasTrimestre] = useState('36')
@@ -108,6 +112,16 @@ export function NuevoHorario() {
 
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null)
   const [errorCatalogos, setErrorCatalogos] = useState<string | null>(null)
+
+  // Modo "Modificar" (?editar=<idHorarioGuardado>, desde Historial de
+  // horarios): precarga ficha/fechas/bloques/grid de ese horario guardado
+  // en vez de arrancar vacío. `datosEdicion` guarda también
+  // idHorarioGuardado/idsHorarios — al guardar, guardarHorario() borra
+  // esas filas viejas antes de crear las nuevas (ver más abajo), así el
+  // horario "editado" queda igual de nuevo que uno creado desde cero.
+  const [datosEdicion, setDatosEdicion] = useState<HorarioGuardado | null>(null)
+  const [cargandoEdicion, setCargandoEdicion] = useState(Boolean(idEditar))
+  const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
 
   // Cuando el dry-run (POST /horarios/validar) encuentra conflictos, se
   // pausa el guardado de ESE bloque y se muestra ModalCruce — el
@@ -133,12 +147,12 @@ export function NuevoHorario() {
     resolverDecisionRef.current = null
   }
 
-  // El grid arranca vacío — a diferencia de la versión anterior (con datos
-  // ficticios), ahora cada bloque de clase se elige de catálogos reales
-  // (ver ModalBloque), así que no hay nada de ejemplo que mostrar hasta que
-  // el coordinador arme el horario.
-  const [{ bloques, grid }] = useState(() => ({ bloques: [] as BloqueClase[], grid: gridVacio() }))
-  const estadoActualRef = useRef<{ bloques: BloqueClase[]; grid: GridAsignaciones }>({ bloques, grid })
+  // bloquesIniciales/gridInicial son de verdad "iniciales": HorarioEditor
+  // los usa como valor de arranque de su propio useHorarioState y después
+  // los ignora (ver useHorarioState.ts) — por eso <HorarioEditor> no se
+  // monta más abajo hasta que cargandoEdicion sea false, si no siempre
+  // arrancaría vacío aunque datosEdicion llegara un instante después.
+  const estadoActualRef = useRef<{ bloques: BloqueClase[]; grid: GridAsignaciones }>({ bloques: [], grid: gridVacio() })
   const capturarEstadoActual = useCallback((estado: { bloques: BloqueClase[]; grid: GridAsignaciones }) => {
     estadoActualRef.current = estado
   }, [])
@@ -167,6 +181,23 @@ export function NuevoHorario() {
             : 'No se pudieron cargar los catálogos (fichas, ambientes, instructores, resultados).',
         )
       })
+
+    if (idEditar) {
+      apiGet<HorarioGuardado>(`/horarios-guardados/${idEditar}`)
+        .then((snapshot) => {
+          setDatosEdicion(snapshot)
+          setFicha(snapshot.ficha)
+          setAprendices(snapshot.aprendices ?? '0')
+          setHorasTrimestre(snapshot.horasTrimestre ?? '36')
+          setFechaInicio(snapshot.fechaInicio ?? '')
+          setFechaFin(snapshot.fechaFin ?? '')
+        })
+        .catch((err: unknown) => {
+          setErrorEdicion(err instanceof ApiError ? err.message : 'No se pudo cargar el horario a modificar.')
+        })
+        .finally(() => setCargandoEdicion(false))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idEditar no cambia en la vida del componente.
   }, [])
 
   async function guardarHorario() {
@@ -175,6 +206,28 @@ export function NuevoHorario() {
     setGuardando(true)
     setErroresGuardar([])
     setMensajeExito(null)
+
+    // Modo edición: se borran primero las clases reales y el snapshot
+    // originales — todo lo de abajo (dry-run, POST /horarios/, POST
+    // /horarios-guardados/) es exactamente el mismo camino que crear desde
+    // cero, así el horario "modificado" queda con fechaCreacion nueva y
+    // sube al tope de Historial, como pidió. Si algún borrado falla (ya no
+    // existe, por ejemplo) no se frena el guardado — mismo criterio de
+    // "mejor esfuerzo" que ya tiene el resto de esta función.
+    if (datosEdicion) {
+      for (const idHorarioViejo of datosEdicion.idsHorarios ?? []) {
+        try {
+          await apiDelete(`/horarios/${idHorarioViejo}`)
+        } catch {
+          // No pasa nada si ya no existía.
+        }
+      }
+      try {
+        await apiDelete(`/horarios-guardados/${datosEdicion.idHorarioGuardado}`)
+      } catch {
+        // Idem.
+      }
+    }
 
     const { bloques: bloquesActuales, grid: gridActual } = estadoActualRef.current
     const grupos = agruparCeldas(gridActual)
@@ -292,7 +345,9 @@ export function NuevoHorario() {
           }`,
         )
       }
-      setMensajeExito(`${creados} clase${creados === 1 ? '' : 's'} guardada${creados === 1 ? '' : 's'} sin cruces.`)
+      setMensajeExito(
+        `${creados} clase${creados === 1 ? '' : 's'} ${datosEdicion ? 'guardada' : 'creada'}${creados === 1 ? '' : 's'} sin cruces.`,
+      )
     }
 
     setErroresGuardar(errores)
@@ -303,17 +358,19 @@ export function NuevoHorario() {
     <AppShell activo="Horarios">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Nuevo horario</h1>
+          <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">
+            {datosEdicion ? 'Modificar horario' : 'Nuevo horario'}
+          </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            Define un bloque de clase eligiendo de los catálogos reales y reutilízalo en el grid —
-            al guardar, el sistema revisa cruces de ficha, instructor, ambiente y resultado
-            repetido antes de crear cada clase.
+            {datosEdicion
+              ? 'Edita los bloques de este horario completo y guarda — reemplaza las clases originales por las que queden acá, con fecha de creación nueva.'
+              : 'Define un bloque de clase eligiendo de los catálogos reales y reutilízalo en el grid — al guardar, el sistema revisa cruces de ficha, instructor, ambiente y resultado repetido antes de crear cada clase.'}
           </p>
         </div>
 
         <div className="flex items-center gap-3 print:hidden">
           <Link
-            to="/dashboard"
+            to={datosEdicion ? '/horarios/historial' : '/dashboard'}
             className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             Cancelar
@@ -322,11 +379,11 @@ export function NuevoHorario() {
           <button
             type="button"
             onClick={() => void guardarHorario()}
-            disabled={guardando || !catalogos}
-            title={!catalogos ? 'Cargando catálogos…' : undefined}
+            disabled={guardando || !catalogos || cargandoEdicion}
+            title={!catalogos ? 'Cargando catálogos…' : cargandoEdicion ? 'Cargando horario a modificar…' : undefined}
             className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {guardando ? 'Guardando…' : 'Guardar horario'}
+            {guardando ? 'Guardando…' : datosEdicion ? 'Guardar cambios' : 'Guardar horario'}
           </button>
         </div>
       </div>
@@ -334,6 +391,12 @@ export function NuevoHorario() {
       {errorCatalogos && (
         <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
           {errorCatalogos}
+        </p>
+      )}
+
+      {errorEdicion && (
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
+          {errorEdicion}
         </p>
       )}
 
@@ -396,15 +459,15 @@ export function NuevoHorario() {
       </div>
 
       <div className="mb-6">
-        {catalogos ? (
+        {catalogos && !cargandoEdicion ? (
           <HorarioEditor
-            bloquesIniciales={bloques}
-            gridInicial={grid}
+            bloquesIniciales={datosEdicion?.bloques ?? []}
+            gridInicial={datosEdicion?.grid ?? gridVacio()}
             onCambiarEstado={capturarEstadoActual}
             catalogos={catalogos}
           />
         ) : (
-          !errorCatalogos && <p className="text-sm text-slate-500">Cargando catálogos…</p>
+          !errorCatalogos && !errorEdicion && <p className="text-sm text-slate-500">Cargando…</p>
         )}
       </div>
 

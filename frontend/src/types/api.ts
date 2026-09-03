@@ -99,6 +99,11 @@ export interface Sede {
   tipoSede: 'principal' | 'secundaria' | 'alterna' | null
 }
 
+export interface Coordinacion {
+  idCoordinacion: number
+  nombreCoordinacion: string
+}
+
 export interface Ambiente {
   idAmbiente: number
   numeroAmbiente: number
@@ -131,6 +136,9 @@ export interface Horario {
   idFicha: number
   idResultado: number
   dias: number[]
+  fechaCreacion: string
+  fechaModificacion: string
+  activo: boolean
   instructorNombre: string | null
   fichaCodigo: string | null
   ambienteNombre: string | null
