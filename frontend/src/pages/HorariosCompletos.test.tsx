@@ -37,14 +37,14 @@ const CARGA_SEMANAL: CargaSemanal = { idUsuario: 'u1', tipoContrato: 'Planta', h
 
 const HORARIO: Horario = {
   idHorario: 7, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-  idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 1, dias: [1],
+  idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 1, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
   instructorNombre: 'Erick Granados', fichaCodigo: '3228973 B', ambienteNombre: 'Ambiente 101',
   resultadoCodigo: 'CPL18', resultadoDescripcion: 'Gestión de inventarios',
 }
 
 const OTRO_HORARIO: Horario = {
   idHorario: 8, horaInicio: '12:00:00', horaFin: '15:00:00', idJornada: 2, idTrimestre: 1,
-  idAmbiente: 1, idInstructor: 'u2', idFicha: 1, idResultado: 1, dias: [2],
+  idAmbiente: 1, idInstructor: 'u2', idFicha: 1, idResultado: 1, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
   instructorNombre: 'Fredy Ardila', fichaCodigo: '9999999', ambienteNombre: 'Taller Industrial',
   resultadoCodigo: 'RA-2', resultadoDescripcion: null,
 }

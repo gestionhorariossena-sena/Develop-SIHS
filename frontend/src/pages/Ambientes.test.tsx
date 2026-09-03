@@ -46,14 +46,14 @@ const FICHAS: Ficha[] = [
 
 const HORARIO_A: Horario = {
   idHorario: 1, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-  idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 100, dias: [1],
+  idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 100, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
   instructorNombre: 'Erick Granados', fichaCodigo: '3228973 B', ambienteNombre: 'Sala 101',
   resultadoCodigo: 'CPL18', resultadoDescripcion: 'Gestión de inventarios',
 }
 
 const HORARIO_B: Horario = {
   idHorario: 2, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-  idAmbiente: 2, idInstructor: 'u2', idFicha: 2, idResultado: 200, dias: [2],
+  idAmbiente: 2, idInstructor: 'u2', idFicha: 2, idResultado: 200, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
   instructorNombre: 'Fredy Ardila', fichaCodigo: '2758431', ambienteNombre: 'Sala 102',
   resultadoCodigo: 'RA-2', resultadoDescripcion: null,
 }

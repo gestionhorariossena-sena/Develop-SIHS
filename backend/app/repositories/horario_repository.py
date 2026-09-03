@@ -45,6 +45,15 @@ class HorarioRepository:
         db.commit()
 
     @staticmethod
+    def guardar(db: Session, horario: Horario) -> Horario:
+        """Commit simple de cambios ya aplicados al objeto — para
+        HorarioService.cambiar_estado, que solo toca `activo` y no
+        necesita reescribir horario_dia como sí hace `actualizar`."""
+        db.commit()
+        db.refresh(horario)
+        return horario
+
+    @staticmethod
     def buscar_solape(
         db: Session,
         campo: str,
@@ -67,6 +76,7 @@ class HorarioRepository:
                 horario_dia.c.idDia.in_(dias),
                 Horario.horaInicio < hora_fin,
                 Horario.horaFin > hora_inicio,
+                Horario.activo.is_(True),
             )
         )
         if excluir_id is not None:
@@ -79,8 +89,10 @@ class HorarioRepository:
     ) -> list[Horario]:
         """Todos los horarios ya asignados a un instructor, sin filtrar por
         día/hora — HorarioService los usa para sumar horas semanales y
-        detectar centro/jornada (RF-011), esa decisión no es de acá."""
-        query = db.query(Horario).filter(Horario.idInstructor == id_instructor)
+        detectar centro/jornada (RF-011), esa decisión no es de acá. Solo
+        los activos: uno desactivado no debería sumar a la carga semanal
+        ni aparecer como vigente en el drawer de relacionados."""
+        query = db.query(Horario).filter(Horario.idInstructor == id_instructor, Horario.activo.is_(True))
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)
         return query.all()
@@ -113,7 +125,7 @@ class HorarioRepository:
         día, que es el caso real de "este resultado ya se programó en otro
         momento no relacionado". Devuelve el horario existente que choca, o
         None."""
-        query = db.query(Horario).filter(Horario.idFicha == id_ficha, Horario.idResultado == id_resultado)
+        query = db.query(Horario).filter(Horario.idFicha == id_ficha, Horario.idResultado == id_resultado, Horario.activo.is_(True))
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)
 

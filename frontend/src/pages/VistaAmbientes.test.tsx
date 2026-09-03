@@ -11,7 +11,7 @@ const OTRO_AMBIENTE: Ambiente = { idAmbiente: 2, numeroAmbiente: 102, nombreAmbi
 const HORARIOS: Horario[] = [
   {
     idHorario: 1, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-    idAmbiente: 1, idInstructor: 'u1', idFicha: 10, idResultado: 100, dias: [1],
+    idAmbiente: 1, idInstructor: 'u1', idFicha: 10, idResultado: 100, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
     instructorNombre: 'Erick Granados', fichaCodigo: '3068356', ambienteNombre: 'Sala 101',
     resultadoCodigo: 'CPL18', resultadoDescripcion: 'Gestión de inventarios',
   },
@@ -102,7 +102,7 @@ describe('VistaAmbientes', () => {
       ...HORARIOS,
       {
         idHorario: 2, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-        idAmbiente: 2, idInstructor: 'u2', idFicha: 20, idResultado: 200, dias: [2],
+        idAmbiente: 2, idInstructor: 'u2', idFicha: 20, idResultado: 200, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
         instructorNombre: 'Fredy Ardila', fichaCodigo: '9999999', ambienteNombre: 'Sala 102',
         resultadoCodigo: 'RA-1', resultadoDescripcion: null,
       },

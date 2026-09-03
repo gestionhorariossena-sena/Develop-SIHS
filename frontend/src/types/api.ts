@@ -136,6 +136,9 @@ export interface Horario {
   idFicha: number
   idResultado: number
   dias: number[]
+  fechaCreacion: string
+  fechaModificacion: string
+  activo: boolean
   instructorNombre: string | null
   fichaCodigo: string | null
   ambienteNombre: string | null
