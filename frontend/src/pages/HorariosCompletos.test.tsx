@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { HorariosCompletos } from './HorariosCompletos'
-import type { Ambiente, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
+import type { Ambiente, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
 
 const FICHA: Ficha = {
   idFicha: 1,
@@ -33,6 +33,7 @@ const AMBIENTE: Ambiente = { idAmbiente: 1, numeroAmbiente: 101, nombreAmbiente:
 const SEDE: Sede = { idSede: 1, nombreSede: 'Sede principal', direccion: null, tipoSede: 'principal' }
 const TRIMESTRE: Trimestre = { idTrimestre: 1, nombre: 'Trimestre 1', fechaInicio: '2026-01-01', fechaFin: '2026-03-31', estado: 'activo' }
 const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }, { idDia: 2, nombreDia: 'Martes' }]
+const CARGA_SEMANAL: CargaSemanal = { idUsuario: 'u1', tipoContrato: 'Planta', horasAsignadas: 10, horasMaximas: 40 }
 
 const HORARIO: Horario = {
   idHorario: 7, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
@@ -43,7 +44,7 @@ const HORARIO: Horario = {
 
 const OTRO_HORARIO: Horario = {
   idHorario: 8, horaInicio: '12:00:00', horaFin: '15:00:00', idJornada: 2, idTrimestre: 1,
-  idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 1, dias: [2],
+  idAmbiente: 1, idInstructor: 'u2', idFicha: 1, idResultado: 1, dias: [2],
   instructorNombre: 'Fredy Ardila', fichaCodigo: '9999999', ambienteNombre: 'Taller Industrial',
   resultadoCodigo: 'RA-2', resultadoDescripcion: null,
 }
@@ -63,6 +64,7 @@ function mockeaBase(horarios: Horario[] = [HORARIO]) {
     if (path === '/sedes') return Promise.resolve([SEDE])
     if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
+    if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA_SEMANAL)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -108,31 +110,50 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
   })
 
-  it('clic en una fila abre el drawer con ficha, instructor, ambiente, tema y horario semanal, con links a cada vista completa', async () => {
+  it('clic en una fila expande debajo una caja con ficha, instructor (+ carga semanal), ambiente, tema y el grid del horario', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await screen.findByText('3228973 B')
 
-    await usuario.click(screen.getByText('3228973 B'))
+    await usuario.click(screen.getAllByText('3228973 B')[0])
 
-    const panel = screen.getByRole('dialog', { name: 'Horario #7' })
-    expect(within(panel).getByText(/Análisis y Desarrollo de Software/)).toBeInTheDocument()
-    expect(within(panel).getByText(/Planta/)).toBeInTheDocument()
-    expect(within(panel).getByText(/Sede principal/)).toBeInTheDocument()
-    expect(within(panel).getByText('CPL18 — Gestión de inventarios')).toBeInTheDocument()
-    expect(await within(panel).findByText('Horario semanal')).toBeInTheDocument()
+    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
+    expect(screen.getByText('Análisis y Desarrollo de Software (ADSO)')).toBeInTheDocument()
+    expect(screen.getByText('erick@example.com')).toBeInTheDocument()
+    expect(screen.getByText('Contrato: Planta')).toBeInTheDocument()
+    expect(screen.getByText('Número: 101')).toBeInTheDocument()
+    expect(screen.getByText('Sede: Sede principal')).toBeInTheDocument()
+    // "CPL18" aparece dos veces: en el grid (tema del bloque asignado) y en
+    // la tarjeta "Tema" del detalle.
+    expect(screen.getAllByText('CPL18').length).toBeGreaterThan(0)
+    expect(screen.getByText('Gestión de inventarios')).toBeInTheDocument()
+    expect(screen.getByText('Horario semanal — igual que en el creador de horarios')).toBeInTheDocument()
 
-    expect(within(panel).getByRole('link', { name: 'Ver ficha →' })).toHaveAttribute('href', '/fichas?id=1')
-    expect(within(panel).getByRole('link', { name: 'Ver instructor →' })).toHaveAttribute('href', '/instructores?id=u1')
-    expect(within(panel).getByRole('link', { name: 'Ver ambiente →' })).toHaveAttribute('href', '/ambientes?id=1')
+    expect(await screen.findByText('10h / 40h')).toBeInTheDocument()
+
+    // No debe abrirse ningún panel/drawer lateral — todo pasa dentro de la tabla.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('con ?id= en la URL, abre el drawer de ese horario directo (deep link desde Calendario general)', async () => {
+  it('clic de nuevo en la misma fila colapsa la caja expandida', async () => {
+    mockeaBase()
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+    await screen.findByText('3228973 B')
+
+    await usuario.click(screen.getAllByText('3228973 B')[0])
+    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
+
+    await usuario.click(screen.getAllByText('3228973 B')[0])
+    expect(screen.queryByText('Horario #7')).not.toBeInTheDocument()
+  })
+
+  it('con ?id= en la URL, expande esa fila directo (deep link desde Calendario general)', async () => {
     mockeaBase()
     renderConProviders(<HorariosCompletos />, ['/horarios/completos?id=7'])
 
-    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
   })
 
   it('muestra el error del backend si la carga falla', async () => {

@@ -1,15 +1,16 @@
-import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Fragment, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
+import { SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { nombresDias } from '../components/relacionados/formatoBloque'
 import { BLOQUES } from './horario/tipos'
 import type { Jornada } from './horario/tipos'
 import { colorParaBloque } from './horario/gridLogic'
+import type { ColorBloque } from './horario/gridLogic'
 import { apiGet, ApiError } from '../services/api'
-import type { Ambiente, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
+import type { Ambiente, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
 
 type FiltroJornada = 'todas' | Jornada
 const POR_PAGINA = 10
@@ -22,16 +23,158 @@ function formatoHora(hora: string) {
   return hora.slice(0, 5)
 }
 
+function colorBarraCarga(horasAsignadas: number, horasMaximas: number) {
+  if (horasAsignadas > horasMaximas) return 'bg-red-600 dark:bg-red-500'
+  if (horasAsignadas / horasMaximas >= 0.8) return 'bg-amber-500 dark:bg-amber-400'
+  return 'bg-emerald-600 dark:bg-emerald-500'
+}
+
+interface DetalleHorarioProps {
+  horario: Horario
+  ficha: Ficha | undefined
+  instructor: Usuario | undefined
+  ambiente: Ambiente | undefined
+  sedeNombre: string | undefined
+  trimestre: Trimestre | undefined
+  jornada: Jornada | null
+  color: ColorBloque
+  diasPorId: Record<number, string>
+  onCerrar: () => void
+}
+
+/**
+ * La caja que se expande bajo la fila — junta TODO lo que hoy está
+ * repartido entre Fichas.tsx/Instructores.tsx/Ambientes.tsx (más la carga
+ * semanal, que solo vivía en el drawer de instructor) en un solo lugar, en
+ * vez de un resumen con links hacia allá. Componente aparte (no un bloque
+ * inline en el .map de la tabla) para que la carga semanal se pida sola al
+ * montar/desmontar con la fila — sin tener que comparar "instructor
+ * anterior vs. actual" a mano como hace Instructores.tsx.
+ */
+function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trimestre, jornada, color, diasPorId, onCerrar }: DetalleHorarioProps) {
+  const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
+  const [errorCarga, setErrorCarga] = useState(false)
+
+  useEffect(() => {
+    apiGet<CargaSemanal>(`/usuarios/${horario.idInstructor}/carga-semanal`)
+      .then(setCargaSemanal)
+      .catch(() => setErrorCarga(true))
+  }, [horario.idInstructor])
+
+  // Sin ocultarFilasVacias a propósito: el pedido fue mostrar el horario
+  // "tal como se ve en el creador" (NuevoHorario.tsx), o sea la plantilla
+  // institucional completa (las 3 jornadas, los 6 bloques, Receso incluido)
+  // con la única celda asignada resaltada, no un recorte a lo mínimo.
+  const { bloques, grid } = convertirHorariosAGrid([horario])
+
+  return (
+    <div className="space-y-4 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className={`rounded px-2 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>Horario #{horario.idHorario}</span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">Jornada {jornada ?? 'sin definir'}</span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">{trimestre?.nombre ?? 'Sin trimestre'}</span>
+        </div>
+        <button type="button" onClick={onCerrar} className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
+          Cerrar
+        </button>
+      </div>
+
+      <SeccionDrawer titulo="Horario semanal — igual que en el creador de horarios">
+        <GridHorario bloques={bloques} grid={grid} hayBloqueActivo={false} soloLectura />
+      </SeccionDrawer>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ficha</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{horario.fichaCodigo ?? 'Sin definir'}</p>
+          {ficha ? (
+            <dl className="mt-1.5 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+              <div>{ficha.programa.nombrePrograma} ({ficha.programa.codigoPrograma})</div>
+              <div>Nivel: {ficha.programa.nivelFormacion ?? 'Sin definir'}</div>
+              <div>Trimestre: {ficha.trimestre.nombre} ({ficha.trimestre.fechaInicio} a {ficha.trimestre.fechaFin})</div>
+              <div>Aprendices: {ficha.aprendicesTotales}</div>
+              <div>Jornadas de la ficha: {ficha.jornadas.length ? ficha.jornadas.join(', ') : 'Sin horario'}</div>
+            </dl>
+          ) : (
+            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Sin más datos disponibles.</p>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Instructor</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{horario.instructorNombre ?? 'Sin definir'}</p>
+          {instructor ? (
+            <dl className="mt-1.5 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+              <div>{instructor.email}</div>
+              <div>Contrato: {instructor.tipoContrato?.trim() || 'Sin definir'}</div>
+              <div>Especialidades: {instructor.especialidades.length ? instructor.especialidades.map((item) => item.nombre).join(', ') : 'Sin asignar'}</div>
+            </dl>
+          ) : (
+            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Sin más datos disponibles.</p>
+          )}
+
+          <div className="mt-2">
+            <p className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Carga semanal</p>
+            {errorCarga ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400">No se pudo calcular.</p>
+            ) : !cargaSemanal ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400">Calculando…</p>
+            ) : cargaSemanal.horasMaximas == null ? (
+              <p className="text-xs text-slate-500 dark:text-slate-400">Sin tope definido (falta tipo de contrato).</p>
+            ) : (
+              <>
+                <p className="mb-1 text-xs font-medium text-slate-700 dark:text-slate-300">{cargaSemanal.horasAsignadas}h / {cargaSemanal.horasMaximas}h</p>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div
+                    className={`h-full rounded-full ${colorBarraCarga(cargaSemanal.horasAsignadas, cargaSemanal.horasMaximas)}`}
+                    style={{ width: `${Math.min(100, Math.round((cargaSemanal.horasAsignadas / cargaSemanal.horasMaximas) * 100))}%` }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ambiente</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{horario.ambienteNombre ?? 'Sin definir'}</p>
+          {ambiente ? (
+            <dl className="mt-1.5 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+              <div>Número: {ambiente.numeroAmbiente}</div>
+              <div>Tipo: {ambiente.tipoAmbiente}</div>
+              <div>Estado: {ambiente.estadoAmbiente}</div>
+              <div>Sede: {sedeNombre ?? 'Sin definir'}</div>
+            </dl>
+          ) : (
+            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Sin más datos disponibles.</p>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tema</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{horario.resultadoCodigo ?? 'Sin definir'}</p>
+          <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-300">{horario.resultadoDescripcion ?? 'Sin descripción.'}</p>
+          <dl className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+            <div>Días: {nombresDias(horario.dias, diasPorId)}</div>
+            <div>Hora: {formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</div>
+          </dl>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /**
  * "Horarios completos" — a diferencia de Fichas/Instructores/Ambientes
  * (cada una centrada en UNA entidad y todo lo que tiene alrededor), acá el
- * horario mismo es la fila: cada `GET /horarios/` es un renglón, con la
- * ficha/instructor/ambiente/resultado/trimestre que le corresponden
- * combinados en un mismo lugar — la vista que "unifica" lo que las otras
- * tres muestran por separado. Enlazada desde el drawer del día en
- * CalendarioGeneral.tsx ("Ver horario completo") y desde acá se puede
- * saltar a la ficha/instructor/ambiente completos (?id=), mismo patrón de
- * ida y vuelta que el resto del sistema.
+ * horario mismo es la fila: cada `GET /horarios/` es un renglón. Clic en
+ * una fila expande hacia abajo (no un drawer/panel lateral) una caja con
+ * TODA la info combinada — ficha, instructor (con carga semanal), ambiente
+ * y tema — igual que se ve repartida entre las otras tres pantallas, más
+ * el horario en el mismo formato de grid que usa el creador
+ * (`NuevoHorario.tsx`). Historial de horarios (versionado/registro de
+ * cambios) es un módulo aparte, no se toca acá.
  */
 export function HorariosCompletos() {
   const [searchParams] = useSearchParams()
@@ -48,7 +191,7 @@ export function HorariosCompletos() {
   const [filtroJornada, setFiltroJornada] = useState<FiltroJornada>('todas')
   const [filtroTrimestre, setFiltroTrimestre] = useState('todos')
   const [paginaActual, setPaginaActual] = useState(1)
-  const [seleccionado, setSeleccionado] = useState<Horario | null>(null)
+  const [idExpandido, setIdExpandido] = useState<number | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -57,13 +200,12 @@ export function HorariosCompletos() {
       .then((datos) => {
         setHorarios(datos)
 
-        // Deep link desde el drawer del día en CalendarioGeneral.tsx
-        // ("Ver horario completo" → /horarios/completos?id=...) — dentro
-        // del .then, no en un efecto reactivo aparte, mismo patrón que
-        // Fichas.tsx/Instructores.tsx/Ambientes.tsx.
+        // Deep link desde el link "Ver horario completo" (Calendario
+        // general) — expande esta fila directo, dentro del .then, mismo
+        // patrón que Fichas.tsx/Instructores.tsx/Ambientes.tsx.
         if (idDesdeUrl) {
           const encontrado = datos.find((horario) => horario.idHorario === Number(idDesdeUrl))
-          if (encontrado) setSeleccionado(encontrado)
+          if (encontrado) setIdExpandido(encontrado.idHorario)
         }
       })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de horarios.'))
@@ -101,14 +243,6 @@ export function HorariosCompletos() {
   const paginaSegura = Math.min(paginaActual, totalPaginas)
   const inicioPagina = (paginaSegura - 1) * POR_PAGINA
   const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
-
-  const { bloques: bloquesGrid, grid } = convertirHorariosAGrid(seleccionado ? [seleccionado] : [])
-  const fichaSeleccionada = seleccionado ? fichaPorId.get(seleccionado.idFicha) : undefined
-  const instructorSeleccionado = seleccionado ? instructorPorId.get(seleccionado.idInstructor) : undefined
-  const ambienteSeleccionado = seleccionado ? ambientePorId.get(seleccionado.idAmbiente) : undefined
-  const trimestreSeleccionado = seleccionado ? trimestrePorId.get(seleccionado.idTrimestre) : undefined
-  const jornadaSeleccionada = seleccionado ? jornadaDeHorario(seleccionado) : null
-  const colorSeleccionado = seleccionado ? colorParaBloque(String(seleccionado.idHorario)) : null
 
   return (
     <AppShell activo="Horarios completos">
@@ -164,16 +298,39 @@ export function HorariosCompletos() {
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
       {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando horarios...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Trimestre</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((horario) => {
         const color = colorParaBloque(String(horario.idHorario))
+        const expandido = horario.idHorario === idExpandido
+        const jornada = jornadaDeHorario(horario)
+        const ambiente = ambientePorId.get(horario.idAmbiente)
         return (
-          <tr key={horario.idHorario} onClick={() => setSeleccionado(horario)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60">
-            <td className={`border-l-4 px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 ${color.borde}`}>{horario.fichaCodigo}</td>
-            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{horario.instructorNombre ?? 'Sin definir'}</td>
-            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{horario.ambienteNombre ?? 'Sin definir'}</td>
-            <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{jornadaDeHorario(horario) ?? 'Sin definir'}</span></td>
-            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{nombresDias(horario.dias, diasPorId)}</td>
-            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</td>
-            <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{trimestrePorId.get(horario.idTrimestre)?.nombre ?? 'Sin definir'}</td>
-          </tr>
+          <Fragment key={horario.idHorario}>
+            <tr onClick={() => setIdExpandido(expandido ? null : horario.idHorario)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60">
+              <td className={`border-l-4 px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 ${color.borde}`}>{horario.fichaCodigo}</td>
+              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{horario.instructorNombre ?? 'Sin definir'}</td>
+              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{horario.ambienteNombre ?? 'Sin definir'}</td>
+              <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{jornada ?? 'Sin definir'}</span></td>
+              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{nombresDias(horario.dias, diasPorId)}</td>
+              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</td>
+              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{trimestrePorId.get(horario.idTrimestre)?.nombre ?? 'Sin definir'}</td>
+            </tr>
+            {expandido && (
+              <tr>
+                <td colSpan={7} className="bg-slate-50 dark:bg-slate-900/40">
+                  <DetalleHorario
+                    horario={horario}
+                    ficha={fichaPorId.get(horario.idFicha)}
+                    instructor={instructorPorId.get(horario.idInstructor)}
+                    ambiente={ambiente}
+                    sedeNombre={ambiente ? sedePorId.get(ambiente.idSede) : undefined}
+                    trimestre={trimestrePorId.get(horario.idTrimestre)}
+                    jornada={jornada}
+                    color={color}
+                    diasPorId={diasPorId}
+                    onCerrar={() => setIdExpandido(null)}
+                  />
+                </td>
+              </tr>
+            )}
+          </Fragment>
         )
       })}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay horarios que coincidan con los filtros.</p>}
 
@@ -203,53 +360,6 @@ export function HorariosCompletos() {
           </div>
         )}
       </div>}
-
-      {seleccionado && colorSeleccionado && (
-        <DrawerRelacionados
-          iniciales={String(seleccionado.idHorario)}
-          titulo={`Horario #${seleccionado.idHorario}`}
-          subtitulo={seleccionado.fichaCodigo ?? undefined}
-          etiquetas={[jornadaSeleccionada ?? 'Sin jornada', trimestreSeleccionado?.nombre ?? 'Sin trimestre']}
-          onCerrar={() => setSeleccionado(null)}
-        >
-          <dl className="space-y-4 text-sm">
-            <div>
-              <dt className="text-slate-500 dark:text-slate-400">Ficha</dt>
-              <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                {seleccionado.fichaCodigo}{fichaSeleccionada ? ` — ${fichaSeleccionada.programa.nombrePrograma}` : ''}
-              </dd>
-              <Link to={`/fichas?id=${seleccionado.idFicha}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Ver ficha →</Link>
-            </div>
-            <div>
-              <dt className="text-slate-500 dark:text-slate-400">Instructor</dt>
-              <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                {seleccionado.instructorNombre ?? 'Sin definir'}{instructorSeleccionado?.tipoContrato ? ` — ${instructorSeleccionado.tipoContrato}` : ''}
-              </dd>
-              <Link to={`/instructores?id=${seleccionado.idInstructor}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Ver instructor →</Link>
-            </div>
-            <div>
-              <dt className="text-slate-500 dark:text-slate-400">Ambiente</dt>
-              <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                {seleccionado.ambienteNombre ?? 'Sin definir'}
-                {ambienteSeleccionado ? ` — ${sedePorId.get(ambienteSeleccionado.idSede) ?? 'Sede sin definir'}` : ''}
-              </dd>
-              <Link to={`/ambientes?id=${seleccionado.idAmbiente}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Ver ambiente →</Link>
-            </div>
-            <div>
-              <dt className="text-slate-500 dark:text-slate-400">Tema</dt>
-              <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                {[seleccionado.resultadoCodigo, seleccionado.resultadoDescripcion].filter(Boolean).join(' — ') || 'Sin definir'}
-              </dd>
-            </div>
-          </dl>
-
-          <SeccionDrawer titulo="Horario semanal">
-            <div className="text-[10px]">
-              <GridHorario bloques={bloquesGrid} grid={grid} hayBloqueActivo={false} soloLectura ocultarFilasVacias />
-            </div>
-          </SeccionDrawer>
-        </DrawerRelacionados>
-      )}
     </AppShell>
   )
 }
