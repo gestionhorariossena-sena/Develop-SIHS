@@ -232,3 +232,14 @@ export interface HorarioGuardado {
   idsHorarios?: number[]
   fechaCreacion: string
 }
+
+export interface Notificacion {
+  idNotificacion: number
+  idUsuario: string
+  tipo: 'cruce' | 'horario' | 'ambiente' | 'sistema'
+  mensaje: string
+  leida: boolean
+  fechaCreacion: string
+  entidadRelacionada: string | null
+  idEntidadRelacionada: string | null
+}

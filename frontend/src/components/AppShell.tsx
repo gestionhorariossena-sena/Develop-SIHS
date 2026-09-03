@@ -4,9 +4,8 @@ import { Link } from 'react-router-dom'
 import senaLogo from '../assets/sena-logo.jpeg'
 import { useAuth } from '../hooks/useAuth'
 import { apiGet } from '../services/api'
-import type { Usuario } from '../types/api'
+import type { Notificacion, Usuario } from '../types/api'
 import { NotificacionesPanel } from './NotificacionesPanel'
-import { NOTIFICACIONES } from '../data/notificacionesEjemplo'
 import { ThemeSelector } from './ThemeSelector'
 
 interface ItemNav {
@@ -41,9 +40,6 @@ interface GrupoNav {
  * evita la confusión de "por qué me deja hacer clic y después falla", no
  * reemplaza esa protección.
  */
-/** Fuera de los grupos, arriba de todo — igual que antes, es el punto de
- * regreso rápido, el mockup lo da por implícito en el logo pero se deja
- * explícito para no perder la forma actual de volver al dashboard. */
 const INICIO: ItemNav = { etiqueta: 'Inicio', ruta: '/dashboard' }
 
 const NAV: GrupoNav[] = [
@@ -103,10 +99,6 @@ function letraInicial(nombre: string) {
   return nombre.trim().charAt(0).toUpperCase()
 }
 
-// El menú flota sobre el contenido (position: fixed) en vez de empujarlo —
-// así el grid de horarios (mínimo 1100px, ver GridHorario.tsx) siempre
-// tiene el ancho completo del viewport disponible y nunca necesita scroll
-// lateral, esté el menú abierto o cerrado.
 const RETRASO_APERTURA_HOVER_MS = 1500
 const RETRASO_CIERRE_HOVER_MS = 300
 
@@ -130,28 +122,38 @@ interface AppShellProps {
  */
 export function AppShell({ activo, children }: AppShellProps) {
   const { signOut } = useAuth()
+
   const [miPerfil, setMiPerfil] = useState<Usuario | null>(null)
   const [errorPerfil, setErrorPerfil] = useState<string | null>(null)
+
   const [navAbierta, setNavAbierta] = useState(false)
   const abiertaPorHoverRef = useRef(false)
   const temporizadorAperturaRef = useRef<number | null>(null)
   const temporizadorCierreRef = useRef<number | null>(null)
+
   const [notifAbiertas, setNotifAbiertas] = useState(false)
+  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([])
   const notifRef = useRef<HTMLDivElement>(null)
-  const hayNoLeidas = NOTIFICACIONES.some((n) => !n.leida)
+
+  const hayNoLeidas = notificaciones.some((n) => !n.leida)
+
   const puedeGestionarUsuarios =
     miPerfil?.roles.some(
       (rol) => rol.nombre === 'Administrador' || rol.nombre === 'Coordinador',
     ) ?? false
-  const esInstructor = miPerfil?.roles.some((rol) => rol.nombre === 'Instructor') ?? false
-  // Los ítems marcados soloGestion (hoy, todo el grupo Administración)
-  // solo tienen sentido para un Administrador o Coordinador — mismo
-  // criterio que antes tenía "Usuarios" a solas. soloInstructor es el
-  // espejo para el grupo "Mi trabajo" (pedido 2026-09-03).
+
+  const esInstructor =
+    miPerfil?.roles.some((rol) => rol.nombre === 'Instructor') ?? false
+
+  // Los ítems marcados soloGestion solo tienen sentido para un
+  // Administrador o Coordinador — mismo criterio que antes tenía "Usuarios".
+  // soloInstructor es el espejo para el grupo "Mi trabajo".
   const nav = NAV.map((grupo) => ({
     ...grupo,
     items: grupo.items.filter(
-      (item) => (!item.soloGestion || puedeGestionarUsuarios) && (!item.soloInstructor || esInstructor),
+      (item) =>
+        (!item.soloGestion || puedeGestionarUsuarios) &&
+        (!item.soloInstructor || esInstructor),
     ),
   })).filter((grupo) => grupo.items.length > 0)
 
@@ -162,15 +164,34 @@ export function AppShell({ activo, children }: AppShellProps) {
         setErrorPerfil(null)
       })
       .catch((err) => {
-        const mensaje = err instanceof Error ? err.message : 'No se pudo cargar tu perfil.'
+        const mensaje =
+          err instanceof Error
+            ? err.message
+            : 'No se pudo cargar tu perfil.'
+
         setErrorPerfil(mensaje)
       })
   }, [])
 
   useEffect(() => {
+    apiGet<Notificacion[]>('/notificaciones/')
+      .then((datos) => {
+        setNotificaciones(datos)
+      })
+      .catch(() => {
+        setNotificaciones([])
+      })
+  }, [])
+
+  useEffect(() => {
     return () => {
-      if (temporizadorAperturaRef.current) window.clearTimeout(temporizadorAperturaRef.current)
-      if (temporizadorCierreRef.current) window.clearTimeout(temporizadorCierreRef.current)
+      if (temporizadorAperturaRef.current) {
+        window.clearTimeout(temporizadorAperturaRef.current)
+      }
+
+      if (temporizadorCierreRef.current) {
+        window.clearTimeout(temporizadorCierreRef.current)
+      }
     }
   }, [])
 
@@ -178,17 +199,23 @@ export function AppShell({ activo, children }: AppShellProps) {
     if (!notifAbiertas) return
 
     function alClicFuera(evento: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(evento.target as Node)) {
+      if (
+        notifRef.current &&
+        !notifRef.current.contains(evento.target as Node)
+      ) {
         setNotifAbiertas(false)
       }
     }
 
     function alPresionarTecla(evento: KeyboardEvent) {
-      if (evento.key === 'Escape') setNotifAbiertas(false)
+      if (evento.key === 'Escape') {
+        setNotifAbiertas(false)
+      }
     }
 
     document.addEventListener('mousedown', alClicFuera)
     document.addEventListener('keydown', alPresionarTecla)
+
     return () => {
       document.removeEventListener('mousedown', alClicFuera)
       document.removeEventListener('keydown', alPresionarTecla)
@@ -200,6 +227,7 @@ export function AppShell({ activo, children }: AppShellProps) {
       window.clearTimeout(temporizadorAperturaRef.current)
       temporizadorAperturaRef.current = null
     }
+
     if (temporizadorCierreRef.current) {
       window.clearTimeout(temporizadorCierreRef.current)
       temporizadorCierreRef.current = null
@@ -218,9 +246,9 @@ export function AppShell({ activo, children }: AppShellProps) {
     setNavAbierta(false)
   }
 
-  /** Borde izquierdo de la pantalla: dejar el cursor ~1.5s la abre solo. */
   function alEntrarBordeHover() {
     if (navAbierta || temporizadorAperturaRef.current) return
+
     temporizadorAperturaRef.current = window.setTimeout(() => {
       abiertaPorHoverRef.current = true
       setNavAbierta(true)
@@ -235,7 +263,6 @@ export function AppShell({ activo, children }: AppShellProps) {
     }
   }
 
-  /** Si se abrió por hover, alejar el cursor del panel vuelve a cerrarlo. */
   function alEntrarPanel() {
     if (temporizadorCierreRef.current) {
       window.clearTimeout(temporizadorCierreRef.current)
@@ -243,9 +270,6 @@ export function AppShell({ activo, children }: AppShellProps) {
     }
   }
 
-  /** Un ítem de nav: link si ya tiene pantalla, deshabilitado si no —
-   * misma convención de siempre, ahora compartida entre "Inicio" (fuera
-   * de los grupos) y cada ítem dentro de un grupo. */
   function renderItemNav(item: ItemNav) {
     const esActivo = item.etiqueta === activo
 
@@ -263,7 +287,9 @@ export function AppShell({ activo, children }: AppShellProps) {
         >
           <span
             className={`h-3.5 w-3.5 shrink-0 rounded ${
-              esActivo ? 'bg-sena-600' : 'border border-slate-300 dark:border-slate-600'
+              esActivo
+                ? 'bg-sena-600'
+                : 'border border-slate-300 dark:border-slate-600'
             }`}
           />
           {item.etiqueta}
@@ -285,6 +311,7 @@ export function AppShell({ activo, children }: AppShellProps) {
 
   function alSalirPanel() {
     if (!abiertaPorHoverRef.current) return
+
     temporizadorCierreRef.current = window.setTimeout(() => {
       setNavAbierta(false)
       abiertaPorHoverRef.current = false
@@ -305,7 +332,9 @@ export function AppShell({ activo, children }: AppShellProps) {
 
       <div
         className={`fixed inset-0 z-40 bg-slate-900/40 transition-opacity duration-200 sm:hidden ${
-          navAbierta ? 'opacity-100' : 'pointer-events-none opacity-0'
+          navAbierta
+            ? 'opacity-100'
+            : 'pointer-events-none opacity-0'
         }`}
         aria-hidden="true"
         onClick={cerrarManual}
@@ -320,12 +349,23 @@ export function AppShell({ activo, children }: AppShellProps) {
       >
         <div className="mb-8 flex shrink-0 items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5">
-            <img src={senaLogo} alt="SENA" className="h-9 w-9 rounded-lg object-cover" />
+            <img
+              src={senaLogo}
+              alt="SENA"
+              className="h-9 w-9 rounded-lg object-cover"
+            />
+
             <div>
-              <p className="text-sm font-bold text-slate-900 dark:text-slate-100">SIHS</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">CGMLTI</p>
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                SIHS
+              </p>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                CGMLTI
+              </p>
             </div>
           </div>
+
           <button
             type="button"
             onClick={cerrarManual}
@@ -333,33 +373,48 @@ export function AppShell({ activo, children }: AppShellProps) {
             aria-label="Ocultar menú"
             className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
           >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M4 12h16" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M11 19l-7-7 7-7M4 12h16"
+              />
             </svg>
           </button>
         </div>
 
-        {/* min-h-0 es necesario para que un hijo flex con overflow-y-auto
-         * pueda encogerse por debajo de la altura de su contenido — sin
-         * eso el nav empuja el alto del <aside> en vez de scrollear, y con
-         * más de ~8 ítems (ver NAV arriba) el grupo Administración quedaba
-         * cortado fuera de la pantalla sin forma de llegar a él. */}
         <nav className="scroll-sidebar min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-          <div className="space-y-1">{renderItemNav(INICIO)}</div>
+          <div className="space-y-1">
+            {renderItemNav(INICIO)}
+          </div>
 
           {nav.map((grupo) => (
             <div key={grupo.grupo}>
               <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">
                 {grupo.grupo.toUpperCase()}
               </p>
-              <div className="space-y-1">{grupo.items.map((item) => renderItemNav(item))}</div>
+
+              <div className="space-y-1">
+                {grupo.items.map((item) => renderItemNav(item))}
+              </div>
             </div>
           ))}
         </nav>
 
         <div className="mt-4 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Trimestre 3 · 2026</p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Programación abierta hasta el 12 de septiembre.</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Trimestre 3 · 2026
+          </p>
+
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Programación abierta hasta el 12 de septiembre.
+          </p>
         </div>
       </aside>
 
@@ -374,27 +429,59 @@ export function AppShell({ activo, children }: AppShellProps) {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => (navAbierta ? cerrarManual() : abrirManual())}
-              title={navAbierta ? 'Ocultar menú' : 'Mostrar menú (o deja el cursor en el borde izquierdo)'}
-              aria-label={navAbierta ? 'Ocultar menú' : 'Mostrar menú'}
+              onClick={() =>
+                navAbierta ? cerrarManual() : abrirManual()
+              }
+              title={
+                navAbierta
+                  ? 'Ocultar menú'
+                  : 'Mostrar menú (o deja el cursor en el borde izquierdo)'
+              }
+              aria-label={
+                navAbierta ? 'Ocultar menú' : 'Mostrar menú'
+              }
               aria-expanded={navAbierta}
               className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 sm:flex"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
 
             <button
               type="button"
-              onClick={() => (navAbierta ? cerrarManual() : abrirManual())}
+              onClick={() =>
+                navAbierta ? cerrarManual() : abrirManual()
+              }
               title={navAbierta ? 'Ocultar menú' : 'Abrir menú'}
-              aria-label={navAbierta ? 'Ocultar menú' : 'Abrir menú'}
+              aria-label={
+                navAbierta ? 'Ocultar menú' : 'Abrir menú'
+              }
               aria-expanded={navAbierta}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 sm:hidden"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
 
@@ -405,9 +492,19 @@ export function AppShell({ activo, children }: AppShellProps) {
                 viewBox="0 0 24 24"
                 stroke="currentColor"
               >
-                <circle cx="11" cy="11" r="7" strokeWidth={2} />
-                <path strokeLinecap="round" strokeWidth={2} d="m20 20-3-3" />
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="7"
+                  strokeWidth={2}
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeWidth={2}
+                  d="m20 20-3-3"
+                />
               </svg>
+
               <input
                 type="search"
                 aria-label="Buscar ficha, instructor o ambiente"
@@ -428,14 +525,21 @@ export function AppShell({ activo, children }: AppShellProps) {
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
-                onClick={() => setNotifAbiertas((abiertas) => !abiertas)}
+                onClick={() =>
+                  setNotifAbiertas((abiertas) => !abiertas)
+                }
                 title="Notificaciones"
                 aria-label="Notificaciones"
                 aria-haspopup="true"
                 aria-expanded={notifAbiertas}
                 className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -443,23 +547,34 @@ export function AppShell({ activo, children }: AppShellProps) {
                     d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"
                   />
                 </svg>
+
                 {hayNoLeidas && (
                   <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-orange-500" />
                 )}
               </button>
 
-              {notifAbiertas && <NotificacionesPanel onCerrar={() => setNotifAbiertas(false)} />}
+              {notifAbiertas && (
+                <NotificacionesPanel
+                  notificaciones={notificaciones}
+                  onNotificacionesActualizadas={setNotificaciones}
+                  onCerrar={() => setNotifAbiertas(false)}
+                />
+              )}
             </div>
 
             <div className="flex items-center gap-2.5">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sena-700 text-xs font-semibold text-white">
                 {miPerfil ? letraInicial(miPerfil.nombre) : '·'}
               </span>
+
               <div className="text-right">
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {miPerfil ? miPerfil.nombre : 'Cargando…'}
                 </p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{miPerfil?.email ?? ''}</p>
+
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {miPerfil?.email ?? ''}
+                </p>
               </div>
             </div>
 
