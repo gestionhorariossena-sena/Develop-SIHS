@@ -69,7 +69,7 @@ const NAV: GrupoNav[] = [
     grupo: 'Formación',
     items: [
       { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
-      { etiqueta: 'Programas', soloGestion: true },
+      { etiqueta: 'Programas', ruta: '/programas', soloGestion: true },
       { etiqueta: 'Temáticas', soloGestion: true },
     ],
   },

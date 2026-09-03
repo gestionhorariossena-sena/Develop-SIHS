@@ -19,6 +19,7 @@ import { Usuarios } from '../pages/Usuarios'
 import { Roles } from '../pages/Roles'
 import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
 import { ProtectedRoute } from './ProtectedRoute'
+import { Programas } from '../pages/Programas'
 
 /**
  * Todas las rutas de la app viven acá. Para agregar una página nueva:
@@ -119,6 +120,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <VistaFichas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/programas"
+        element={
+          <ProtectedRoute>
+            <Programas />
           </ProtectedRoute>
         }
       />
