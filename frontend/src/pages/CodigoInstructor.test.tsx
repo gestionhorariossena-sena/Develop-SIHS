@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { CodigoInstructor } from './CodigoInstructor'
 import type { Usuario } from '../types/api'
@@ -38,8 +39,10 @@ const COORDINADOR: Usuario = {
 }
 
 const apiGetMock = vi.fn()
+const apiPostMock = vi.fn()
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiPost: (...args: unknown[]) => apiPostMock(...args),
   ApiError: class ApiError extends Error {
     status: number
     constructor(status: number, message: string) {
@@ -81,5 +84,35 @@ describe('CodigoInstructor', () => {
     renderConProviders(<CodigoInstructor />)
 
     expect(await screen.findByText('Solo un Administrador puede ver los códigos de instructor.')).toBeInTheDocument()
+  })
+
+  it('un instructor sin código tiene un botón "Generar" que lo crea (respaldo si falló la generación automática)', async () => {
+    mockeaUsuarios([INSTRUCTOR_SIN_CODIGO])
+    apiPostMock.mockResolvedValue({ codigo: 'INS-XYZ99', idUsuario: 'u2' })
+    const usuario = userEvent.setup()
+
+    renderConProviders(<CodigoInstructor />)
+    const fila = (await screen.findByText('Laura Pérez')).closest('tr') as HTMLElement
+    expect(within(fila).getByText('Sin código aún')).toBeInTheDocument()
+
+    await usuario.click(within(fila).getByRole('button', { name: 'Generar' }))
+
+    await waitFor(() => expect(apiPostMock).toHaveBeenCalledWith('/usuarios/instructor/codigo/generar', { idUsuario: 'u2' }))
+    expect(await within(fila).findByText('INS-XYZ99')).toBeInTheDocument()
+    expect(within(fila).getByRole('button', { name: 'Copiar' })).toBeInTheDocument()
+  })
+
+  it('si falla la generación, muestra el error y no rompe la fila', async () => {
+    const { ApiError } = await import('../services/api')
+    mockeaUsuarios([INSTRUCTOR_SIN_CODIGO])
+    apiPostMock.mockRejectedValue(new ApiError(409, 'No se pudo generar un código único.'))
+    const usuario = userEvent.setup()
+
+    renderConProviders(<CodigoInstructor />)
+    const fila = (await screen.findByText('Laura Pérez')).closest('tr') as HTMLElement
+    await usuario.click(within(fila).getByRole('button', { name: 'Generar' }))
+
+    expect(await screen.findByText('No se pudo generar un código único.')).toBeInTheDocument()
+    expect(within(fila).getByRole('button', { name: 'Generar' })).toBeInTheDocument()
   })
 })

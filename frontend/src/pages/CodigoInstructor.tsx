@@ -1,24 +1,30 @@
 import { useEffect, useState } from 'react'
 import { AppShell } from '../components/AppShell'
-import { apiGet, ApiError } from '../services/api'
+import { apiGet, apiPost, ApiError } from '../services/api'
 import type { Usuario } from '../types/api'
 
 /**
- * Lista de solo lectura de los códigos de instructor ya emitidos —
- * "Código de instructor: completar el flujo frontend y vincularlo a un
- * trimestre". No pide nada nuevo al backend: usa GET /usuarios/ (mismo
- * endpoint que Usuarios.tsx, admin-only) y filtra los que tienen rol
- * Instructor, igual que ya hacía Usuarios.tsx antes de este cambio.
+ * Lista de los códigos de instructor ya emitidos — "Código de instructor:
+ * completar el flujo frontend y vincularlo a un trimestre". No pide nada
+ * nuevo al backend: usa GET /usuarios/ (mismo endpoint que Usuarios.tsx,
+ * admin-only) y filtra los que tienen rol Instructor, igual que ya hacía
+ * Usuarios.tsx antes de este cambio.
  *
- * El código ya no se genera acá — se dispara solo al aprobar el rol
- * Instructor en AprobarlicitarSolicitudes.tsx, y queda fijo una vez
- * creado (UsuarioService.generar_codigo_instructor es idempotente).
+ * El código se genera solo al aprobar el rol Instructor en
+ * AprobarlicitarSolicitudes.tsx, y queda fijo una vez creado
+ * (UsuarioService.generar_codigo_instructor es idempotente) — pero si esa
+ * generación automática falla (ver el catch en AprobarlicitarSolicitudes),
+ * o si ya había instructores aprobados antes de que existiera ese flujo,
+ * el instructor queda sin código y no hay forma de generarlo. Por eso acá
+ * también hay un botón "Generar" de respaldo, mismo endpoint que ya usaba
+ * Usuarios.tsx.
  */
 export function CodigoInstructor() {
   const [usuarios, setUsuarios] = useState<Usuario[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [noAutorizado, setNoAutorizado] = useState(false)
   const [copiadoId, setCopiadoId] = useState<string | null>(null)
+  const [generandoId, setGenerandoId] = useState<string | null>(null)
 
   useEffect(() => {
     apiGet<Usuario[]>('/usuarios/')
@@ -43,6 +49,21 @@ export function CodigoInstructor() {
       setTimeout(() => setCopiadoId((previo) => (previo === idUsuario ? null : previo)), 2000)
     } catch {
       // No bloquea la experiencia si el navegador no permite copiar.
+    }
+  }
+
+  async function generar(idUsuario: string) {
+    setGenerandoId(idUsuario)
+    setError(null)
+    try {
+      const resultado = await apiPost<{ codigo: string; idUsuario: string }>('/usuarios/instructor/codigo/generar', { idUsuario })
+      setUsuarios((previo) =>
+        previo?.map((usuario) => (usuario.idUsuario === idUsuario ? { ...usuario, codigoInstructor: resultado.codigo } : usuario)) ?? previo,
+      )
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo generar el código.')
+    } finally {
+      setGenerandoId(null)
     }
   }
 
@@ -107,13 +128,22 @@ export function CodigoInstructor() {
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {instructor.codigoInstructor && (
+                      {instructor.codigoInstructor ? (
                         <button
                           type="button"
                           onClick={() => copiar(instructor.idUsuario, instructor.codigoInstructor as string)}
                           className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                         >
                           {copiadoId === instructor.idUsuario ? 'Copiado' : 'Copiar'}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => void generar(instructor.idUsuario)}
+                          disabled={generandoId === instructor.idUsuario}
+                          className="rounded-lg border border-sena-300 px-3 py-1.5 text-xs font-medium text-sena-700 hover:bg-sena-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sena-700 dark:text-sena-400 dark:hover:bg-sena-950/40"
+                        >
+                          {generandoId === instructor.idUsuario ? 'Generando…' : 'Generar'}
                         </button>
                       )}
                     </td>
