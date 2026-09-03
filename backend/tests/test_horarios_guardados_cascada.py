@@ -141,3 +141,18 @@ def test_listar_horarios_guardados_con_idshorarios_null_no_da_500(client, db_ses
     cuerpo = respuesta.json()
     assert len(cuerpo) == 1
     assert cuerpo[0]["idsHorarios"] == []
+
+
+def test_instructor_no_puede_ver_el_historial_de_horarios_de_otros(client, db_session, autenticar_como):
+    """Reportado 2026-09-03: un Instructor podía pedir GET
+    /horarios-guardados/ directo (sin pasar por el sidebar) y ver los
+    snapshots de TODOS los instructores — esta ruta solo chequeaba
+    autenticación, no rol. Es una herramienta de coordinación; el
+    Instructor ve su propio horario vigente vía /usuarios/me/horarios."""
+    _crear_tablas_extra(db_session)
+    _poblar(db_session)
+    _, headers = autenticar_como("Instructor")
+
+    respuesta = client.get("/api/v1/horarios-guardados/", headers=headers)
+
+    assert respuesta.status_code == 403

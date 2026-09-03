@@ -65,7 +65,7 @@ function mockeaFichasYPerfil(fichas: unknown) {
 const HORARIOS: Horario[] = [
   {
     idHorario: 1, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-    idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 1, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
+    idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 1, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
     instructorNombre: 'Erick Granados', fichaCodigo: '3228973 B', ambienteNombre: 'Ambiente 101',
     resultadoCodigo: 'RA-9', resultadoDescripcion: null,
   },
@@ -238,7 +238,7 @@ describe('Fichas', () => {
       ...HORARIOS,
       {
         idHorario: 2, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-        idAmbiente: 2, idInstructor: 'u2', idFicha: 2, idResultado: 2, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
+        idAmbiente: 2, idInstructor: 'u2', idFicha: 2, idResultado: 2, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
         instructorNombre: 'Fredy Ardila', fichaCodigo: '2758431', ambienteNombre: 'Ambiente 202',
         resultadoCodigo: 'RA-2', resultadoDescripcion: null,
       },
