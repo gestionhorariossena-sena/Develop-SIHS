@@ -60,11 +60,12 @@ const HORARIO_B: Horario = {
 
 const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }, { idDia: 2, nombreDia: 'Martes' }]
 
-const apiGetMock = vi.fn()
-const apiPostMock = vi.fn()
+const { apiGetMock, apiPostMock, apiPutMock } = vi.hoisted(() => ({ apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPutMock: vi.fn() }))
+const PERFIL_ADMIN = { idUsuario: 'admin', nombre: 'Administrador', email: 'admin@test.com', estado: 'activo', fechaRegistro: '2026-01-01', roles: [{ idRol: 1, nombre: 'Administrador' }], especialidades: [] }
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
   apiPost: (...args: unknown[]) => apiPostMock(...args),
+  apiPut: (...args: unknown[]) => apiPutMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -73,6 +74,7 @@ vi.mock('../services/api', () => ({
  * que devuelva /ambientes. */
 function mockeaBase(ambientes: Ambiente[] = AMBIENTES, todosLosHorarios: Horario[] = [HORARIO_A, HORARIO_B]) {
   apiGetMock.mockImplementation((path: string) => {
+    if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
     if (path === '/ambientes') return Promise.resolve(ambientes)
     if (path === '/sedes') return Promise.resolve(SEDES)
     if (path === '/coordinaciones/') return Promise.resolve(COORDINACIONES)
@@ -86,6 +88,22 @@ function mockeaBase(ambientes: Ambiente[] = AMBIENTES, todosLosHorarios: Horario
 }
 
 describe('Ambientes', () => {
+  it('permite editar desde la fila con el payload del schema y refresca la lista', async () => {
+    mockeaBase()
+    apiPutMock.mockResolvedValue({ ...AMBIENTES[0], nombreAmbiente: 'Sala actualizada' })
+    const usuario = userEvent.setup()
+    renderConProviders(<Ambientes />)
+    await screen.findByText('Sala 101')
+
+    await usuario.click(screen.getAllByRole('button', { name: 'Editar' })[0])
+    await usuario.clear(screen.getByLabelText('Nombre'))
+    await usuario.type(screen.getByLabelText('Nombre'), 'Sala actualizada')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar ambiente' }))
+
+    await waitFor(() => expect(apiPutMock).toHaveBeenCalledWith('/ambientes/1', expect.objectContaining({ numeroAmbiente: 101, nombreAmbiente: 'Ambiente', idSede: 1 })))
+    expect(apiGetMock.mock.calls.filter(([path]) => path === '/ambientes').length).toBe(2)
+  })
+
   it('carga los ambientes desde el backend y los muestra en la tabla', async () => {
     mockeaBase()
     renderConProviders(<Ambientes />)
