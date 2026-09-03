@@ -37,6 +37,57 @@ class HorarioService:
         return HorarioRepository.obtener_por_id(db, id_horario)
 
     @staticmethod
+    def a_response(db, horario) -> dict:
+        """Serializa un Horario a la forma de HorarioResponse, enriquecido
+        con los nombres/códigos de instructor/ficha/ambiente/resultado —
+        movido acá desde api/v1/horarios.py (`_a_response`) para
+        reutilizarlo también en los GET por instructor/ficha/ambiente que
+        alimentan el drawer de relacionados (SCRUM-46/47/48)."""
+        return {
+            "idHorario": horario.idHorario,
+            "horaInicio": horario.horaInicio,
+            "horaFin": horario.horaFin,
+            "idJornada": horario.idJornada,
+            "idTrimestre": horario.idTrimestre,
+            "idAmbiente": horario.idAmbiente,
+            "idInstructor": horario.idInstructor,
+            "idFicha": horario.idFicha,
+            "idResultado": horario.idResultado,
+            "fechaCreacion": horario.fechaCreacion,
+            "fechaModificacion": horario.fechaModificacion,
+            "activo": horario.activo,
+            "publicado": horario.publicado,
+            "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
+            "instructorNombre": horario.instructor.nombre if horario.instructor else None,
+            "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
+            "ambienteNombre": horario.ambiente.nombre if horario.ambiente else None,
+            "resultadoCodigo": horario.resultado.codigo if horario.resultado else None,
+            "resultadoDescripcion": horario.resultado.descripcion if horario.resultado else None,
+        }
+
+    @staticmethod
+    def obtener_por_instructor(db, id_instructor) -> list[dict]:
+        """GET /usuarios/{id}/horarios (SCRUM-46) — horarios asignados a un
+        instructor, para la mini-grid/grid del drawer de relacionados."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_instructor(db, id_instructor)
+        ]
+
+    @staticmethod
+    def obtener_por_ficha(db, id_ficha) -> list[dict]:
+        """GET /fichas/{id}/horarios (SCRUM-47) — horarios de una ficha."""
+        return [HorarioService.a_response(db, h) for h in HorarioRepository.obtener_por_ficha(db, id_ficha)]
+
+    @staticmethod
+    def obtener_por_ambiente(db, id_ambiente) -> list[dict]:
+        """GET /ambientes/{id}/horarios (SCRUM-48) — horarios de un ambiente."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_ambiente(db, id_ambiente)
+        ]
+
+    @staticmethod
     def crear(db, data, forzar: bool = False) -> tuple:
         """Crea horario. Si forzar=False, lanza excepción si hay cruces.
         Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
@@ -93,6 +144,40 @@ class HorarioService:
         return True
 
     @staticmethod
+    def cambiar_estado(db, id_horario, activo: bool | None = None, publicado: bool | None = None):
+        """Activar/desactivar y/o publicar/despublicar sin borrar (backlog
+        de Historial, pedido 2026-09-03). Un horario desactivado deja de
+        contar para cruces y para las horas semanales de RF-011 — ver los
+        filtros `activo` en HorarioRepository — así que reactivarlo puede
+        volver a chocar con algo que se creó mientras tanto; por ahora no
+        se re-valida al reactivar (igual que un ambiente puede pasar a
+        "mantenimiento" y volver a "disponible" sin revisar cruces), queda
+        para cuando se arme el backlog completo si hace falta más rigor
+        acá. `publicado` es independiente de `activo`: controla si el
+        instructor lo ve en "Mi horario", no si cuenta para cruces."""
+        horario = HorarioRepository.obtener_por_id(db, id_horario)
+
+        if not horario:
+            return None
+
+        if activo is not None:
+            horario.activo = activo
+        if publicado is not None:
+            horario.publicado = publicado
+        return HorarioRepository.guardar(db, horario)
+
+    @staticmethod
+    def obtener_publicados_por_instructor(db, id_instructor) -> list[dict]:
+        """GET /usuarios/me/horarios — autoservicio del instructor ("Mi
+        horario"): solo lo activo y publicado, nunca un borrador que el
+        coordinador todavía está armando."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_instructor(db, id_instructor)
+            if h.publicado
+        ]
+
+    @staticmethod
     def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
         """Cruces por solape de horario: misma ficha, mismo instructor o
         mismo ambiente ya ocupados en ese día/hora — ver
@@ -131,7 +216,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, excluir_id
+            db, data.idFicha, data.idResultado, data.dias, excluir_id
         )
         if resultado_existente:
             errores.append(
@@ -140,7 +225,6 @@ class HorarioService:
             )
 
         errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
-
         return errores
 
     @staticmethod
@@ -190,7 +274,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, excluir_id
+            db, data.idFicha, data.idResultado, data.dias, excluir_id
         )
         if resultado_existente:
             conflictos.append(

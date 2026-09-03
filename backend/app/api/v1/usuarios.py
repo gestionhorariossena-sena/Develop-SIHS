@@ -11,6 +11,7 @@ from app.core.supabase_auth import (
     require_lectura_catalogo,
 )
 from app.models.usuario import Usuario
+from app.schemas.horario import HorarioResponse
 from app.schemas.usuario import (
     CargaSemanalResponse,
     UsuarioCodigoInstructorRequest,
@@ -28,6 +29,21 @@ def obtener_mi_perfil(usuario: Usuario = Depends(get_current_user)):
     """Perfil del usuario autenticado — confirma que Supabase Auth + la
     base de datos están conectados end-to-end."""
     return usuario
+
+
+@router.get("/me/horarios", response_model=list[HorarioResponse])
+def obtener_mis_horarios(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """Autoservicio para "Mi horario" (pedido 2026-09-03) — a diferencia de
+    GET /{id}/horarios (Coordinador/Administrador viendo A OTRO), acá
+    cualquier usuario autenticado puede pedir SUS PROPIOS horarios, sin
+    importar el rol — no hace falta `require_lectura_catalogo`, el alcance
+    ya está limitado a `usuario.idUsuario` (nunca a un id que venga del
+    request). Solo devuelve lo publicado — un instructor no debe ver un
+    borrador que el coordinador todavía está armando."""
+    return HorarioService.obtener_publicados_por_instructor(db, usuario.idUsuario)
 
 
 @router.get("/", response_model=list[UsuarioResponse])
@@ -69,6 +85,20 @@ def obtener_carga_semanal(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     return carga
+
+
+@router.get("/{id_usuario}/horarios", response_model=list[HorarioResponse])
+def obtener_horarios_instructor(
+    id_usuario: UUID,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_lectura_catalogo),
+):
+    """Horarios asignados a un instructor — alimenta la mini-grid semanal
+    del drawer de relacionados en Instructores.tsx (SCRUM-46)."""
+    if not UsuarioService.obtener_por_id(db, id_usuario):
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    return HorarioService.obtener_por_instructor(db, id_usuario)
 
 
 @router.post("/instructor/codigo/generar")

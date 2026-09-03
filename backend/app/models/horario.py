@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, Column, ForeignKey, Integer, Table, Time
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer, Table, Time, func, true
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -39,6 +39,19 @@ class Horario(Base):
     idInstructor = Column(UUID(as_uuid=True), ForeignKey("usuarios.idUsuario"), nullable=False)
     idFicha = Column(Integer, ForeignKey("fichas.idFicha"), nullable=False)
     idResultado = Column(Integer, ForeignKey("resultados_aprendizaje.idResultado"), nullable=False)
+
+    # Habilitan el backlog de Historial de horarios (pedido 2026-09-03):
+    # ordenar por más reciente y desactivar sin borrar. fechaModificacion
+    # se actualiza sola en cada UPDATE — no hace falta tocarla a mano en
+    # HorarioService.actualizar().
+    fechaCreacion = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    fechaModificacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    activo = Column(Boolean, server_default=true(), nullable=False)
+    # Visibilidad para el instructor (vistas de "Mi horario", pedido
+    # 2026-09-03) — distinto de `activo`, que es para cruces/RF-011. Default
+    # true: no oculta de golpe los horarios ya creados antes de que este
+    # campo existiera, ver el docstring de la migración.
+    publicado = Column(Boolean, server_default=true(), nullable=False)
 
     instructor = relationship("Usuario")
     ficha = relationship("Ficha")

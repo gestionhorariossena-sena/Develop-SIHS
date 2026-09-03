@@ -12,18 +12,91 @@ import { ThemeSelector } from './ThemeSelector'
 interface ItemNav {
   etiqueta: string
   ruta?: string
+  /** Solo Administrador/Coordinador — mismo criterio que ya tenía "Usuarios". */
+  soloGestion?: boolean
+  /** Solo para quien tenga el rol Instructor — pantallas de autoservicio
+   * ("Mi horario"), no tiene sentido que las vea un Coordinador/Aprendiz. */
+  soloInstructor?: boolean
 }
 
-const NAV: ItemNav[] = [
-  { etiqueta: 'Inicio', ruta: '/dashboard' },
-  { etiqueta: 'Horarios', ruta: '/horarios/nuevo' },
-  { etiqueta: 'Historial de horarios', ruta: '/horarios/historial' },
-  { etiqueta: 'Ambientes', ruta: '/ambientes' },
-  { etiqueta: 'Instructores', ruta: '/instructores' },
-  { etiqueta: 'Fichas', ruta: '/fichas' },
-  { etiqueta: 'Usuarios', ruta: '/usuarios' },
-  { etiqueta: 'Aprobar solicitudes de registro', ruta: '/aprobar-solicitudes' },
-  { etiqueta: 'Reportes' },
+interface GrupoNav {
+  grupo: string
+  items: ItemNav[]
+}
+
+/**
+ * Reorganizado en grupos (ver _Docs/Diseño/sidebar.png, mockup de
+ * referencia) — antes era una lista plana bajo un único rótulo "GESTIÓN".
+ * Los ítems sin `ruta` son módulos que todavía no existen (misma
+ * convención que ya había: se muestran deshabilitados con tooltip).
+ * "Horarios" es el "Constructor" del mockup — se dejó ese nombre para no
+ * tocar NuevoHorario.tsx en este cambio, es solo una etiqueta.
+ *
+ * Todo el set de herramientas de coordinación (Programación/Formación/
+ * Recursos/Operación, no solo Administración) es `soloGestion: true`
+ * (pedido 2026-09-03: un Instructor no debe ni ver en el navbar algo para
+ * lo que no tiene permiso). Esto es solo la vitrina — lo que de verdad
+ * protege los datos son los permisos del backend
+ * (`require_lectura_catalogo` en cada endpoint de catálogo); ocultar acá
+ * evita la confusión de "por qué me deja hacer clic y después falla", no
+ * reemplaza esa protección.
+ */
+/** Fuera de los grupos, arriba de todo — igual que antes, es el punto de
+ * regreso rápido, el mockup lo da por implícito en el logo pero se deja
+ * explícito para no perder la forma actual de volver al dashboard. */
+const INICIO: ItemNav = { etiqueta: 'Inicio', ruta: '/dashboard' }
+
+const NAV: GrupoNav[] = [
+  {
+    grupo: 'Mi trabajo',
+    items: [
+      { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
+    ],
+  },
+  {
+    grupo: 'Programación',
+    items: [
+      { etiqueta: 'Horarios', ruta: '/horarios/nuevo', soloGestion: true },
+      { etiqueta: 'Horarios completos', ruta: '/horarios/completos', soloGestion: true },
+      { etiqueta: 'Historial de horarios', ruta: '/horarios/historial', soloGestion: true },
+      { etiqueta: 'Vista por fichas', ruta: '/vista-fichas', soloGestion: true },
+      { etiqueta: 'Vista por instructores', ruta: '/vista-instructores', soloGestion: true },
+      { etiqueta: 'Vista por ambientes', ruta: '/vista-ambientes', soloGestion: true },
+      { etiqueta: 'Calendario general', ruta: '/calendario', soloGestion: true },
+    ],
+  },
+  {
+    grupo: 'Formación',
+    items: [
+      { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
+      { etiqueta: 'Programas', soloGestion: true },
+      { etiqueta: 'Temáticas', soloGestion: true },
+    ],
+  },
+  {
+    grupo: 'Recursos',
+    items: [
+      { etiqueta: 'Instructores', ruta: '/instructores', soloGestion: true },
+      { etiqueta: 'Ambientes', ruta: '/ambientes', soloGestion: true },
+      { etiqueta: 'Sedes', soloGestion: true },
+    ],
+  },
+  {
+    grupo: 'Operación',
+    items: [
+      { etiqueta: 'Aprobar solicitudes de registro', ruta: '/aprobar-solicitudes', soloGestion: true },
+      { etiqueta: 'Cambios', soloGestion: true },
+      { etiqueta: 'Notificaciones', soloGestion: true },
+    ],
+  },
+  {
+    grupo: 'Administración',
+    items: [
+      { etiqueta: 'Usuarios', ruta: '/usuarios', soloGestion: true },
+      { etiqueta: 'Roles', soloGestion: true },
+      { etiqueta: 'Configuración', soloGestion: true },
+    ],
+  },
 ]
 
 function letraInicial(nombre: string) {
@@ -70,9 +143,17 @@ export function AppShell({ activo, children }: AppShellProps) {
     miPerfil?.roles.some(
       (rol) => rol.nombre === 'Administrador' || rol.nombre === 'Coordinador',
     ) ?? false
-  // "Usuarios" administra roles y códigos de instructor del sistema — solo
-  // tiene sentido mostrárselo a un Administrador o Coordinador.
-  const nav = NAV.filter((item) => item.etiqueta !== 'Usuarios' || puedeGestionarUsuarios)
+  const esInstructor = miPerfil?.roles.some((rol) => rol.nombre === 'Instructor') ?? false
+  // Los ítems marcados soloGestion (hoy, todo el grupo Administración)
+  // solo tienen sentido para un Administrador o Coordinador — mismo
+  // criterio que antes tenía "Usuarios" a solas. soloInstructor es el
+  // espejo para el grupo "Mi trabajo" (pedido 2026-09-03).
+  const nav = NAV.map((grupo) => ({
+    ...grupo,
+    items: grupo.items.filter(
+      (item) => (!item.soloGestion || puedeGestionarUsuarios) && (!item.soloInstructor || esInstructor),
+    ),
+  })).filter((grupo) => grupo.items.length > 0)
 
   useEffect(() => {
     apiGet<Usuario>('/usuarios/me')
@@ -162,6 +243,46 @@ export function AppShell({ activo, children }: AppShellProps) {
     }
   }
 
+  /** Un ítem de nav: link si ya tiene pantalla, deshabilitado si no —
+   * misma convención de siempre, ahora compartida entre "Inicio" (fuera
+   * de los grupos) y cada ítem dentro de un grupo. */
+  function renderItemNav(item: ItemNav) {
+    const esActivo = item.etiqueta === activo
+
+    if (item.ruta) {
+      return (
+        <Link
+          key={item.etiqueta}
+          to={item.ruta}
+          onClick={cerrarManual}
+          className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
+            esActivo
+              ? 'bg-sena-50 text-sena-700 dark:bg-sena-950/50'
+              : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
+          }`}
+        >
+          <span
+            className={`h-3.5 w-3.5 shrink-0 rounded ${
+              esActivo ? 'bg-sena-600' : 'border border-slate-300 dark:border-slate-600'
+            }`}
+          />
+          {item.etiqueta}
+        </Link>
+      )
+    }
+
+    return (
+      <span
+        key={item.etiqueta}
+        title="Módulo aún no implementado en el backend"
+        className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500"
+      >
+        <span className="h-3.5 w-3.5 shrink-0 rounded border border-slate-300 dark:border-slate-600" />
+        {item.etiqueta}
+      </span>
+    )
+  }
+
   function alSalirPanel() {
     if (!abiertaPorHoverRef.current) return
     temporizadorCierreRef.current = window.setTimeout(() => {
@@ -193,74 +314,50 @@ export function AppShell({ activo, children }: AppShellProps) {
       <aside
         onMouseEnter={alEntrarPanel}
         onMouseLeave={alSalirPanel}
-        className={`fixed left-0 top-0 z-50 flex h-screen w-60 shrink-0 flex-col justify-between border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform duration-200 print:hidden dark:border-slate-700 dark:bg-slate-800 ${
+        className={`fixed left-0 top-0 z-50 flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform duration-200 print:hidden dark:border-slate-700 dark:bg-slate-800 ${
           navAbierta ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div>
-          <div className="mb-8 flex items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5">
-              <img src={senaLogo} alt="SENA" className="h-9 w-9 rounded-lg object-cover" />
-              <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">SIHS</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">CGMLTI</p>
-              </div>
+        <div className="mb-8 flex shrink-0 items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <img src={senaLogo} alt="SENA" className="h-9 w-9 rounded-lg object-cover" />
+            <div>
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100">SIHS</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">CGMLTI</p>
             </div>
-            <button
-              type="button"
-              onClick={cerrarManual}
-              title="Ocultar menú"
-              aria-label="Ocultar menú"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M4 12h16" />
-              </svg>
-            </button>
           </div>
-
-          <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">GESTIÓN</p>
-          <nav className="space-y-1">
-            {nav.map((item) => {
-              const esActivo = item.etiqueta === activo
-
-              if (item.ruta) {
-                return (
-                  <Link
-                    key={item.etiqueta}
-                    to={item.ruta}
-                    onClick={cerrarManual}
-                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                      esActivo
-                        ? 'bg-sena-50 text-sena-700 dark:bg-sena-950/50'
-                        : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span
-                      className={`h-3.5 w-3.5 shrink-0 rounded ${
-                        esActivo ? 'bg-sena-600' : 'border border-slate-300 dark:border-slate-600'
-                      }`}
-                    />
-                    {item.etiqueta}
-                  </Link>
-                )
-              }
-
-              return (
-                <span
-                  key={item.etiqueta}
-                  title="Módulo aún no implementado en el backend"
-                  className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500"
-                >
-                  <span className="h-3.5 w-3.5 shrink-0 rounded border border-slate-300 dark:border-slate-600" />
-                  {item.etiqueta}
-                </span>
-              )
-            })}
-          </nav>
+          <button
+            type="button"
+            onClick={cerrarManual}
+            title="Ocultar menú"
+            aria-label="Ocultar menú"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M4 12h16" />
+            </svg>
+          </button>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+        {/* min-h-0 es necesario para que un hijo flex con overflow-y-auto
+         * pueda encogerse por debajo de la altura de su contenido — sin
+         * eso el nav empuja el alto del <aside> en vez de scrollear, y con
+         * más de ~8 ítems (ver NAV arriba) el grupo Administración quedaba
+         * cortado fuera de la pantalla sin forma de llegar a él. */}
+        <nav className="scroll-sidebar min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+          <div className="space-y-1">{renderItemNav(INICIO)}</div>
+
+          {nav.map((grupo) => (
+            <div key={grupo.grupo}>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">
+                {grupo.grupo.toUpperCase()}
+              </p>
+              <div className="space-y-1">{grupo.items.map((item) => renderItemNav(item))}</div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="mt-4 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Trimestre 3 · 2026</p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Programación abierta hasta el 12 de septiembre.</p>
         </div>

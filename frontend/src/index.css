@@ -32,6 +32,40 @@ html.dark {
   color-scheme: dark;
 }
 
+/* Barra de scroll delgada para el <nav> del sidebar (AppShell.tsx) — sin
+ * esto el navegador usa su barra ancha por defecto, que no combina con el
+ * resto del diseño. Negra en modo claro, azul en modo oscuro (pedido
+ * explícito: "que se integre con el color azul oscuro en el modo oscuro").
+ * `scrollbar-width`/`scrollbar-color` cubren Firefox; `::-webkit-scrollbar-*`
+ * cubre Chrome/Edge/Safari — no hay una sola propiedad CSS que sirva para
+ * los dos motores todavía. */
+.scroll-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #0f172a transparent;
+}
+.scroll-sidebar::-webkit-scrollbar {
+  width: 5px;
+}
+.scroll-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-sidebar::-webkit-scrollbar-thumb {
+  background-color: #0f172a;
+  border-radius: 9999px;
+}
+.scroll-sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: #334155;
+}
+html.dark .scroll-sidebar {
+  scrollbar-color: #3b82f6 transparent;
+}
+html.dark .scroll-sidebar::-webkit-scrollbar-thumb {
+  background-color: #3b82f6;
+}
+html.dark .scroll-sidebar::-webkit-scrollbar-thumb:hover {
+  background-color: #60a5fa;
+}
+
 /* Sin esto, los navegadores quitan los fondos de color al imprimir/exportar
    a PDF (para ahorrar tinta) — el grid de horarios pierde el color por
    jornada (mañana/tarde/noche) que es justo lo que lo hace legible.

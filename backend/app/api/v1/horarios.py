@@ -5,11 +5,11 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.supabase_auth import require_roles
-from app.repositories.horario_repository import HorarioRepository
 from app.schemas.horario import (
     HorarioCreate,
     HorarioDryRunRequest,
     HorarioDryRunResponse,
+    HorarioEstadoUpdate,
     HorarioResponse,
     HorarioUpdate,
 )
@@ -24,23 +24,7 @@ require_puede_programar = require_roles("Coordinador", "Administrador")
 
 
 def _a_response(db: Session, horario) -> dict:
-    return {
-        "idHorario": horario.idHorario,
-        "horaInicio": horario.horaInicio,
-        "horaFin": horario.horaFin,
-        "idJornada": horario.idJornada,
-        "idTrimestre": horario.idTrimestre,
-        "idAmbiente": horario.idAmbiente,
-        "idInstructor": horario.idInstructor,
-        "idFicha": horario.idFicha,
-        "idResultado": horario.idResultado,
-        "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
-        "instructorNombre": horario.instructor.nombre if horario.instructor else None,
-        "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
-        "ambienteNombre": horario.ambiente.nombre if horario.ambiente else None,
-        "resultadoCodigo": horario.resultado.codigo if horario.resultado else None,
-        "resultadoDescripcion": horario.resultado.descripcion if horario.resultado else None,
-    }
+    return HorarioService.a_response(db, horario)
 
 
 @router.post("/validar", response_model=HorarioDryRunResponse)
@@ -141,6 +125,32 @@ def actualizar_horario(
     AuditoriaService.registrar(
         db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=id_horario, detalle=detalle
     )
+
+    return _a_response(db, horario)
+
+
+@router.patch("/{id_horario}/estado", response_model=HorarioResponse)
+def cambiar_estado_horario(
+    id_horario: int,
+    data: HorarioEstadoUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_puede_programar),
+):
+    """Activar/desactivar y/o publicar/despublicar sin borrar — backlog de
+    Horarios completos/Historial (pedido 2026-09-03). No pasa por
+    HorarioUpdate: no cambia ficha/instructor/ambiente/horario, así que no
+    tiene sentido pedir esos campos ni re-correr el dry-run completo."""
+    horario = HorarioService.cambiar_estado(db, id_horario, activo=data.activo, publicado=data.publicado)
+
+    if not horario:
+        raise HTTPException(status_code=404, detail="Horario no encontrado")
+
+    acciones = []
+    if data.activo is not None:
+        acciones.append("ACTIVAR" if data.activo else "DESACTIVAR")
+    if data.publicado is not None:
+        acciones.append("PUBLICAR" if data.publicado else "DESPUBLICAR")
+    AuditoriaService.registrar(db, usuario=usuario, accion=" y ".join(acciones) or "SIN_CAMBIOS", entidad="horarios", id_entidad=id_horario)
 
     return _a_response(db, horario)
 

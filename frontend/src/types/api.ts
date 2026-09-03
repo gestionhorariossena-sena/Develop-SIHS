@@ -25,6 +25,7 @@ export interface Usuario {
   tipoContrato?: string | null
   horasContratadasSemana?: number | null
   codigoInstructor?: string | null
+  sigla?: string | null
   roles: Rol[]
   especialidades: Especialidad[]
 }
@@ -71,6 +72,10 @@ export interface Ficha {
   idPrograma: number
   idTrimestre: number
   idSede: number | null
+  fechaInicioLectiva?: string | null
+  fechaFinLectiva?: string | null
+  fechaInicioProductiva?: string | null
+  fechaFinProductiva?: string | null
   programa: Programa
   trimestre: Trimestre
   sede: Sede | null
@@ -92,6 +97,11 @@ export interface Sede {
   nombreSede: string
   direccion: string | null
   tipoSede: 'principal' | 'secundaria' | 'alterna' | null
+}
+
+export interface Coordinacion {
+  idCoordinacion: number
+  nombreCoordinacion: string
 }
 
 export interface Ambiente {
@@ -126,6 +136,10 @@ export interface Horario {
   idFicha: number
   idResultado: number
   dias: number[]
+  fechaCreacion: string
+  fechaModificacion: string
+  activo: boolean
+  publicado: boolean
   instructorNombre: string | null
   fichaCodigo: string | null
   ambienteNombre: string | null
@@ -143,8 +157,6 @@ export interface HorarioCreate {
   idFicha: number
   idResultado: number
   dias: number[]
-  /** Si viene true, el backend salta los cruces FÍSICOS (no las reglas
-   * RF-011, esas nunca se saltan) — ver HorarioService.crear/actualizar. */
   forzar?: boolean
 }
 
@@ -214,5 +226,9 @@ export interface HorarioGuardado {
   fechaFin: string | null
   bloques: BloqueClase[]
   grid: GridAsignaciones
+  // idHorario de cada fila real en `horarios` creada junto con este
+  // snapshot — permite que borrar el "Horario completo" también libere
+  // esas clases reales (ver backend/app/services/horario_guardado_service.py).
+  idsHorarios?: number[]
   fechaCreacion: string
 }
