@@ -78,7 +78,7 @@ const NAV: GrupoNav[] = [
     items: [
       { etiqueta: 'Instructores', ruta: '/instructores', soloGestion: true },
       { etiqueta: 'Ambientes', ruta: '/ambientes', soloGestion: true },
-      { etiqueta: 'Sedes', soloGestion: true },
+      { etiqueta: 'Sedes', ruta: '/sedes', soloGestion: true },
     ],
   },
   {

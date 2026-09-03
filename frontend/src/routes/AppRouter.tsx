@@ -9,6 +9,7 @@ import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { CalendarioGeneral } from '../pages/CalendarioGeneral'
 import { HorariosCompletos } from '../pages/HorariosCompletos'
 import { Ambientes } from '../pages/Ambientes'
+import { Sedes } from '../pages/Sedes'
 import { Instructores } from '../pages/Instructores'
 import { VistaInstructores } from '../pages/VistaInstructores'
 import { Fichas } from '../pages/Fichas'
@@ -88,6 +89,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <Ambientes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sedes"
+        element={
+          <ProtectedRoute>
+            <Sedes />
           </ProtectedRoute>
         }
       />
