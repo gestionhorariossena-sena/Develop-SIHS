@@ -9,7 +9,7 @@ import { BLOQUES } from './horario/tipos'
 import type { Jornada } from './horario/tipos'
 import { colorParaBloque } from './horario/gridLogic'
 import type { ColorBloque } from './horario/gridLogic'
-import { apiGet, ApiError } from '../services/api'
+import { apiGet, apiPatch, ApiError } from '../services/api'
 import type { Ambiente, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
 
 type FiltroJornada = 'todas' | Jornada
@@ -40,6 +40,7 @@ interface DetalleHorarioProps {
   color: ColorBloque
   diasPorId: Record<number, string>
   onCerrar: () => void
+  onCambiarPublicado: (horario: Horario) => void
 }
 
 /**
@@ -51,9 +52,24 @@ interface DetalleHorarioProps {
  * montar/desmontar con la fila — sin tener que comparar "instructor
  * anterior vs. actual" a mano como hace Instructores.tsx.
  */
-function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trimestre, jornada, color, diasPorId, onCerrar }: DetalleHorarioProps) {
+function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trimestre, jornada, color, diasPorId, onCerrar, onCambiarPublicado }: DetalleHorarioProps) {
   const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
   const [errorCarga, setErrorCarga] = useState(false)
+  const [publicando, setPublicando] = useState(false)
+
+  async function alternarPublicado() {
+    setPublicando(true)
+    try {
+      const actualizado = await apiPatch<Horario>(`/horarios/${horario.idHorario}/estado`, { publicado: !horario.publicado })
+      onCambiarPublicado(actualizado)
+    } catch {
+      // Error no fatal — el botón simplemente no cambia de estado; el
+      // usuario puede reintentar. No hay un lugar de error dedicado acá
+      // (esta caja no tiene su propia zona de mensajes de error).
+    } finally {
+      setPublicando(false)
+    }
+  }
 
   useEffect(() => {
     apiGet<CargaSemanal>(`/usuarios/${horario.idInstructor}/carga-semanal`)
@@ -74,8 +90,26 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
           <span className={`rounded px-2 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>Horario #{horario.idHorario}</span>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">Jornada {jornada ?? 'sin definir'}</span>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">{trimestre?.nombre ?? 'Sin trimestre'}</span>
+          <span
+            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+              horario.publicado
+                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+            }`}
+          >
+            {horario.publicado ? 'Publicado' : 'Borrador'}
+          </span>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => void alternarPublicado()}
+            disabled={publicando}
+            title={horario.publicado ? 'Deja de mostrarse en "Mi horario" para el instructor' : 'A partir de ahora el instructor lo ve en "Mi horario"'}
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+          >
+            {publicando ? 'Guardando…' : horario.publicado ? 'Despublicar' : 'Publicar'}
+          </button>
           <Link
             to={`/horarios/historial?id=${horario.idHorario}`}
             title="El historial todavía no distingue horarios individuales — se está rediseñando como registro de cambios, por ahora esto abre el listado general."
@@ -347,6 +381,9 @@ export function HorariosCompletos() {
                     color={color}
                     diasPorId={diasPorId}
                     onCerrar={() => setIdExpandido(null)}
+                    onCambiarPublicado={(actualizado) =>
+                      setHorarios((anterior) => anterior.map((h) => (h.idHorario === actualizado.idHorario ? actualizado : h)))
+                    }
                   />
                 </td>
               </tr>

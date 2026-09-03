@@ -14,6 +14,9 @@ interface ItemNav {
   ruta?: string
   /** Solo Administrador/Coordinador — mismo criterio que ya tenía "Usuarios". */
   soloGestion?: boolean
+  /** Solo para quien tenga el rol Instructor — pantallas de autoservicio
+   * ("Mi horario"), no tiene sentido que las vea un Coordinador/Aprendiz. */
+  soloInstructor?: boolean
 }
 
 interface GrupoNav {
@@ -35,6 +38,12 @@ interface GrupoNav {
 const INICIO: ItemNav = { etiqueta: 'Inicio', ruta: '/dashboard' }
 
 const NAV: GrupoNav[] = [
+  {
+    grupo: 'Mi trabajo',
+    items: [
+      { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
+    ],
+  },
   {
     grupo: 'Programación',
     items: [
@@ -125,12 +134,16 @@ export function AppShell({ activo, children }: AppShellProps) {
     miPerfil?.roles.some(
       (rol) => rol.nombre === 'Administrador' || rol.nombre === 'Coordinador',
     ) ?? false
+  const esInstructor = miPerfil?.roles.some((rol) => rol.nombre === 'Instructor') ?? false
   // Los ítems marcados soloGestion (hoy, todo el grupo Administración)
   // solo tienen sentido para un Administrador o Coordinador — mismo
-  // criterio que antes tenía "Usuarios" a solas.
+  // criterio que antes tenía "Usuarios" a solas. soloInstructor es el
+  // espejo para el grupo "Mi trabajo" (pedido 2026-09-03).
   const nav = NAV.map((grupo) => ({
     ...grupo,
-    items: grupo.items.filter((item) => !item.soloGestion || puedeGestionarUsuarios),
+    items: grupo.items.filter(
+      (item) => (!item.soloGestion || puedeGestionarUsuarios) && (!item.soloInstructor || esInstructor),
+    ),
   })).filter((grupo) => grupo.items.length > 0)
 
   useEffect(() => {

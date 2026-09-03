@@ -10,7 +10,7 @@ const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }]
 const CLASE_1: Horario = {
   idHorario: 1, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
   idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 1, dias: [1],
-  fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
+  fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
   instructorNombre: 'Erick Granados', fichaCodigo: 'FICHA-1', ambienteNombre: 'Ambiente 101',
   resultadoCodigo: 'RA-1', resultadoDescripcion: null,
 }
@@ -18,7 +18,7 @@ const CLASE_1: Horario = {
 const CLASE_SUELTA: Horario = {
   idHorario: 2, horaInicio: '12:00:00', horaFin: '15:00:00', idJornada: 2, idTrimestre: 1,
   idAmbiente: 2, idInstructor: 'u2', idFicha: 2, idResultado: 2, dias: [1],
-  fechaCreacion: '2026-02-01T00:00:00Z', fechaModificacion: '2026-02-01T00:00:00Z', activo: true,
+  fechaCreacion: '2026-02-01T00:00:00Z', fechaModificacion: '2026-02-01T00:00:00Z', activo: true, publicado: true,
   instructorNombre: 'Fredy Ardila', fichaCodigo: 'FICHA-SUELTA', ambienteNombre: 'Ambiente 202',
   resultadoCodigo: 'RA-2', resultadoDescripcion: null,
 }
@@ -117,6 +117,25 @@ describe('HistorialHorarios', () => {
     expect(screen.getByRole('button', { name: /Activar clase/ })).toBeInTheDocument()
   })
 
+  it('el horario abierto muestra "Publicado" y permite despublicarlo (todas sus clases a la vez)', async () => {
+    mockeaBase()
+    apiPatchMock.mockResolvedValue({ ...CLASE_1, publicado: false })
+    const usuario = userEvent.setup()
+    renderConProviders(<HistorialHorarios />)
+    await screen.findByText('FICHA-SNAPSHOT')
+
+    await usuario.click(screen.getByRole('button', { name: 'Ver horario' }))
+    expect(await screen.findByText('Publicado')).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Despublicar' }))
+
+    expect(apiPatchMock).toHaveBeenCalledWith('/horarios/1/estado', { publicado: false })
+    // "Borrador" aparece dos veces: el badge del horario completo (header)
+    // y el badge de la clase individual dentro de "Clases de este horario".
+    await waitFor(() => expect(screen.getAllByText('Borrador').length).toBeGreaterThan(0))
+    expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument()
+  })
+
   it('un error al cambiar el estado de una clase se muestra en la página', async () => {
     mockeaBase()
     apiPatchMock.mockRejectedValue(new Error('falló'))
@@ -158,8 +177,10 @@ describe('HistorialHorarios', () => {
 
     expect(await screen.findByText(/se guardó antes de vincularse/)).toBeInTheDocument()
     expect(screen.getByText('Nombre viejo')).toBeInTheDocument()
-    // Sin idsHorarios no hay clases reales que gestionar acá.
+    // Sin idsHorarios no hay clases reales que gestionar ni publicar acá.
     expect(screen.queryByText('Clases de este horario')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Publicar' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Despublicar' })).not.toBeInTheDocument()
   })
 
   it('muestra el error del backend si la carga de clases reales falla', async () => {
