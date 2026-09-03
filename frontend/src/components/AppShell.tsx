@@ -291,47 +291,50 @@ export function AppShell({ activo, children }: AppShellProps) {
       <aside
         onMouseEnter={alEntrarPanel}
         onMouseLeave={alSalirPanel}
-        className={`fixed left-0 top-0 z-50 flex h-screen w-60 shrink-0 flex-col justify-between border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform duration-200 print:hidden dark:border-slate-700 dark:bg-slate-800 ${
+        className={`fixed left-0 top-0 z-50 flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform duration-200 print:hidden dark:border-slate-700 dark:bg-slate-800 ${
           navAbierta ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div>
-          <div className="mb-8 flex items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5">
-              <img src={senaLogo} alt="SENA" className="h-9 w-9 rounded-lg object-cover" />
-              <div>
-                <p className="text-sm font-bold text-slate-900 dark:text-slate-100">SIHS</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">CGMLTI</p>
-              </div>
+        <div className="mb-8 flex shrink-0 items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <img src={senaLogo} alt="SENA" className="h-9 w-9 rounded-lg object-cover" />
+            <div>
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100">SIHS</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">CGMLTI</p>
             </div>
-            <button
-              type="button"
-              onClick={cerrarManual}
-              title="Ocultar menú"
-              aria-label="Ocultar menú"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M4 12h16" />
-              </svg>
-            </button>
           </div>
-
-          <nav className="space-y-4">
-            <div className="space-y-1">{renderItemNav(INICIO)}</div>
-
-            {nav.map((grupo) => (
-              <div key={grupo.grupo}>
-                <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">
-                  {grupo.grupo.toUpperCase()}
-                </p>
-                <div className="space-y-1">{grupo.items.map((item) => renderItemNav(item))}</div>
-              </div>
-            ))}
-          </nav>
+          <button
+            type="button"
+            onClick={cerrarManual}
+            title="Ocultar menú"
+            aria-label="Ocultar menú"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M4 12h16" />
+            </svg>
+          </button>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+        {/* min-h-0 es necesario para que un hijo flex con overflow-y-auto
+         * pueda encogerse por debajo de la altura de su contenido — sin
+         * eso el nav empuja el alto del <aside> en vez de scrollear, y con
+         * más de ~8 ítems (ver NAV arriba) el grupo Administración quedaba
+         * cortado fuera de la pantalla sin forma de llegar a él. */}
+        <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+          <div className="space-y-1">{renderItemNav(INICIO)}</div>
+
+          {nav.map((grupo) => (
+            <div key={grupo.grupo}>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">
+                {grupo.grupo.toUpperCase()}
+              </p>
+              <div className="space-y-1">{grupo.items.map((item) => renderItemNav(item))}</div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="mt-4 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Trimestre 3 · 2026</p>
           <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Programación abierta hasta el 12 de septiembre.</p>
         </div>
