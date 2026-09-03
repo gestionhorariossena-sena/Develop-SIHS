@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
@@ -8,8 +8,8 @@ import { indexarPorFicha, opcionesInstructor } from '../components/horario/index
 import { SeccionAmbientesAsignados, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
 import { SeccionInstructoresAsignados } from '../components/relacionados/SeccionesFicha'
 import { ImportarArchivo, type ColumnaImportar } from '../components/ImportarArchivo'
-import { apiGet, apiPost, ApiError } from '../services/api'
-import type { DiaSemana, Ficha, Horario, Programa, Sede, Trimestre } from '../types/api'
+import { apiGet, apiPost, apiPut, ApiError } from '../services/api'
+import type { DiaSemana, Ficha, Horario, Programa, Sede, Trimestre, Usuario } from '../types/api'
 import type { FilaCsv } from '../utils/csv'
 
 const COLUMNAS_IMPORTAR_FICHA: ColumnaImportar[] = [
@@ -22,6 +22,9 @@ const COLUMNAS_IMPORTAR_FICHA: ColumnaImportar[] = [
 type Orden = 'codigo' | 'programa' | 'trimestre'
 
 const POR_PAGINA = 10
+
+type FichaForm = { codigoFicha: string; idPrograma: string; idTrimestre: string; idSede: string; fechaInicioLectiva: string; fechaFinLectiva: string; fechaInicioProductiva: string; fechaFinProductiva: string }
+const FORM_VACIO: FichaForm = { codigoFicha: '', idPrograma: '', idTrimestre: '', idSede: '', fechaInicioLectiva: '', fechaFinLectiva: '', fechaInicioProductiva: '', fechaFinProductiva: '' }
 
 function nivel(ficha: Ficha) {
   return ficha.programa.nivelFormacion || 'Sin definir'
@@ -41,6 +44,11 @@ export function Fichas() {
   const [seleccionada, setSeleccionada] = useState<Ficha | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [perfil, setPerfil] = useState<Usuario | null>(null)
+  const [modalAbierto, setModalAbierto] = useState(false)
+  const [editandoId, setEditandoId] = useState<number | null>(null)
+  const [form, setForm] = useState<FichaForm>(FORM_VACIO)
+  const [guardando, setGuardando] = useState(false)
 
   // SCRUM-89: carga masiva por CSV. El catálogo completo (no solo lo que
   // ya tiene fichas creadas) se pide recién al abrir el panel, para
@@ -62,8 +70,15 @@ export function Fichas() {
   // patrón que Instructores.tsx con ficha/ambiente).
   const [todosLosHorarios, setTodosLosHorarios] = useState<Horario[]>([])
 
+  async function cargarFichas() {
+    const datos = await apiGet<Ficha[]>('/fichas/')
+    setFichas(datos)
+    return datos
+  }
+
   useEffect(() => {
-    apiGet<Ficha[]>('/fichas/')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    cargarFichas()
       .then((datos) => {
         setFichas(datos)
 
@@ -77,7 +92,6 @@ export function Fichas() {
       })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de fichas.'))
       .finally(() => setCargando(false))
-
     // Sin .catch dedicado no rompe nada visible (nombresDias cae a "?" por
     // día si falta el mapa), pero deja una unhandled rejection en tests —
     // mismo patrón que Instructores.tsx.
@@ -88,6 +102,7 @@ export function Fichas() {
     apiGet<Horario[]>('/horarios/')
       .then(setTodosLosHorarios)
       .catch(() => {})
+    apiGet<Usuario>('/usuarios/me').then(setPerfil).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idDesdeUrl no cambia en la vida del componente.
   }, [])
 
@@ -173,10 +188,49 @@ export function Fichas() {
   const paginaSegura = Math.min(paginaActual, totalPaginas)
   const inicioPagina = (paginaSegura - 1) * POR_PAGINA
   const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
+  const puedeGestionar = perfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
+
+  function abrirCrear() {
+    setEditandoId(null)
+    setForm(FORM_VACIO)
+    setError(null)
+    setModalAbierto(true)
+  }
+
+  function abrirEditar(ficha: Ficha) {
+    setEditandoId(ficha.idFicha)
+    setForm({ codigoFicha: ficha.codigoFicha, idPrograma: String(ficha.idPrograma), idTrimestre: String(ficha.idTrimestre), idSede: ficha.idSede == null ? '' : String(ficha.idSede), fechaInicioLectiva: ficha.fechaInicioLectiva ?? '', fechaFinLectiva: ficha.fechaFinLectiva ?? '', fechaInicioProductiva: ficha.fechaInicioProductiva ?? '', fechaFinProductiva: ficha.fechaFinProductiva ?? '' })
+    setError(null)
+    setModalAbierto(true)
+  }
+
+  async function guardarFicha(evento: FormEvent<HTMLFormElement>) {
+    evento.preventDefault()
+    const codigoFicha = form.codigoFicha.trim()
+    const idPrograma = Number(form.idPrograma)
+    const idTrimestre = Number(form.idTrimestre)
+    if (!codigoFicha || !idPrograma || !idTrimestre) {
+      setError('Código, programa y trimestre son obligatorios.')
+      return
+    }
+    const payload = { codigoFicha, idPrograma, idTrimestre, idSede: form.idSede ? Number(form.idSede) : null, fechaInicioLectiva: form.fechaInicioLectiva || null, fechaFinLectiva: form.fechaFinLectiva || null, fechaInicioProductiva: form.fechaInicioProductiva || null, fechaFinProductiva: form.fechaFinProductiva || null }
+    try {
+      setGuardando(true)
+      setError(null)
+      const respuesta = editandoId === null ? await apiPost<Ficha>('/fichas/', payload) : await apiPut<Ficha>(`/fichas/${editandoId}`, payload)
+      const datos = await cargarFichas()
+      setSeleccionada(datos.find((ficha) => ficha.idFicha === respuesta.idFicha) ?? respuesta)
+      setModalAbierto(false)
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo guardar la ficha.')
+    } finally {
+      setGuardando(false)
+    }
+  }
 
   return (
     <AppShell activo="Fichas">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Fichas</h1><p className="text-sm text-slate-500 dark:text-slate-400">Fichas de formación registradas por programa y trimestre.</p></div><div className="flex items-center gap-2"><button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">{mostrarImportar ? 'Ocultar carga de archivo' : 'Cargar archivo'}</button><p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {fichas.length} fichas</p></div></div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Fichas</h1><p className="text-sm text-slate-500 dark:text-slate-400">Fichas de formación registradas por programa y trimestre.</p></div><div className="flex items-center gap-2">{puedeGestionar && <button type="button" onClick={abrirCrear} className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800">Nueva ficha</button>}<button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">{mostrarImportar ? 'Ocultar carga de archivo' : 'Cargar archivo'}</button><p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {fichas.length} fichas</p></div></div>
 
       {mostrarImportar && (
         <ImportarArchivo
@@ -211,7 +265,7 @@ export function Fichas() {
       </section>
 
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Nivel</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Aprendices</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((ficha) => <tr key={ficha.idFicha} onClick={() => setSeleccionada(ficha)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-slate-400">{ficha.programa.codigoPrograma}</p></td><td className="px-4 py-3"><span className="rounded-full bg-sena-50 px-2.5 py-1 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{nivel(ficha)}</span></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{ficha.jornadas.length ? ficha.jornadas.map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-slate-400">Sin horario</span>}</div></td><td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">{ficha.aprendicesTotales}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{ficha.trimestre.nombre}</td><td className="px-4 py-3"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{ficha.trimestre.estado}</span></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Nivel</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Aprendices</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th>{puedeGestionar && <th className="px-4 py-3">Acciones</th>}</tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((ficha) => <tr key={ficha.idFicha} onClick={() => setSeleccionada(ficha)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-slate-400">{ficha.programa.codigoPrograma}</p></td><td className="px-4 py-3"><span className="rounded-full bg-sena-50 px-2.5 py-1 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{nivel(ficha)}</span></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{ficha.jornadas.length ? ficha.jornadas.map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-slate-400">Sin horario</span>}</div></td><td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">{ficha.aprendicesTotales}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{ficha.trimestre.nombre}</td><td className="px-4 py-3"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{ficha.trimestre.estado}</span></td>{puedeGestionar && <td className="px-4 py-3"><button type="button" onClick={(evento) => { evento.stopPropagation(); abrirEditar(ficha) }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button></td>}</tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (
           <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 dark:border-slate-700">
@@ -240,6 +294,16 @@ export function Fichas() {
         )}
       </div>}
 
+      {puedeGestionar && modalAbierto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4" role="presentation">
+          <form onSubmit={guardarFicha} className="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl dark:bg-slate-800" role="dialog" aria-modal="true" aria-labelledby="titulo-formulario-ficha">
+            <div className="mb-5 flex items-center justify-between"><h2 id="titulo-formulario-ficha" className="text-xl font-semibold text-slate-900 dark:text-slate-100">{editandoId === null ? 'Nueva ficha' : 'Editar ficha'}</h2><button type="button" onClick={() => setModalAbierto(false)} className="text-sm text-slate-500">Cancelar</button></div>
+            <div className="grid gap-3 sm:grid-cols-2"><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Código de ficha<input required value={form.codigoFicha} onChange={(evento) => setForm({ ...form, codigoFicha: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">ID del programa<input required type="number" min="1" value={form.idPrograma} onChange={(evento) => setForm({ ...form, idPrograma: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">ID del trimestre<input required type="number" min="1" value={form.idTrimestre} onChange={(evento) => setForm({ ...form, idTrimestre: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-900 dark:text-slate-100" /></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">ID de sede (opcional)<input type="number" min="1" value={form.idSede} onChange={(evento) => setForm({ ...form, idSede: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-900 dark:text-slate-100" /></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Inicio lectivo<input type="date" value={form.fechaInicioLectiva} onChange={(evento) => setForm({ ...form, fechaInicioLectiva: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Fin lectivo<input type="date" value={form.fechaFinLectiva} onChange={(evento) => setForm({ ...form, fechaFinLectiva: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Inicio productivo<input type="date" value={form.fechaInicioProductiva} onChange={(evento) => setForm({ ...form, fechaInicioProductiva: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:text-slate-100" /></label><label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Fin productivo<input type="date" value={form.fechaFinProductiva} onChange={(evento) => setForm({ ...form, fechaFinProductiva: evento.target.value })} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 dark:border-slate-900 dark:text-slate-100" /></label></div>
+            <button type="submit" disabled={guardando} className="mt-5 w-full rounded-lg bg-sena-700 py-2.5 font-semibold text-white hover:bg-sena-800 disabled:opacity-60">{guardando ? 'Guardando...' : 'Guardar ficha'}</button>
+          </form>
+        </div>
+      )}
+
       {seleccionada && (
         <DrawerRelacionados
           iniciales={seleccionada.codigoFicha.slice(0, 2).toUpperCase()}
@@ -247,6 +311,8 @@ export function Fichas() {
           subtitulo="Ficha"
           onCerrar={() => setSeleccionada(null)}
         >
+          {puedeGestionar && <button type="button" onClick={() => abrirEditar(seleccionada)} className="mb-5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-300">Editar ficha</button>}
+
           <dl className="space-y-4 text-sm">
             <div><dt className="text-slate-500 dark:text-slate-400">Programa</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionada.programa.nombrePrograma}</dd></div>
             <div><dt className="text-slate-500 dark:text-slate-400">Nivel de formación</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{nivel(seleccionada)}</dd></div>

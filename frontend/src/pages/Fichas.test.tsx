@@ -46,11 +46,12 @@ const FICHAS: Ficha[] = [
   },
 ]
 
-const apiGetMock = vi.fn()
-const apiPostMock = vi.fn()
+const { apiGetMock, apiPostMock, apiPutMock } = vi.hoisted(() => ({ apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPutMock: vi.fn() }))
+const PERFIL_ADMIN = { idUsuario: 'admin', nombre: 'Administrador', email: 'admin@test.com', estado: 'activo', fechaRegistro: '2026-01-01', roles: [{ idRol: 1, nombre: 'Administrador' }], especialidades: [] }
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
   apiPost: (...args: unknown[]) => apiPostMock(...args),
+  apiPut: (...args: unknown[]) => apiPutMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -60,6 +61,7 @@ vi.mock('../services/api', () => ({
 function mockeaFichasYPerfil(fichas: unknown) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/fichas/') return typeof fichas === 'function' ? fichas() : Promise.resolve(fichas)
+    if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -81,11 +83,29 @@ function mockeaFichasConHorarios(fichas: unknown, todosLosHorarios: Horario[] = 
     if (path === '/fichas/1/horarios') return Promise.resolve(HORARIOS)
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
     if (path === '/horarios/') return Promise.resolve(todosLosHorarios)
+    if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
 
 describe('Fichas', () => {
+  it('permite crear y editar desde la fila con el payload del schema y refresca la lista', async () => {
+    mockeaFichasYPerfil(FICHAS)
+    apiPostMock.mockResolvedValue({ ...FICHAS[0], idFicha: 3, codigoFicha: 'Nueva' })
+    apiPutMock.mockResolvedValue({ ...FICHAS[0], codigoFicha: 'Actualizada' })
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    await screen.findByText('3228973 B')
+
+    await usuario.click(screen.getAllByRole('button', { name: 'Editar' })[0])
+    await usuario.clear(screen.getByLabelText('Código de ficha'))
+    await usuario.type(screen.getByLabelText('Código de ficha'), 'Actualizada')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar ficha' }))
+
+    await waitFor(() => expect(apiPutMock).toHaveBeenCalledWith('/fichas/2', expect.objectContaining({ codigoFicha: 'Actualizada', fechaInicioLectiva: null })))
+    expect(apiGetMock.mock.calls.filter(([path]) => path === '/fichas/').length).toBe(2)
+  })
+
   it('carga las fichas desde el backend y las muestra en la tabla', async () => {
     mockeaFichasYPerfil(FICHAS)
     renderConProviders(<Fichas />)

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Enum, Integer, String
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -18,6 +18,7 @@ class Usuario(Base):
 
     nombre = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
+    numeroDocumento = Column(String(30), unique=True, nullable=True)
 
     estado = Column(
         Enum("activo", "inactivo", name="estado_usuario"),
@@ -31,6 +32,10 @@ class Usuario(Base):
     tipoContrato = Column(String(20))
     horasContratadasSemana = Column(Integer)
     codigoInstructor = Column(String(20), unique=True, nullable=True)
+    # Trimestre en el que se generó codigoInstructor. El código queda fijo
+    # una vez creado (no se regenera) — no es un historial de códigos por
+    # trimestre, solo registra en cuál se emitió el único código vigente.
+    idTrimestre = Column(Integer, ForeignKey("trimestres.idTrimestre"), nullable=True)
     # Sigla/iniciales cortas (ej. "DC", "LM") — así referencian instructores
     # ambas coordinaciones en sus horarios reales, distinto de
     # codigoInstructor (el código de registro que ya existía).
