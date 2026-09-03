@@ -39,7 +39,7 @@ const CARGA: CargaSemanal = { idUsuario: 'u1', tipoContrato: 'Planta', horasAsig
 const HORARIOS: Horario[] = [
   {
     idHorario: 1, horaInicio: '12:00:00', horaFin: '15:00:00', idJornada: 2, idTrimestre: 1,
-    idAmbiente: 1, idInstructor: 'u1', idFicha: 10, idResultado: 100, dias: [1, 3], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
+    idAmbiente: 1, idInstructor: 'u1', idFicha: 10, idResultado: 100, dias: [1, 3], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
     instructorNombre: 'Erick Granados', fichaCodigo: '3068356', ambienteNombre: 'Ambiente 306',
     resultadoCodigo: 'CPL18', resultadoDescripcion: 'Gestión de inventarios',
   },
@@ -239,7 +239,7 @@ describe('Instructores', () => {
       ...HORARIOS,
       {
         idHorario: 2, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-        idAmbiente: 2, idInstructor: 'u4', idFicha: 20, idResultado: 200, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
+        idAmbiente: 2, idInstructor: 'u4', idFicha: 20, idResultado: 200, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
         instructorNombre: 'Fredy Ardila', fichaCodigo: '9999999', ambienteNombre: 'Ambiente 999',
         resultadoCodigo: 'RA-1', resultadoDescripcion: null,
       },

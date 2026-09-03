@@ -111,3 +111,51 @@ def test_cambiar_estado_404_si_el_horario_no_existe(client, db_session, autentic
     respuesta = client.patch("/api/v1/horarios/999/estado", json={"activo": True}, headers=headers)
 
     assert respuesta.status_code == 404
+
+
+def test_publicar_y_despublicar_horario_no_toca_activo(client, db_session, autenticar_como):
+    _crear_tablas_extra(db_session)
+    _, headers = autenticar_como("Coordinador")
+    instructor, ficha = _catalogos_base(db_session)
+    _crear_horario(db_session, 100, instructor, ficha)
+
+    respuesta = client.patch("/api/v1/horarios/100/estado", json={"publicado": False}, headers=headers)
+
+    assert respuesta.status_code == 200
+    cuerpo = respuesta.json()
+    assert cuerpo["publicado"] is False
+    assert cuerpo["activo"] is True  # no se tocó, el campo no venía en el body
+
+    respuesta = client.patch("/api/v1/horarios/100/estado", json={"publicado": True}, headers=headers)
+    assert respuesta.json()["publicado"] is True
+
+
+def test_mis_horarios_solo_muestra_lo_publicado_y_propio(client, db_session, autenticar_como):
+    _crear_tablas_extra(db_session)
+    yo, headers = autenticar_como("Instructor")
+    _, headers_coordinador = autenticar_como("Coordinador")
+    _, ficha = _catalogos_base(db_session)
+    otro_instructor = db_session.query(Usuario).filter(Usuario.nombre == "Carlos López").one()
+
+    _crear_horario(db_session, 100, yo, ficha)
+    _crear_horario(db_session, 101, yo, ficha, dias=(2,))
+    _crear_horario(db_session, 200, otro_instructor, ficha, dias=(3,))
+    # Despublicar es cosa de Coordinador/Administrador, no del propio
+    # instructor — por eso este PATCH va con otras credenciales.
+    despublicado = client.patch("/api/v1/horarios/101/estado", json={"publicado": False}, headers=headers_coordinador)
+    assert despublicado.status_code == 200
+
+    respuesta = client.get("/api/v1/usuarios/me/horarios", headers=headers)
+
+    assert respuesta.status_code == 200
+    ids = [h["idHorario"] for h in respuesta.json()]
+    # 101 es propio pero despublicado, 200 es publicado pero de otro instructor.
+    assert ids == [100]
+
+
+def test_mis_horarios_requiere_autenticacion(client, db_session):
+    _crear_tablas_extra(db_session)
+
+    respuesta = client.get("/api/v1/usuarios/me/horarios")
+
+    assert respuesta.status_code == 401

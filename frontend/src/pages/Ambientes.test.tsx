@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
@@ -46,14 +46,14 @@ const FICHAS: Ficha[] = [
 
 const HORARIO_A: Horario = {
   idHorario: 1, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-  idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 100, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
+  idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 100, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
   instructorNombre: 'Erick Granados', fichaCodigo: '3228973 B', ambienteNombre: 'Sala 101',
   resultadoCodigo: 'CPL18', resultadoDescripcion: 'Gestión de inventarios',
 }
 
 const HORARIO_B: Horario = {
   idHorario: 2, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-  idAmbiente: 2, idInstructor: 'u2', idFicha: 2, idResultado: 200, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
+  idAmbiente: 2, idInstructor: 'u2', idFicha: 2, idResultado: 200, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
   instructorNombre: 'Fredy Ardila', fichaCodigo: '2758431', ambienteNombre: 'Sala 102',
   resultadoCodigo: 'RA-2', resultadoDescripcion: null,
 }
@@ -61,8 +61,10 @@ const HORARIO_B: Horario = {
 const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }, { idDia: 2, nombreDia: 'Martes' }]
 
 const apiGetMock = vi.fn()
+const apiPostMock = vi.fn()
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiPost: (...args: unknown[]) => apiPostMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -254,5 +256,74 @@ describe('Ambientes', () => {
     await usuario.selectOptions(screen.getByLabelText('Instructor'), 'Erick Granados')
     expect(screen.getByText('Sala 101')).toBeInTheDocument()
     expect(screen.queryByText('Sala 102')).not.toBeInTheDocument()
+  })
+
+  describe('SCRUM-89: carga masiva de ambientes por CSV', () => {
+    function archivoCsv(texto: string) {
+      return new File([texto], 'ambientes.csv', { type: 'text/csv' })
+    }
+
+    beforeEach(() => {
+      apiPostMock.mockClear()
+    })
+
+    it('sube un CSV, previsualiza y al confirmar crea cada ambiente resolviendo la sede a su id', async () => {
+      mockeaBase()
+      apiPostMock.mockResolvedValue({})
+      const usuario = userEvent.setup()
+      renderConProviders(<Ambientes />)
+      await screen.findByText('Sala 101')
+
+      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      const csv = 'numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente\n201,Sala 201,regular,Sede principal,'
+      await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
+
+      expect(await screen.findByText(/Se encontraron/)).toBeInTheDocument()
+      await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 1 fila' }))
+
+      await waitFor(() => expect(apiPostMock).toHaveBeenCalledWith('/ambientes', {
+        numeroAmbiente: 201,
+        nombreAmbiente: 'Sala 201',
+        tipoAmbiente: 'regular',
+        estadoAmbiente: 'disponible',
+        idSede: 1,
+      }))
+      // La etiqueta de cada fila del reporte usa la primera columna
+      // declarada (numeroAmbiente), no el nombre.
+      expect(await screen.findByText(/Fila 2 — 201: creada/)).toBeInTheDocument()
+    })
+
+    it('si tipoAmbiente no es válido, reporta el error de esa fila sin llamar al backend', async () => {
+      mockeaBase()
+      const usuario = userEvent.setup()
+      renderConProviders(<Ambientes />)
+      await screen.findByText('Sala 101')
+
+      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      const csv = 'numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente\n201,Sala 201,invalido,Sede principal,'
+      await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
+      await screen.findByText(/Se encontraron/)
+
+      await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 1 fila' }))
+
+      expect(await screen.findByText(/tipoAmbiente debe ser "regular" o "especial"/)).toBeInTheDocument()
+      expect(apiPostMock).not.toHaveBeenCalled()
+    })
+
+    it('si la sede del CSV no existe, reporta el error de esa fila', async () => {
+      mockeaBase()
+      const usuario = userEvent.setup()
+      renderConProviders(<Ambientes />)
+      await screen.findByText('Sala 101')
+
+      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      const csv = 'numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente\n201,Sala 201,regular,Sede fantasma,'
+      await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
+      await screen.findByText(/Se encontraron/)
+
+      await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 1 fila' }))
+
+      expect(await screen.findByText(/No existe la sede "Sede fantasma"\./)).toBeInTheDocument()
+    })
   })
 })

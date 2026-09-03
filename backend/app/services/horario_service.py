@@ -56,6 +56,7 @@ class HorarioService:
             "fechaCreacion": horario.fechaCreacion,
             "fechaModificacion": horario.fechaModificacion,
             "activo": horario.activo,
+            "publicado": horario.publicado,
             "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
             "instructorNombre": horario.instructor.nombre if horario.instructor else None,
             "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
@@ -143,22 +144,38 @@ class HorarioService:
         return True
 
     @staticmethod
-    def cambiar_estado(db, id_horario, activo: bool):
-        """Activar/desactivar sin borrar (backlog de Historial, pedido
-        2026-09-03). Un horario desactivado deja de contar para cruces y
-        para las horas semanales de RF-011 — ver los filtros `activo` en
-        HorarioRepository — así que reactivarlo puede volver a chocar con
-        algo que se creó mientras tanto; por ahora no se re-valida al
-        reactivar (igual que un ambiente puede pasar a "mantenimiento" y
-        volver a "disponible" sin revisar cruces), queda para cuando se
-        arme el backlog completo si hace falta más rigor acá."""
+    def cambiar_estado(db, id_horario, activo: bool | None = None, publicado: bool | None = None):
+        """Activar/desactivar y/o publicar/despublicar sin borrar (backlog
+        de Historial, pedido 2026-09-03). Un horario desactivado deja de
+        contar para cruces y para las horas semanales de RF-011 — ver los
+        filtros `activo` en HorarioRepository — así que reactivarlo puede
+        volver a chocar con algo que se creó mientras tanto; por ahora no
+        se re-valida al reactivar (igual que un ambiente puede pasar a
+        "mantenimiento" y volver a "disponible" sin revisar cruces), queda
+        para cuando se arme el backlog completo si hace falta más rigor
+        acá. `publicado` es independiente de `activo`: controla si el
+        instructor lo ve en "Mi horario", no si cuenta para cruces."""
         horario = HorarioRepository.obtener_por_id(db, id_horario)
 
         if not horario:
             return None
 
-        horario.activo = activo
+        if activo is not None:
+            horario.activo = activo
+        if publicado is not None:
+            horario.publicado = publicado
         return HorarioRepository.guardar(db, horario)
+
+    @staticmethod
+    def obtener_publicados_por_instructor(db, id_instructor) -> list[dict]:
+        """GET /usuarios/me/horarios — autoservicio del instructor ("Mi
+        horario"): solo lo activo y publicado, nunca un borrador que el
+        coordinador todavía está armando."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_instructor(db, id_instructor)
+            if h.publicado
+        ]
 
     @staticmethod
     def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
