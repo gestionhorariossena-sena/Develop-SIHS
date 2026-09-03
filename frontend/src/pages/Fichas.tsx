@@ -7,8 +7,17 @@ import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { indexarPorFicha, opcionesInstructor } from '../components/horario/indexarHorarios'
 import { SeccionAmbientesAsignados, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
 import { SeccionInstructoresAsignados } from '../components/relacionados/SeccionesFicha'
-import { apiGet, ApiError } from '../services/api'
-import type { DiaSemana, Ficha, Horario } from '../types/api'
+import { ImportarArchivo, type ColumnaImportar } from '../components/ImportarArchivo'
+import { apiGet, apiPost, ApiError } from '../services/api'
+import type { DiaSemana, Ficha, Horario, Programa, Sede, Trimestre } from '../types/api'
+import type { FilaCsv } from '../utils/csv'
+
+const COLUMNAS_IMPORTAR_FICHA: ColumnaImportar[] = [
+  { clave: 'codigoFicha', encabezado: 'codigoFicha' },
+  { clave: 'codigoPrograma', encabezado: 'codigoPrograma' },
+  { clave: 'trimestre', encabezado: 'trimestre' },
+  { clave: 'sede', encabezado: 'sede', requerido: false },
+]
 
 type Orden = 'codigo' | 'programa' | 'trimestre'
 
@@ -32,6 +41,15 @@ export function Fichas() {
   const [seleccionada, setSeleccionada] = useState<Ficha | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // SCRUM-89: carga masiva por CSV. El catálogo completo (no solo lo que
+  // ya tiene fichas creadas) se pide recién al abrir el panel, para
+  // resolver codigoPrograma/trimestre/sede del archivo a los ids que pide
+  // POST /fichas/.
+  const [mostrarImportar, setMostrarImportar] = useState(false)
+  const [catalogoProgramas, setCatalogoProgramas] = useState<Programa[] | null>(null)
+  const [catalogoTrimestres, setCatalogoTrimestres] = useState<Trimestre[] | null>(null)
+  const [catalogoSedes, setCatalogoSedes] = useState<Sede[] | null>(null)
 
   // Horarios reales de la ficha seleccionada — alimenta el grid semanal
   // del drawer (SCRUM-67, reusa GridHorario en solo-lectura). Se piden
@@ -81,6 +99,51 @@ export function Fichas() {
       .catch(() => setErrorHorariosPara(seleccionada.idFicha))
   }, [seleccionada])
 
+  useEffect(() => {
+    if (!mostrarImportar || catalogoProgramas) return
+
+    Promise.all([apiGet<Programa[]>('/programas/'), apiGet<Trimestre[]>('/trimestres/'), apiGet<Sede[]>('/sedes')])
+      .then(([programas, trimestres, sedes]) => {
+        setCatalogoProgramas(programas)
+        setCatalogoTrimestres(trimestres)
+        setCatalogoSedes(sedes)
+      })
+      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el catálogo para importar.'))
+  }, [mostrarImportar, catalogoProgramas])
+
+  async function importarFilaFicha(fila: FilaCsv) {
+    const codigoFicha = fila.codigoFicha?.trim()
+    const codigoPrograma = fila.codigoPrograma?.trim()
+    const nombreTrimestre = fila.trimestre?.trim()
+    const nombreSede = fila.sede?.trim()
+
+    if (!codigoFicha) throw new Error('Falta codigoFicha.')
+    if (!codigoPrograma) throw new Error('Falta codigoPrograma.')
+    if (!nombreTrimestre) throw new Error('Falta trimestre.')
+
+    const programaEncontrado = catalogoProgramas?.find((item) => item.codigoPrograma.toLocaleUpperCase('es-CO') === codigoPrograma.toLocaleUpperCase('es-CO'))
+    if (!programaEncontrado) throw new Error(`No existe el programa "${codigoPrograma}".`)
+
+    const trimestreEncontrado = catalogoTrimestres?.find((item) => item.nombre.toLocaleUpperCase('es-CO') === nombreTrimestre.toLocaleUpperCase('es-CO'))
+    if (!trimestreEncontrado) throw new Error(`No existe el trimestre "${nombreTrimestre}".`)
+
+    const sedeEncontrada = nombreSede ? catalogoSedes?.find((item) => item.nombreSede.toLocaleUpperCase('es-CO') === nombreSede.toLocaleUpperCase('es-CO')) : undefined
+    if (nombreSede && !sedeEncontrada) throw new Error(`No existe la sede "${nombreSede}".`)
+
+    await apiPost('/fichas/', {
+      codigoFicha,
+      idPrograma: programaEncontrado.idPrograma,
+      idTrimestre: trimestreEncontrado.idTrimestre,
+      idSede: sedeEncontrada ? sedeEncontrada.idSede : null,
+    })
+  }
+
+  function refrescarFichasTrasImportar() {
+    apiGet<Ficha[]>('/fichas/')
+      .then(setFichas)
+      .catch(() => {})
+  }
+
   const horariosVigentes = seleccionada && horariosFicha?.idFicha === seleccionada.idFicha ? horariosFicha.datos : null
   const errorHorarios = seleccionada?.idFicha === errorHorariosPara
   const cargandoHorarios = Boolean(seleccionada) && horariosVigentes === null && !errorHorarios
@@ -113,7 +176,16 @@ export function Fichas() {
 
   return (
     <AppShell activo="Fichas">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Fichas</h1><p className="text-sm text-slate-500 dark:text-slate-400">Fichas de formación registradas por programa y trimestre.</p></div><p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {fichas.length} fichas</p></div>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Fichas</h1><p className="text-sm text-slate-500 dark:text-slate-400">Fichas de formación registradas por programa y trimestre.</p></div><div className="flex items-center gap-2"><button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">{mostrarImportar ? 'Ocultar carga de archivo' : 'Cargar archivo'}</button><p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {fichas.length} fichas</p></div></div>
+
+      {mostrarImportar && (
+        <ImportarArchivo
+          columnas={COLUMNAS_IMPORTAR_FICHA}
+          onImportarFila={importarFilaFicha}
+          onTerminado={refrescarFichasTrasImportar}
+          onCerrar={() => setMostrarImportar(false)}
+        />
+      )}
 
       <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de fichas">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
