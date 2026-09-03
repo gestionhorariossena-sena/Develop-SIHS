@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import require_admin
+from app.core.supabase_auth import require_admin, require_lectura_catalogo
 from app.schemas.sede import SedeCreate, SedeResponse, SedeUpdate
 from app.services.sede_service import SedeService
 
@@ -11,12 +11,12 @@ service = SedeService()
 
 
 @router.get("", response_model=list[SedeResponse])
-def list_sedes(db: Session = Depends(get_db), usuario=Depends(require_admin)):
+def list_sedes(db: Session = Depends(get_db), usuario=Depends(require_lectura_catalogo)):
     return service.list(db)
 
 
 @router.get("/{sede_id}", response_model=SedeResponse)
-def get_sede(sede_id: int, db: Session = Depends(get_db), usuario=Depends(require_admin)):
+def get_sede(sede_id: int, db: Session = Depends(get_db), usuario=Depends(require_lectura_catalogo)):
     return service.get(db, sede_id)
 
 

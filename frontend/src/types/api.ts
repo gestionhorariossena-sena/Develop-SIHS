@@ -99,6 +99,11 @@ export interface Sede {
   tipoSede: 'principal' | 'secundaria' | 'alterna' | null
 }
 
+export interface Coordinacion {
+  idCoordinacion: number
+  nombreCoordinacion: string
+}
+
 export interface Ambiente {
   idAmbiente: number
   numeroAmbiente: number

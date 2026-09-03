@@ -62,3 +62,29 @@ export function opcionesInstructor(horarios: Horario[]): string[] {
   }
   return [...instructores].sort()
 }
+
+/** Índice ambiente → fichas/instructores/coordinaciones asociados —
+ * para filtrar Ambientes.tsx igual que Instructores.tsx/Fichas.tsx, sin
+ * pedir los horarios de cada ambiente uno por uno. La coordinación no
+ * viene en `Horario` (solo `idFicha`) — se traduce con `coordinacionPorFicha`
+ * (idFicha → idCoordinacion, derivado de `Ficha.programa.idCoordinacion`). */
+export interface AsociacionesAmbiente {
+  fichas: Set<string>
+  instructores: Set<string>
+  coordinaciones: Set<number>
+}
+
+export function indexarPorAmbiente(horarios: Horario[], coordinacionPorFicha: Map<number, number>): Map<number, AsociacionesAmbiente> {
+  const indice = new Map<number, AsociacionesAmbiente>()
+
+  for (const horario of horarios) {
+    const entrada = indice.get(horario.idAmbiente) ?? { fichas: new Set<string>(), instructores: new Set<string>(), coordinaciones: new Set<number>() }
+    if (horario.fichaCodigo) entrada.fichas.add(horario.fichaCodigo)
+    if (horario.instructorNombre) entrada.instructores.add(horario.instructorNombre)
+    const idCoordinacion = coordinacionPorFicha.get(horario.idFicha)
+    if (idCoordinacion != null) entrada.coordinaciones.add(idCoordinacion)
+    indice.set(horario.idAmbiente, entrada)
+  }
+
+  return indice
+}
