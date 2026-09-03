@@ -3,42 +3,9 @@ import { useEffect, useState } from 'react'
 import { AppShell } from '../components/AppShell'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { GridHorario } from '../components/horario/GridHorario'
-import { apiDelete, apiGet, ApiError } from '../services/api'
-import { BLOQUES } from './horario/tipos'
-import type { BloqueClase, GridAsignaciones } from './horario/tipos'
+import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
+import { apiDelete, apiGet, apiPatch, ApiError } from '../services/api'
 import type { DiaSemana, Horario, HorarioGuardado } from '../types/api'
-
-const ID_BLOQUE_REAL = 'clase-real'
-
-/** Arma bloques+grid de una sola clase (tabla `horarios` real) para
- * reutilizar `GridHorario` en modo solo lectura — esa clase solo tiene un
- * horario fijo (no una plantilla de bloques como el editor), así que solo
- * hay una celda "activa" por día. Si la hora no calza con ninguno de los 6
- * bloques institucionales (`BLOQUES`), no se puede ubicar en el grid. */
-function construirVistaClaseReal(h: Horario): { bloques: BloqueClase[]; grid: GridAsignaciones } | null {
-  const bloqueIdx = BLOQUES.findIndex((b) => b.horaInicio24 === h.horaInicio && b.horaFin24 === h.horaFin)
-  if (bloqueIdx === -1) return null
-
-  const grid: GridAsignaciones = BLOQUES.map(() => [null, null, null, null, null, null])
-  for (const dia of h.dias) {
-    const diaIdx = dia - 1
-    if (diaIdx >= 0 && diaIdx < 6) grid[bloqueIdx][diaIdx] = ID_BLOQUE_REAL
-  }
-
-  const tematica = [h.resultadoCodigo, h.resultadoDescripcion].filter(Boolean).join(' — ') || 'Clase'
-  return {
-    bloques: [
-      {
-        id: ID_BLOQUE_REAL,
-        tematica,
-        instructor: h.instructorNombre ?? '—',
-        ficha: h.fichaCodigo ?? '—',
-        ambiente: h.ambienteNombre ?? '—',
-      },
-    ],
-    grid,
-  }
-}
 
 function formatearFecha(iso: string) {
   return new Date(iso).toLocaleString('es-CO', {
@@ -77,6 +44,7 @@ export function HistorialHorarios() {
 
   const [confirmandoSnapshotId, setConfirmandoSnapshotId] = useState<number | null>(null)
   const [borrandoSnapshotId, setBorrandoSnapshotId] = useState<number | null>(null)
+  const [cambiandoEstadoId, setCambiandoEstadoId] = useState<number | null>(null)
 
   useEffect(() => {
     // Con "/" al final a propósito: sin él, FastAPI responde 307 hacia la
@@ -113,6 +81,18 @@ export function HistorialHorarios() {
     }
   }
 
+  async function cambiarEstado(idHorario: number, activo: boolean) {
+    setCambiandoEstadoId(idHorario)
+    try {
+      const actualizado = await apiPatch<Horario>(`/horarios/${idHorario}/estado`, { activo })
+      setHorariosReales((anterior) => anterior?.map((h) => (h.idHorario === idHorario ? actualizado : h)) ?? anterior)
+    } catch (err) {
+      setErrorReales(err instanceof ApiError ? err.message : 'No se pudo cambiar el estado de la clase.')
+    } finally {
+      setCambiandoEstadoId(null)
+    }
+  }
+
   async function confirmarEliminarSnapshot(idHorarioGuardado: number) {
     setBorrandoSnapshotId(idHorarioGuardado)
     try {
@@ -128,10 +108,29 @@ export function HistorialHorarios() {
 
   const seleccionado = horarios?.find((h) => h.idHorarioGuardado === seleccionadoId) ?? null
   const seleccionadoReal = horariosReales?.find((h) => h.idHorario === seleccionadoRealId) ?? null
-  const vistaClaseReal = seleccionadoReal ? construirVistaClaseReal(seleccionadoReal) : null
 
   const cargando = !horarios && !error && !horariosReales && !errorReales
   const hayFilas = (horariosReales && horariosReales.length > 0) || (horarios && horarios.length > 0)
+
+  // Más reciente primero — con fechaModificacion ya disponible, editar (o
+  // activar/desactivar) una clase la sube al tope, como si acabara de
+  // crearse. Copia del arreglo: sort() muta in place y horariosReales/
+  // horarios siguen siendo el estado "fuente de verdad".
+  const clasesOrdenadas = [...(horariosReales ?? [])].sort((a, b) => b.fechaModificacion.localeCompare(a.fechaModificacion))
+  const snapshotsOrdenados = [...(horarios ?? [])].sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion))
+
+  // Vista de "Horario completo": ya NO se dibuja desde el blob congelado
+  // (`seleccionado.bloques`/`grid`, tal como quedó al guardarlo) sino con
+  // los horarios reales vigentes vía `idsHorarios` — así se ven los
+  // cambios de nombre/estado más recientes, y solo las clases que
+  // pertenecen a ESTE horario, no a otro. Snapshots viejos (de antes de
+  // que existiera `idsHorarios`, ver horario_guardado.py) no tienen ese
+  // vínculo y caen al blob congelado como única opción.
+  const idsHorariosSeleccionado = seleccionado?.idsHorarios ?? []
+  const horariosDelSnapshot = (horariosReales ?? []).filter((h) => idsHorariosSeleccionado.includes(h.idHorario))
+  const vistaSnapshotEnVivo = idsHorariosSeleccionado.length > 0 ? convertirHorariosAGrid(horariosDelSnapshot) : null
+
+  const vistaClaseReal = seleccionadoReal ? convertirHorariosAGrid([seleccionadoReal]) : null
 
   return (
     <AppShell activo="Historial de horarios">
@@ -172,13 +171,18 @@ export function HistorialHorarios() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {horariosReales?.map((h) => (
-                    <tr key={`real-${h.idHorario}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                  {clasesOrdenadas.map((h) => (
+                    <tr key={`real-${h.idHorario}`} className={`hover:bg-slate-50 dark:hover:bg-slate-700/60 ${h.activo ? '' : 'opacity-60'}`}>
                       <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
                         {h.fichaCodigo ?? '—'}
                         <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
                           Clase
                         </span>
+                        {!h.activo && (
+                          <span className="ml-1 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                            Inactivo
+                          </span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
                         {h.instructorNombre ?? '—'} · {h.ambienteNombre ?? '—'} ·{' '}
@@ -186,7 +190,7 @@ export function HistorialHorarios() {
                         {formatearHora(h.horaFin)}
                       </td>
                       <td className="px-4 py-3 text-slate-500">—</td>
-                      <td className="px-4 py-3 text-slate-500">—</td>
+                      <td className="px-4 py-3 text-slate-500">{formatearFecha(h.fechaModificacion)}</td>
                       <td className="px-4 py-3 text-right">
                         {confirmandoId === h.idHorario ? (
                           <div className="flex items-center justify-end gap-1.5">
@@ -220,6 +224,23 @@ export function HistorialHorarios() {
                             </button>
                             <button
                               type="button"
+                              title="Reabrir en el creador de horarios — próximo paso del rediseño, todavía no implementado."
+                              disabled
+                              className="cursor-not-allowed rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-400 dark:border-slate-700 dark:text-slate-500"
+                            >
+                              Modificar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void cambiarEstado(h.idHorario, !h.activo)}
+                              disabled={cambiandoEstadoId === h.idHorario}
+                              aria-label={`${h.activo ? 'Desactivar' : 'Activar'} clase de ${h.fichaCodigo}`}
+                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300"
+                            >
+                              {cambiandoEstadoId === h.idHorario ? '…' : h.activo ? 'Desactivar' : 'Activar'}
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => setConfirmandoId(h.idHorario)}
                               aria-label={`Borrar clase de ${h.fichaCodigo}`}
                               className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-red-50 hover:text-red-600"
@@ -232,7 +253,7 @@ export function HistorialHorarios() {
                     </tr>
                   ))}
 
-                  {horarios?.map((h) => (
+                  {snapshotsOrdenados.map((h) => (
                     <tr key={`snap-${h.idHorarioGuardado}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
                       <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
                         {h.ficha}
@@ -318,14 +339,31 @@ export function HistorialHorarios() {
             </Campo>
           </div>
 
-          <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-            <GridHorario
-              bloques={seleccionado.bloques}
-              grid={seleccionado.grid}
-              hayBloqueActivo={false}
-              soloLectura
-            />
-          </div>
+          {vistaSnapshotEnVivo ? (
+            <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+              <GridHorario
+                bloques={vistaSnapshotEnVivo.bloques}
+                grid={vistaSnapshotEnVivo.grid}
+                hayBloqueActivo={false}
+                soloLectura
+              />
+            </div>
+          ) : (
+            <>
+              <p className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                Este horario se guardó antes de vincularse a las clases reales — se muestra tal como quedó al
+                crearlo, no refleja cambios posteriores.
+              </p>
+              <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+                <GridHorario
+                  bloques={seleccionado.bloques}
+                  grid={seleccionado.grid}
+                  hayBloqueActivo={false}
+                  soloLectura
+                />
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -350,7 +388,7 @@ export function HistorialHorarios() {
             </Campo>
           </div>
 
-          {vistaClaseReal ? (
+          {vistaClaseReal && vistaClaseReal.bloques.length > 0 ? (
             <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
               <GridHorario
                 bloques={vistaClaseReal.bloques}
