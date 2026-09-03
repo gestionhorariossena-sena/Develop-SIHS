@@ -7,12 +7,22 @@ import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { indexarPorAmbiente, opcionesFichaAmbiente, opcionesInstructor } from '../components/horario/indexarHorarios'
 import { SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
 import { SeccionInstructoresAsignados } from '../components/relacionados/SeccionesFicha'
-import { apiGet, ApiError } from '../services/api'
+import { ImportarArchivo, type ColumnaImportar } from '../components/ImportarArchivo'
+import { apiGet, apiPost, ApiError } from '../services/api'
 import type { Ambiente, Coordinacion, DiaSemana, Ficha, Horario, Sede } from '../types/api'
+import type { FilaCsv } from '../utils/csv'
 
 type Orden = 'nombre' | 'sede' | 'estado'
 
 const POR_PAGINA = 10
+
+const COLUMNAS_IMPORTAR_AMBIENTE: ColumnaImportar[] = [
+  { clave: 'numeroAmbiente', encabezado: 'numeroAmbiente' },
+  { clave: 'nombreAmbiente', encabezado: 'nombreAmbiente' },
+  { clave: 'tipoAmbiente', encabezado: 'tipoAmbiente' },
+  { clave: 'sede', encabezado: 'sede' },
+  { clave: 'estadoAmbiente', encabezado: 'estadoAmbiente', requerido: false },
+]
 
 const estiloEstado: Record<Ambiente['estadoAmbiente'], string> = {
   disponible: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
@@ -37,6 +47,9 @@ export function Ambientes() {
   const [seleccionado, setSeleccionado] = useState<Ambiente | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // SCRUM-89: carga masiva por CSV — reusa la lista de sedes que la página
+  // ya pide para el filtro/tabla, no hace falta pedirla de nuevo.
+  const [mostrarImportar, setMostrarImportar] = useState(false)
 
   // Horarios reales del ambiente seleccionado — alimenta el grid semanal y
   // las secciones del drawer (fichas/instructores/temas), mismo patrón que
@@ -87,6 +100,36 @@ export function Ambientes() {
       .catch(() => setErrorHorariosPara(seleccionado.idAmbiente))
   }, [seleccionado])
 
+  async function importarFilaAmbiente(fila: FilaCsv) {
+    const numeroTexto = fila.numeroAmbiente?.trim()
+    const nombreAmbiente = fila.nombreAmbiente?.trim()
+    const tipoTexto = fila.tipoAmbiente?.trim().toLocaleLowerCase('es-CO')
+    const nombreSede = fila.sede?.trim()
+    const estadoTexto = (fila.estadoAmbiente?.trim().toLocaleLowerCase('es-CO') || 'disponible') as Ambiente['estadoAmbiente']
+
+    const numeroAmbiente = Number(numeroTexto)
+    if (!numeroTexto || Number.isNaN(numeroAmbiente) || numeroAmbiente <= 0) throw new Error('numeroAmbiente debe ser un número mayor a 0.')
+    if (!nombreAmbiente) throw new Error('Falta nombreAmbiente.')
+    if (tipoTexto !== 'regular' && tipoTexto !== 'especial') throw new Error('tipoAmbiente debe ser "regular" o "especial".')
+    if (!['disponible', 'mantenimiento', 'inactivo'].includes(estadoTexto)) throw new Error('estadoAmbiente debe ser "disponible", "mantenimiento" o "inactivo".')
+    if (!nombreSede) throw new Error('Falta sede.')
+
+    const sedeEncontrada = sedes.find((item) => item.nombreSede.toLocaleUpperCase('es-CO') === nombreSede.toLocaleUpperCase('es-CO'))
+    if (!sedeEncontrada) throw new Error(`No existe la sede "${nombreSede}".`)
+
+    await apiPost('/ambientes', {
+      numeroAmbiente,
+      nombreAmbiente,
+      tipoAmbiente: tipoTexto,
+      estadoAmbiente: estadoTexto,
+      idSede: sedeEncontrada.idSede,
+    })
+  }
+
+  function refrescarAmbientesTrasImportar() {
+    apiGet<Ambiente[]>('/ambientes').then(setAmbientes).catch(() => {})
+  }
+
   const horariosVigentes = seleccionado && horariosAmbiente?.idAmbiente === seleccionado.idAmbiente ? horariosAmbiente.datos : null
   const errorHorarios = seleccionado?.idAmbiente === errorHorariosPara
   const cargandoHorarios = Boolean(seleccionado) && horariosVigentes === null && !errorHorarios
@@ -129,8 +172,22 @@ export function Ambientes() {
           <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Ambientes</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">Ambientes de formación registrados por sede y coordinación.</p>
         </div>
-        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {ambientes.length} ambientes</p>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">
+            {mostrarImportar ? 'Ocultar carga de archivo' : 'Cargar archivo'}
+          </button>
+          <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {ambientes.length} ambientes</p>
+        </div>
       </div>
+
+      {mostrarImportar && (
+        <ImportarArchivo
+          columnas={COLUMNAS_IMPORTAR_AMBIENTE}
+          onImportarFila={importarFilaAmbiente}
+          onTerminado={refrescarAmbientesTrasImportar}
+          onCerrar={() => setMostrarImportar(false)}
+        />
+      )}
 
       <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de ambientes">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
