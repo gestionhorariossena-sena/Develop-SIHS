@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
@@ -15,11 +15,14 @@ function iniciales(nombre: string) {
  * filtra por UN instructor y muestra su horario semanal completo, para
  * que el coordinador no tenga que buscarlo a mano en cada ficha/ambiente.
  * El detalle (tipo de contrato, especialidades, carga semanal) sigue
- * viviendo en Instructores.tsx — acá solo hay un link "Ver info" que
- * lleva para allá y abre su drawer directo (vía ?id=), sin duplicar esa
- * información en dos pantallas.
+ * viviendo en Instructores.tsx — hay un link "Ver info" que lleva para
+ * allá y abre su drawer directo (vía ?id=), y el drawer de Instructores.tsx
+ * tiene el link de vuelta ("Ver horario completo", también vía ?id=) —
+ * todo conectado en las dos direcciones, sin duplicar información.
  */
 export function VistaInstructores() {
+  const [searchParams] = useSearchParams()
+  const idDesdeUrl = searchParams.get('id')
   const [instructores, setInstructores] = useState<Usuario[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [seleccionado, setSeleccionado] = useState<Usuario | null>(null)
@@ -31,9 +34,23 @@ export function VistaInstructores() {
 
   useEffect(() => {
     apiGet<Usuario[]>('/usuarios/')
-      .then((usuarios) => setInstructores(usuarios.filter((usuario) => usuario.roles.some((rol) => rol.nombre === 'Instructor'))))
+      .then((usuarios) => {
+        const soloInstructores = usuarios.filter((usuario) => usuario.roles.some((rol) => rol.nombre === 'Instructor'))
+        setInstructores(soloInstructores)
+
+        // Deep link desde el drawer de Instructores.tsx ("Ver horario
+        // completo" → /vista-instructores?id=...) — mismo patrón que el
+        // deep link inverso en Instructores.tsx: va dentro del .then, no
+        // en un efecto reactivo aparte, para no reabrirse solo si el
+        // usuario limpia la selección después.
+        if (idDesdeUrl) {
+          const encontrado = soloInstructores.find((instructor) => instructor.idUsuario === idDesdeUrl)
+          if (encontrado) setSeleccionado(encontrado)
+        }
+      })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de instructores.'))
       .finally(() => setCargando(false))
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idDesdeUrl no cambia en la vida del componente.
   }, [])
 
   useEffect(() => {

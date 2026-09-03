@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { SeccionAmbientesAsignados, SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
@@ -203,6 +203,12 @@ export function Instructores() {
                     <GridHorario bloques={bloquesGridInstructor} grid={gridInstructor} hayBloqueActivo={false} soloLectura ocultarFilasVacias />
                   </div>
                 )}
+                <Link
+                  to={`/vista-instructores?id=${seleccionado.idUsuario}`}
+                  className="mt-2 inline-block text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400"
+                >
+                  Ver horario completo →
+                </Link>
               </SeccionDrawer>
               <SeccionFichasAsignadas horarios={horariosVigentes ?? []} diasPorId={diasPorId} />
               <SeccionTemasQueDicta horarios={horariosVigentes ?? []} />

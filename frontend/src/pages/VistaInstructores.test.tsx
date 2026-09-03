@@ -113,4 +113,12 @@ describe('VistaInstructores', () => {
 
     expect(await screen.findByText('Sin horario asignado en el trimestre actual.')).toBeInTheDocument()
   })
+
+  it('con ?id= en la URL, selecciona ese instructor directo (deep link desde el drawer de Instructores.tsx)', async () => {
+    mockeaBase()
+    renderConProviders(<VistaInstructores />, ['/vista-instructores?id=u1'])
+
+    await waitFor(() => expect(screen.getByText('CPL18')).toBeInTheDocument())
+    expect(screen.getByRole('link', { name: 'Ver info →' })).toHaveAttribute('href', '/instructores?id=u1')
+  })
 })

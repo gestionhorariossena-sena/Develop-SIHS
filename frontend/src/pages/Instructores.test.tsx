@@ -195,4 +195,17 @@ describe('Instructores', () => {
 
     expect(await screen.findByRole('dialog', { name: 'Erick Granados' })).toBeInTheDocument()
   })
+
+  it('el drawer tiene un link "Ver horario completo" hacia Vista por instructores', async () => {
+    mockeaUsuariosYPerfil(USUARIOS)
+    const usuario = userEvent.setup()
+    renderConProviders(<Instructores />)
+    await screen.findByText('Erick Granados')
+
+    await usuario.click(screen.getByText('Erick Granados'))
+
+    const panel = screen.getByRole('dialog', { name: 'Erick Granados' })
+    const link = await within(panel).findByRole('link', { name: 'Ver horario completo →' })
+    expect(link).toHaveAttribute('href', '/vista-instructores?id=u1')
+  })
 })
