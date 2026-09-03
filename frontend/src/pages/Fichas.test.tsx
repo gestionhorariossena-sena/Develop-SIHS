@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
@@ -47,8 +47,10 @@ const FICHAS: Ficha[] = [
 ]
 
 const apiGetMock = vi.fn()
+const apiPostMock = vi.fn()
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiPost: (...args: unknown[]) => apiPostMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -258,5 +260,95 @@ describe('Fichas', () => {
 
     expect(screen.queryByText('3228973 B')).not.toBeInTheDocument()
     expect(screen.getByText('2758431')).toBeInTheDocument()
+  })
+
+  describe('SCRUM-89: carga masiva de fichas por CSV', () => {
+    function mockeaFichasConCatalogo() {
+      apiGetMock.mockImplementation((path: string) => {
+        if (path === '/fichas/') return Promise.resolve(FICHAS)
+        if (path === '/programas/') return Promise.resolve([FICHAS[0].programa, FICHAS[1].programa])
+        if (path === '/trimestres/') return Promise.resolve([FICHAS[0].trimestre, FICHAS[1].trimestre])
+        if (path === '/sedes') return Promise.resolve([])
+        return Promise.reject(new Error('no mockeado en este test'))
+      })
+    }
+
+    function archivoCsv(texto: string) {
+      return new File([texto], 'fichas.csv', { type: 'text/csv' })
+    }
+
+    beforeEach(() => {
+      apiPostMock.mockClear()
+    })
+
+    it('el botón "Cargar archivo" abre y cierra el panel de importación', async () => {
+      mockeaFichasYPerfil(FICHAS)
+      const usuario = userEvent.setup()
+      renderConProviders(<Fichas />)
+      await screen.findByText('3228973 B')
+
+      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      expect(screen.getByText(/Columnas esperadas/)).toBeInTheDocument()
+
+      await usuario.click(screen.getByRole('button', { name: 'Cerrar' }))
+      expect(screen.queryByText(/Columnas esperadas/)).not.toBeInTheDocument()
+    })
+
+    it('sube un CSV, previsualiza las filas y al confirmar crea cada ficha resolviendo programa/trimestre a sus ids', async () => {
+      mockeaFichasConCatalogo()
+      apiPostMock.mockResolvedValue({})
+      const usuario = userEvent.setup()
+      renderConProviders(<Fichas />)
+      await screen.findByText('3228973 B')
+
+      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      const csv = 'codigoFicha,codigoPrograma,trimestre,sede\nFICHA-NUEVA,ADSO,Trimestre 3,'
+      await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
+
+      expect(await screen.findByText(/Se encontraron/)).toBeInTheDocument()
+      expect(screen.getByText('FICHA-NUEVA')).toBeInTheDocument()
+
+      await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 1 fila' }))
+
+      await waitFor(() => expect(apiPostMock).toHaveBeenCalledWith('/fichas/', {
+        codigoFicha: 'FICHA-NUEVA',
+        idPrograma: 1,
+        idTrimestre: 1,
+        idSede: null,
+      }))
+      expect(await screen.findByText(/FICHA-NUEVA: creada/)).toBeInTheDocument()
+    })
+
+    it('si el CSV referencia un programa que no existe, reporta el error en esa fila sin romper las demás', async () => {
+      mockeaFichasConCatalogo()
+      apiPostMock.mockResolvedValue({})
+      const usuario = userEvent.setup()
+      renderConProviders(<Fichas />)
+      await screen.findByText('3228973 B')
+
+      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      const csv = 'codigoFicha,codigoPrograma,trimestre,sede\nFICHA-A,NOEXISTE,Trimestre 3,\nFICHA-B,ADSO,Trimestre 3,'
+      await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
+      await screen.findByText(/Se encontraron/)
+
+      await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 2 filas' }))
+
+      expect(await screen.findByText(/FICHA-A: No existe el programa "NOEXISTE"\./)).toBeInTheDocument()
+      expect(await screen.findByText(/FICHA-B: creada/)).toBeInTheDocument()
+      expect(apiPostMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('si al CSV le falta una columna requerida, avisa antes de mostrar la previsualización', async () => {
+      mockeaFichasConCatalogo()
+      const usuario = userEvent.setup()
+      renderConProviders(<Fichas />)
+      await screen.findByText('3228973 B')
+
+      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv('codigoFicha,codigoPrograma\nFICHA-X,ADSO'))
+
+      expect(await screen.findByText(/le faltan estas columnas: trimestre/)).toBeInTheDocument()
+      expect(screen.queryByText(/Se encontraron/)).not.toBeInTheDocument()
+    })
   })
 })
