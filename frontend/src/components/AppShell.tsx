@@ -12,18 +12,72 @@ import { ThemeSelector } from './ThemeSelector'
 interface ItemNav {
   etiqueta: string
   ruta?: string
+  /** Solo Administrador/Coordinador — mismo criterio que ya tenía "Usuarios". */
+  soloGestion?: boolean
 }
 
-const NAV: ItemNav[] = [
-  { etiqueta: 'Inicio', ruta: '/dashboard' },
-  { etiqueta: 'Horarios', ruta: '/horarios/nuevo' },
-  { etiqueta: 'Historial de horarios', ruta: '/horarios/historial' },
-  { etiqueta: 'Ambientes', ruta: '/ambientes' },
-  { etiqueta: 'Instructores', ruta: '/instructores' },
-  { etiqueta: 'Fichas', ruta: '/fichas' },
-  { etiqueta: 'Usuarios', ruta: '/usuarios' },
-  { etiqueta: 'Aprobar solicitudes de registro', ruta: '/aprobar-solicitudes' },
-  { etiqueta: 'Reportes' },
+interface GrupoNav {
+  grupo: string
+  items: ItemNav[]
+}
+
+/**
+ * Reorganizado en grupos (ver _Docs/Diseño/sidebar.png, mockup de
+ * referencia) — antes era una lista plana bajo un único rótulo "GESTIÓN".
+ * Los ítems sin `ruta` son módulos que todavía no existen (misma
+ * convención que ya había: se muestran deshabilitados con tooltip).
+ * "Horarios" es el "Constructor" del mockup — se dejó ese nombre para no
+ * tocar NuevoHorario.tsx en este cambio, es solo una etiqueta.
+ */
+/** Fuera de los grupos, arriba de todo — igual que antes, es el punto de
+ * regreso rápido, el mockup lo da por implícito en el logo pero se deja
+ * explícito para no perder la forma actual de volver al dashboard. */
+const INICIO: ItemNav = { etiqueta: 'Inicio', ruta: '/dashboard' }
+
+const NAV: GrupoNav[] = [
+  {
+    grupo: 'Programación',
+    items: [
+      { etiqueta: 'Horarios', ruta: '/horarios/nuevo' },
+      { etiqueta: 'Historial de horarios', ruta: '/horarios/historial' },
+      { etiqueta: 'Vista por fichas' },
+      { etiqueta: 'Vista por instructores' },
+      { etiqueta: 'Vista por ambientes' },
+      { etiqueta: 'Calendario general' },
+    ],
+  },
+  {
+    grupo: 'Formación',
+    items: [
+      { etiqueta: 'Fichas', ruta: '/fichas' },
+      { etiqueta: 'Programas' },
+      { etiqueta: 'Temáticas' },
+    ],
+  },
+  {
+    grupo: 'Recursos',
+    items: [
+      { etiqueta: 'Instructores', ruta: '/instructores' },
+      { etiqueta: 'Ambientes', ruta: '/ambientes' },
+      { etiqueta: 'Sedes' },
+    ],
+  },
+  {
+    grupo: 'Operación',
+    items: [
+      { etiqueta: 'Aprobar solicitudes de registro', ruta: '/aprobar-solicitudes' },
+      { etiqueta: 'Cambios' },
+      { etiqueta: 'Notificaciones' },
+    ],
+  },
+  {
+    grupo: 'Administración',
+    items: [
+      { etiqueta: 'Usuarios', ruta: '/usuarios', soloGestion: true },
+      { etiqueta: 'Roles', soloGestion: true },
+      { etiqueta: 'Configuración', soloGestion: true },
+    ],
+  },
 ]
 
 function letraInicial(nombre: string) {
@@ -70,9 +124,13 @@ export function AppShell({ activo, children }: AppShellProps) {
     miPerfil?.roles.some(
       (rol) => rol.nombre === 'Administrador' || rol.nombre === 'Coordinador',
     ) ?? false
-  // "Usuarios" administra roles y códigos de instructor del sistema — solo
-  // tiene sentido mostrárselo a un Administrador o Coordinador.
-  const nav = NAV.filter((item) => item.etiqueta !== 'Usuarios' || puedeGestionarUsuarios)
+  // Los ítems marcados soloGestion (hoy, todo el grupo Administración)
+  // solo tienen sentido para un Administrador o Coordinador — mismo
+  // criterio que antes tenía "Usuarios" a solas.
+  const nav = NAV.map((grupo) => ({
+    ...grupo,
+    items: grupo.items.filter((item) => !item.soloGestion || puedeGestionarUsuarios),
+  })).filter((grupo) => grupo.items.length > 0)
 
   useEffect(() => {
     apiGet<Usuario>('/usuarios/me')
@@ -162,6 +220,46 @@ export function AppShell({ activo, children }: AppShellProps) {
     }
   }
 
+  /** Un ítem de nav: link si ya tiene pantalla, deshabilitado si no —
+   * misma convención de siempre, ahora compartida entre "Inicio" (fuera
+   * de los grupos) y cada ítem dentro de un grupo. */
+  function renderItemNav(item: ItemNav) {
+    const esActivo = item.etiqueta === activo
+
+    if (item.ruta) {
+      return (
+        <Link
+          key={item.etiqueta}
+          to={item.ruta}
+          onClick={cerrarManual}
+          className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
+            esActivo
+              ? 'bg-sena-50 text-sena-700 dark:bg-sena-950/50'
+              : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
+          }`}
+        >
+          <span
+            className={`h-3.5 w-3.5 shrink-0 rounded ${
+              esActivo ? 'bg-sena-600' : 'border border-slate-300 dark:border-slate-600'
+            }`}
+          />
+          {item.etiqueta}
+        </Link>
+      )
+    }
+
+    return (
+      <span
+        key={item.etiqueta}
+        title="Módulo aún no implementado en el backend"
+        className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500"
+      >
+        <span className="h-3.5 w-3.5 shrink-0 rounded border border-slate-300 dark:border-slate-600" />
+        {item.etiqueta}
+      </span>
+    )
+  }
+
   function alSalirPanel() {
     if (!abiertaPorHoverRef.current) return
     temporizadorCierreRef.current = window.setTimeout(() => {
@@ -219,44 +317,17 @@ export function AppShell({ activo, children }: AppShellProps) {
             </button>
           </div>
 
-          <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">GESTIÓN</p>
-          <nav className="space-y-1">
-            {nav.map((item) => {
-              const esActivo = item.etiqueta === activo
+          <nav className="space-y-4">
+            <div className="space-y-1">{renderItemNav(INICIO)}</div>
 
-              if (item.ruta) {
-                return (
-                  <Link
-                    key={item.etiqueta}
-                    to={item.ruta}
-                    onClick={cerrarManual}
-                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                      esActivo
-                        ? 'bg-sena-50 text-sena-700 dark:bg-sena-950/50'
-                        : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span
-                      className={`h-3.5 w-3.5 shrink-0 rounded ${
-                        esActivo ? 'bg-sena-600' : 'border border-slate-300 dark:border-slate-600'
-                      }`}
-                    />
-                    {item.etiqueta}
-                  </Link>
-                )
-              }
-
-              return (
-                <span
-                  key={item.etiqueta}
-                  title="Módulo aún no implementado en el backend"
-                  className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500"
-                >
-                  <span className="h-3.5 w-3.5 shrink-0 rounded border border-slate-300 dark:border-slate-600" />
-                  {item.etiqueta}
-                </span>
-              )
-            })}
+            {nav.map((grupo) => (
+              <div key={grupo.grupo}>
+                <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">
+                  {grupo.grupo.toUpperCase()}
+                </p>
+                <div className="space-y-1">{grupo.items.map((item) => renderItemNav(item))}</div>
+              </div>
+            ))}
           </nav>
         </div>
 
