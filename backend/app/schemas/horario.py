@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import datetime, time
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -62,6 +62,9 @@ class HorarioResponse(HorarioBase):
 
     idHorario: int
     dias: list[int]
+    fechaCreacion: datetime
+    fechaModificacion: datetime
+    activo: bool
 
     # Enriquecido por HorarioService/_a_response para no obligar al
     # frontend a resolver estos nombres con llamadas aparte.
@@ -70,3 +73,11 @@ class HorarioResponse(HorarioBase):
     ambienteNombre: str | None = None
     resultadoCodigo: str | None = None
     resultadoDescripcion: str | None = None
+
+
+class HorarioEstadoUpdate(BaseModel):
+    """Body de PATCH /horarios/{id}/estado — activar/desactivar sin pasar
+    por la validación completa de HorarioUpdate (no cambia ficha/instructor/
+    ambiente/horario, solo si cuenta como clase vigente)."""
+
+    activo: bool

@@ -84,13 +84,36 @@ vistazo:
 
 | Jornada | Clase de celda | Barra de encabezado |
 |---|---|---|
-| Mañana | `bg-emerald-50` / `bg-emerald-100` | `bg-slate-900` |
-| Tarde | `bg-sky-50` / `bg-sky-100` | `bg-slate-900` |
-| Noche | `bg-sena-50` / `bg-sena-100` | `bg-slate-900` |
+| Mañana | `bg-emerald-200` / `bg-emerald-300/70` | `bg-slate-900` |
+| Tarde | `bg-blue-200` / `bg-blue-300/70` | `bg-slate-900` |
+| Noche | `bg-emerald-200` / `bg-emerald-300/70` | `bg-slate-900` |
 
 Las barras "JORNADA MAÑANA/TARDE/NOCHE" son siempre `slate-900` (casi negro)
 independientemente de la jornada — así es en la planilla original, la
 diferenciación va en el color de las celdas, no en la barra.
+
+#### Grid de horario en modo oscuro
+
+El texto del grid (`GridHorario.tsx`, `CeldaHorario.tsx`) es **siempre
+`text-slate-900` (negro), sin variante `dark:`**, y las celdas vacías son
+**siempre** `bg-emerald-200`/`bg-blue-200` (verde/azul, tabla de arriba),
+también sin variante `dark:`. Es la única parte del frontend que rompe a
+propósito la convención "todo tiene su par `dark:`" — motivo:
+
+- Antes las celdas usaban tonos casi blancos (`-50`) y el texto usaba
+  `dark:text-slate-200` (gris claro), pensado para un fondo oscuro. Pero el
+  fondo de la celda no tenía variante `dark:`, así que en modo oscuro seguía
+  siendo casi blanco — el resultado era texto claro sobre fondo claro, casi
+  ilegible ("las letras casi ni se leen").
+- La solución correcta NO es ponerle `dark:bg-...` oscuro a la celda,
+  porque entonces haría falta texto blanco encima, no negro — y el pedido
+  explícito fue texto negro. En vez de eso, el fondo pasa a un tono ya lo
+  bastante saturado (`-200`/`-300`, "azul oscuro"/"verde oscuro" frente al
+  `-50` anterior) para que texto negro fijo tenga buen contraste en
+  cualquier tema, sin necesitar dos paletas.
+- Si se vuelve a tocar este grid: no agregar `dark:text-*` claro a nada que
+  quede dentro de estas celdas, y no agregar `dark:bg-*` oscuro sin también
+  cambiar el texto a blanco — son las dos mitades de la misma regla.
 
 ## Tipografía
 

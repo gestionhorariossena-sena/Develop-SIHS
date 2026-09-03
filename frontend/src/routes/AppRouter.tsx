@@ -6,9 +6,14 @@ import { RestablecerContrasena } from '../pages/RestablecerContrasena'
 import { Dashboard } from '../pages/Dashboard'
 import { NuevoHorario } from '../pages/NuevoHorario'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
+import { CalendarioGeneral } from '../pages/CalendarioGeneral'
+import { HorariosCompletos } from '../pages/HorariosCompletos'
 import { Ambientes } from '../pages/Ambientes'
 import { Instructores } from '../pages/Instructores'
+import { VistaInstructores } from '../pages/VistaInstructores'
 import { Fichas } from '../pages/Fichas'
+import { VistaFichas } from '../pages/VistaFichas'
+import { VistaAmbientes } from '../pages/VistaAmbientes'
 import { Usuarios } from '../pages/Usuarios'
 import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -36,10 +41,26 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/calendario"
+        element={
+          <ProtectedRoute>
+            <CalendarioGeneral />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/horarios/nuevo"
         element={
           <ProtectedRoute>
             <NuevoHorario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/horarios/completos"
+        element={
+          <ProtectedRoute>
+            <HorariosCompletos />
           </ProtectedRoute>
         }
       />
@@ -68,10 +89,34 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/vista-instructores"
+        element={
+          <ProtectedRoute>
+            <VistaInstructores />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/fichas"
         element={
           <ProtectedRoute>
             <Fichas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vista-fichas"
+        element={
+          <ProtectedRoute>
+            <VistaFichas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vista-ambientes"
+        element={
+          <ProtectedRoute>
+            <VistaAmbientes />
           </ProtectedRoute>
         }
       />

@@ -39,7 +39,7 @@ const CARGA: CargaSemanal = { idUsuario: 'u1', tipoContrato: 'Planta', horasAsig
 const HORARIOS: Horario[] = [
   {
     idHorario: 1, horaInicio: '12:00:00', horaFin: '15:00:00', idJornada: 2, idTrimestre: 1,
-    idAmbiente: 1, idInstructor: 'u1', idFicha: 10, idResultado: 100, dias: [1, 3],
+    idAmbiente: 1, idInstructor: 'u1', idFicha: 10, idResultado: 100, dias: [1, 3], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
     instructorNombre: 'Erick Granados', fichaCodigo: '3068356', ambienteNombre: 'Ambiente 306',
     resultadoCodigo: 'CPL18', resultadoDescripcion: 'Gestión de inventarios',
   },
@@ -54,12 +54,13 @@ vi.mock('../services/api', () => ({
 /** AppShell también llama a apiGet('/usuarios/me') al montar — el mock
  * tiene que distinguir por ruta o revienta leyendo `.roles` de lo que sea
  * que devuelva /usuarios/. */
-function mockeaUsuariosYPerfil(usuarios: unknown) {
+function mockeaUsuariosYPerfil(usuarios: unknown, todosLosHorarios: Horario[] = HORARIOS) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/usuarios/') return Promise.resolve(usuarios)
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
     if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA)
     if (path === '/usuarios/u1/horarios') return Promise.resolve(HORARIOS)
+    if (path === '/horarios/') return Promise.resolve(todosLosHorarios)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -187,5 +188,77 @@ describe('Instructores', () => {
     await waitFor(() => {
       expect(screen.getByText('No se pudo cargar el listado de instructores.')).toBeInTheDocument()
     })
+  })
+
+  it('con ?id= en la URL, abre el drawer de ese instructor directo (deep link desde Vista por instructores)', async () => {
+    mockeaUsuariosYPerfil(USUARIOS)
+    renderConProviders(<Instructores />, ['/instructores?id=u1'])
+
+    expect(await screen.findByRole('dialog', { name: 'Erick Granados' })).toBeInTheDocument()
+  })
+
+  it('el drawer tiene un link "Ver horario completo" hacia Vista por instructores', async () => {
+    mockeaUsuariosYPerfil(USUARIOS)
+    const usuario = userEvent.setup()
+    renderConProviders(<Instructores />)
+    await screen.findByText('Erick Granados')
+
+    await usuario.click(screen.getByText('Erick Granados'))
+
+    const panel = screen.getByRole('dialog', { name: 'Erick Granados' })
+    const link = await within(panel).findByRole('link', { name: 'Ver horario completo →' })
+    expect(link).toHaveAttribute('href', '/vista-instructores?id=u1')
+  })
+
+  it('con más de 10 instructores, pagina y "Siguiente" avanza a la página 2', async () => {
+    const muchos: Usuario[] = Array.from({ length: 12 }, (_, i) => ({
+      ...INSTRUCTOR,
+      idUsuario: `u${i + 1}`,
+      nombre: `Instructor ${String(i + 1).padStart(2, '0')}`,
+    }))
+    mockeaUsuariosYPerfil(muchos)
+    const usuario = userEvent.setup()
+    renderConProviders(<Instructores />)
+    await screen.findByText('Instructor 01')
+
+    expect(screen.getByText('Página 1 de 2')).toBeInTheDocument()
+    expect(screen.queryByText('Instructor 11')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+
+    await usuario.click(screen.getByRole('button', { name: 'Siguiente' }))
+
+    expect(screen.getByText('Página 2 de 2')).toBeInTheDocument()
+    expect(screen.getByText('Instructor 11')).toBeInTheDocument()
+    expect(screen.queryByText('Instructor 01')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+  })
+
+  it('filtra por ficha y por ambiente usando todos los horarios del sistema', async () => {
+    const otroInstructor: Usuario = { ...INSTRUCTOR, idUsuario: 'u4', nombre: 'Fredy Ardila' }
+    const todosLosHorarios: Horario[] = [
+      ...HORARIOS,
+      {
+        idHorario: 2, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
+        idAmbiente: 2, idInstructor: 'u4', idFicha: 20, idResultado: 200, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
+        instructorNombre: 'Fredy Ardila', fichaCodigo: '9999999', ambienteNombre: 'Ambiente 999',
+        resultadoCodigo: 'RA-1', resultadoDescripcion: null,
+      },
+    ]
+    mockeaUsuariosYPerfil([INSTRUCTOR, otroInstructor], todosLosHorarios)
+    const usuario = userEvent.setup()
+    renderConProviders(<Instructores />)
+    await screen.findByText('Erick Granados')
+    expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Ficha'), '3068356')
+
+    expect(screen.getByText('Erick Granados')).toBeInTheDocument()
+    expect(screen.queryByText('Fredy Ardila')).not.toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Ficha'), 'Todas')
+    await usuario.selectOptions(screen.getByLabelText('Ambiente'), 'Ambiente 999')
+
+    expect(screen.queryByText('Erick Granados')).not.toBeInTheDocument()
+    expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
   })
 })

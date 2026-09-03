@@ -2,10 +2,18 @@ import { BLOQUES, DIAS } from '../../pages/horario/tipos'
 import type { BloqueClase, GridAsignaciones, Jornada, PosicionCelda } from '../../pages/horario/tipos'
 import { CeldaHorario } from './CeldaHorario'
 
+// Sin variante `dark:` a propósito — mismo tono en claro y oscuro (ver
+// GUIA_DE_MARCA.md, sección "Grid de horario en modo oscuro"). Antes estas
+// celdas eran casi blancas (`-50`) y el texto usaba `dark:text-slate-200`,
+// pensado para fondo oscuro: en modo oscuro la celda seguía clara (no tenía
+// `dark:bg-...`) y el texto quedaba claro sobre claro, casi ilegible. La
+// solución no es agregar un fondo oscuro (para eso habría que poner texto
+// blanco, no negro), sino un tono ya suficientemente saturado para que el
+// texto negro fijo tenga buen contraste en cualquier tema.
 const colorFondoJornada: Record<Jornada, { celda: string; celdaAlt: string }> = {
-  Mañana: { celda: 'bg-emerald-50', celdaAlt: 'bg-emerald-100/60' },
-  Tarde: { celda: 'bg-sky-50', celdaAlt: 'bg-sky-100/60' },
-  Noche: { celda: 'bg-sena-50', celdaAlt: 'bg-sena-100/60' },
+  Mañana: { celda: 'bg-emerald-200', celdaAlt: 'bg-emerald-300/70' },
+  Tarde: { celda: 'bg-blue-200', celdaAlt: 'bg-blue-300/70' },
+  Noche: { celda: 'bg-emerald-200', celdaAlt: 'bg-emerald-300/70' },
 }
 
 // La columna de hora usa minmax en vez de un px fijo, y las columnas de día
@@ -74,7 +82,7 @@ export function GridHorario({
             {indices.map((bloqueIdx, posicion) => (
               <div key={bloqueIdx}>
                 <div className="grid gap-px bg-slate-200 dark:bg-slate-700" style={ESTILO_COLUMNAS}>
-                  <div className={`${fondos.celda} flex flex-col justify-center px-2 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200`}>
+                  <div className={`${fondos.celda} flex flex-col justify-center px-2 py-2 text-xs font-semibold text-slate-900`}>
                     <span className="truncate">{BLOQUES[bloqueIdx].horaInicio}</span>
                     <span className="truncate">– {BLOQUES[bloqueIdx].horaFin}</span>
                   </div>

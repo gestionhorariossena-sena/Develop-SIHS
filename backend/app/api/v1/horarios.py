@@ -9,6 +9,7 @@ from app.schemas.horario import (
     HorarioCreate,
     HorarioDryRunRequest,
     HorarioDryRunResponse,
+    HorarioEstadoUpdate,
     HorarioResponse,
     HorarioUpdate,
 )
@@ -124,6 +125,28 @@ def actualizar_horario(
     AuditoriaService.registrar(
         db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=id_horario, detalle=detalle
     )
+
+    return _a_response(db, horario)
+
+
+@router.patch("/{id_horario}/estado", response_model=HorarioResponse)
+def cambiar_estado_horario(
+    id_horario: int,
+    data: HorarioEstadoUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_puede_programar),
+):
+    """Activar/desactivar sin borrar — backlog de Horarios completos/
+    Historial (pedido 2026-09-03). No pasa por HorarioUpdate: no cambia
+    ficha/instructor/ambiente/horario, así que no tiene sentido pedir
+    esos campos ni re-correr el dry-run completo."""
+    horario = HorarioService.cambiar_estado(db, id_horario, data.activo)
+
+    if not horario:
+        raise HTTPException(status_code=404, detail="Horario no encontrado")
+
+    accion = "ACTIVAR" if data.activo else "DESACTIVAR"
+    AuditoriaService.registrar(db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=id_horario)
 
     return _a_response(db, horario)
 

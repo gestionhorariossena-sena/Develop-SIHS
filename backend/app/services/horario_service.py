@@ -53,6 +53,9 @@ class HorarioService:
             "idInstructor": horario.idInstructor,
             "idFicha": horario.idFicha,
             "idResultado": horario.idResultado,
+            "fechaCreacion": horario.fechaCreacion,
+            "fechaModificacion": horario.fechaModificacion,
+            "activo": horario.activo,
             "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
             "instructorNombre": horario.instructor.nombre if horario.instructor else None,
             "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
@@ -138,6 +141,24 @@ class HorarioService:
 
         HorarioRepository.eliminar(db, horario)
         return True
+
+    @staticmethod
+    def cambiar_estado(db, id_horario, activo: bool):
+        """Activar/desactivar sin borrar (backlog de Historial, pedido
+        2026-09-03). Un horario desactivado deja de contar para cruces y
+        para las horas semanales de RF-011 — ver los filtros `activo` en
+        HorarioRepository — así que reactivarlo puede volver a chocar con
+        algo que se creó mientras tanto; por ahora no se re-valida al
+        reactivar (igual que un ambiente puede pasar a "mantenimiento" y
+        volver a "disponible" sin revisar cruces), queda para cuando se
+        arme el backlog completo si hace falta más rigor acá."""
+        horario = HorarioRepository.obtener_por_id(db, id_horario)
+
+        if not horario:
+            return None
+
+        horario.activo = activo
+        return HorarioRepository.guardar(db, horario)
 
     @staticmethod
     def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
