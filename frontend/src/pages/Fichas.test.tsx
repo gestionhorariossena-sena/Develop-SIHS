@@ -73,11 +73,12 @@ const HORARIOS: Horario[] = [
 
 const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }]
 
-function mockeaFichasConHorarios(fichas: unknown) {
+function mockeaFichasConHorarios(fichas: unknown, todosLosHorarios: Horario[] = HORARIOS) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/fichas/') return Promise.resolve(fichas)
     if (path === '/fichas/1/horarios') return Promise.resolve(HORARIOS)
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
+    if (path === '/horarios/') return Promise.resolve(todosLosHorarios)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -187,5 +188,55 @@ describe('Fichas', () => {
     await waitFor(() => {
       expect(screen.getByText('No se pudo cargar el listado de fichas.')).toBeInTheDocument()
     })
+  })
+
+  it('con más de 10 fichas, pagina y "Siguiente" avanza a la página 2', async () => {
+    const muchas: Ficha[] = Array.from({ length: 12 }, (_, i) => ({
+      ...FICHAS[0],
+      idFicha: i + 1,
+      codigoFicha: `FICHA-${String(i + 1).padStart(2, '0')}`,
+    }))
+    mockeaFichasYPerfil(muchas)
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    await screen.findByText('FICHA-01')
+
+    expect(screen.getByText('Página 1 de 2')).toBeInTheDocument()
+    expect(screen.queryByText('FICHA-11')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+
+    await usuario.click(screen.getByRole('button', { name: 'Siguiente' }))
+
+    expect(screen.getByText('Página 2 de 2')).toBeInTheDocument()
+    expect(screen.getByText('FICHA-11')).toBeInTheDocument()
+    expect(screen.queryByText('FICHA-01')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+  })
+
+  it('filtra la lista de fichas por instructor usando todos los horarios del sistema', async () => {
+    const todosLosHorarios: Horario[] = [
+      ...HORARIOS,
+      {
+        idHorario: 2, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
+        idAmbiente: 2, idInstructor: 'u2', idFicha: 2, idResultado: 2, dias: [2],
+        instructorNombre: 'Fredy Ardila', fichaCodigo: '2758431', ambienteNombre: 'Ambiente 202',
+        resultadoCodigo: 'RA-2', resultadoDescripcion: null,
+      },
+    ]
+    mockeaFichasConHorarios(FICHAS, todosLosHorarios)
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    await screen.findByText('3228973 B')
+    expect(screen.getByText('2758431')).toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Instructor'), 'Erick Granados')
+
+    expect(screen.getByText('3228973 B')).toBeInTheDocument()
+    expect(screen.queryByText('2758431')).not.toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Instructor'), 'Fredy Ardila')
+
+    expect(screen.queryByText('3228973 B')).not.toBeInTheDocument()
+    expect(screen.getByText('2758431')).toBeInTheDocument()
   })
 })

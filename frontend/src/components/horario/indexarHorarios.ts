@@ -34,3 +34,31 @@ export function opcionesFichaAmbiente(horarios: Horario[]): { fichas: string[]; 
   }
   return { fichas: [...fichas].sort(), ambientes: [...ambientes].sort() }
 }
+
+/** Índice inverso: ficha → instructores que dictan en ella — para filtrar
+ * Fichas.tsx por instructor, mismo criterio que indexarPorInstructor pero
+ * al revés. Se indexa por `idFicha` (no por código) porque es lo que ya
+ * trae `Ficha`; el valor del filtro sigue siendo el nombre del instructor,
+ * que es lo que se muestra en el <select>. */
+export function indexarPorFicha(horarios: Horario[]): Map<number, Set<string>> {
+  const indice = new Map<number, Set<string>>()
+
+  for (const horario of horarios) {
+    if (!horario.instructorNombre) continue
+    const entrada = indice.get(horario.idFicha) ?? new Set<string>()
+    entrada.add(horario.instructorNombre)
+    indice.set(horario.idFicha, entrada)
+  }
+
+  return indice
+}
+
+/** Instructores únicos presentes en los horarios — para poblar el <select>
+ * de filtro por instructor. */
+export function opcionesInstructor(horarios: Horario[]): string[] {
+  const instructores = new Set<string>()
+  for (const horario of horarios) {
+    if (horario.instructorNombre) instructores.add(horario.instructorNombre)
+  }
+  return [...instructores].sort()
+}
