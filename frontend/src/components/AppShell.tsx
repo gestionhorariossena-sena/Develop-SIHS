@@ -39,6 +39,7 @@ const NAV: GrupoNav[] = [
     grupo: 'Programación',
     items: [
       { etiqueta: 'Horarios', ruta: '/horarios/nuevo' },
+      { etiqueta: 'Horarios completos', ruta: '/horarios/completos' },
       { etiqueta: 'Historial de horarios', ruta: '/horarios/historial' },
       { etiqueta: 'Vista por fichas', ruta: '/vista-fichas' },
       { etiqueta: 'Vista por instructores', ruta: '/vista-instructores' },

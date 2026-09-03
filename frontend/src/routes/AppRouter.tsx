@@ -7,6 +7,7 @@ import { Dashboard } from '../pages/Dashboard'
 import { NuevoHorario } from '../pages/NuevoHorario'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { CalendarioGeneral } from '../pages/CalendarioGeneral'
+import { HorariosCompletos } from '../pages/HorariosCompletos'
 import { Ambientes } from '../pages/Ambientes'
 import { Instructores } from '../pages/Instructores'
 import { VistaInstructores } from '../pages/VistaInstructores'
@@ -52,6 +53,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <NuevoHorario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/horarios/completos"
+        element={
+          <ProtectedRoute>
+            <HorariosCompletos />
           </ProtectedRoute>
         }
       />

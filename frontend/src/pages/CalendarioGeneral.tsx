@@ -6,6 +6,7 @@ import { formatoHora } from '../components/relacionados/formatoBloque'
 import { apiGet, ApiError } from '../services/api'
 import { BLOQUES } from './horario/tipos'
 import type { Jornada } from './horario/tipos'
+import { colorParaBloque } from './horario/gridLogic'
 import type { DiaSemana, Ficha, Horario, Trimestre } from '../types/api'
 
 const NOMBRES_DIA_JS = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
@@ -13,16 +14,14 @@ const NOMBRES_MES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Jul
 const ENCABEZADOS_SEMANA = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 const MAX_CHIPS_POR_DIA = 3
 
-// Mismo criterio de color que GridHorario.tsx (Mañana/Noche en verde, Tarde
-// en azul) — acá es un punto pequeño, no una celda con texto encima, así
-// que Noche sí puede tener su propio tono sin problema de contraste.
-const colorJornada: Record<Jornada, { punto: string; texto: string }> = {
-  Mañana: { punto: 'bg-emerald-500', texto: 'text-emerald-700 dark:text-emerald-400' },
-  Tarde: { punto: 'bg-blue-500', texto: 'text-blue-700 dark:text-blue-400' },
-  Noche: { punto: 'bg-slate-600', texto: 'text-slate-700 dark:text-slate-300' },
-}
-
+/** Un chip del calendario = un horario (fila de `GET /horarios/`), no una
+ * "clase" suelta — un mismo horario puede repetirse varios días de la
+ * semana (`horario.dias`) y siempre debe verse del mismo color en todos.
+ * El color sale de `colorParaBloque(idHorario)`, la misma función hash que
+ * ya usa el editor (`NuevoHorario.tsx`/`CeldaHorario.tsx`) — así un horario
+ * se ve igual acá y en el editor, sin mantener una paleta aparte. */
 interface ClaseDelDia {
+  idHorario: number
   idFicha: number
   programa: string
   jornada: Jornada
@@ -117,22 +116,22 @@ export function CalendarioGeneral() {
     if (idDia == null) return []
 
     const fechaISO = formatoFechaISO(fecha)
-    const grupos = new Map<string, ClaseDelDia>()
+    const grupos = new Map<number, ClaseDelDia>()
     for (const horario of todosLosHorarios) {
       if (!horario.dias.includes(idDia)) continue
       if (!fechaDentroDeTrimestre(fechaISO, trimestrePorId.get(horario.idTrimestre))) continue
       const jornada = jornadaDeHorario(horario)
       if (!jornada) continue
 
-      const clave = `${horario.idFicha}-${jornada}`
-      const entrada = grupos.get(clave) ?? {
+      const entrada = grupos.get(horario.idHorario) ?? {
+        idHorario: horario.idHorario,
         idFicha: horario.idFicha,
         programa: programaPorFicha.get(horario.idFicha) ?? horario.fichaCodigo ?? `Ficha ${horario.idFicha}`,
         jornada,
         horarios: [],
       }
       entrada.horarios.push(horario)
-      grupos.set(clave, entrada)
+      grupos.set(horario.idHorario, entrada)
     }
     return [...grupos.values()]
   }
@@ -245,16 +244,7 @@ export function CalendarioGeneral() {
           </div>
         </div>
 
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-4">
-          <div className="flex items-center gap-4">
-            {(Object.keys(colorJornada) as Jornada[]).map((jornada) => (
-              <span key={jornada} className="flex items-center gap-1.5 text-xs font-medium text-slate-600 dark:text-slate-300">
-                <span className={`h-2 w-2 rounded-full ${colorJornada[jornada].punto}`} />
-                Jornada {jornada}
-              </span>
-            ))}
-          </div>
-
+        <div className="mb-4 flex flex-wrap items-end justify-end gap-4">
           <div className="flex items-end gap-2">
             <div>
               <label htmlFor="ir-fecha-dia" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Día</label>
@@ -336,15 +326,17 @@ export function CalendarioGeneral() {
                       {fecha.getDate()}
                     </span>
                     <div className="space-y-0.5">
-                      {visibles.map((clase) => (
-                        <p
-                          key={`${clase.idFicha}-${clase.jornada}`}
-                          className={`flex items-center gap-1 truncate text-[11px] font-medium ${colorJornada[clase.jornada].texto}`}
-                        >
-                          <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${colorJornada[clase.jornada].punto}`} />
-                          <span className="truncate">{clase.programa}</span>
-                        </p>
-                      ))}
+                      {visibles.map((clase) => {
+                        const color = colorParaBloque(String(clase.idHorario))
+                        return (
+                          <p
+                            key={clase.idHorario}
+                            className={`truncate rounded border-l-2 px-1 py-0.5 text-[11px] font-medium ${color.fondo} ${color.borde} ${color.texto}`}
+                          >
+                            {clase.programa}
+                          </p>
+                        )
+                      })}
                       {restantes > 0 && (
                         <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">+{restantes} más</p>
                       )}
@@ -368,29 +360,34 @@ export function CalendarioGeneral() {
             <p className="text-sm text-slate-500 dark:text-slate-400">Sin clases programadas este día.</p>
           ) : (
             <ul className="space-y-2">
-              {clasesDeFecha(fechaSeleccionada).map((clase) => (
-                <li key={`${clase.idFicha}-${clase.jornada}`} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
-                  <div className="mb-1 flex items-center gap-2">
-                    <span className={`h-2 w-2 rounded-full ${colorJornada[clase.jornada].punto}`} />
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{clase.programa}</p>
-                  </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Jornada {clase.jornada} · {clase.horarios.map((h) => `${formatoHora(h.horaInicio)}-${formatoHora(h.horaFin)}`).join(', ')}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {[...new Set(clase.horarios.map((h) => h.instructorNombre).filter(Boolean))].join(', ') || 'Sin instructor'}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {[...new Set(clase.horarios.map((h) => h.ambienteNombre).filter(Boolean))].join(', ') || 'Sin ambiente'}
-                  </p>
-                  <Link
-                    to={`/fichas?id=${clase.idFicha}`}
-                    className="mt-2 inline-block text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400"
-                  >
-                    Ver ficha →
-                  </Link>
-                </li>
-              ))}
+              {clasesDeFecha(fechaSeleccionada).map((clase) => {
+                const color = colorParaBloque(String(clase.idHorario))
+                return (
+                  <li key={clase.idHorario} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                    <div className="mb-1 flex items-center gap-2">
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${color.fondo} ${color.texto}`}>
+                        Horario #{clase.idHorario}
+                      </span>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{clase.programa}</p>
+                    </div>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Jornada {clase.jornada} · {clase.horarios.map((h) => `${formatoHora(h.horaInicio)}-${formatoHora(h.horaFin)}`).join(', ')}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {[...new Set(clase.horarios.map((h) => h.instructorNombre).filter(Boolean))].join(', ') || 'Sin instructor'}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {[...new Set(clase.horarios.map((h) => h.ambienteNombre).filter(Boolean))].join(', ') || 'Sin ambiente'}
+                    </p>
+                    <Link
+                      to={`/horarios/completos?id=${clase.idHorario}`}
+                      className="mt-2 inline-block text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400"
+                    >
+                      Ver horario completo →
+                    </Link>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </DrawerRelacionados>

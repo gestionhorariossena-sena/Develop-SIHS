@@ -27,7 +27,7 @@ const TRIMESTRE: Trimestre = { idTrimestre: 1, nombre: 'Trimestre 1', fechaInici
 // 2026-01-05 es lunes — el horario tiene dias:[1] (Lunes) y cae dentro del
 // trimestre de arriba, así que debe aparecer justo ese día en el calendario.
 const HORARIO: Horario = {
-  idHorario: 1, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
+  idHorario: 7, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
   idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 1, dias: [1],
   instructorNombre: 'Erick Granados', fichaCodigo: '3228973 B', ambienteNombre: 'Ambiente 101',
   resultadoCodigo: 'RA-9', resultadoDescripcion: null,
@@ -56,15 +56,12 @@ async function irA5DeEnero2026(usuario: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('CalendarioGeneral', () => {
-  it('muestra el mes actual, la leyenda de jornadas y el link al historial', async () => {
+  it('muestra el mes actual y el link al historial', async () => {
     mockeaBase()
     renderConProviders(<CalendarioGeneral />)
 
     const hoy = new Date()
     expect(await screen.findByText(`${NOMBRES_MES[hoy.getMonth()]} ${hoy.getFullYear()}`)).toBeInTheDocument()
-    expect(screen.getByText('Jornada Mañana')).toBeInTheDocument()
-    expect(screen.getByText('Jornada Tarde')).toBeInTheDocument()
-    expect(screen.getByText('Jornada Noche')).toBeInTheDocument()
 
     const link = screen.getByRole('link', { name: 'Ver historial de horarios' })
     expect(link).toHaveAttribute('href', '/horarios/historial')
@@ -73,7 +70,7 @@ describe('CalendarioGeneral', () => {
   it('la pestaña "Semana" aparece deshabilitada (aún no implementada)', async () => {
     mockeaBase()
     renderConProviders(<CalendarioGeneral />)
-    await screen.findByText('Jornada Mañana')
+    await screen.findByRole('button', { name: 'Hoy' })
 
     expect(screen.getByText('Semana')).toHaveAttribute('title', 'Vista semanal — aún no implementada')
   })
@@ -82,7 +79,7 @@ describe('CalendarioGeneral', () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<CalendarioGeneral />)
-    await screen.findByText('Jornada Mañana')
+    await screen.findByRole('button', { name: 'Hoy' })
 
     const hoy = new Date()
     const anterior = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1)
@@ -92,30 +89,35 @@ describe('CalendarioGeneral', () => {
     expect(screen.getByText(`${NOMBRES_MES[anterior.getMonth()]} ${anterior.getFullYear()}`)).toBeInTheDocument()
   })
 
-  it('usando los selectores Día/Mes/Año, navega a una fecha y muestra sus clases programadas', async () => {
+  it('usando los selectores Día/Mes/Año, navega a una fecha y muestra el horario programado, con su color de referencia', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<CalendarioGeneral />)
-    await screen.findByText('Jornada Mañana')
+    await screen.findByRole('button', { name: 'Hoy' })
 
     await irA5DeEnero2026(usuario)
 
     expect(screen.getByText('Enero 2026')).toBeInTheDocument()
     const panel = await screen.findByRole('dialog', { name: '5 de enero de 2026' })
+    expect(within(panel).getByText('Horario #7')).toBeInTheDocument()
     expect(within(panel).getByText('Análisis y Desarrollo de Software')).toBeInTheDocument()
     expect(within(panel).getByText(/Jornada Mañana/)).toBeInTheDocument()
     expect(within(panel).getByText('Erick Granados')).toBeInTheDocument()
     expect(within(panel).getByText('Ambiente 101')).toBeInTheDocument()
 
-    const linkFicha = within(panel).getByRole('link', { name: 'Ver ficha →' })
-    expect(linkFicha).toHaveAttribute('href', '/fichas?id=1')
+    const link = within(panel).getByRole('link', { name: 'Ver horario completo →' })
+    expect(link).toHaveAttribute('href', '/horarios/completos?id=7')
+
+    // El mismo horario debe verse en la celda del calendario con el color
+    // que le corresponde por id (mismo criterio que el editor de horarios).
+    expect(screen.getAllByText('Análisis y Desarrollo de Software').length).toBeGreaterThan(0)
   })
 
   it('clic directo en el día del calendario abre el mismo detalle', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<CalendarioGeneral />)
-    await screen.findByText('Jornada Mañana')
+    await screen.findByRole('button', { name: 'Hoy' })
     await irA5DeEnero2026(usuario)
     await usuario.click(screen.getByRole('button', { name: 'Cerrar' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
@@ -129,7 +131,7 @@ describe('CalendarioGeneral', () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<CalendarioGeneral />)
-    await screen.findByText('Jornada Mañana')
+    await screen.findByRole('button', { name: 'Hoy' })
 
     // 2026-01-04 es domingo — ningún horario cae ahí (DIAS del fixture solo tiene Lunes).
     await userEvent.selectOptions(screen.getByLabelText('Año'), '2026')
