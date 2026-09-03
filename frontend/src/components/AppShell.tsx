@@ -93,7 +93,7 @@ const NAV: GrupoNav[] = [
     grupo: 'Administración',
     items: [
       { etiqueta: 'Usuarios', ruta: '/usuarios', soloGestion: true },
-      { etiqueta: 'Roles', soloGestion: true },
+      { etiqueta: 'Roles', ruta: '/roles', soloGestion: true },
       { etiqueta: 'Configuración', soloGestion: true },
     ],
   },
