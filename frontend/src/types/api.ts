@@ -139,6 +139,7 @@ export interface Horario {
   fechaCreacion: string
   fechaModificacion: string
   activo: boolean
+  publicado: boolean
   instructorNombre: string | null
   fichaCodigo: string | null
   ambienteNombre: string | null

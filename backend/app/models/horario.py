@@ -47,6 +47,11 @@ class Horario(Base):
     fechaCreacion = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     fechaModificacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     activo = Column(Boolean, server_default=true(), nullable=False)
+    # Visibilidad para el instructor (vistas de "Mi horario", pedido
+    # 2026-09-03) — distinto de `activo`, que es para cruces/RF-011. Default
+    # true: no oculta de golpe los horarios ya creados antes de que este
+    # campo existiera, ver el docstring de la migración.
+    publicado = Column(Boolean, server_default=true(), nullable=False)
 
     instructor = relationship("Usuario")
     ficha = relationship("Ficha")

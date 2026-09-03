@@ -37,21 +37,23 @@ const CARGA_SEMANAL: CargaSemanal = { idUsuario: 'u1', tipoContrato: 'Planta', h
 
 const HORARIO: Horario = {
   idHorario: 7, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
-  idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 1, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
+  idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 1, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
   instructorNombre: 'Erick Granados', fichaCodigo: '3228973 B', ambienteNombre: 'Ambiente 101',
   resultadoCodigo: 'CPL18', resultadoDescripcion: 'Gestión de inventarios',
 }
 
 const OTRO_HORARIO: Horario = {
   idHorario: 8, horaInicio: '12:00:00', horaFin: '15:00:00', idJornada: 2, idTrimestre: 1,
-  idAmbiente: 1, idInstructor: 'u2', idFicha: 1, idResultado: 1, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
+  idAmbiente: 1, idInstructor: 'u2', idFicha: 1, idResultado: 1, dias: [2], fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
   instructorNombre: 'Fredy Ardila', fichaCodigo: '9999999', ambienteNombre: 'Taller Industrial',
   resultadoCodigo: 'RA-2', resultadoDescripcion: null,
 }
 
 const apiGetMock = vi.fn()
+const apiPatchMock = vi.fn()
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiPatch: (...args: unknown[]) => apiPatchMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -155,6 +157,23 @@ describe('HorariosCompletos', () => {
     expect(screen.getByRole('link', { name: 'Ver horario por ambiente →' })).toHaveAttribute('href', '/vista-ambientes?id=1')
 
     expect(screen.getByRole('link', { name: 'Detalles de creación / Modificar →' })).toHaveAttribute('href', '/horarios/historial?id=7')
+  })
+
+  it('muestra "Publicado" y permite despublicar un horario individual', async () => {
+    mockeaBase()
+    apiPatchMock.mockResolvedValue({ ...HORARIO, publicado: false })
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+    await screen.findByText('3228973 B')
+
+    await usuario.click(screen.getAllByText('3228973 B')[0])
+    expect(await screen.findByText('Publicado')).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Despublicar' }))
+
+    expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
+    expect(await screen.findByText('Borrador')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument()
   })
 
   it('clic de nuevo en la misma fila colapsa la caja expandida', async () => {

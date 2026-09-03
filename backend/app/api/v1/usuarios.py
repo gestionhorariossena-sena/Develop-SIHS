@@ -31,6 +31,21 @@ def obtener_mi_perfil(usuario: Usuario = Depends(get_current_user)):
     return usuario
 
 
+@router.get("/me/horarios", response_model=list[HorarioResponse])
+def obtener_mis_horarios(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """Autoservicio para "Mi horario" (pedido 2026-09-03) — a diferencia de
+    GET /{id}/horarios (Coordinador/Administrador viendo A OTRO), acá
+    cualquier usuario autenticado puede pedir SUS PROPIOS horarios, sin
+    importar el rol — no hace falta `require_lectura_catalogo`, el alcance
+    ya está limitado a `usuario.idUsuario` (nunca a un id que venga del
+    request). Solo devuelve lo publicado — un instructor no debe ver un
+    borrador que el coordinador todavía está armando."""
+    return HorarioService.obtener_publicados_por_instructor(db, usuario.idUsuario)
+
+
 @router.get("/", response_model=list[UsuarioResponse])
 def listar_usuarios(
     db: Session = Depends(get_db),

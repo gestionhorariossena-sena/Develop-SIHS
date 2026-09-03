@@ -49,6 +49,7 @@ export function HistorialHorarios() {
   const [confirmandoSnapshotId, setConfirmandoSnapshotId] = useState<number | null>(null)
   const [borrandoSnapshotId, setBorrandoSnapshotId] = useState<number | null>(null)
   const [cambiandoEstadoId, setCambiandoEstadoId] = useState<number | null>(null)
+  const [publicando, setPublicando] = useState(false)
 
   useEffect(() => {
     // Con "/" al final a propósito: sin él, FastAPI responde 307 hacia la
@@ -97,6 +98,22 @@ export function HistorialHorarios() {
     }
   }
 
+  async function publicarHorarioCompleto(publicado: boolean) {
+    if (horariosDelSnapshot.length === 0) return
+    setPublicando(true)
+    try {
+      const actualizados = await Promise.all(
+        horariosDelSnapshot.map((h) => apiPatch<Horario>(`/horarios/${h.idHorario}/estado`, { publicado })),
+      )
+      const porId = new Map(actualizados.map((h) => [h.idHorario, h]))
+      setHorariosReales((anterior) => anterior?.map((h) => porId.get(h.idHorario) ?? h) ?? anterior)
+    } catch (err) {
+      setErrorReales(err instanceof ApiError ? err.message : 'No se pudo publicar el horario.')
+    } finally {
+      setPublicando(false)
+    }
+  }
+
   async function confirmarEliminarSnapshot(idHorarioGuardado: number) {
     setBorrandoSnapshotId(idHorarioGuardado)
     try {
@@ -132,6 +149,12 @@ export function HistorialHorarios() {
   const idsHorariosSeleccionado = seleccionado?.idsHorarios ?? []
   const horariosDelSnapshot = (horariosReales ?? []).filter((h) => idsHorariosSeleccionado.includes(h.idHorario))
   const vistaSnapshotEnVivo = idsHorariosSeleccionado.length > 0 ? convertirHorariosAGrid(horariosDelSnapshot) : null
+
+  // "Publicado" es a nivel de horario completo, no por clase suelta — si
+  // alguna de sus clases todavía no está publicada, el horario como
+  // conjunto no cuenta como publicado (el instructor vería un horario
+  // incompleto en "Mi horario", que es justo lo que se quiere evitar).
+  const horarioCompletoPublicado = horariosDelSnapshot.length > 0 && horariosDelSnapshot.every((h) => h.publicado)
 
   return (
     <AppShell activo="Historial de horarios">
@@ -245,14 +268,42 @@ export function HistorialHorarios() {
       {seleccionado && (
         <div>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
-            <button
-              type="button"
-              onClick={() => setSeleccionadoId(null)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              ← Volver al historial
-            </button>
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSeleccionadoId(null)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                ← Volver al historial
+              </button>
+              {horariosDelSnapshot.length > 0 && (
+                <span
+                  className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                    horarioCompletoPublicado
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                      : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {horarioCompletoPublicado ? 'Publicado' : 'Borrador'}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              {horariosDelSnapshot.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => void publicarHorarioCompleto(!horarioCompletoPublicado)}
+                  disabled={publicando}
+                  title={
+                    horarioCompletoPublicado
+                      ? 'Deja de mostrarse en "Mi horario" para el instructor'
+                      : 'Publica todas las clases de este horario — a partir de ahora el instructor las ve en "Mi horario"'
+                  }
+                  className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {publicando ? 'Guardando…' : horarioCompletoPublicado ? 'Despublicar' : 'Publicar'}
+                </button>
+              )}
               <Link
                 to={`/horarios/nuevo?editar=${seleccionado.idHorarioGuardado}`}
                 className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
@@ -310,6 +361,11 @@ export function HistorialHorarios() {
                       {!h.activo && (
                         <span className="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-600 dark:bg-slate-700 dark:text-slate-300">
                           Inactivo
+                        </span>
+                      )}
+                      {!h.publicado && (
+                        <span className="ml-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                          Borrador
                         </span>
                       )}
                     </div>
