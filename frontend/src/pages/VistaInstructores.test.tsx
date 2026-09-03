@@ -48,10 +48,11 @@ vi.mock('../services/api', () => ({
   ApiError: class ApiError extends Error {},
 }))
 
-function mockeaBase() {
+function mockeaBase(todosLosHorarios: Horario[] = HORARIOS) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR, OTRO_INSTRUCTOR, COORDINADOR])
     if (path === '/usuarios/u1/horarios') return Promise.resolve(HORARIOS)
+    if (path === '/horarios/') return Promise.resolve(todosLosHorarios)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -120,5 +121,33 @@ describe('VistaInstructores', () => {
 
     await waitFor(() => expect(screen.getByText('CPL18')).toBeInTheDocument())
     expect(screen.getByRole('link', { name: 'Ver info →' })).toHaveAttribute('href', '/instructores?id=u1')
+  })
+
+  it('filtra la lista de instructores por ficha y por ambiente', async () => {
+    const todosLosHorarios: Horario[] = [
+      ...HORARIOS,
+      {
+        idHorario: 2, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
+        idAmbiente: 2, idInstructor: 'u2', idFicha: 20, idResultado: 200, dias: [2],
+        instructorNombre: 'Fredy Ardila', fichaCodigo: '9999999', ambienteNombre: 'Ambiente 999',
+        resultadoCodigo: 'RA-1', resultadoDescripcion: null,
+      },
+    ]
+    mockeaBase(todosLosHorarios)
+    const usuario = userEvent.setup()
+    renderConProviders(<VistaInstructores />)
+    await screen.findByText('Erick Granados')
+    expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Ficha'), '3068356')
+
+    expect(screen.getByText('Erick Granados')).toBeInTheDocument()
+    expect(screen.queryByText('Fredy Ardila')).not.toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Ficha'), 'Todas')
+    await usuario.selectOptions(screen.getByLabelText('Ambiente'), 'Ambiente 999')
+
+    expect(screen.queryByText('Erick Granados')).not.toBeInTheDocument()
+    expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
   })
 })

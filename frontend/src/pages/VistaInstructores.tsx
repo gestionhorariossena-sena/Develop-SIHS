@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
+import { indexarPorInstructor, opcionesFichaAmbiente } from '../components/horario/indexarHorarios'
 import { apiGet, ApiError } from '../services/api'
 import type { Horario, Usuario } from '../types/api'
 
@@ -25,12 +26,18 @@ export function VistaInstructores() {
   const idDesdeUrl = searchParams.get('id')
   const [instructores, setInstructores] = useState<Usuario[]>([])
   const [busqueda, setBusqueda] = useState('')
+  const [filtroFicha, setFiltroFicha] = useState('todas')
+  const [filtroAmbiente, setFiltroAmbiente] = useState('todos')
   const [seleccionado, setSeleccionado] = useState<Usuario | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const [horarios, setHorarios] = useState<{ idUsuario: string; datos: Horario[] } | null>(null)
   const [errorHorariosPara, setErrorHorariosPara] = useState<string | null>(null)
+  // Todos los horarios del sistema — para filtrar la lista de instructores
+  // por ficha/ambiente (no los del instructor seleccionado, esos son
+  // `horarios` arriba, con otro propósito: alimentar el grid).
+  const [todosLosHorarios, setTodosLosHorarios] = useState<Horario[]>([])
 
   useEffect(() => {
     apiGet<Usuario[]>('/usuarios/')
@@ -50,6 +57,10 @@ export function VistaInstructores() {
       })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de instructores.'))
       .finally(() => setCargando(false))
+
+    apiGet<Horario[]>('/horarios/')
+      .then(setTodosLosHorarios)
+      .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idDesdeUrl no cambia en la vida del componente.
   }, [])
 
@@ -66,13 +77,20 @@ export function VistaInstructores() {
   const cargandoHorarios = Boolean(seleccionado) && horariosVigentes === null && !errorHorarios
   const { bloques, grid } = convertirHorariosAGrid(horariosVigentes ?? [])
 
+  const indiceAsociaciones = indexarPorInstructor(todosLosHorarios)
+  const { fichas: opcionesFicha, ambientes: opcionesAmbiente } = opcionesFichaAmbiente(todosLosHorarios)
   const texto = busqueda.trim().toLocaleLowerCase('es-CO')
   const visibles = instructores.filter((instructor) => {
-    if (!texto) return true
-    return [instructor.nombre, instructor.email, ...instructor.especialidades.map((item) => item.nombre)]
-      .join(' ')
-      .toLocaleLowerCase('es-CO')
-      .includes(texto)
+    const coincideTexto =
+      !texto ||
+      [instructor.nombre, instructor.email, ...instructor.especialidades.map((item) => item.nombre)]
+        .join(' ')
+        .toLocaleLowerCase('es-CO')
+        .includes(texto)
+    const asociaciones = indiceAsociaciones.get(instructor.idUsuario)
+    const coincideFicha = filtroFicha === 'todas' || (asociaciones?.fichas.has(filtroFicha) ?? false)
+    const coincideAmbiente = filtroAmbiente === 'todos' || (asociaciones?.ambientes.has(filtroAmbiente) ?? false)
+    return coincideTexto && coincideFicha && coincideAmbiente
   })
 
   return (
@@ -98,6 +116,41 @@ export function VistaInstructores() {
             placeholder="Nombre, correo o especialidad"
             className="mb-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
           />
+
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <div>
+              <label htmlFor="filtro-ficha-vista" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                Ficha
+              </label>
+              <select
+                id="filtro-ficha-vista"
+                value={filtroFicha}
+                onChange={(evento) => setFiltroFicha(evento.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+              >
+                <option value="todas">Todas</option>
+                {opcionesFicha.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="filtro-ambiente-vista" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
+                Ambiente
+              </label>
+              <select
+                id="filtro-ambiente-vista"
+                value={filtroAmbiente}
+                onChange={(evento) => setFiltroAmbiente(evento.target.value)}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+              >
+                <option value="todos">Todos</option>
+                {opcionesAmbiente.map((item) => (
+                  <option key={item}>{item}</option>
+                ))}
+              </select>
+            </div>
+          </div>
 
           {cargando ? (
             <p className="py-6 text-center text-sm text-slate-500 dark:text-slate-400">Cargando instructores…</p>

@@ -54,12 +54,13 @@ vi.mock('../services/api', () => ({
 /** AppShell también llama a apiGet('/usuarios/me') al montar — el mock
  * tiene que distinguir por ruta o revienta leyendo `.roles` de lo que sea
  * que devuelva /usuarios/. */
-function mockeaUsuariosYPerfil(usuarios: unknown) {
+function mockeaUsuariosYPerfil(usuarios: unknown, todosLosHorarios: Horario[] = HORARIOS) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/usuarios/') return Promise.resolve(usuarios)
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
     if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA)
     if (path === '/usuarios/u1/horarios') return Promise.resolve(HORARIOS)
+    if (path === '/horarios/') return Promise.resolve(todosLosHorarios)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -230,5 +231,34 @@ describe('Instructores', () => {
     expect(screen.getByText('Instructor 11')).toBeInTheDocument()
     expect(screen.queryByText('Instructor 01')).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+  })
+
+  it('filtra por ficha y por ambiente usando todos los horarios del sistema', async () => {
+    const otroInstructor: Usuario = { ...INSTRUCTOR, idUsuario: 'u4', nombre: 'Fredy Ardila' }
+    const todosLosHorarios: Horario[] = [
+      ...HORARIOS,
+      {
+        idHorario: 2, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
+        idAmbiente: 2, idInstructor: 'u4', idFicha: 20, idResultado: 200, dias: [2],
+        instructorNombre: 'Fredy Ardila', fichaCodigo: '9999999', ambienteNombre: 'Ambiente 999',
+        resultadoCodigo: 'RA-1', resultadoDescripcion: null,
+      },
+    ]
+    mockeaUsuariosYPerfil([INSTRUCTOR, otroInstructor], todosLosHorarios)
+    const usuario = userEvent.setup()
+    renderConProviders(<Instructores />)
+    await screen.findByText('Erick Granados')
+    expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Ficha'), '3068356')
+
+    expect(screen.getByText('Erick Granados')).toBeInTheDocument()
+    expect(screen.queryByText('Fredy Ardila')).not.toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Ficha'), 'Todas')
+    await usuario.selectOptions(screen.getByLabelText('Ambiente'), 'Ambiente 999')
+
+    expect(screen.queryByText('Erick Granados')).not.toBeInTheDocument()
+    expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
   })
 })

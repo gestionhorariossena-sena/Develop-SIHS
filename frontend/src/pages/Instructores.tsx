@@ -5,6 +5,7 @@ import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/Dr
 import { SeccionAmbientesAsignados, SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
+import { indexarPorInstructor, opcionesFichaAmbiente } from '../components/horario/indexarHorarios'
 import { apiGet, ApiError } from '../services/api'
 import type { CargaSemanal, DiaSemana, Horario, Usuario } from '../types/api'
 
@@ -33,7 +34,10 @@ export function Instructores() {
   const [busqueda, setBusqueda] = useState('')
   const [especialidad, setEspecialidad] = useState('todas')
   const [tipoContrato, setTipoContrato] = useState('todos')
+  const [ficha, setFicha] = useState('todas')
+  const [ambiente, setAmbiente] = useState('todos')
   const [orden, setOrden] = useState<Orden>('nombre')
+  const [todosLosHorarios, setTodosLosHorarios] = useState<Horario[]>([])
   const [paginaActual, setPaginaActual] = useState(1)
   const [seleccionado, setSeleccionado] = useState<Usuario | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -76,6 +80,14 @@ export function Instructores() {
     apiGet<DiaSemana[]>('/dias-semana/')
       .then((dias) => setDiasPorId(Object.fromEntries(dias.map((d) => [d.idDia, d.nombreDia]))))
       .catch(() => {})
+
+    // Todos los horarios del sistema (no solo los del instructor abierto en
+    // el drawer) — para poder filtrar la lista por ficha/ambiente sin pedir
+    // los horarios de cada instructor uno por uno. Sin .catch dedicado los
+    // filtros de ficha/ambiente simplemente quedan vacíos si esto falla.
+    apiGet<Horario[]>('/horarios/')
+      .then(setTodosLosHorarios)
+      .catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar, igual que el resto del archivo; idDesdeUrl no cambia en la vida del componente.
   }, [])
 
@@ -111,12 +123,18 @@ export function Instructores() {
 
   const especialidades = [...new Set(instructores.flatMap((instructor) => instructor.especialidades.map((item) => item.nombre)))].sort()
   const contratos = [...new Set(instructores.map(contrato))].sort()
+  const indiceAsociaciones = indexarPorInstructor(todosLosHorarios)
+  const { fichas: opcionesFicha, ambientes: opcionesAmbiente } = opcionesFichaAmbiente(todosLosHorarios)
   const texto = busqueda.trim().toLocaleLowerCase('es-CO')
-  const filtrosActivos = Number(Boolean(busqueda.trim())) + Number(especialidad !== 'todas') + Number(tipoContrato !== 'todos')
+  const filtrosActivos =
+    Number(Boolean(busqueda.trim())) + Number(especialidad !== 'todas') + Number(tipoContrato !== 'todos') + Number(ficha !== 'todas') + Number(ambiente !== 'todos')
   const visibles = instructores.filter((instructor) => {
     const coincideTexto = !texto || [instructor.nombre, instructor.email, ...instructor.especialidades.map((item) => item.nombre)].join(' ').toLocaleLowerCase('es-CO').includes(texto)
     const coincideEspecialidad = especialidad === 'todas' || instructor.especialidades.some((item) => item.nombre === especialidad)
-    return coincideTexto && coincideEspecialidad && (tipoContrato === 'todos' || contrato(instructor) === tipoContrato)
+    const asociaciones = indiceAsociaciones.get(instructor.idUsuario)
+    const coincideFicha = ficha === 'todas' || (asociaciones?.fichas.has(ficha) ?? false)
+    const coincideAmbiente = ambiente === 'todos' || (asociaciones?.ambientes.has(ambiente) ?? false)
+    return coincideTexto && coincideEspecialidad && coincideFicha && coincideAmbiente && (tipoContrato === 'todos' || contrato(instructor) === tipoContrato)
   }).sort((primero, segundo) => {
     if (orden === 'especialidad') return (primero.especialidades[0]?.nombre ?? '').localeCompare(segundo.especialidades[0]?.nombre ?? '', 'es-CO')
     if (orden === 'contrato') return contrato(primero).localeCompare(contrato(segundo), 'es-CO')
@@ -144,7 +162,7 @@ export function Instructores() {
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Filtrar instructores</p>
             {filtrosActivos > 0 && <span className="rounded-full bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
-            {filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setEspecialidad('todas'); setTipoContrato('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Limpiar filtros</button>}
+            {filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setEspecialidad('todas'); setTipoContrato('todos'); setFicha('todas'); setAmbiente('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Limpiar filtros</button>}
           </div>
           <div className="flex gap-4">
             <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Activos</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.estado === 'activo').length}</p></div>
@@ -152,10 +170,12 @@ export function Instructores() {
             <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Especialidades</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{especialidades.length}</p></div>
           </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_12rem_11rem_10rem]">
-          <div className="md:col-span-2 xl:col-span-1"><label htmlFor="buscar-instructor" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Buscar</label><input id="buscar-instructor" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Nombre, correo o especialidad" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></div>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="md:col-span-2 lg:col-span-1"><label htmlFor="buscar-instructor" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Buscar</label><input id="buscar-instructor" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Nombre, correo o especialidad" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></div>
           <div><label htmlFor="filtro-especialidad" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Especialidad</label><select id="filtro-especialidad" value={especialidad} onChange={(evento) => setEspecialidad(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todas">Todas</option>{especialidades.map((item) => <option key={item}>{item}</option>)}</select></div>
           <div><label htmlFor="filtro-contrato" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Tipo de contrato</label><select id="filtro-contrato" value={tipoContrato} onChange={(evento) => setTipoContrato(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{contratos.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="filtro-ficha" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Ficha</label><select id="filtro-ficha" value={ficha} onChange={(evento) => setFicha(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todas">Todas</option>{opcionesFicha.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="filtro-ambiente" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Ambiente</label><select id="filtro-ambiente" value={ambiente} onChange={(evento) => setAmbiente(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{opcionesAmbiente.map((item) => <option key={item}>{item}</option>)}</select></div>
           <div><label htmlFor="orden-instructor" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Ordenar por</label><select id="orden-instructor" value={orden} onChange={(evento) => setOrden(evento.target.value as Orden)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="nombre">Nombre</option><option value="especialidad">Especialidad</option><option value="contrato">Contrato</option></select></div>
         </div>
       </section>
