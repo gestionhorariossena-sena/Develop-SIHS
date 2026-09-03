@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { GridHorario } from '../components/horario/GridHorario'
@@ -19,22 +20,25 @@ function formatearHora(hhmmss: string) {
 }
 
 /**
- * Lista de horarios guardados desde `NuevoHorario.tsx` (tabla
- * `horarios_guardados`, ver ese archivo para por qué no es el módulo
- * `horarios` real todavía) — clic en uno para verlo completo en modo
- * solo lectura y, desde ahí, exportarlo a PDF con el mismo
- * `ExportarPdfButton` reutilizable que usa el editor.
+ * Backlog de horarios completos guardados desde `NuevoHorario.tsx` (tabla
+ * `horarios_guardados`) — la lista principal es solo eso, un horario
+ * completo por fila; las clases individuales (`GET /horarios/`, la tabla
+ * que de verdad valida cruces) NO se listan sueltas acá — se ven solo
+ * dentro del horario al que pertenecen (pedido 2026-09-03: verlas
+ * mezcladas en la misma lista se sentía desordenado). Un horario real que
+ * no pertenece a ningún snapshot (por ejemplo, creado directo por API) no
+ * aparece acá — sigue siendo visible y manejable desde "Horarios
+ * completos" (`/horarios/completos`), que sí lista cada clase suelta.
  *
- * También lista las clases REALES (`GET /horarios/`, la tabla que de
- * verdad valida cruces) con opción de borrar una — útil para liberar un
- * horario de prueba sin tener que pedirlo por SQL. Pide confirmación
- * antes de borrar, igual que al eliminar un bloque en el editor.
+ * Clic en un horario para verlo completo (con datos vigentes, no
+ * congelados — ver `vistaSnapshotEnVivo` más abajo), exportarlo a PDF,
+ * reabrirlo en el creador ("Modificar") o gestionar sus clases una por
+ * una (activar/desactivar/borrar).
  */
 export function HistorialHorarios() {
   const [horarios, setHorarios] = useState<HorarioGuardado[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [seleccionadoId, setSeleccionadoId] = useState<number | null>(null)
-  const [seleccionadoRealId, setSeleccionadoRealId] = useState<number | null>(null)
 
   const [horariosReales, setHorariosReales] = useState<Horario[] | null>(null)
   const [errorReales, setErrorReales] = useState<string | null>(null)
@@ -107,16 +111,15 @@ export function HistorialHorarios() {
   }
 
   const seleccionado = horarios?.find((h) => h.idHorarioGuardado === seleccionadoId) ?? null
-  const seleccionadoReal = horariosReales?.find((h) => h.idHorario === seleccionadoRealId) ?? null
 
   const cargando = !horarios && !error && !horariosReales && !errorReales
-  const hayFilas = (horariosReales && horariosReales.length > 0) || (horarios && horarios.length > 0)
+  const hayFilas = horarios && horarios.length > 0
 
-  // Más reciente primero — con fechaModificacion ya disponible, editar (o
-  // activar/desactivar) una clase la sube al tope, como si acabara de
-  // crearse. Copia del arreglo: sort() muta in place y horariosReales/
-  // horarios siguen siendo el estado "fuente de verdad".
-  const clasesOrdenadas = [...(horariosReales ?? [])].sort((a, b) => b.fechaModificacion.localeCompare(a.fechaModificacion))
+  // Más reciente primero — con horarios_guardados no hay fechaModificacion
+  // propia (es un snapshot, no algo que se edite in-place), así que el
+  // orden es por fechaCreacion; "Modificar" borra el snapshot viejo y crea
+  // uno nuevo (ver NuevoHorario.tsx), así que editar sí sube uno al tope,
+  // igual que pidió, solo que por la vía de "es uno nuevo de verdad".
   const snapshotsOrdenados = [...(horarios ?? [])].sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion))
 
   // Vista de "Horario completo": ya NO se dibuja desde el blob congelado
@@ -130,26 +133,24 @@ export function HistorialHorarios() {
   const horariosDelSnapshot = (horariosReales ?? []).filter((h) => idsHorariosSeleccionado.includes(h.idHorario))
   const vistaSnapshotEnVivo = idsHorariosSeleccionado.length > 0 ? convertirHorariosAGrid(horariosDelSnapshot) : null
 
-  const vistaClaseReal = seleccionadoReal ? convertirHorariosAGrid([seleccionadoReal]) : null
-
   return (
     <AppShell activo="Historial de horarios">
       <div className="mb-6 print:hidden">
         <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Historial de horarios</h1>
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Todo lo guardado desde el editor — clases individuales y horarios completos, en la misma lista.
-          Borrar una clase libera ese instructor/ambiente/ficha/resultado para volver a programarlo.
+          Horarios completos guardados desde el creador. Abre uno para ver sus clases, modificarlo,
+          exportarlo a PDF o activar/desactivar/borrar una clase puntual.
         </p>
       </div>
 
-      {!seleccionado && !seleccionadoReal && (
-        <div className="print:hidden">
-          {(error || errorReales) && (
-            <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error ?? errorReales}
-            </p>
-          )}
+      {(error || errorReales) && (
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
+          {error ?? errorReales}
+        </p>
+      )}
 
+      {!seleccionado && (
+        <div className="print:hidden">
           {cargando && <p className="text-sm text-slate-500">Cargando…</p>}
 
           {!cargando && !hayFilas && (
@@ -171,88 +172,6 @@ export function HistorialHorarios() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                  {clasesOrdenadas.map((h) => (
-                    <tr key={`real-${h.idHorario}`} className={`hover:bg-slate-50 dark:hover:bg-slate-700/60 ${h.activo ? '' : 'opacity-60'}`}>
-                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
-                        {h.fichaCodigo ?? '—'}
-                        <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-emerald-700">
-                          Clase
-                        </span>
-                        {!h.activo && (
-                          <span className="ml-1 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-600 dark:bg-slate-700 dark:text-slate-300">
-                            Inactivo
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                        {h.instructorNombre ?? '—'} · {h.ambienteNombre ?? '—'} ·{' '}
-                        {h.dias.map((d) => diasPorId[d] ?? d).join(', ')} · {formatearHora(h.horaInicio)}–
-                        {formatearHora(h.horaFin)}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500">—</td>
-                      <td className="px-4 py-3 text-slate-500">{formatearFecha(h.fechaModificacion)}</td>
-                      <td className="px-4 py-3 text-right">
-                        {confirmandoId === h.idHorario ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <span className="text-xs text-slate-500">¿Borrar?</span>
-                            <button
-                              type="button"
-                              onClick={() => void confirmarEliminar(h.idHorario)}
-                              disabled={borrandoId === h.idHorario}
-                              aria-label={`Confirmar borrar clase de ${h.fichaCodigo}`}
-                              className="rounded bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-700 disabled:opacity-60"
-                            >
-                              {borrandoId === h.idHorario ? 'Borrando…' : 'Sí, borrar'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmandoId(null)}
-                              aria-label={`Cancelar borrar clase de ${h.fichaCodigo}`}
-                              className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setSeleccionadoRealId(h.idHorario)}
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-                            >
-                              Ver
-                            </button>
-                            <button
-                              type="button"
-                              title="Reabrir en el creador de horarios — próximo paso del rediseño, todavía no implementado."
-                              disabled
-                              className="cursor-not-allowed rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-400 dark:border-slate-700 dark:text-slate-500"
-                            >
-                              Modificar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void cambiarEstado(h.idHorario, !h.activo)}
-                              disabled={cambiandoEstadoId === h.idHorario}
-                              aria-label={`${h.activo ? 'Desactivar' : 'Activar'} clase de ${h.fichaCodigo}`}
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300"
-                            >
-                              {cambiandoEstadoId === h.idHorario ? '…' : h.activo ? 'Desactivar' : 'Activar'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmandoId(h.idHorario)}
-                              aria-label={`Borrar clase de ${h.fichaCodigo}`}
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-red-50 hover:text-red-600"
-                            >
-                              Borrar
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-
                   {snapshotsOrdenados.map((h) => (
                     <tr key={`snap-${h.idHorarioGuardado}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
                       <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
@@ -297,6 +216,12 @@ export function HistorialHorarios() {
                             >
                               Ver horario
                             </button>
+                            <Link
+                              to={`/horarios/nuevo?editar=${h.idHorarioGuardado}`}
+                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                            >
+                              Modificar
+                            </Link>
                             <button
                               type="button"
                               onClick={() => setConfirmandoSnapshotId(h.idHorarioGuardado)}
@@ -327,7 +252,15 @@ export function HistorialHorarios() {
             >
               ← Volver al historial
             </button>
-            <ExportarPdfButton />
+            <div className="flex items-center gap-3">
+              <Link
+                to={`/horarios/nuevo?editar=${seleccionado.idHorarioGuardado}`}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+              >
+                Modificar
+              </Link>
+              <ExportarPdfButton />
+            </div>
           </div>
 
           <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-4 dark:border-slate-700 dark:bg-slate-800">
@@ -340,7 +273,7 @@ export function HistorialHorarios() {
           </div>
 
           {vistaSnapshotEnVivo ? (
-            <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+            <div className="mb-6 min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
               <GridHorario
                 bloques={vistaSnapshotEnVivo.bloques}
                 grid={vistaSnapshotEnVivo.grid}
@@ -354,7 +287,7 @@ export function HistorialHorarios() {
                 Este horario se guardó antes de vincularse a las clases reales — se muestra tal como quedó al
                 crearlo, no refleja cambios posteriores.
               </p>
-              <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+              <div className="mb-6 min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
                 <GridHorario
                   bloques={seleccionado.bloques}
                   grid={seleccionado.grid}
@@ -364,44 +297,68 @@ export function HistorialHorarios() {
               </div>
             </>
           )}
-        </div>
-      )}
 
-      {seleccionadoReal && (
-        <div>
-          <div className="mb-4 print:hidden">
-            <button
-              type="button"
-              onClick={() => setSeleccionadoRealId(null)}
-              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-            >
-              ← Volver al historial
-            </button>
-          </div>
-
-          <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-4 dark:border-slate-700 dark:bg-slate-800">
-            <Campo etiqueta="Ficha">{seleccionadoReal.fichaCodigo ?? '—'}</Campo>
-            <Campo etiqueta="Instructor">{seleccionadoReal.instructorNombre ?? '—'}</Campo>
-            <Campo etiqueta="Ambiente">{seleccionadoReal.ambienteNombre ?? '—'}</Campo>
-            <Campo etiqueta="Resultado de aprendizaje">
-              {[seleccionadoReal.resultadoCodigo, seleccionadoReal.resultadoDescripcion].filter(Boolean).join(' — ') || '—'}
-            </Campo>
-          </div>
-
-          {vistaClaseReal && vistaClaseReal.bloques.length > 0 ? (
-            <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <GridHorario
-                bloques={vistaClaseReal.bloques}
-                grid={vistaClaseReal.grid}
-                hayBloqueActivo={false}
-                soloLectura
-              />
+          {horariosDelSnapshot.length > 0 && (
+            <div className="rounded-xl border border-slate-200 bg-white p-5 print:hidden dark:border-slate-700 dark:bg-slate-800">
+              <p className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Clases de este horario</p>
+              <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+                {horariosDelSnapshot.map((h) => (
+                  <li key={h.idHorario} className={`flex flex-wrap items-center justify-between gap-2 py-2.5 ${h.activo ? '' : 'opacity-60'}`}>
+                    <div className="text-sm text-slate-700 dark:text-slate-300">
+                      {h.instructorNombre ?? '—'} · {h.ambienteNombre ?? '—'} ·{' '}
+                      {h.dias.map((d) => diasPorId[d] ?? d).join(', ')} · {formatearHora(h.horaInicio)}–{formatearHora(h.horaFin)}
+                      {!h.activo && (
+                        <span className="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                          Inactivo
+                        </span>
+                      )}
+                    </div>
+                    {confirmandoId === h.idHorario ? (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs text-slate-500">¿Borrar?</span>
+                        <button
+                          type="button"
+                          onClick={() => void confirmarEliminar(h.idHorario)}
+                          disabled={borrandoId === h.idHorario}
+                          aria-label={`Confirmar borrar clase de ${h.fichaCodigo}`}
+                          className="rounded bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-700 disabled:opacity-60"
+                        >
+                          {borrandoId === h.idHorario ? 'Borrando…' : 'Sí, borrar'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmandoId(null)}
+                          aria-label={`Cancelar borrar clase de ${h.fichaCodigo}`}
+                          className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void cambiarEstado(h.idHorario, !h.activo)}
+                          disabled={cambiandoEstadoId === h.idHorario}
+                          aria-label={`${h.activo ? 'Desactivar' : 'Activar'} clase de ${h.fichaCodigo}`}
+                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300"
+                        >
+                          {cambiandoEstadoId === h.idHorario ? '…' : h.activo ? 'Desactivar' : 'Activar'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmandoId(h.idHorario)}
+                          aria-label={`Borrar clase de ${h.fichaCodigo}`}
+                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-red-50 hover:text-red-600"
+                        >
+                          Borrar
+                        </button>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
             </div>
-          ) : (
-            <p className="rounded-lg bg-slate-50 px-3 py-4 text-center text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-              {formatearHora(seleccionadoReal.horaInicio)}–{formatearHora(seleccionadoReal.horaFin)} no coincide con
-              ninguno de los 6 bloques institucionales, así que no se puede dibujar en la grilla.
-            </p>
           )}
         </div>
       )}

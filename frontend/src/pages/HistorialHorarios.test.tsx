@@ -7,19 +7,19 @@ import type { DiaSemana, Horario, HorarioGuardado } from '../types/api'
 
 const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }]
 
-const CLASE_VIEJA: Horario = {
+const CLASE_1: Horario = {
   idHorario: 1, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
   idAmbiente: 1, idInstructor: 'u1', idFicha: 1, idResultado: 1, dias: [1],
   fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true,
-  instructorNombre: 'Erick Granados', fichaCodigo: 'FICHA-VIEJA', ambienteNombre: 'Ambiente 101',
+  instructorNombre: 'Erick Granados', fichaCodigo: 'FICHA-1', ambienteNombre: 'Ambiente 101',
   resultadoCodigo: 'RA-1', resultadoDescripcion: null,
 }
 
-const CLASE_RECIENTE: Horario = {
+const CLASE_SUELTA: Horario = {
   idHorario: 2, horaInicio: '12:00:00', horaFin: '15:00:00', idJornada: 2, idTrimestre: 1,
   idAmbiente: 2, idInstructor: 'u2', idFicha: 2, idResultado: 2, dias: [1],
   fechaCreacion: '2026-02-01T00:00:00Z', fechaModificacion: '2026-02-01T00:00:00Z', activo: true,
-  instructorNombre: 'Fredy Ardila', fichaCodigo: 'FICHA-RECIENTE', ambienteNombre: 'Ambiente 202',
+  instructorNombre: 'Fredy Ardila', fichaCodigo: 'FICHA-SUELTA', ambienteNombre: 'Ambiente 202',
   resultadoCodigo: 'RA-2', resultadoDescripcion: null,
 }
 
@@ -32,7 +32,7 @@ const SNAPSHOT_CON_VINCULO: HorarioGuardado = {
   horasTrimestre: '40',
   fechaInicio: '2026-01-01',
   fechaFin: '2026-03-31',
-  bloques: [{ id: 'blob-1', tematica: 'Tema congelado', instructor: 'Nombre viejo', ficha: 'FICHA-VIEJA', ambiente: 'Ambiente viejo' }],
+  bloques: [{ id: 'blob-1', tematica: 'Tema congelado', instructor: 'Nombre viejo', ficha: 'FICHA-1', ambiente: 'Ambiente viejo' }],
   grid: [['blob-1', null, null, null, null, null], [null, null, null, null, null, null], [null, null, null, null, null, null], [null, null, null, null, null, null], [null, null, null, null, null, null], [null, null, null, null, null, null]],
   idsHorarios: [1],
   fechaCreacion: '2026-01-01T00:00:00Z',
@@ -54,7 +54,7 @@ vi.mock('../services/api', () => ({
   ApiError: class ApiError extends Error {},
 }))
 
-function mockeaBase(horariosReales: Horario[] = [CLASE_VIEJA, CLASE_RECIENTE], snapshots: HorarioGuardado[] = [SNAPSHOT_CON_VINCULO]) {
+function mockeaBase(horariosReales: Horario[] = [CLASE_1, CLASE_SUELTA], snapshots: HorarioGuardado[] = [SNAPSHOT_CON_VINCULO]) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/horarios-guardados/') return Promise.resolve(snapshots)
     if (path === '/horarios/') return Promise.resolve(horariosReales)
@@ -64,59 +64,30 @@ function mockeaBase(horariosReales: Horario[] = [CLASE_VIEJA, CLASE_RECIENTE], s
 }
 
 describe('HistorialHorarios', () => {
-  it('lista las clases reales con la más recientemente modificada primero', async () => {
+  it('la lista principal solo muestra horarios completos, no clases individuales sueltas', async () => {
     mockeaBase()
     renderConProviders(<HistorialHorarios />)
 
-    await screen.findByText('FICHA-VIEJA')
-    const filas = screen.getAllByRole('row').filter((fila) => within(fila).queryByText(/FICHA-/))
-    expect(within(filas[0]).getByText('FICHA-RECIENTE')).toBeInTheDocument()
-    expect(within(filas[1]).getByText('FICHA-VIEJA')).toBeInTheDocument()
+    expect(await screen.findByText('FICHA-SNAPSHOT')).toBeInTheDocument()
+    // FICHA-1/FICHA-SUELTA son clases individuales (GET /horarios/) — no
+    // deben aparecer como filas propias antes de abrir un horario.
+    expect(screen.queryByText('FICHA-1')).not.toBeInTheDocument()
+    expect(screen.queryByText('FICHA-SUELTA')).not.toBeInTheDocument()
   })
 
-  it('el botón "Modificar" está deshabilitado con su motivo en el title', async () => {
+  it('el botón "Modificar" de la lista enlaza al creador en modo edición', async () => {
     mockeaBase()
     renderConProviders(<HistorialHorarios />)
-    await screen.findByText('FICHA-VIEJA')
+    await screen.findByText('FICHA-SNAPSHOT')
 
-    const botones = screen.getAllByRole('button', { name: 'Modificar' })
-    expect(botones[0]).toBeDisabled()
-    expect(botones[0]).toHaveAttribute('title', expect.stringContaining('todavía no implementado'))
-  })
-
-  it('desactivar una clase la marca "Inactivo" y el botón pasa a "Activar"', async () => {
-    mockeaBase()
-    apiPatchMock.mockResolvedValue({ ...CLASE_VIEJA, activo: false })
-    const usuario = userEvent.setup()
-    renderConProviders(<HistorialHorarios />)
-    await screen.findByText('FICHA-VIEJA')
-
-    const fila = screen.getByText('FICHA-VIEJA').closest('tr') as HTMLElement
-    await usuario.click(within(fila).getByRole('button', { name: /Desactivar clase/ }))
-
-    expect(apiPatchMock).toHaveBeenCalledWith('/horarios/1/estado', { activo: false })
-    expect(await screen.findByText('Inactivo')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Activar clase de FICHA-VIEJA/ })).toBeInTheDocument()
-  })
-
-  it('un error al cambiar el estado se muestra en la página', async () => {
-    mockeaBase()
-    apiPatchMock.mockRejectedValue(new Error('falló'))
-    const usuario = userEvent.setup()
-    renderConProviders(<HistorialHorarios />)
-    await screen.findByText('FICHA-VIEJA')
-
-    const fila = screen.getByText('FICHA-VIEJA').closest('tr') as HTMLElement
-    await usuario.click(within(fila).getByRole('button', { name: /Desactivar clase/ }))
-
-    expect(await screen.findByText('No se pudo cambiar el estado de la clase.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Modificar' })).toHaveAttribute('href', '/horarios/nuevo?editar=10')
   })
 
   it('"Ver horario" de un snapshot con idsHorarios muestra las clases reales vigentes, no el blob congelado', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HistorialHorarios />)
-    await screen.findByText('FICHA-VIEJA')
+    await screen.findByText('FICHA-SNAPSHOT')
 
     await usuario.click(screen.getByRole('button', { name: 'Ver horario' }))
 
@@ -128,16 +99,67 @@ describe('HistorialHorarios', () => {
     expect(screen.queryByText(/se guardó antes de vincularse/)).not.toBeInTheDocument()
   })
 
-  it('un snapshot sin idsHorarios (viejo) cae al blob congelado con el aviso correspondiente', async () => {
-    mockeaBase([CLASE_VIEJA, CLASE_RECIENTE], [SNAPSHOT_SIN_VINCULO])
+  it('dentro del horario abierto, la clase tiene Desactivar/Borrar y un link "Modificar" al creador', async () => {
+    mockeaBase()
+    apiPatchMock.mockResolvedValue({ ...CLASE_1, activo: false })
     const usuario = userEvent.setup()
     renderConProviders(<HistorialHorarios />)
-    await screen.findByText('FICHA-VIEJA')
+    await screen.findByText('FICHA-SNAPSHOT')
+
+    await usuario.click(screen.getByRole('button', { name: 'Ver horario' }))
+    expect(await screen.findByText('Clases de este horario')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Modificar' })).toHaveAttribute('href', '/horarios/nuevo?editar=10')
+
+    await usuario.click(screen.getByRole('button', { name: /Desactivar clase/ }))
+
+    expect(apiPatchMock).toHaveBeenCalledWith('/horarios/1/estado', { activo: false })
+    expect(await screen.findByText('Inactivo')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Activar clase/ })).toBeInTheDocument()
+  })
+
+  it('un error al cambiar el estado de una clase se muestra en la página', async () => {
+    mockeaBase()
+    apiPatchMock.mockRejectedValue(new Error('falló'))
+    const usuario = userEvent.setup()
+    renderConProviders(<HistorialHorarios />)
+    await screen.findByText('FICHA-SNAPSHOT')
+
+    await usuario.click(screen.getByRole('button', { name: 'Ver horario' }))
+    await screen.findByText('Clases de este horario')
+    await usuario.click(screen.getByRole('button', { name: /Desactivar clase/ }))
+
+    expect(await screen.findByText('No se pudo cambiar el estado de la clase.')).toBeInTheDocument()
+  })
+
+  it('borrar una clase dentro del horario la quita de "Clases de este horario"', async () => {
+    mockeaBase()
+    apiDeleteMock.mockResolvedValue(undefined)
+    const usuario = userEvent.setup()
+    renderConProviders(<HistorialHorarios />)
+    await screen.findByText('FICHA-SNAPSHOT')
+
+    await usuario.click(screen.getByRole('button', { name: 'Ver horario' }))
+    const seccion = (await screen.findByText('Clases de este horario')).closest('div') as HTMLElement
+
+    await usuario.click(within(seccion).getByRole('button', { name: /Borrar clase/ }))
+    await usuario.click(within(seccion).getByRole('button', { name: /Confirmar borrar clase/ }))
+
+    expect(apiDeleteMock).toHaveBeenCalledWith('/horarios/1')
+    await waitFor(() => expect(screen.queryByText('Clases de este horario')).not.toBeInTheDocument())
+  })
+
+  it('un snapshot sin idsHorarios (viejo) cae al blob congelado con el aviso correspondiente', async () => {
+    mockeaBase([CLASE_1, CLASE_SUELTA], [SNAPSHOT_SIN_VINCULO])
+    const usuario = userEvent.setup()
+    renderConProviders(<HistorialHorarios />)
+    await screen.findByText('FICHA-SNAPSHOT')
 
     await usuario.click(screen.getByRole('button', { name: 'Ver horario' }))
 
     expect(await screen.findByText(/se guardó antes de vincularse/)).toBeInTheDocument()
     expect(screen.getByText('Nombre viejo')).toBeInTheDocument()
+    // Sin idsHorarios no hay clases reales que gestionar acá.
+    expect(screen.queryByText('Clases de este horario')).not.toBeInTheDocument()
   })
 
   it('muestra el error del backend si la carga de clases reales falla', async () => {
