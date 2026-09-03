@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { GridHorario } from '../components/horario/GridHorario'
@@ -75,9 +75,18 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">Jornada {jornada ?? 'sin definir'}</span>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">{trimestre?.nombre ?? 'Sin trimestre'}</span>
         </div>
-        <button type="button" onClick={onCerrar} className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
-          Cerrar
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            to={`/horarios/historial?id=${horario.idHorario}`}
+            title="El historial todavía no distingue horarios individuales — se está rediseñando como registro de cambios, por ahora esto abre el listado general."
+            className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400"
+          >
+            Detalles de creación / Modificar →
+          </Link>
+          <button type="button" onClick={onCerrar} className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
+            Cerrar
+          </button>
+        </div>
       </div>
 
       <SeccionDrawer titulo="Horario semanal — igual que en el creador de horarios">
@@ -99,6 +108,10 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
           ) : (
             <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Sin más datos disponibles.</p>
           )}
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-slate-100 pt-2 dark:border-slate-700">
+            <Link to={`/fichas?id=${horario.idFicha}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Más info →</Link>
+            <Link to={`/vista-fichas?id=${horario.idFicha}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Ver horario por ficha →</Link>
+          </div>
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
@@ -134,6 +147,10 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
               </>
             )}
           </div>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-slate-100 pt-2 dark:border-slate-700">
+            <Link to={`/instructores?id=${horario.idInstructor}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Más info →</Link>
+            <Link to={`/vista-instructores?id=${horario.idInstructor}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Ver horario por instructor →</Link>
+          </div>
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
@@ -149,6 +166,10 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
           ) : (
             <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Sin más datos disponibles.</p>
           )}
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-slate-100 pt-2 dark:border-slate-700">
+            <Link to={`/ambientes?id=${horario.idAmbiente}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Más info →</Link>
+            <Link to={`/vista-ambientes?id=${horario.idAmbiente}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Ver horario por ambiente →</Link>
+          </div>
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">

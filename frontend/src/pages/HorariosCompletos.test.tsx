@@ -136,6 +136,27 @@ describe('HorariosCompletos', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('cada tarjeta tiene links "Más info" y "Ver horario por..." hacia su vista completa y su vista agregada', async () => {
+    mockeaBase()
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+    await screen.findByText('3228973 B')
+
+    await usuario.click(screen.getAllByText('3228973 B')[0])
+    await screen.findByText('Horario #7')
+
+    const masInfo = screen.getAllByRole('link', { name: 'Más info →' })
+    expect(masInfo[0]).toHaveAttribute('href', '/fichas?id=1')
+    expect(masInfo[1]).toHaveAttribute('href', '/instructores?id=u1')
+    expect(masInfo[2]).toHaveAttribute('href', '/ambientes?id=1')
+
+    expect(screen.getByRole('link', { name: 'Ver horario por ficha →' })).toHaveAttribute('href', '/vista-fichas?id=1')
+    expect(screen.getByRole('link', { name: 'Ver horario por instructor →' })).toHaveAttribute('href', '/vista-instructores?id=u1')
+    expect(screen.getByRole('link', { name: 'Ver horario por ambiente →' })).toHaveAttribute('href', '/vista-ambientes?id=1')
+
+    expect(screen.getByRole('link', { name: 'Detalles de creación / Modificar →' })).toHaveAttribute('href', '/horarios/historial?id=7')
+  })
+
   it('clic de nuevo en la misma fila colapsa la caja expandida', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
