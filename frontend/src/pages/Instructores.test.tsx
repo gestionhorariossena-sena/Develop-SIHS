@@ -208,4 +208,27 @@ describe('Instructores', () => {
     const link = await within(panel).findByRole('link', { name: 'Ver horario completo →' })
     expect(link).toHaveAttribute('href', '/vista-instructores?id=u1')
   })
+
+  it('con más de 10 instructores, pagina y "Siguiente" avanza a la página 2', async () => {
+    const muchos: Usuario[] = Array.from({ length: 12 }, (_, i) => ({
+      ...INSTRUCTOR,
+      idUsuario: `u${i + 1}`,
+      nombre: `Instructor ${String(i + 1).padStart(2, '0')}`,
+    }))
+    mockeaUsuariosYPerfil(muchos)
+    const usuario = userEvent.setup()
+    renderConProviders(<Instructores />)
+    await screen.findByText('Instructor 01')
+
+    expect(screen.getByText('Página 1 de 2')).toBeInTheDocument()
+    expect(screen.queryByText('Instructor 11')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+
+    await usuario.click(screen.getByRole('button', { name: 'Siguiente' }))
+
+    expect(screen.getByText('Página 2 de 2')).toBeInTheDocument()
+    expect(screen.getByText('Instructor 11')).toBeInTheDocument()
+    expect(screen.queryByText('Instructor 01')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+  })
 })

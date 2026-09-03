@@ -10,6 +10,8 @@ import type { CargaSemanal, DiaSemana, Horario, Usuario } from '../types/api'
 
 type Orden = 'nombre' | 'especialidad' | 'contrato'
 
+const POR_PAGINA = 10
+
 function iniciales(nombre: string) {
   return nombre.trim().split(/\s+/).slice(0, 2).map((parte) => parte.charAt(0).toUpperCase()).join('')
 }
@@ -32,6 +34,7 @@ export function Instructores() {
   const [especialidad, setEspecialidad] = useState('todas')
   const [tipoContrato, setTipoContrato] = useState('todos')
   const [orden, setOrden] = useState<Orden>('nombre')
+  const [paginaActual, setPaginaActual] = useState(1)
   const [seleccionado, setSeleccionado] = useState<Usuario | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -120,6 +123,15 @@ export function Instructores() {
     return primero.nombre.localeCompare(segundo.nombre, 'es-CO')
   })
 
+  // Clamped en vez de reseteado con un efecto: si un filtro deja menos
+  // páginas de las que había, la página actual "cae" a la última válida
+  // sola, sin necesitar un useEffect que resetee paginaActual (y sin el
+  // problema de set-state-en-efecto que eso traería).
+  const totalPaginas = Math.max(1, Math.ceil(visibles.length / POR_PAGINA))
+  const paginaSegura = Math.min(paginaActual, totalPaginas)
+  const inicioPagina = (paginaSegura - 1) * POR_PAGINA
+  const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
+
   return (
     <AppShell activo="Instructores">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -127,10 +139,10 @@ export function Instructores() {
         <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {instructores.length} instructores</p>
       </div>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Instructores activos</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.estado === 'activo').length}</p></div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Con especialidad</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.especialidades.length > 0).length}</p></div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Especialidades</p><p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{especialidades.length}</p></div>
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
+        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Activos</p><p className="text-lg font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.estado === 'activo').length}</p></div>
+        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Con especialidad</p><p className="text-lg font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.especialidades.length > 0).length}</p></div>
+        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Especialidades</p><p className="text-lg font-bold text-slate-900 dark:text-slate-100">{especialidades.length}</p></div>
       </div>
 
       <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de instructores">
@@ -150,7 +162,34 @@ export function Instructores() {
       </section>
 
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Carga semanal</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visibles.map((item) => <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-slate-900 dark:text-slate-100">{item.nombre}</p><p className="text-xs text-slate-500 dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}</div>}
+      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Carga semanal</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((item) => <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-slate-900 dark:text-slate-100">{item.nombre}</p><p className="text-xs text-slate-500 dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}
+
+        {visibles.length > 0 && (
+          <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 dark:border-slate-700">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Página {paginaSegura} de {totalPaginas}
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+                disabled={paginaSegura === 1}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+              >
+                Anterior
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+                disabled={paginaSegura === totalPaginas}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
+        )}
+      </div>}
 
       {seleccionado && (
         <DrawerRelacionados
