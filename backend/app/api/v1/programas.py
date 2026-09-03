@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import require_admin
+from app.core.supabase_auth import require_admin, require_lectura_catalogo
 from app.schemas.programa import ProgramaCreate, ProgramaResponse, ProgramaUpdate
 from app.services.programa_service import ProgramaService
 
@@ -21,7 +21,7 @@ def crear_programa(
 @router.get("/", response_model=list[ProgramaResponse])
 def obtener_programas(
     db: Session = Depends(get_db),
-    usuario=Depends(require_admin),
+    usuario=Depends(require_lectura_catalogo),
 ):
     return ProgramaService.obtener_todos(db)
 
@@ -30,7 +30,7 @@ def obtener_programas(
 def obtener_programa(
     id_programa: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_admin),
+    usuario=Depends(require_lectura_catalogo),
 ):
     programa = ProgramaService.obtener_por_id(db, id_programa)
 

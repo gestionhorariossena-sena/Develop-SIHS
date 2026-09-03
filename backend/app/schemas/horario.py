@@ -65,6 +65,7 @@ class HorarioResponse(HorarioBase):
     fechaCreacion: datetime
     fechaModificacion: datetime
     activo: bool
+    publicado: bool
 
     # Enriquecido por HorarioService/_a_response para no obligar al
     # frontend a resolver estos nombres con llamadas aparte.
@@ -76,8 +77,11 @@ class HorarioResponse(HorarioBase):
 
 
 class HorarioEstadoUpdate(BaseModel):
-    """Body de PATCH /horarios/{id}/estado — activar/desactivar sin pasar
-    por la validación completa de HorarioUpdate (no cambia ficha/instructor/
-    ambiente/horario, solo si cuenta como clase vigente)."""
+    """Body de PATCH /horarios/{id}/estado — activar/desactivar y/o
+    publicar/despublicar sin pasar por la validación completa de
+    HorarioUpdate (no cambia ficha/instructor/ambiente/horario). Ambos
+    campos son opcionales e independientes: mandar solo `publicado` no
+    toca `activo`, y viceversa."""
 
-    activo: bool
+    activo: bool | None = None
+    publicado: bool | None = None

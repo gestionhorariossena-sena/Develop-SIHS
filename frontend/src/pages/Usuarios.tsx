@@ -23,6 +23,7 @@ export function Usuarios() {
   const [error, setError] = useState<string | null>(null)
   const [noAutorizado, setNoAutorizado] = useState(false)
   const [guardandoId, setGuardandoId] = useState<string | null>(null)
+  const [cambioPendiente, setCambioPendiente] = useState<{ usuario: Usuario; idRol: number | null } | null>(null)
 
   useEffect(() => {
     Promise.all([apiGet<Usuario[]>('/usuarios/'), apiGet<Rol[]>('/roles/')])
@@ -39,7 +40,14 @@ export function Usuarios() {
       })
   }, [])
 
-  async function cambiarRol(usuario: Usuario, idRolNuevo: number) {
+  function solicitarCambioRol(usuario: Usuario, valor: string) {
+    setCambioPendiente({ usuario, idRol: valor === 'none' ? null : Number(valor) })
+  }
+
+  async function confirmarCambioRol() {
+    if (!cambioPendiente) return
+
+    const { usuario, idRol: idRolNuevo } = cambioPendiente
     setError(null)
     setGuardandoId(usuario.idUsuario)
 
@@ -47,15 +55,18 @@ export function Usuarios() {
       for (const rolActual of usuario.roles) {
         await apiDelete('/usuario-rol/remover', { idUsuario: usuario.idUsuario, idRol: rolActual.idRol })
       }
-      await apiPost('/usuario-rol/asignar', { idUsuario: usuario.idUsuario, idRol: idRolNuevo })
+      if (idRolNuevo !== null) {
+        await apiPost('/usuario-rol/asignar', { idUsuario: usuario.idUsuario, idRol: idRolNuevo })
+      }
 
-      const rolNuevo = roles.find((r) => r.idRol === idRolNuevo)
+      const rolNuevo = idRolNuevo === null ? undefined : roles.find((r) => r.idRol === idRolNuevo)
       setUsuarios(
         (previo) =>
           previo?.map((u) =>
             u.idUsuario === usuario.idUsuario ? { ...u, roles: rolNuevo ? [rolNuevo] : [] } : u,
           ) ?? previo,
       )
+      setCambioPendiente(null)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo cambiar el rol.')
     } finally {
@@ -125,12 +136,13 @@ export function Usuarios() {
                         <select
                           value={usuario.roles[0]?.idRol ?? ''}
                           disabled={guardandoId === usuario.idUsuario}
-                          onChange={(e) => cambiarRol(usuario, Number(e.target.value))}
+                          onChange={(e) => solicitarCambioRol(usuario, e.target.value)}
                           className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
                         >
                           <option value="" disabled>
-                            Sin rol asignado
+                            {usuario.roles.length ? 'Selecciona un cambio' : 'Sin rol asignado'}
                           </option>
+                          {usuario.roles.length > 0 && <option value="none">Quitar todos los roles</option>}
                           {roles.map((rol) => (
                             <option key={rol.idRol} value={rol.idRol}>
                               {rol.nombre}
@@ -144,6 +156,23 @@ export function Usuarios() {
               </tbody>
             </table>
           </div>
+      )}
+
+      {cambioPendiente && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4" role="dialog" aria-modal="true" aria-labelledby="confirmar-cambio-rol">
+          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
+            <h2 id="confirmar-cambio-rol" className="text-lg font-semibold text-slate-900 dark:text-slate-100">Confirmar cambio de permisos</h2>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+              {cambioPendiente.idRol === null
+                ? `Se quitarán todos los roles de ${cambioPendiente.usuario.nombre}. Ya no podrá acceder a las funciones que dependen de ellos.`
+                : `Se reemplazarán los roles actuales de ${cambioPendiente.usuario.nombre} por ${roles.find((rol) => rol.idRol === cambioPendiente.idRol)?.nombre ?? 'el rol seleccionado'}.`}
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setCambioPendiente(null)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Cancelar</button>
+              <button type="button" onClick={() => void confirmarCambioRol()} disabled={guardandoId !== null} className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60">{guardandoId ? 'Guardando…' : 'Confirmar cambio'}</button>
+            </div>
+          </div>
+        </div>
       )}
     </AppShell>
   )

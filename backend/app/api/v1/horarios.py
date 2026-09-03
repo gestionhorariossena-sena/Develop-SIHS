@@ -136,17 +136,21 @@ def cambiar_estado_horario(
     db: Session = Depends(get_db),
     usuario=Depends(require_puede_programar),
 ):
-    """Activar/desactivar sin borrar — backlog de Horarios completos/
-    Historial (pedido 2026-09-03). No pasa por HorarioUpdate: no cambia
-    ficha/instructor/ambiente/horario, así que no tiene sentido pedir
-    esos campos ni re-correr el dry-run completo."""
-    horario = HorarioService.cambiar_estado(db, id_horario, data.activo)
+    """Activar/desactivar y/o publicar/despublicar sin borrar — backlog de
+    Horarios completos/Historial (pedido 2026-09-03). No pasa por
+    HorarioUpdate: no cambia ficha/instructor/ambiente/horario, así que no
+    tiene sentido pedir esos campos ni re-correr el dry-run completo."""
+    horario = HorarioService.cambiar_estado(db, id_horario, activo=data.activo, publicado=data.publicado)
 
     if not horario:
         raise HTTPException(status_code=404, detail="Horario no encontrado")
 
-    accion = "ACTIVAR" if data.activo else "DESACTIVAR"
-    AuditoriaService.registrar(db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=id_horario)
+    acciones = []
+    if data.activo is not None:
+        acciones.append("ACTIVAR" if data.activo else "DESACTIVAR")
+    if data.publicado is not None:
+        acciones.append("PUBLICAR" if data.publicado else "DESPUBLICAR")
+    AuditoriaService.registrar(db, usuario=usuario, accion=" y ".join(acciones) or "SIN_CAMBIOS", entidad="horarios", id_entidad=id_horario)
 
     return _a_response(db, horario)
 
