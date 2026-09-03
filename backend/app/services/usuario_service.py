@@ -16,6 +16,10 @@ class UsuarioService:
         return UsuarioRepository.obtener_por_id(db, id_usuario)
 
     @staticmethod
+    def obtener_por_numero_documento(db, numero: str):
+        return UsuarioRepository.obtener_por_numero_documento(db, numero)
+
+    @staticmethod
     def generar_codigo_instructor(db, id_usuario: UUID):
         usuario = UsuarioRepository.obtener_por_id(db, id_usuario)
 

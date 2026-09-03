@@ -18,6 +18,7 @@ class Usuario(Base):
 
     nombre = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
+    numeroDocumento = Column(String(30), unique=True, nullable=True)
 
     estado = Column(
         Enum("activo", "inactivo", name="estado_usuario"),
