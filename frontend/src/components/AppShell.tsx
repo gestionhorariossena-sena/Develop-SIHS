@@ -31,6 +31,15 @@ interface GrupoNav {
  * convención que ya había: se muestran deshabilitados con tooltip).
  * "Horarios" es el "Constructor" del mockup — se dejó ese nombre para no
  * tocar NuevoHorario.tsx en este cambio, es solo una etiqueta.
+ *
+ * Todo el set de herramientas de coordinación (Programación/Formación/
+ * Recursos/Operación, no solo Administración) es `soloGestion: true`
+ * (pedido 2026-09-03: un Instructor no debe ni ver en el navbar algo para
+ * lo que no tiene permiso). Esto es solo la vitrina — lo que de verdad
+ * protege los datos son los permisos del backend
+ * (`require_lectura_catalogo` en cada endpoint de catálogo); ocultar acá
+ * evita la confusión de "por qué me deja hacer clic y después falla", no
+ * reemplaza esa protección.
  */
 /** Fuera de los grupos, arriba de todo — igual que antes, es el punto de
  * regreso rápido, el mockup lo da por implícito en el logo pero se deja
@@ -47,37 +56,37 @@ const NAV: GrupoNav[] = [
   {
     grupo: 'Programación',
     items: [
-      { etiqueta: 'Horarios', ruta: '/horarios/nuevo' },
-      { etiqueta: 'Horarios completos', ruta: '/horarios/completos' },
-      { etiqueta: 'Historial de horarios', ruta: '/horarios/historial' },
-      { etiqueta: 'Vista por fichas', ruta: '/vista-fichas' },
-      { etiqueta: 'Vista por instructores', ruta: '/vista-instructores' },
-      { etiqueta: 'Vista por ambientes', ruta: '/vista-ambientes' },
-      { etiqueta: 'Calendario general', ruta: '/calendario' },
+      { etiqueta: 'Horarios', ruta: '/horarios/nuevo', soloGestion: true },
+      { etiqueta: 'Horarios completos', ruta: '/horarios/completos', soloGestion: true },
+      { etiqueta: 'Historial de horarios', ruta: '/horarios/historial', soloGestion: true },
+      { etiqueta: 'Vista por fichas', ruta: '/vista-fichas', soloGestion: true },
+      { etiqueta: 'Vista por instructores', ruta: '/vista-instructores', soloGestion: true },
+      { etiqueta: 'Vista por ambientes', ruta: '/vista-ambientes', soloGestion: true },
+      { etiqueta: 'Calendario general', ruta: '/calendario', soloGestion: true },
     ],
   },
   {
     grupo: 'Formación',
     items: [
-      { etiqueta: 'Fichas', ruta: '/fichas' },
-      { etiqueta: 'Programas' },
-      { etiqueta: 'Temáticas' },
+      { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
+      { etiqueta: 'Programas', soloGestion: true },
+      { etiqueta: 'Temáticas', soloGestion: true },
     ],
   },
   {
     grupo: 'Recursos',
     items: [
-      { etiqueta: 'Instructores', ruta: '/instructores' },
-      { etiqueta: 'Ambientes', ruta: '/ambientes' },
-      { etiqueta: 'Sedes' },
+      { etiqueta: 'Instructores', ruta: '/instructores', soloGestion: true },
+      { etiqueta: 'Ambientes', ruta: '/ambientes', soloGestion: true },
+      { etiqueta: 'Sedes', soloGestion: true },
     ],
   },
   {
     grupo: 'Operación',
     items: [
-      { etiqueta: 'Aprobar solicitudes de registro', ruta: '/aprobar-solicitudes' },
-      { etiqueta: 'Cambios' },
-      { etiqueta: 'Notificaciones' },
+      { etiqueta: 'Aprobar solicitudes de registro', ruta: '/aprobar-solicitudes', soloGestion: true },
+      { etiqueta: 'Cambios', soloGestion: true },
+      { etiqueta: 'Notificaciones', soloGestion: true },
     ],
   },
   {

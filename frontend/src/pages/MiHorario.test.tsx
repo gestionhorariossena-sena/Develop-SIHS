@@ -50,7 +50,7 @@ describe('MiHorario', () => {
     })
   })
 
-  it('el ítem "Mi horario" del sidebar aparece si el usuario tiene rol Instructor', async () => {
+  it('un Instructor puro ve "Mi horario" pero NO las herramientas de coordinación en el sidebar', async () => {
     apiGetMock.mockImplementation((path: string) => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', roles: [{ idRol: 1, nombre: 'Instructor' }] })
@@ -61,9 +61,14 @@ describe('MiHorario', () => {
     renderConProviders(<MiHorario />)
 
     expect(await screen.findByRole('link', { name: 'Mi horario' })).toHaveAttribute('href', '/mi-horario')
+    // Ni siquiera debe aparecer el link — no es solo un tema de que falle
+    // al hacer clic, la herramienta de coordinación no debe ser visible.
+    expect(screen.queryByRole('link', { name: 'Fichas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Instructores' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Calendario general' })).not.toBeInTheDocument()
   })
 
-  it('el ítem "Mi horario" del sidebar NO aparece para un usuario sin rol Instructor', async () => {
+  it('un Coordinador ve las herramientas de coordinación pero NO "Mi horario" (no tiene rol Instructor)', async () => {
     apiGetMock.mockImplementation((path: string) => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Ana', email: 'a@example.com', roles: [{ idRol: 2, nombre: 'Coordinador' }] })
@@ -75,5 +80,24 @@ describe('MiHorario', () => {
 
     await screen.findByText('Todavía no tenés clases publicadas en este trimestre.')
     expect(screen.queryByRole('link', { name: 'Mi horario' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Fichas' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Instructores' })).toBeInTheDocument()
+  })
+
+  it('un usuario con roles Instructor y Coordinador a la vez ve ambos mundos', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/me') {
+        return Promise.resolve({
+          idUsuario: 'u1', nombre: 'Multi', email: 'm@example.com',
+          roles: [{ idRol: 1, nombre: 'Instructor' }, { idRol: 2, nombre: 'Coordinador' }],
+        })
+      }
+      if (path === '/usuarios/me/horarios') return Promise.resolve([])
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<MiHorario />)
+
+    expect(await screen.findByRole('link', { name: 'Mi horario' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Fichas' })).toBeInTheDocument()
   })
 })
