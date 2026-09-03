@@ -1,7 +1,7 @@
 """agrega tabla notificaciones
 
 Revision ID: e5c53749014d
-Revises: 68224e41fcbe
+Revises: f3a1c9d02b7e
 Create Date: 2026-09-03 00:00:00.000000
 
 Escrita a mano porque la base compartida todavía no tiene el baseline de
@@ -16,7 +16,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision: str = 'e5c53749014d'
-down_revision: Union[str, Sequence[str], None] = '68224e41fcbe'
+down_revision: Union[str, Sequence[str], None] = 'f3a1c9d02b7e'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
