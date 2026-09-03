@@ -190,6 +190,26 @@ describe('Fichas', () => {
     })
   })
 
+  it('con ?id= en la URL, abre el drawer de esa ficha directo (deep link desde Vista por fichas)', async () => {
+    mockeaFichasYPerfil(FICHAS)
+    renderConProviders(<Fichas />, ['/fichas?id=1'])
+
+    expect(await screen.findByRole('dialog', { name: '3228973 B' })).toBeInTheDocument()
+  })
+
+  it('el drawer tiene un link "Ver horario completo" hacia Vista por fichas', async () => {
+    mockeaFichasConHorarios(FICHAS)
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    await screen.findByText('3228973 B')
+
+    await usuario.click(screen.getByText('3228973 B'))
+
+    const panel = screen.getByRole('dialog', { name: '3228973 B' })
+    const link = await within(panel).findByRole('link', { name: 'Ver horario completo →' })
+    expect(link).toHaveAttribute('href', '/vista-fichas?id=1')
+  })
+
   it('con más de 10 fichas, pagina y "Siguiente" avanza a la página 2', async () => {
     const muchas: Ficha[] = Array.from({ length: 12 }, (_, i) => ({
       ...FICHAS[0],

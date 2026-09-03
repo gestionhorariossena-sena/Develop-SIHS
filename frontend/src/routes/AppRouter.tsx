@@ -10,6 +10,7 @@ import { Ambientes } from '../pages/Ambientes'
 import { Instructores } from '../pages/Instructores'
 import { VistaInstructores } from '../pages/VistaInstructores'
 import { Fichas } from '../pages/Fichas'
+import { VistaFichas } from '../pages/VistaFichas'
 import { Usuarios } from '../pages/Usuarios'
 import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
 import { ProtectedRoute } from './ProtectedRoute'
@@ -81,6 +82,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <Fichas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vista-fichas"
+        element={
+          <ProtectedRoute>
+            <VistaFichas />
           </ProtectedRoute>
         }
       />

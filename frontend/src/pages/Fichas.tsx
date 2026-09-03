@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { GridHorario } from '../components/horario/GridHorario'
@@ -18,6 +19,8 @@ function nivel(ficha: Ficha) {
 }
 
 export function Fichas() {
+  const [searchParams] = useSearchParams()
+  const idDesdeUrl = searchParams.get('id')
   const [fichas, setFichas] = useState<Ficha[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [programa, setPrograma] = useState('todos')
@@ -43,7 +46,17 @@ export function Fichas() {
 
   useEffect(() => {
     apiGet<Ficha[]>('/fichas/')
-      .then(setFichas)
+      .then((datos) => {
+        setFichas(datos)
+
+        // Deep link desde VistaFichas.tsx ("Ver info" → /fichas?id=...):
+        // abre el drawer de esa ficha directo — mismo patrón que
+        // Instructores.tsx con VistaInstructores.tsx.
+        if (idDesdeUrl) {
+          const encontrada = datos.find((ficha) => ficha.idFicha === Number(idDesdeUrl))
+          if (encontrada) setSeleccionada(encontrada)
+        }
+      })
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de fichas.'))
       .finally(() => setCargando(false))
 
@@ -57,6 +70,7 @@ export function Fichas() {
     apiGet<Horario[]>('/horarios/')
       .then(setTodosLosHorarios)
       .catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idDesdeUrl no cambia en la vida del componente.
   }, [])
 
   useEffect(() => {
@@ -182,6 +196,12 @@ export function Fichas() {
             <>
               <SeccionDrawer titulo="Horario semanal">
                 <GridHorario bloques={bloquesGrid} grid={grid} hayBloqueActivo={false} soloLectura />
+                <Link
+                  to={`/vista-fichas?id=${seleccionada.idFicha}`}
+                  className="mt-2 inline-block text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400"
+                >
+                  Ver horario completo →
+                </Link>
               </SeccionDrawer>
               <SeccionInstructoresAsignados horarios={horariosVigentes ?? []} diasPorId={diasPorId} />
               <SeccionTemasQueDicta horarios={horariosVigentes ?? []} />
