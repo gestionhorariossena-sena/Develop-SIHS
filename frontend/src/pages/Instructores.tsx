@@ -139,19 +139,18 @@ export function Instructores() {
         <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {instructores.length} instructores</p>
       </div>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3">
-        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Activos</p><p className="text-lg font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.estado === 'activo').length}</p></div>
-        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Con especialidad</p><p className="text-lg font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.especialidades.length > 0).length}</p></div>
-        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-800"><p className="text-xs font-medium uppercase tracking-wide text-slate-400">Especialidades</p><p className="text-lg font-bold text-slate-900 dark:text-slate-100">{especialidades.length}</p></div>
-      </div>
-
       <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de instructores">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Filtrar instructores</p>
             {filtrosActivos > 0 && <span className="rounded-full bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
+            {filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setEspecialidad('todas'); setTipoContrato('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Limpiar filtros</button>}
           </div>
-          {filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setEspecialidad('todas'); setTipoContrato('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Limpiar filtros</button>}
+          <div className="flex gap-4">
+            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Activos</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.estado === 'activo').length}</p></div>
+            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Con especialidad</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.especialidades.length > 0).length}</p></div>
+            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Especialidades</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{especialidades.length}</p></div>
+          </div>
         </div>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1.4fr)_12rem_11rem_10rem]">
           <div className="md:col-span-2 xl:col-span-1"><label htmlFor="buscar-instructor" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Buscar</label><input id="buscar-instructor" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Nombre, correo o especialidad" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></div>
