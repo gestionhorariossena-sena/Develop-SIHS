@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, false
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -20,7 +20,7 @@ class Notificacion(Base):
     tipo = Column(String(30), nullable=False)
     mensaje = Column(String(500), nullable=False)
 
-    leida = Column(Boolean, server_default="false", nullable=False)
+    leida = Column(Boolean, server_default=false(), nullable=False)
 
     fechaCreacion = Column(
         DateTime(timezone=True),
