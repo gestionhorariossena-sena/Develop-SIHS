@@ -321,7 +321,7 @@ export function AppShell({ activo, children }: AppShellProps) {
          * eso el nav empuja el alto del <aside> en vez de scrollear, y con
          * más de ~8 ítems (ver NAV arriba) el grupo Administración quedaba
          * cortado fuera de la pantalla sin forma de llegar a él. */}
-        <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+        <nav className="scroll-sidebar min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
           <div className="space-y-1">{renderItemNav(INICIO)}</div>
 
           {nav.map((grupo) => (
