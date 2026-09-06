@@ -16,13 +16,13 @@ export function SeccionFichasAsignadas({ horarios, diasPorId }: { horarios: Hora
   return (
     <SeccionDrawer titulo="Fichas asignadas">
       {fichas.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">Sin fichas asignadas en el trimestre actual.</p>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin fichas asignadas en el trimestre actual.</p>
       ) : (
         <ul className="space-y-2">
           {fichas.map((ficha) => (
-            <li key={ficha.codigo} className="rounded-lg border border-slate-200 p-2.5 dark:border-slate-700">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{ficha.codigo}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+            <li key={ficha.codigo} className="rounded-xl border border-outline-variant p-2.5 dark:border-slate-700">
+              <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{ficha.codigo}</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">
                 {ficha.bloques.map((bloque) => `${nombresDias(bloque.dias, diasPorId)} ${formatoHora(bloque.horaInicio)}-${formatoHora(bloque.horaFin)}`).join(' · ')}
               </p>
             </li>
@@ -47,11 +47,11 @@ export function SeccionTemasQueDicta({ horarios }: { horarios: Horario[] }) {
   return (
     <SeccionDrawer titulo="Temas que dicta">
       {lista.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">Sin temas asignados en el trimestre actual.</p>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin temas asignados en el trimestre actual.</p>
       ) : (
         <ul className="space-y-1.5">
           {lista.map((tema) => (
-            <li key={tema} className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-sm text-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <li key={tema} className="rounded-xl bg-surface px-2.5 py-1.5 text-sm text-on-surface-variant dark:bg-slate-900 dark:text-slate-300">
               {tema}
             </li>
           ))}
@@ -68,11 +68,11 @@ export function SeccionAmbientesAsignados({ horarios }: { horarios: Horario[] })
   return (
     <SeccionDrawer titulo="Ambientes asignados">
       {ambientes.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">Sin ambientes asignados en el trimestre actual.</p>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin ambientes asignados en el trimestre actual.</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {ambientes.map((nombre) => (
-            <span key={nombre} className="rounded-lg border border-slate-200 px-2.5 py-1 text-sm text-slate-700 dark:border-slate-700 dark:text-slate-300">
+            <span key={nombre} className="rounded-xl border border-outline-variant px-2.5 py-1 text-sm text-on-surface-variant dark:border-slate-700 dark:text-slate-300">
               {nombre}
             </span>
           ))}

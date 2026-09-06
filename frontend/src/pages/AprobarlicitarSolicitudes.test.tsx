@@ -46,7 +46,7 @@ async function aprobarConRol(nombreRol: string) {
   const usuario = userEvent.setup()
   renderConProviders(<AprobarlicitarSolicitudes />)
 
-  await usuario.click(await screen.findByRole('button', { name: 'Asignar rol' }))
+  await usuario.click(await screen.findByRole('button', { name: 'Aprobar registro y asignar rol' }))
   await usuario.click(screen.getByRole('button', { name: nombreRol }))
   await usuario.click(screen.getByRole('button', { name: 'Asignar' }))
 

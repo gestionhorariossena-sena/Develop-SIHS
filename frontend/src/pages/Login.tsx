@@ -126,8 +126,8 @@ export function Login() {
 
   return (
     <AuthLayout>
-      <h1 className="mb-2 text-2xl font-bold text-slate-900 dark:text-slate-100">Iniciar sesión</h1>
-      <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+      <h1 className="mb-2 text-2xl font-bold text-on-surface dark:text-slate-100">Iniciar sesión</h1>
+      <p className="mb-6 text-sm text-on-surface-variant dark:text-slate-400">
         Acceso exclusivo para coordinadores e instructores del Centro de Gestión de Mercados,
         Logística y TI.
       </p>
@@ -159,17 +159,17 @@ export function Login() {
         />
 
         <div className="mb-5 flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-            <input type="checkbox" className="h-4 w-4 rounded border-slate-300 bg-white text-sena-600 dark:border-slate-700 dark:bg-slate-900" />
+          <label className="flex items-center gap-2 text-on-surface-variant dark:text-slate-300">
+            <input type="checkbox" className="h-4 w-4 rounded border-outline bg-surface-container-lowest text-primary dark:border-slate-700 dark:bg-slate-900" />
             Recordarme
           </label>
-          <Link to="/recuperar-contrasena" className="font-medium text-sena-700 hover:underline">
+          <Link to="/recuperar-contrasena" className="font-medium text-primary hover:underline">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
 
         {error && (
-          <p role="alert" className="mb-4 text-sm text-red-600">
+          <p role="alert" className="mb-4 text-sm text-error">
             {error}
           </p>
         )}
@@ -177,15 +177,15 @@ export function Login() {
         <button
           type="submit"
           disabled={loading || bloqueado}
-          className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
+          className="w-full rounded-xl bg-primary py-3 font-semibold text-on-primary transition hover:bg-on-primary-container disabled:opacity-60"
         >
           {loading ? 'Ingresando…' : bloqueado ? 'Cuenta bloqueada temporalmente' : 'Iniciar sesión'}
         </button>
       </form>
 
-      <p className="mt-6 border-t border-slate-100 pt-5 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400">
+      <p className="mt-6 border-t border-outline-variant pt-5 text-center text-sm text-on-surface-variant dark:border-slate-700 dark:text-slate-400">
         ¿No tienes cuenta?{' '}
-        <Link to="/registro" className="font-semibold text-sena-700 hover:underline">
+        <Link to="/registro" className="font-semibold text-primary hover:underline">
           Solicita registro
         </Link>
       </p>

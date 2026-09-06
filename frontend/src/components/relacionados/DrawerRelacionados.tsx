@@ -39,7 +39,7 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
         aria-label={titulo}
         onKeyDown={manejarTeclado}
         onClick={(evento) => evento.stopPropagation()}
-        className="flex h-full w-full max-w-md flex-col overflow-y-auto bg-white p-6 shadow-2xl dark:bg-slate-800"
+        className="flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface-container-lowest p-6 shadow-2xl dark:bg-slate-800"
       >
         <div className="mb-6 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -47,12 +47,12 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
               {iniciales}
             </span>
             <div>
-              <h2 className="font-semibold text-slate-900 dark:text-slate-100">{titulo}</h2>
-              {subtitulo && <p className="text-sm text-slate-500 dark:text-slate-400">{subtitulo}</p>}
+              <h2 className="font-semibold text-on-surface dark:text-slate-100">{titulo}</h2>
+              {subtitulo && <p className="text-sm text-on-surface-variant dark:text-slate-400">{subtitulo}</p>}
               {etiquetas && etiquetas.length > 0 && (
                 <div className="mt-1 flex flex-wrap gap-1.5">
                   {etiquetas.map((etiqueta) => (
-                    <span key={etiqueta} className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                    <span key={etiqueta} className="rounded-full bg-surface-container px-2 py-0.5 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">
                       {etiqueta}
                     </span>
                   ))}
@@ -64,7 +64,7 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
             type="button"
             onClick={onCerrar}
             aria-label="Cerrar"
-            className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+            className="text-sm font-medium text-on-surface-variant hover:text-on-surface dark:text-slate-400 dark:hover:text-slate-100"
           >
             Cerrar
           </button>
@@ -81,7 +81,7 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
 export function SeccionDrawer({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
     <section>
-      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{titulo}</h3>
+      <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">{titulo}</h3>
       {children}
     </section>
   )

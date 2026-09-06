@@ -4,8 +4,8 @@ import { apiDelete, apiGet, apiPost, ApiError } from '../services/api'
 import type { Rol, Usuario } from '../types/api'
 
 const estiloEstado: Record<Usuario['estado'], string> = {
-  activo: 'bg-emerald-50 text-emerald-700',
-  inactivo: 'bg-slate-100 text-slate-500',
+  activo: 'bg-primary-container text-on-primary-container',
+  inactivo: 'bg-surface-container text-on-surface-variant',
 }
 
 /**
@@ -77,29 +77,29 @@ export function Usuarios() {
   return (
     <AppShell activo="Usuarios">
       <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Usuarios</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Usuarios</h1>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">
           Usuarios registrados en el sistema y su rol asignado. El rol pedido al registrarse queda
           como solicitud — acá se asigna el rol real.
         </p>
       </div>
 
       {noAutorizado && (
-        <div className="rounded-xl border border-orange-200 bg-orange-50 p-5 text-sm text-orange-800">
+        <div className="rounded-xl border border-tertiary/30 bg-tertiary-container p-5 text-sm text-on-tertiary-container">
           Solo un Administrador puede ver y gestionar los usuarios registrados.
         </div>
       )}
 
       {!noAutorizado && error && (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="mb-4 rounded-xl border border-error/30 bg-error-container px-4 py-3 text-sm text-on-error-container">
           {error}
         </p>
       )}
 
       {!noAutorizado && (
-          <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+          <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
             <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              <thead className="bg-surface-container-low text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
                 <tr>
                   <th scope="col" className="px-4 py-3">Nombre</th>
                   <th scope="col" className="px-4 py-3">Correo</th>
@@ -107,24 +107,24 @@ export function Usuarios() {
                   <th scope="col" className="px-4 py-3">Rol</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+              <tbody className="divide-y divide-outline-variant dark:divide-slate-700">
                 {usuarios === null ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                    <td colSpan={4} className="px-4 py-6 text-center text-on-surface-variant">
                       Cargando…
                     </td>
                   </tr>
                 ) : usuarios.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                    <td colSpan={4} className="px-4 py-6 text-center text-on-surface-variant">
                       No hay usuarios registrados todavía.
                     </td>
                   </tr>
                 ) : (
                   usuarios.map((usuario) => (
-                    <tr key={usuario.idUsuario} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
-                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{usuario.nombre}</td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{usuario.email}</td>
+                    <tr key={usuario.idUsuario} className="hover:bg-surface-container-low dark:hover:bg-slate-700/60">
+                      <td className="px-4 py-3 font-medium text-on-surface dark:text-slate-100">{usuario.nombre}</td>
+                      <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{usuario.email}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estiloEstado[usuario.estado]}`}
@@ -137,7 +137,7 @@ export function Usuarios() {
                           value={usuario.roles[0]?.idRol ?? ''}
                           disabled={guardandoId === usuario.idUsuario}
                           onChange={(e) => solicitarCambioRol(usuario, e.target.value)}
-                          className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                          className="rounded-xl border border-outline bg-surface-container-lowest px-2.5 py-1.5 text-sm text-on-surface-variant disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
                         >
                           <option value="" disabled>
                             {usuario.roles.length ? 'Selecciona un cambio' : 'Sin rol asignado'}
@@ -160,16 +160,16 @@ export function Usuarios() {
 
       {cambioPendiente && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4" role="dialog" aria-modal="true" aria-labelledby="confirmar-cambio-rol">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
-            <h2 id="confirmar-cambio-rol" className="text-lg font-semibold text-slate-900 dark:text-slate-100">Confirmar cambio de permisos</h2>
-            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+          <div className="w-full max-w-md rounded-xl border border-outline-variant bg-surface-container-lowest p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-800">
+            <h2 id="confirmar-cambio-rol" className="text-lg font-semibold text-on-surface dark:text-slate-100">Confirmar cambio de permisos</h2>
+            <p className="mt-2 text-sm text-on-surface-variant dark:text-slate-300">
               {cambioPendiente.idRol === null
                 ? `Se quitarán todos los roles de ${cambioPendiente.usuario.nombre}. Ya no podrá acceder a las funciones que dependen de ellos.`
                 : `Se reemplazarán los roles actuales de ${cambioPendiente.usuario.nombre} por ${roles.find((rol) => rol.idRol === cambioPendiente.idRol)?.nombre ?? 'el rol seleccionado'}.`}
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setCambioPendiente(null)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Cancelar</button>
-              <button type="button" onClick={() => void confirmarCambioRol()} disabled={guardandoId !== null} className="rounded-lg bg-red-600 px-3 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60">{guardandoId ? 'Guardando…' : 'Confirmar cambio'}</button>
+              <button type="button" onClick={() => setCambioPendiente(null)} className="rounded-xl border border-outline px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Cancelar</button>
+              <button type="button" onClick={() => void confirmarCambioRol()} disabled={guardandoId !== null} className="rounded-xl bg-error px-3 py-2 text-sm font-semibold text-on-error hover:bg-error/90 disabled:cursor-not-allowed disabled:opacity-60">{guardandoId ? 'Guardando…' : 'Confirmar cambio'}</button>
             </div>
           </div>
         </div>

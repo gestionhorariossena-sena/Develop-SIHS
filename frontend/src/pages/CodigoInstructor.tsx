@@ -70,8 +70,8 @@ export function CodigoInstructor() {
   return (
     <AppShell activo="Código de instructor">
       <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Código de instructor</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Código de instructor</h1>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">
           Código único de cada instructor, generado automáticamente al aprobar su rol. Es fijo — no
           se regenera.
         </p>
@@ -84,15 +84,15 @@ export function CodigoInstructor() {
       )}
 
       {!noAutorizado && error && (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
       )}
 
       {!noAutorizado && (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+        <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+            <thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
               <tr>
                 <th scope="col" className="px-4 py-3">Nombre</th>
                 <th scope="col" className="px-4 py-3">Correo</th>
@@ -100,31 +100,31 @@ export function CodigoInstructor() {
                 <th scope="col" className="px-4 py-3"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+            <tbody className="divide-y divide-outline-variant dark:divide-slate-700">
               {usuarios === null ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={4} className="px-4 py-6 text-center text-on-surface-variant">
                     Cargando…
                   </td>
                 </tr>
               ) : instructores.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-6 text-center text-slate-500">
+                  <td colSpan={4} className="px-4 py-6 text-center text-on-surface-variant">
                     No hay instructores registrados todavía.
                   </td>
                 </tr>
               ) : (
                 instructores.map((instructor) => (
-                  <tr key={instructor.idUsuario} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
-                    <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">{instructor.nombre}</td>
-                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{instructor.email}</td>
+                  <tr key={instructor.idUsuario} className="hover:bg-surface dark:hover:bg-slate-700/60">
+                    <td className="px-4 py-3 font-medium text-on-surface dark:text-slate-100">{instructor.nombre}</td>
+                    <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{instructor.email}</td>
                     <td className="px-4 py-3">
                       {instructor.codigoInstructor ? (
                         <span className="rounded-full border border-sena-200 bg-sena-50 px-2.5 py-1 text-xs font-semibold tracking-wide text-sena-700 dark:border-sena-700 dark:bg-sena-950/50 dark:text-sena-300">
                           {instructor.codigoInstructor}
                         </span>
                       ) : (
-                        <span className="text-xs text-slate-400 dark:text-slate-500">Sin código aún</span>
+                        <span className="text-xs text-on-surface-variant dark:text-slate-500">Sin código aún</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -132,7 +132,7 @@ export function CodigoInstructor() {
                         <button
                           type="button"
                           onClick={() => copiar(instructor.idUsuario, instructor.codigoInstructor as string)}
-                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                          className="rounded-xl border border-outline px-3 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                         >
                           {copiadoId === instructor.idUsuario ? 'Copiado' : 'Copiar'}
                         </button>
@@ -141,7 +141,7 @@ export function CodigoInstructor() {
                           type="button"
                           onClick={() => void generar(instructor.idUsuario)}
                           disabled={generandoId === instructor.idUsuario}
-                          className="rounded-lg border border-sena-300 px-3 py-1.5 text-xs font-medium text-sena-700 hover:bg-sena-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sena-700 dark:text-sena-400 dark:hover:bg-sena-950/40"
+                          className="rounded-xl border border-sena-300 px-3 py-1.5 text-xs font-medium text-sena-700 hover:bg-sena-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-sena-700 dark:text-sena-400 dark:hover:bg-sena-950/40"
                         >
                           {generandoId === instructor.idUsuario ? 'Generando…' : 'Generar'}
                         </button>

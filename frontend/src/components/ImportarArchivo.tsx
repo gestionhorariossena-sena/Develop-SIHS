@@ -85,13 +85,13 @@ export function ImportarArchivo({ columnas, onImportarFila, onTerminado, onCerra
   }
 
   return (
-    <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Cargar archivo">
+    <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Cargar archivo">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Cargar archivo (CSV)</p>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Columnas esperadas: {columnas.map((columna) => columna.encabezado).join(', ')}</p>
+          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Cargar archivo (CSV)</p>
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">Columnas esperadas: {columnas.map((columna) => columna.encabezado).join(', ')}</p>
         </div>
-        <button type="button" onClick={onCerrar} className="text-sm font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200">
+        <button type="button" onClick={onCerrar} className="text-sm font-medium text-on-surface-variant hover:text-on-surface-variant dark:text-slate-400 dark:hover:text-slate-200">
           Cerrar
         </button>
       </div>
@@ -101,19 +101,19 @@ export function ImportarArchivo({ columnas, onImportarFila, onTerminado, onCerra
         accept=".csv,text/csv"
         onChange={(evento) => void manejarArchivo(evento)}
         aria-label="Seleccionar archivo CSV"
-        className="block w-full text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-sena-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sena-700 dark:text-slate-300 dark:file:bg-sena-950/50 dark:file:text-sena-400"
+        className="block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-sena-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sena-700 dark:text-slate-300 dark:file:bg-sena-950/50 dark:file:text-sena-400"
       />
 
-      {errorArchivo && <p className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorArchivo}</p>}
+      {errorArchivo && <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorArchivo}</p>}
 
       {filas && !resultados && (
         <div className="mt-4">
-          <p className="mb-2 text-sm text-slate-600 dark:text-slate-300">
+          <p className="mb-2 text-sm text-on-surface-variant dark:text-slate-300">
             Se encontraron <strong>{filas.length}</strong> fila{filas.length === 1 ? '' : 's'}. Revisá antes de confirmar — todavía no se creó nada.
           </p>
-          <div className="max-h-64 overflow-auto rounded-lg border border-slate-200 dark:border-slate-700">
+          <div className="max-h-64 overflow-auto rounded-xl border border-outline-variant dark:border-slate-700">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+              <thead className="bg-surface font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
                 <tr>
                   {columnas.map((columna) => (
                     <th key={columna.clave} className="px-3 py-2">
@@ -122,11 +122,11 @@ export function ImportarArchivo({ columnas, onImportarFila, onTerminado, onCerra
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+              <tbody className="divide-y divide-outline-variant dark:divide-slate-700">
                 {filas.map((fila, indice) => (
                   <tr key={indice}>
                     {columnas.map((columna) => (
-                      <td key={columna.clave} className="px-3 py-2 text-slate-700 dark:text-slate-300">
+                      <td key={columna.clave} className="px-3 py-2 text-on-surface-variant dark:text-slate-300">
                         {fila[columna.encabezado] || '—'}
                       </td>
                     ))}
@@ -139,7 +139,7 @@ export function ImportarArchivo({ columnas, onImportarFila, onTerminado, onCerra
             type="button"
             onClick={() => void confirmarImportacion()}
             disabled={importando}
-            className="mt-3 rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-3 rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {importando ? 'Importando…' : `Confirmar importación de ${filas.length} fila${filas.length === 1 ? '' : 's'}`}
           </button>
@@ -148,7 +148,7 @@ export function ImportarArchivo({ columnas, onImportarFila, onTerminado, onCerra
 
       {resultados && (
         <div className="mt-4">
-          <p className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+          <p className="mb-2 text-sm font-medium text-on-surface-variant dark:text-slate-300">
             {resultados.filter((resultado) => resultado.ok).length} de {filas?.length ?? resultados.length} filas creadas{importando ? ' (importando…)' : '.'}
           </p>
           <ul className="max-h-64 space-y-1 overflow-auto text-sm">
