@@ -1,6 +1,6 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Hanken+Grotesk:wght@600;700&display=swap');
+@import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -52,7 +52,7 @@
   --font-display: "Hanken Grotesk", system-ui, sans-serif;
   --font-body: "Geist", system-ui, sans-serif;
 
-  /* Compat: clases bg-sena-*/text-sena-* ya escritas antes del rediseño. */
+  /* Compat: clases bg-sena-* y text-sena-* ya escritas antes del rediseño. */
   --color-sena-50: #eaf7ec;
   --color-sena-100: #dcfce7;
   --color-sena-500: #16a34a;
@@ -92,6 +92,60 @@ h1, h2, h3, h4, h5, h6 {
 
 html.dark {
   color-scheme: dark;
+
+  /* Los mockups de Stitch (DESIGN.md) solo definían modo claro — esta
+   * paleta oscura no viene de ahí, se diseñó siguiendo la misma lógica de
+   * Material Design 3 (superficies oscuras, contenedores de acento
+   * oscuros y saturados, texto claro) para que las clases `dark:` que ya
+   * existían en el resto de la app (dark:bg-slate-800, dark:text-slate-100,
+   * etc.) tengan con qué combinar — sin esto, un elemento con `dark:` viejo
+   * quedaba con texto claro sobre un fondo que seguía claro (texto
+   * invisible), porque los tokens nuevos no tenían variante oscura. */
+  --color-surface: #0f172a;
+  --color-surface-dim: #1e293b;
+  --color-surface-bright: #334155;
+  --color-surface-container-lowest: #1e293b;
+  --color-surface-container-low: #1e293b;
+  --color-surface-container: #334155;
+  --color-surface-container-high: #475569;
+  --color-surface-container-highest: #64748b;
+  --color-on-surface: #f1f5f9;
+  --color-on-surface-variant: #cbd5e1;
+  --color-inverse-surface: #f1f5f9;
+  --color-inverse-on-surface: #1e293b;
+  --color-outline: #475569;
+  --color-outline-variant: #334155;
+
+  --color-primary: #4ade80;
+  --color-on-primary: #052e13;
+  --color-primary-container: #14532d;
+  --color-on-primary-container: #bbf7d0;
+  --color-inverse-primary: #16a34a;
+
+  --color-secondary: #6fdf43;
+  --color-on-secondary: #052100;
+  --color-secondary-container: #1a3a0a;
+  --color-on-secondary-container: #bbf7d0;
+
+  --color-tertiary: #fbbf24;
+  --color-on-tertiary: #451a03;
+  --color-tertiary-container: #78350f;
+  --color-on-tertiary-container: #fef3c7;
+
+  --color-error: #f87171;
+  --color-on-error: #450a0a;
+  --color-error-container: #7f1d1d;
+  --color-on-error-container: #fecaca;
+
+  --color-background: #0f172a;
+  --color-on-background: #f1f5f9;
+
+  --color-sena-50: #14532d;
+  --color-sena-100: #14532d;
+  --color-sena-500: #4ade80;
+  --color-sena-600: #6fdf43;
+  --color-sena-700: #bbf7d0;
+  --color-sena-800: #bbf7d0;
 }
 
 /* Barra de scroll delgada para el <nav> del sidebar (AppShell.tsx) — sin
