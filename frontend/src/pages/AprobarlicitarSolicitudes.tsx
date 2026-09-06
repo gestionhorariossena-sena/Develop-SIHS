@@ -32,6 +32,7 @@ export function AprobarlicitarSolicitudes() {
   const [rolSeleccionado, setRolSeleccionado] = useState<number | null>(null)
   const [mostrarModal, setMostrarModal] = useState(false)
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
+  const [busqueda, setBusqueda] = useState('')
   const contenidoModalRef = useRef<HTMLDivElement>(null)
 
   // Cargar usuarios sin rol y lista de roles
@@ -165,8 +166,21 @@ export function AprobarlicitarSolicitudes() {
     )
   }
 
+  const usuariosFiltrados = busqueda.trim()
+    ? usuariosSinRol.filter((u) => {
+        const texto = busqueda.trim().toLocaleLowerCase('es-CO')
+        return u.nombre.toLocaleLowerCase('es-CO').includes(texto) || u.email.toLocaleLowerCase('es-CO').includes(texto)
+      })
+    : usuariosSinRol
+
   return (
     <AppShell activo="Aprobar solicitudes de registro">
+      <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
+        <span>Dashboard</span>
+        <span className="text-outline">/</span>
+        <span className="font-semibold text-primary">Solicitudes y Auditoría</span>
+      </nav>
+
       {/* Encabezado — mismo estilo "Centro de Solicitudes" del mockup */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-3">
@@ -221,8 +235,31 @@ export function AprobarlicitarSolicitudes() {
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
-          {usuariosSinRol.map((usuario) => (
+        <>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
+            <h2 className="flex items-center gap-1.5 text-sm font-semibold text-on-surface dark:text-slate-100">
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-on-surface-variant">filter_alt</span>
+              Solicitudes pendientes de aprobación
+            </h2>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <span aria-hidden="true" className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-on-surface-variant">search</span>
+                <input
+                  type="search"
+                  value={busqueda}
+                  onChange={(evento) => setBusqueda(evento.target.value)}
+                  placeholder="Filtrar por nombre o correo…"
+                  className="rounded-xl border border-outline bg-surface-container-lowest py-1.5 pl-8 pr-3 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900"
+                />
+              </div>
+              <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant dark:bg-slate-700">
+                Todos ({usuariosFiltrados.length})
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+          {usuariosFiltrados.map((usuario) => (
             <div
               key={usuario.idUsuario}
               className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800"
@@ -254,7 +291,8 @@ export function AprobarlicitarSolicitudes() {
               </button>
             </div>
           ))}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Modal para asignar rol */}

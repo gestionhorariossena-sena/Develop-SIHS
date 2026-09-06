@@ -326,12 +326,26 @@ export function HorariosCompletos() {
 
   return (
     <AppShell activo="Horarios completos">
+      <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant dark:text-slate-400">
+        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <span className="text-outline">/</span>
+        <span className="font-semibold text-primary">Vistas de Horarios</span>
+        <span className="text-outline">/</span>
+        <span>Coordinación Académica</span>
+      </nav>
+
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Horarios completos</h1>
+          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Vistas de Horarios — Coordinación Académica</h1>
           <p className="text-sm text-on-surface-variant dark:text-slate-400">Cada horario con su ficha, instructor, ambiente y tema en un solo lugar.</p>
         </div>
-        <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {horarios.length} horarios</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-3 py-1 text-xs font-semibold text-on-secondary-container">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" aria-hidden="true" />
+            Auditoría de Malla Activa
+          </span>
+          <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {horarios.length} horarios</p>
+        </div>
       </div>
 
       {/* Selector de perspectiva — mismos 4 modos del mockup, como links

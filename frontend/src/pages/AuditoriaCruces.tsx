@@ -57,6 +57,7 @@ export function AuditoriaCruces() {
   const [sedes, setSedes] = useState<Sede[]>([])
   const [filtroTrimestre, setFiltroTrimestre] = useState('todos')
   const [filtroSede, setFiltroSede] = useState('todas')
+  const [busqueda, setBusqueda] = useState('')
 
   // `datos` guarda junto a la respuesta la combinación de filtros que la
   // produjo — así, al cambiar de filtro, el resultado del filtro anterior
@@ -107,7 +108,13 @@ export function AuditoriaCruces() {
     )
   }
 
-  const conflictos = datosVigentes?.conflictos ?? []
+  const todosLosConflictos = datosVigentes?.conflictos ?? []
+  // "Búsqueda Rápida" del mockup — filtro de texto en cliente sobre el
+  // mensaje ya armado por el backend (que ya nombra ficha/instructor/
+  // ambiente involucrados), sin pedir nada nuevo.
+  const conflictos = busqueda.trim()
+    ? todosLosConflictos.filter((c) => c.mensaje.toLocaleLowerCase('es-CO').includes(busqueda.trim().toLocaleLowerCase('es-CO')))
+    : todosLosConflictos
   const conflictosDuros = conflictos.filter((c) => c.tipo === 'regla_instructor')
   const conflictosFisicos = conflictos.filter((c) => c.tipo !== 'regla_instructor')
 
@@ -152,15 +159,27 @@ export function AuditoriaCruces() {
 
   return (
     <AppShell activo="Auditoría de cruces">
-      <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-on-surface">Auditoría de cruces</h1>
-        <p className="text-sm text-on-surface-variant">
-          Cruces detectados entre horarios ya guardados — mismas reglas que el Constructor usa al crear uno nuevo.
-        </p>
+      <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
+        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <span className="text-outline">/</span>
+        <span className="font-semibold text-primary">Auditoría de cruces</span>
+      </nav>
+
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="mb-1 text-2xl font-bold text-on-surface">Auditoría de cruces</h1>
+          <p className="text-sm text-on-surface-variant">
+            Cruces detectados entre horarios ya guardados — mismas reglas que el Constructor usa al crear uno nuevo.
+          </p>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-secondary-container px-3 py-1 text-xs font-semibold text-on-secondary-container">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" aria-hidden="true" />
+          Auditoría de Malla Activa
+        </span>
       </div>
 
       <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de auditoría">
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-3">
           <div>
             <label htmlFor="filtro-trimestre-auditoria" className="mb-1.5 block text-xs font-medium text-on-surface-variant">Trimestre</label>
             <select
@@ -189,8 +208,33 @@ export function AuditoriaCruces() {
               ))}
             </select>
           </div>
+          <div>
+            <label htmlFor="busqueda-rapida-auditoria" className="mb-1.5 block text-xs font-medium text-on-surface-variant">Búsqueda Rápida</label>
+            <div className="relative">
+              <span aria-hidden="true" className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">search</span>
+              <input
+                id="busqueda-rapida-auditoria"
+                type="search"
+                value={busqueda}
+                onChange={(evento) => setBusqueda(evento.target.value)}
+                placeholder="Instructor, ficha o ambiente…"
+                className="w-full rounded-xl border border-outline bg-surface-container-lowest py-2 pl-8 pr-3 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900"
+              />
+            </div>
+          </div>
         </div>
       </section>
+
+      <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-xs font-medium text-on-surface-variant dark:border-slate-700 dark:bg-slate-800">
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-tertiary" aria-hidden="true" />Conflicto de solape detectado</span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-error" aria-hidden="true" />Regla institucional (RF-011)</span>
+        {conflictos.length > 0 && (
+          <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-2.5 py-1 text-on-tertiary-container">
+            <span aria-hidden="true" className="material-symbols-outlined text-[14px]">warning</span>
+            {conflictos.length} conflicto{conflictos.length === 1 ? '' : 's'} crítico{conflictos.length === 1 ? '' : 's'} activo{conflictos.length === 1 ? '' : 's'}
+          </span>
+        )}
+      </div>
 
       {error && <p className="mb-4 rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm text-on-error-container">{error}</p>}
 
@@ -207,13 +251,6 @@ export function AuditoriaCruces() {
             </div>
           ) : (
             <>
-              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-tertiary/20 bg-tertiary-container p-4">
-                <span aria-hidden="true" className="material-symbols-outlined text-on-tertiary-container">warning</span>
-                <span className="text-sm font-semibold text-on-tertiary-container">
-                  {conflictos.length} conflicto{conflictos.length === 1 ? '' : 's'} crítico{conflictos.length === 1 ? '' : 's'} activo{conflictos.length === 1 ? '' : 's'}
-                </span>
-              </div>
-
               <div className="space-y-3">
                 {conflictosDuros.map((conflicto, i) => (
                   <TarjetaConflicto key={`duro-${i}`} conflicto={conflicto} duro />
