@@ -298,6 +298,32 @@ export function Ambientes() {
  </div>
  )}
 
+ {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato real
+ del backend. Ambiente no tiene campo "piso"; estas pestañas son
+ decorativas (sin onClick) para mostrar el layout del mockup, no filtran
+ nada. Si algún día se agrega piso como campo real, esto pasa a ser
+ interactivo de verdad en vez de solo mostrar P3 como plantilla fija. */}
+ {!cargando && ambientes.length > 0 && (
+ <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-3">
+ {['P1 · Talleres y Bodegas', 'P2 · Aulas Polivalentes', 'P3 · Software, 3D y Cloud', 'P4 · Auditorio y Servidores'].map((piso, indice) => (
+ <span
+ key={piso}
+ className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+ indice === 2 ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'
+ }`}
+ >
+ {piso}
+ </span>
+ ))}
+ <span className="ml-auto flex items-center gap-3 text-xs text-on-surface-variant">
+ <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-primary" />Libre</span>
+ <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-on-surface-variant" />Ocupado</span>
+ <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-error" />Cruce</span>
+ <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-tertiary" />Mant.</span>
+ </span>
+ </div>
+ )}
+
  {mostrarImportar && (
  <ImportarArchivo
  columnas={COLUMNAS_IMPORTAR_AMBIENTE}
@@ -438,6 +464,14 @@ export function Ambientes() {
  <div><dt className="text-on-surface-variant">Número</dt><dd className="mt-1 font-medium text-on-surface">{seleccionado.numeroAmbiente}</dd></div>
  <div><dt className="text-on-surface-variant">Tipo</dt><dd className="mt-1 font-medium capitalize text-on-surface">{seleccionado.tipoAmbiente}</dd></div>
  <div><dt className="text-on-surface-variant">Estado</dt><dd className="mt-1 font-medium capitalize text-on-surface">{seleccionado.estadoAmbiente}</dd></div>
+ {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato real
+ del backend. El modelo Ambiente no tiene capacidad ni equipamiento
+ técnico hoy; no usar estos dos <dd> como si fueran dinámicos sin
+ agregar antes el campo/fetch correspondiente. */}
+ <div className="grid grid-cols-2 gap-4 border-t border-outline-variant pt-4">
+ <div><dt className="text-on-surface-variant">Capacidad total</dt><dd className="mt-1 font-medium text-on-surface">32 aprendices</dd></div>
+ <div><dt className="text-on-surface-variant">Equipamiento técnico</dt><dd className="mt-1 font-medium text-on-surface">Core i7 · 16GB RAM</dd></div>
+ </div>
  </dl>
 
  {conflictoDelSeleccionado && (

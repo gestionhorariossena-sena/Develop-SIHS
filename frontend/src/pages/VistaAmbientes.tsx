@@ -215,6 +215,13 @@ export function VistaAmbientes() {
  </Link>
  </div>
 
+ {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato real
+ del backend (Ambiente no tiene capacidad ni equipamiento técnico hoy). */}
+ <div className="mb-4 grid grid-cols-2 gap-3 rounded-xl border border-outline-variant bg-surface-container-low p-3 text-sm">
+ <div><span className="text-on-surface-variant">Capacidad total</span><p className="font-medium text-on-surface">32 aprendices</p></div>
+ <div><span className="text-on-surface-variant">Equipamiento técnico</span><p className="font-medium text-on-surface">Core i7 · 16GB RAM</p></div>
+ </div>
+
  {(() => {
  const conflicto = conflictosAmbiente.find((c) => c.idAmbiente === seleccionado.idAmbiente)
  if (!conflicto) return null
