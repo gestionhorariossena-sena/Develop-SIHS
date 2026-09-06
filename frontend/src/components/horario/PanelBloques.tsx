@@ -35,8 +35,13 @@ export function PanelBloques({
     <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Bloques de clase</p>
-          <p className="text-xs text-on-surface-variant dark:text-slate-400">Elige uno y haz clic en el grid para asignarlo.</p>
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-on-surface dark:text-slate-100">
+            <span className="material-symbols-outlined text-[18px] text-primary">inventory_2</span>
+            Piezas para Asignar
+          </p>
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
+            {bloques.length} {bloques.length === 1 ? 'bloque listo' : 'bloques listos'} — elige uno y haz clic en el grid.
+          </p>
         </div>
         <button
           type="button"
@@ -61,8 +66,8 @@ export function PanelBloques({
             return (
               <li key={bloque.id}>
                 <div
-                  className={`flex items-center gap-2 rounded-xl border px-2.5 py-2 transition ${
-                    activo ? 'border-sena-600 ring-1 ring-sena-600 dark:bg-slate-700/50' : 'border-outline-variant dark:border-slate-700'
+                  className={`flex items-center gap-2 rounded-xl border px-2.5 py-2.5 transition ${
+                    activo ? 'border-primary ring-1 ring-primary dark:bg-slate-700/50' : 'border-outline-variant dark:border-slate-700'
                   }`}
                 >
                   {confirmando ? (
@@ -107,6 +112,14 @@ export function PanelBloques({
                           </span>
                           <span className="block truncate text-[11px] text-on-surface-variant dark:text-slate-400">
                             {bloque.instructor}
+                          </span>
+                          <span className="mt-1 flex flex-wrap gap-1">
+                            <span className="rounded-full bg-secondary-container px-1.5 py-0.5 text-[10px] font-semibold text-on-secondary-container">
+                              Ficha {bloque.ficha}
+                            </span>
+                            <span className="rounded-full bg-surface-container px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant dark:bg-slate-700">
+                              {bloque.ambiente}
+                            </span>
                           </span>
                         </span>
                       </button>

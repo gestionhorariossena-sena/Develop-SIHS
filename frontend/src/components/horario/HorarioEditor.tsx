@@ -50,6 +50,11 @@ export function HorarioEditor({ bloquesIniciales, gridInicial, onCambiarEstado, 
       </div>
 
       <div className="min-w-0 overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-on-surface dark:text-slate-100">
+          <span className="material-symbols-outlined text-[18px] text-primary">calendar_view_week</span>
+          Lienzo Semanal
+        </div>
+
         {estado.bloqueActivo && (
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-primary-container px-3 py-2 text-xs text-on-primary-container print:hidden">
             <span>

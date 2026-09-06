@@ -364,14 +364,24 @@ export function NuevoHorario() {
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">
-            {datosEdicion ? 'Modificar horario' : 'Nuevo horario'}
-          </h1>
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold text-on-surface dark:text-slate-100">
+              {datosEdicion ? 'Modificar horario' : 'Constructor de Horarios'}
+            </h1>
+            <span className="rounded-full bg-secondary-container px-2.5 py-0.5 text-[11px] font-semibold text-on-secondary-container">
+              {datosEdicion ? 'Modo edición' : 'Nuevo horario'}
+            </span>
+          </div>
           <p className="text-sm text-on-surface-variant dark:text-slate-400">
             {datosEdicion
               ? 'Edita los bloques de este horario completo y guarda — reemplaza las clases originales por las que queden acá, con fecha de creación nueva.'
               : 'Define un bloque de clase eligiendo de los catálogos reales y reutilízalo en el grid — al guardar, el sistema revisa cruces de ficha, instructor, ambiente y resultado repetido antes de crear cada clase.'}
           </p>
+          {catalogos && (
+            <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
+              {catalogos.fichas.length} fichas · {catalogos.instructores.length} instructores · {catalogos.ambientes.length} ambientes disponibles
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-3 print:hidden">
@@ -479,17 +489,24 @@ export function NuevoHorario() {
         </div>
 
         <aside className="flex flex-col gap-4 print:hidden">
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-            <p className="mb-1 text-sm font-semibold text-on-surface dark:text-slate-100">Auditoría de cruces</p>
-            <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
-              Revisa los cruces ya detectados entre horarios guardados de la sede antes de programar más clases.
-            </p>
-            <Link
-              to="/horarios/auditoria"
-              className="inline-flex items-center gap-1 rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface-container-high dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-            >
-              Ver auditoría de cruces →
-            </Link>
+          <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex items-center gap-2 border-b border-outline-variant bg-error-container/40 px-4 py-3 dark:border-slate-700 dark:bg-red-950/20">
+              <span className="material-symbols-outlined text-[18px] text-error dark:text-red-400">shield</span>
+              <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Auditoría en Tiempo Real</p>
+            </div>
+            <div className="p-4">
+              <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
+                Consulta los cruces ya detectados entre horarios guardados de la sede antes de programar más clases —
+                mismas 5 categorías del motor real: cruce de ficha, instructor, ambiente, resultado repetido y regla
+                institucional (RF-011).
+              </p>
+              <Link
+                to="/horarios/auditoria"
+                className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-on-primary-container"
+              >
+                Ver auditoría de cruces →
+              </Link>
+            </div>
           </div>
 
           <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
