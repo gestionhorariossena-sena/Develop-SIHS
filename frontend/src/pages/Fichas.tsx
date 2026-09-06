@@ -469,6 +469,56 @@ export function Fichas() {
         >
           {puedeGestionar && <button type="button" onClick={() => abrirEditar(seleccionada)} className="mb-5 rounded-xl border border-outline px-3 py-1.5 text-sm font-semibold text-on-surface dark:border-slate-700 dark:text-slate-300">Editar ficha</button>}
 
+          {/* Contenido de mockup (Stitch, directorio_de_fichas_sihs_sena) —
+              pendiente de conectar a un dato real del backend. Capacidad de
+              ambiente, vocero aprendiz e historial de cambios son valores
+              fijos de vitrina, no vienen de ningún fetch. No usar como si
+              fuera dinámico sin agregar el campo/endpoint real primero
+              (Ambiente no tiene columna de capacidad; Ficha no tiene vocero;
+              Auditoria no está conectada a cambios de ficha todavía). */}
+          <div className="mb-5 overflow-hidden rounded-xl border border-outline-variant dark:border-slate-700">
+            <div className="relative flex h-28 items-end bg-gradient-to-br from-primary-container to-secondary-container p-3">
+              <span className="material-symbols-outlined absolute right-3 top-3 text-[28px] text-on-primary-container/40" aria-hidden="true">school</span>
+              <span className="rounded-lg bg-inverse-surface/80 px-2 py-1 text-xs font-medium text-inverse-on-surface">
+                {(ambientesPorFicha.get(seleccionada.idFicha) ?? [])[0] ?? 'Ambiente sin asignar'} · Capacidad: 32 Aprendices
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 bg-surface-container-lowest p-3 dark:bg-slate-800">
+              <div><dt className="text-xs text-on-surface-variant dark:text-slate-400">Vocero Aprendiz</dt><dd className="mt-0.5 text-sm font-semibold text-on-surface dark:text-slate-100">Andrés David Rocha</dd></div>
+              <div><dt className="text-xs text-on-surface-variant dark:text-slate-400">Trimestre formativo</dt><dd className="mt-0.5 text-sm font-semibold text-on-surface dark:text-slate-100">{seleccionada.trimestre.nombre} ({etapaFicha(seleccionada)})</dd></div>
+            </div>
+          </div>
+
+          <SeccionDrawer titulo="Historial de cambios recientes">
+            <ul className="space-y-2.5 text-sm">
+              <li className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" /><div><p className="text-on-surface dark:text-slate-100">Reasignación de ambiente a {(ambientesPorFicha.get(seleccionada.idFicha) ?? [])[0] ?? 'nuevo ambiente'}</p><p className="text-xs text-on-surface-variant/70">Ayer, 16:45 por Coordinación Académica</p></div></li>
+              <li className="flex gap-2"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-on-surface-variant/40" /><div><p className="text-on-surface dark:text-slate-100">Ajuste de bloque transversal viernes</p><p className="text-xs text-on-surface-variant/70">14 may., 10:20 por Lic. Pedro Silva</p></div></li>
+            </ul>
+          </SeccionDrawer>
+
+          <div className="mb-5 flex items-center justify-between gap-2 text-sm">
+            <button type="button" disabled title="Aún no implementado en el backend" className="font-semibold text-on-surface-variant/50">Ver plan de estudios</button>
+            <button type="button" disabled title="Aún no implementado en el backend" className="font-semibold text-on-surface-variant/50">Notificar ficha</button>
+          </div>
+
+          <div className="mb-5 flex items-center justify-between gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden="true">contact_mail</span>
+              <div><p className="font-semibold text-on-surface dark:text-slate-100">Contacto vocero</p><p className="text-xs text-on-surface-variant/70">ad_rocha@soy.sena.edu.co</p></div>
+            </div>
+            <button type="button" disabled title="Aún no implementado en el backend" className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant/40">
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">send</span>
+            </button>
+          </div>
+
+          <Link
+            to="/horarios/nuevo"
+            className="mb-5 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
+          >
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit_calendar</span>
+            Abrir en Constructor
+          </Link>
+
           <dl className="space-y-4 text-sm">
             <div><dt className="text-on-surface-variant dark:text-slate-400">Programa</dt><dd className="mt-1 font-medium text-on-surface dark:text-slate-100">{seleccionada.programa.nombrePrograma}</dd></div>
             <div><dt className="text-on-surface-variant dark:text-slate-400">Nivel de formación</dt><dd className="mt-1 font-medium text-on-surface dark:text-slate-100">{nivel(seleccionada)}</dd></div>
