@@ -59,6 +59,7 @@ const NAV: GrupoNav[] = [
       { etiqueta: 'Vista por instructores', ruta: '/vista-instructores', soloGestion: true },
       { etiqueta: 'Vista por ambientes', ruta: '/vista-ambientes', soloGestion: true },
       { etiqueta: 'Calendario general', ruta: '/calendario', soloGestion: true },
+      { etiqueta: 'Auditoría de cruces', ruta: '/horarios/auditoria', soloGestion: true },
     ],
   },
   {
