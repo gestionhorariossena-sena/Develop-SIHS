@@ -261,9 +261,65 @@ export function Fichas() {
     }
   }
 
+  const totalLectiva = fichas.filter((ficha) => etapaFicha(ficha) === 'Lectiva').length
+  const totalAprendices = fichas.reduce((total, ficha) => total + ficha.aprendicesTotales, 0)
+
+  const chips: { etiqueta: string; quitar: () => void }[] = []
+  if (busqueda.trim()) chips.push({ etiqueta: `"${busqueda.trim()}"`, quitar: () => setBusqueda('') })
+  if (programa !== 'todos') chips.push({ etiqueta: programa, quitar: () => setPrograma('todos') })
+  if (nivelFormacion !== 'todos') chips.push({ etiqueta: nivelFormacion, quitar: () => setNivelFormacion('todos') })
+  if (jornada !== 'todas') chips.push({ etiqueta: jornada, quitar: () => setJornada('todas') })
+  if (instructor !== 'todos') chips.push({ etiqueta: instructor, quitar: () => setInstructor('todos') })
+  if (etapa !== 'todas') chips.push({ etiqueta: etapa, quitar: () => setEtapa('todas') })
+
   return (
     <AppShell activo="Fichas">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4"><div><h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Fichas</h1><p className="text-sm text-on-surface-variant dark:text-slate-400">Fichas de formación registradas por programa y trimestre.</p></div><div className="flex items-center gap-2">{puedeGestionar && <button type="button" onClick={abrirCrear} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-on-primary-container">Nueva ficha</button>}<button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="rounded-xl border border-outline px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">{mostrarImportar ? 'Ocultar carga de archivo' : 'Cargar archivo'}</button><p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {fichas.length} fichas</p></div></div>
+      <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant dark:text-slate-400">
+        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <span className="text-outline">/</span>
+        <span className="text-primary">Fichas</span>
+      </nav>
+
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="mb-1 flex flex-wrap items-center gap-2.5">
+            <h1 className="text-2xl font-bold text-on-surface dark:text-slate-100">Directorio de Fichas de Caracterización</h1>
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary-container px-2.5 py-1 text-xs font-semibold text-on-primary-container dark:bg-sena-950/50">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              {fichas.length} fichas activas
+            </span>
+          </div>
+          <p className="max-w-2xl text-sm text-on-surface-variant dark:text-slate-400">Fichas de formación registradas por programa y trimestre — monitoreo de cupos, asignación horaria y ambientes asignados.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {puedeGestionar && <button type="button" onClick={abrirCrear} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-on-primary-container">+ Nueva ficha</button>}
+          <button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="rounded-xl border border-outline px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">{mostrarImportar ? 'Ocultar carga de archivo' : 'Cargar archivo'}</button>
+          <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {fichas.length} fichas</p>
+        </div>
+      </div>
+
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-medium text-on-surface-variant dark:text-slate-400">Total de fichas</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{fichas.length}</p>
+          <p className="mt-0.5 text-xs text-on-surface-variant/70">{visibles.length} coinciden con los filtros</p>
+        </div>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-medium text-on-surface-variant dark:text-slate-400">Fichas en etapa lectiva</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{totalLectiva}</p>
+          <p className="mt-0.5 text-xs text-on-surface-variant/70">{fichas.length ? Math.round((totalLectiva / fichas.length) * 100) : 0}% del total</p>
+        </div>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-medium text-on-surface-variant dark:text-slate-400">Aprendices matriculados</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{totalAprendices}</p>
+          <p className="mt-0.5 text-xs text-on-surface-variant/70">En todas las fichas activas</p>
+        </div>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-medium text-on-surface-variant dark:text-slate-400">Programas formativos</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{programas.length}</p>
+          <p className="mt-0.5 text-xs text-on-surface-variant/70">Distintos en este listado</p>
+        </div>
+      </div>
 
       {mostrarImportar && (
         <ImportarArchivo
@@ -298,8 +354,32 @@ export function Fichas() {
         </div>
       </section>
 
+      {chips.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant/70">Filtros activos:</span>
+          {chips.map((chip) => (
+            <button
+              key={chip.etiqueta}
+              type="button"
+              onClick={chip.quitar}
+              className="inline-flex items-center gap-1.5 rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant hover:bg-surface-container-high dark:bg-slate-700 dark:text-slate-300"
+            >
+              {chip.etiqueta}
+              <span aria-hidden="true">×</span>
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => { setBusqueda(''); setPrograma('todos'); setNivelFormacion('todos'); setJornada('todas'); setInstructor('todos'); setEtapa('todas') }}
+            className="text-xs font-semibold text-primary hover:text-on-primary-container dark:text-sena-400"
+          >
+            Restablecer todo
+          </button>
+        </div>
+      )}
+
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Nivel</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Etapa</th><th className="px-4 py-3">Sede</th><th className="px-4 py-3">Aprendices</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th>{puedeGestionar && <th className="px-4 py-3">Acciones</th>}</tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((ficha) => <tr key={ficha.idFicha} onClick={() => setSeleccionada(ficha)} className="cursor-pointer hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-on-surface dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-on-surface-variant/70">{ficha.programa.codigoPrograma}</p></td><td className="px-4 py-3"><span className="rounded-full bg-primary-container px-2.5 py-1 text-xs font-semibold text-primary dark:bg-sena-950/50">{nivel(ficha)}</span></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{ficha.jornadas.length ? ficha.jornadas.map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-on-surface-variant/70">Sin horario</span>}</div></td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ETAPA_BADGE[etapaFicha(ficha)]}`}>{etapaFicha(ficha)}</span></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{ficha.sede?.nombreSede ?? 'Sin sede'}</td><td className="px-4 py-3 font-medium text-on-surface dark:text-slate-300">{ficha.aprendicesTotales}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{ficha.trimestre.nombre}</td><td className="px-4 py-3"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{ficha.trimestre.estado}</span></td>{puedeGestionar && <td className="px-4 py-3"><button type="button" onClick={(evento) => { evento.stopPropagation(); abrirEditar(ficha) }} className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button></td>}</tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Nivel</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Etapa</th><th className="px-4 py-3">Sede</th><th className="px-4 py-3">Aprendices</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th>{puedeGestionar && <th className="px-4 py-3">Acciones</th>}</tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((ficha) => <tr key={ficha.idFicha} onClick={() => setSeleccionada(ficha)} className="cursor-pointer border-l-4 border-l-transparent hover:border-l-primary hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-on-surface dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-on-surface-variant/70">{ficha.programa.codigoPrograma}</p></td><td className="px-4 py-3"><span className="rounded-full bg-primary-container px-2.5 py-1 text-xs font-semibold text-primary dark:bg-sena-950/50">{nivel(ficha)}</span></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{ficha.jornadas.length ? ficha.jornadas.map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-on-surface-variant/70">Sin horario</span>}</div></td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ETAPA_BADGE[etapaFicha(ficha)]}`}>{etapaFicha(ficha)}</span></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{ficha.sede?.nombreSede ?? 'Sin sede'}</td><td className="px-4 py-3 font-medium text-on-surface dark:text-slate-300">{ficha.aprendicesTotales}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{ficha.trimestre.nombre}</td><td className="px-4 py-3"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{ficha.trimestre.estado}</span></td>{puedeGestionar && <td className="px-4 py-3"><button type="button" onClick={(evento) => { evento.stopPropagation(); abrirEditar(ficha) }} className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button></td>}</tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (
           <div className="flex items-center justify-between border-t border-outline-variant px-4 py-3 dark:border-slate-700">
@@ -327,6 +407,14 @@ export function Fichas() {
           </div>
         )}
       </div>}
+
+      <div className="mt-4 flex items-start gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+        <span className="material-symbols-outlined mt-0.5 text-[20px] text-primary">info</span>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">
+          Las fichas sin franja asignada o con cruces de horario se resuelven desde el{' '}
+          <Link to="/horarios/nuevo" className="font-semibold text-primary hover:text-on-primary-container dark:text-sena-400">Constructor Ágil</Link>.
+        </p>
+      </div>
 
       {puedeGestionar && modalAbierto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-inverse-surface/40 p-4" role="presentation">
