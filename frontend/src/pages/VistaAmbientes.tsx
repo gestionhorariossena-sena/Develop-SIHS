@@ -5,7 +5,7 @@ import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { indexarPorAmbiente, opcionesFichaAmbiente, opcionesInstructor } from '../components/horario/indexarHorarios'
 import { apiGet, ApiError } from '../services/api'
-import type { Ambiente, Horario } from '../types/api'
+import type { AuditoriaConflicto, Ambiente, Horario } from '../types/api'
 
 // Sin variante coordinación (a diferencia de Ambientes.tsx): esta vista solo
 // necesita filtrar por ficha/instructor para encontrar el ambiente, no
@@ -39,6 +39,9 @@ export function VistaAmbientes() {
  // ficha/instructor (no los del ambiente seleccionado, esos son `horarios`
  // arriba, con otro propósito: alimentar el grid).
  const [todosLosHorarios, setTodosLosHorarios] = useState<Horario[]>([])
+ // Mismo barrido real de GET /horarios/auditoria-cruces que usa
+ // Ambientes.tsx, para el aviso de conflicto en el panel de detalle.
+ const [conflictosAmbiente, setConflictosAmbiente] = useState<AuditoriaConflicto[]>([])
 
  useEffect(() => {
  apiGet<Ambiente[]>('/ambientes')
@@ -60,6 +63,10 @@ export function VistaAmbientes() {
 
  apiGet<Horario[]>('/horarios/')
  .then(setTodosLosHorarios)
+ .catch(() => {})
+
+ apiGet<{ conflictos: AuditoriaConflicto[] }>('/horarios/auditoria-cruces')
+ .then((respuesta) => setConflictosAmbiente(respuesta.conflictos))
  .catch(() => {})
  // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idDesdeUrl no cambia en la vida del componente.
  }, [])
@@ -207,6 +214,23 @@ export function VistaAmbientes() {
  Ver info →
  </Link>
  </div>
+
+ {(() => {
+ const conflicto = conflictosAmbiente.find((c) => c.idAmbiente === seleccionado.idAmbiente)
+ if (!conflicto) return null
+ return (
+ <div className="mb-4 rounded-xl border border-error-container bg-error-container p-4">
+ <p className="flex items-center gap-1.5 text-sm font-bold text-on-error-container">
+ <span className="material-symbols-outlined text-[18px]" aria-hidden="true">warning</span>
+ Conflicto de horario detectado
+ </p>
+ <p className="mt-1 text-sm text-on-error-container">{conflicto.mensaje}</p>
+ <Link to="/horarios/auditoria" className="mt-2 inline-block text-sm font-semibold text-on-error-container underline">
+ Ver en Auditoría de Cruces →
+ </Link>
+ </div>
+ )
+ })()}
 
  {cargandoHorarios ? (
  <p className="py-8 text-center text-sm text-on-surface-variant">Cargando horario…</p>

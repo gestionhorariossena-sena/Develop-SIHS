@@ -9,7 +9,7 @@ import { SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/rela
 import { SeccionInstructoresAsignados } from '../components/relacionados/SeccionesFicha'
 import { ImportarArchivo, type ColumnaImportar } from '../components/ImportarArchivo'
 import { apiGet, apiPost, apiPut, ApiError } from '../services/api'
-import type { Ambiente, Coordinacion, DiaSemana, Ficha, Horario, Sede, Usuario } from '../types/api'
+import type { AuditoriaConflicto, Ambiente, Coordinacion, DiaSemana, Ficha, Horario, Sede, Usuario } from '../types/api'
 import type { FilaCsv } from '../utils/csv'
 
 type Orden = 'nombre'| 'sede'| 'estado'
@@ -69,6 +69,12 @@ export function Ambientes() {
  // ficha/coordinación/instructor sin pedir los horarios de cada ambiente
  // uno por uno (mismo patrón que Instructores.tsx/Fichas.tsx).
  const [todosLosHorarios, setTodosLosHorarios] = useState<Horario[]>([])
+ // Barrido real de cruces (GET /horarios/auditoria-cruces) — alimenta el
+ // aviso "Conflicto de horario detectado" del drawer cuando el ambiente
+ // seleccionado aparece en algún conflicto ya guardado. Mismo espíritu que
+ // el panel "EN CONFLICTO" del mockup Stitch, pero con datos reales en vez
+ // de capacidad/equipamiento inventados.
+ const [conflictosAmbiente, setConflictosAmbiente] = useState<AuditoriaConflicto[]>([])
 
  async function cargarAmbientes() {
  const datos = await apiGet<Ambiente[]>('/ambientes')
@@ -98,6 +104,7 @@ export function Ambientes() {
  apiGet<Coordinacion[]>('/coordinaciones/').then(setCoordinaciones).catch(() => {})
  apiGet<Ficha[]>('/fichas/').then(setFichas).catch(() => {})
  apiGet<Horario[]>('/horarios/').then(setTodosLosHorarios).catch(() => {})
+ apiGet<{ conflictos: AuditoriaConflicto[] }>('/horarios/auditoria-cruces').then((respuesta) => setConflictosAmbiente(respuesta.conflictos)).catch(() => {})
 
  // Sin .catch dedicado no rompe nada visible (nombresDias cae a "?"por
  // día si falta el mapa), pero deja una unhandled rejection en tests —
@@ -189,10 +196,18 @@ export function Ambientes() {
  // "ocupación" acá es disponibles/total del grupo, no aforo físico.
  const resumenPorTipo = (['regular', 'especial'] as const).map((tipo) => {
  const delTipo = ambientes.filter((item) => item.tipoAmbiente === tipo)
- const disponibles = delTipo.filter((item) => item.estadoAmbiente === 'disponible').length
- const pctDisponible = delTipo.length > 0 ? Math.round((disponibles / delTipo.length) * 100) : 0
- return { tipo, total: delTipo.length, disponibles, pctDisponible }
+ const disponibles = delTipo.filter((item) => item.estadoAmbiente === 'disponible')
+ const pctDisponible = delTipo.length > 0 ? Math.round((disponibles.length / delTipo.length) * 100) : 0
+ return { tipo, total: delTipo.length, disponibles: disponibles.length, pctDisponible, primerDisponible: disponibles[0] }
  }).filter((item) => item.total > 0)
+
+ // Ocupación pico de la sede (igual concepto que el badge del mockup Stitch,
+ // "92.3% Ocupación Pico"): % de ambientes que NO están disponibles ahora.
+ const ocupacionPico = ambientes.length > 0 ? Math.round(((ambientes.length - ambientes.filter((a) => a.estadoAmbiente === 'disponible').length) / ambientes.length) * 100) : 0
+
+ const conflictoDelSeleccionado = seleccionado
+ ? conflictosAmbiente.find((c) => c.idAmbiente === seleccionado.idAmbiente)
+ : undefined
 
  function abrirCrear() {
  setEditandoId(null)
@@ -235,8 +250,20 @@ export function Ambientes() {
  <AppShell activo="Ambientes">
  <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
  <div>
- <h1 className="mb-1 text-2xl font-bold text-on-surface">Ambientes</h1>
- <p className="text-sm text-on-surface-variant">Ambientes de formación registrados por sede y coordinación.</p>
+ <nav className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
+ <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+ <span>/</span>
+ <span className="text-on-surface">Ambientes</span>
+ </nav>
+ <div className="flex flex-wrap items-center gap-2">
+ <h1 className="text-2xl font-bold text-on-surface">Ambientes</h1>
+ {!cargando && ambientes.length > 0 && (
+ <span className="rounded-full bg-secondary-container px-2.5 py-1 text-xs font-semibold text-on-secondary-container">
+ {ambientes.length} ambientes · {ocupacionPico}% ocupación
+ </span>
+ )}
+ </div>
+ <p className="mt-1 text-sm text-on-surface-variant">Ambientes de formación registrados por sede y coordinación.</p>
  </div>
  <div className="flex items-center gap-2">
  {puedeGestionar && <button type="button"onClick={abrirCrear} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container">Nuevo ambiente</button>}
@@ -261,6 +288,11 @@ export function Ambientes() {
  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
  <div className="h-full rounded-full bg-primary" style={{ width: `${item.pctDisponible}%` }} />
  </div>
+ {item.primerDisponible && (
+ <p className="mt-2 text-xs text-on-surface-variant">
+ Disponible: <span className="font-semibold text-on-surface">{item.primerDisponible.nombreAmbiente} · {item.primerDisponible.numeroAmbiente}</span>
+ </p>
+ )}
  </div>
  ))}
  </div>
@@ -407,6 +439,19 @@ export function Ambientes() {
  <div><dt className="text-on-surface-variant">Tipo</dt><dd className="mt-1 font-medium capitalize text-on-surface">{seleccionado.tipoAmbiente}</dd></div>
  <div><dt className="text-on-surface-variant">Estado</dt><dd className="mt-1 font-medium capitalize text-on-surface">{seleccionado.estadoAmbiente}</dd></div>
  </dl>
+
+ {conflictoDelSeleccionado && (
+ <div className="mb-5 rounded-xl border border-error-container bg-error-container p-4">
+ <p className="flex items-center gap-1.5 text-sm font-bold text-on-error-container">
+ <span className="material-symbols-outlined text-[18px]" aria-hidden="true">warning</span>
+ Conflicto de horario detectado
+ </p>
+ <p className="mt-1 text-sm text-on-error-container">{conflictoDelSeleccionado.mensaje}</p>
+ <Link to="/horarios/auditoria" className="mt-2 inline-block text-sm font-semibold text-on-error-container underline">
+ Ver en Auditoría de Cruces →
+ </Link>
+ </div>
+ )}
 
  {cargandoHorarios ? (
  <SeccionDrawer titulo="Horario semanal">
