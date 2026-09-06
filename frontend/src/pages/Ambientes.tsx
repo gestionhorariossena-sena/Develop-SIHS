@@ -182,6 +182,18 @@ export function Ambientes() {
  const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
  const puedeGestionar = perfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
 
+ // Tarjetas de resumen por tipo (mismo espíritu que el mockup Stitch de
+ // "agrupar por categoría con % de ocupación", pero con datos reales: el
+ // modelo Ambiente solo distingue regular/especial, no hay categorías
+ // nombradas ("Laboratorios Software", etc.) ni capacidad física — así que
+ // "ocupación" acá es disponibles/total del grupo, no aforo físico.
+ const resumenPorTipo = (['regular', 'especial'] as const).map((tipo) => {
+ const delTipo = ambientes.filter((item) => item.tipoAmbiente === tipo)
+ const disponibles = delTipo.filter((item) => item.estadoAmbiente === 'disponible').length
+ const pctDisponible = delTipo.length > 0 ? Math.round((disponibles / delTipo.length) * 100) : 0
+ return { tipo, total: delTipo.length, disponibles, pctDisponible }
+ }).filter((item) => item.total > 0)
+
  function abrirCrear() {
  setEditandoId(null)
  setForm({ ...FORM_VACIO, idSede: sedes[0] ? String(sedes[0].idSede) : ''})
@@ -234,6 +246,25 @@ export function Ambientes() {
  <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant ">{visibles.length} de {ambientes.length} ambientes</p>
  </div>
  </div>
+
+ {resumenPorTipo.length > 0 && !cargando && (
+ <div className="mb-4 grid gap-3 sm:grid-cols-2">
+ {resumenPorTipo.map((item) => (
+ <div key={item.tipo} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+ <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant capitalize">Ambientes {item.tipo}s</p>
+ <div className="mt-1 flex items-baseline justify-between">
+ <p className="text-2xl font-bold text-on-surface">
+ {item.disponibles}<span className="text-base font-medium text-on-surface-variant">/{item.total} disponibles</span>
+ </p>
+ <p className="text-sm font-semibold text-primary">{item.pctDisponible}%</p>
+ </div>
+ <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
+ <div className="h-full rounded-full bg-primary" style={{ width: `${item.pctDisponible}%` }} />
+ </div>
+ </div>
+ ))}
+ </div>
+ )}
 
  {mostrarImportar && (
  <ImportarArchivo
