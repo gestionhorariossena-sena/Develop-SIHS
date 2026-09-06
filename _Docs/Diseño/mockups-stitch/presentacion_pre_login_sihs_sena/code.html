@@ -1,0 +1,419 @@
+<!DOCTYPE html><html class="light" lang="es"><head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>SIHS SENA — Gestión Integral de Horarios Académicos · CGMLTI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=Hanken+Grotesk:wght@500;600;700;800&amp;display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: "#16a34a",
+              soft: "#dcfce7",
+              glow: "rgba(22, 163, 74, 0.12)",
+              dark: "#14532d"
+            },
+            sena: {
+              DEFAULT: "#39a900",
+              dark: "#2b7d00",
+              light: "#eaf7ec"
+            },
+            amber: {
+              DEFAULT: "#d97706",
+              soft: "#fef3c7"
+            },
+            surface: {
+              50: "#f8fafc",
+              100: "#f1f5f9",
+              200: "#e2e8f0",
+              300: "#cbd5e1",
+              800: "#1e293b",
+              900: "#0f172a"
+            }
+          },
+          fontFamily: {
+            sans: ["Geist", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+            display: ["Hanken Grotesk", "Geist", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: linear-gradient(180deg, #eaf7ec 0%, #f4fbf6 240px, #ffffff 780px, #f8fafc 100%);
+      color: #0f172a;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+    }
+    .hero-glow {
+      background: radial-gradient(circle at 50% 30%, rgba(57, 169, 0, 0.08) 0%, rgba(22, 163, 74, 0.03) 50%, transparent 80%);
+    }
+    .pattern-grid {
+      background-image: radial-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800 font-sans selection:bg-emerald-500/20 selection:text-emerald-800 antialiased">
+
+  <!-- 1. HEADER PÚBLICO PRE-LOGIN (Sin navbar de app) -->
+  <header class="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-emerald-100/80 shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-all">
+    <div class="max-w-7xl mx-auto px-6 h-18 py-3.5 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo + SIHS Badge (Institucional) -->
+      <div class="flex items-center gap-3.5">
+        <a href="#" class="flex items-center gap-3 group">
+          <div class="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 shadow-sm group-hover:scale-105 transition-transform">
+            <span class="font-display font-extrabold text-lg tracking-tight text-[#39a900]">S</span>
+          </div>
+          <div class="flex flex-col">
+            <div class="flex items-center gap-2">
+              <span class="font-display font-extrabold text-slate-900 tracking-tight text-lg sm:text-xl">SIHS</span>
+              <span class="text-[10px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">SENA</span>
+            </div>
+            <span class="text-[11px] text-slate-500 font-medium">Sistema Institucional de Horarios</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Sede Sello Sutil (Centro de pantalla/discreto) -->
+      <div class="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100/80 border border-slate-200 text-xs text-slate-600">
+        <span class="w-2 h-2 rounded-full bg-[#16a34a] animate-pulse"></span>
+        <span class="font-medium text-slate-700">CGMLTI Calle 52</span>
+        <span class="text-slate-400">·</span>
+        <span class="text-slate-500">Distrito Capital</span>
+      </div>
+
+      <!-- Pre-login Actions: Iniciar Sesión & Registro -->
+      <div class="flex items-center gap-3">
+        <a href="#login" class="inline-flex items-center justify-center px-4 py-2 rounded-lg text-xs font-semibold text-slate-700 hover:text-emerald-700 hover:bg-emerald-50/80 border border-slate-200 hover:border-emerald-200 transition-all shadow-sm">
+          Iniciar Sesión
+        </a>
+        <a href="#registro" class="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold text-white bg-[#16a34a] hover:bg-[#15803d] transition-all shadow-sm hover:shadow active:scale-95">
+          <span class="material-symbols-outlined text-[15px]">person_add</span>
+          <span class="">Registrarse</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 flex flex-col">
+    
+    <!-- 2. HERO SECTION -->
+    <section class="relative overflow-hidden pt-12 pb-20 lg:pt-20 lg:pb-28 hero-glow">
+      <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          
+          <!-- Hero Left Column: Copy & Actions -->
+          <div class="lg:col-span-7 space-y-6 text-center lg:text-left">
+            
+            <!-- Contextual Sede Badge -->
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/90 border border-emerald-200/90 shadow-sm text-xs text-slate-700">
+              <span class="px-2 py-0.5 rounded-full bg-[#39a900]/15 text-[#2b7d00] font-bold text-[10px] uppercase tracking-wide">Operación Trimestral</span>
+              <span class="text-slate-400">|</span>
+              <span class="font-medium text-slate-700">Centro de Gestión de Mercados, Logística y TI</span>
+            </div>
+
+            <!-- Main Headline (Hanken Grotesk) -->
+            <h1 class="text-3xl sm:text-5xl lg:text-[52px] font-display font-bold text-slate-900 tracking-tight leading-[1.15]">
+              Gestión de horarios académicos, <span class="text-[#16a34a] inline-block">sin cruces</span> ni sorpresas.
+            </h1>
+
+            <!-- Subtitle (Geist) -->
+            <p class="text-base sm:text-lg text-slate-600 font-normal leading-relaxed max-w-2xl mx-auto lg:mx-0">
+              Plataforma institucional de programación formativa para el <strong class="text-slate-900 font-semibold">CGMLTI Calle 52</strong>. Centraliza la asignación de fichas, disponibilidad docente, ambientes especializados y auditoría preventiva en tiempo real.
+            </p>
+
+            <!-- Hero Action Buttons -->
+            <div class="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5">
+              <a href="#login" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-sm font-semibold shadow-md hover:shadow-lg transition-all active:scale-95 group">
+                <span class="">Iniciar Sesión en SIHS</span>
+                <span class="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+              </a>
+              <a href="#features" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-sm font-semibold border border-slate-200 shadow-sm transition-all hover:border-slate-300">
+                <span class="material-symbols-outlined text-[18px] text-slate-500">info</span>
+                <span class="">Conocer más funcionalidades</span>
+              </a>
+            </div>
+
+            <!-- Micro Metrics Pill Bar -->
+            <div class="pt-4 flex items-center justify-center lg:justify-start gap-6 text-xs text-slate-500">
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-emerald-600 text-[18px]">verified</span>
+                <span class="">100% Reglas SENA RF-011</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-emerald-600 text-[18px]">bolt</span>
+                <span class="">Detección Inmediata</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-emerald-600 text-[18px]">visibility</span>
+                <span class="">Consulta Multi-perspectiva</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Hero Right Column: UI Preview Mockup (Clean & Institutional) -->
+          <div class="lg:col-span-5">
+            <div class="relative mx-auto max-w-md lg:max-w-none">
+              
+              <!-- Ambient Blur Backdrop Glow -->
+              <div class="absolute -inset-1 rounded-2xl bg-gradient-to-tr from-emerald-500/20 via-teal-400/10 to-amber-300/20 blur-xl opacity-80"></div>
+              
+              <!-- Floating Card Container -->
+              <div class="relative rounded-2xl bg-white border border-slate-200/90 shadow-xl overflow-hidden">
+                
+                <!-- Mockup Window Chrome -->
+                <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between text-xs">
+                  <div class="flex items-center gap-1.5">
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-300"></div>
+                    <span class="ml-2 font-mono text-[11px] text-slate-500 font-medium">sihs.sena.edu.co/cierre-matriz</span>
+                  </div>
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                    Sincronizado
+                  </span>
+                </div>
+
+                <!-- Mockup Content Pane (Miniatura real del sistema) -->
+                <div class="p-5 space-y-4">
+                  
+                  <!-- Top Row Mini Stats -->
+                  <div class="grid grid-cols-2 gap-2.5"><div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><div class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Programación Académica</div><div class="text-sm font-display font-bold text-slate-900 mt-1">Matriz Centralizada</div><div class="text-[10px] text-emerald-700 font-medium mt-0.5 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">check_circle</span> Optimización en línea</div></div><div class="p-3 rounded-xl bg-slate-50 border border-slate-200"><div class="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Auditoría Automática</div><div class="text-sm font-display font-bold text-slate-900 mt-1">Validación Inmediata</div><div class="text-[10px] text-slate-500 font-medium mt-0.5 flex items-center gap-1"><span class="material-symbols-outlined text-[12px]">bolt</span> Control en tiempo real</div></div></div>
+
+                  <!-- Alert Simulation Banner (Suave, ámbar institucional) -->
+                  <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5 text-xs"><span class="material-symbols-outlined text-[17px] text-amber-600 shrink-0 mt-0.5">crisis_alert</span><div class="min-w-0"><div class="flex items-center gap-1.5"><span class="font-semibold text-amber-950 text-[11px]">Auditoría Preventiva SIHS</span><span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-200 text-amber-900">control_activo</span></div><div class="text-[10px] text-amber-800 mt-0.5 leading-snug">Prevención activa de cruces de horario, ambientes e instructores bajo norma RF-011.</div></div></div>
+
+                  <!-- Schedule Grid Mock Snippet -->
+                  <div class="rounded-xl border border-slate-200 bg-white overflow-hidden text-xs"><div class="bg-slate-100/70 px-3 py-2 border-b border-slate-200 font-semibold text-slate-700 text-[11px] flex justify-between"><span class="">Malla Semanal · Ficha Demostrativa</span><span class="text-emerald-700 font-mono text-[10px]">Programa Formativo</span></div><div class="p-2.5 space-y-2"><div class="p-2 rounded-lg bg-emerald-50/80 border border-emerald-200 flex items-center justify-between"><div><div class="font-semibold text-emerald-950 text-[11px]">Lunes 06:00 – 12:00</div><div class="text-[10px] text-slate-600">Módulo Técnico · Ambiente Especializado</div></div><span class="px-2 py-0.5 rounded text-[9px] font-semibold bg-emerald-200 text-emerald-800">Verificado</span></div><div class="p-2 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between"><div><div class="font-semibold text-slate-800 text-[11px]">Martes 06:00 – 12:00</div><div class="text-[10px] text-slate-600">Sesión Teórico-Práctica · Aula / Laboratorio</div></div><span class="px-2 py-0.5 rounded text-[9px] font-medium bg-slate-200 text-slate-700">En cronograma</span></div></div></div>
+
+                </div>
+
+                <!-- Mockup Bottom Bar -->
+                <div class="px-4 py-2.5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                  <span class="flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    Reglas de negocio activas
+                  </span>
+                  <span class="font-mono text-[10px]">CGMLTI · Calle 52</span>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. SECCIÓN DE FUNCIONALIDADES REALES (3-4 tarjetas basadas exactamente en lo construido) -->
+    <section id="features" class="py-16 sm:py-24 bg-white border-y border-slate-200/80">
+      <div class="max-w-7xl mx-auto px-6 space-y-12">
+        
+        <!-- Section Header -->
+        <div class="text-center max-w-3xl mx-auto space-y-3">
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold">
+            <span class="material-symbols-outlined text-[15px]">settings_suggest</span>
+            <span class="">Módulos Operativos Validados</span>
+          </div>
+          <h2 class="text-2xl sm:text-4xl font-display font-bold text-slate-900 tracking-tight">
+            Diseñado para la realidad operativa del centro
+          </h2>
+          <p class="text-sm sm:text-base text-slate-600 leading-relaxed">
+            Herramientas especializadas para coordinadores e instructores que eliminan la fricción y garantizan el cumplimiento de la normativa institucional.
+          </p>
+        </div>
+
+        <!-- 4 Real Feature Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          
+          <!-- Feature 1: Constructor de Horarios -->
+          <div class="p-6 rounded-xl bg-surface-50 border border-slate-200 hover:border-emerald-300 hover:shadow-lg transition-all group flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-emerald-100/70 border border-emerald-200 flex items-center justify-center text-emerald-700 mb-5 group-hover:scale-110 group-hover:bg-[#16a34a] group-hover:text-white transition-all">
+                <span class="material-symbols-outlined text-[26px]">tune</span>
+              </div>
+              <h3 class="text-base font-display font-bold text-slate-900 mb-2">
+                Constructor de Horarios
+              </h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Arma la programación semanal con detección automática de cruces de ficha, instructor y ambiente, con validación estricta del tope de horas según tipo de contrato (RF-011: 32h contratista / 40h planta).
+              </p>
+            </div>
+            <div class="pt-5 mt-5 border-t border-slate-200/80 flex items-center justify-between text-xs">
+              <span class="text-[11px] font-mono text-emerald-800 font-semibold bg-emerald-100/60 px-2 py-0.5 rounded">Norma RF-011</span>
+              <span class="text-slate-400 group-hover:text-emerald-700 transition-colors material-symbols-outlined text-[16px]">arrow_forward</span>
+            </div>
+          </div>
+
+          <!-- Feature 2: Auditoría de Cruces -->
+          <div class="p-6 rounded-xl bg-surface-50 border border-slate-200 hover:border-amber-300 hover:shadow-lg transition-all group flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-amber-100/70 border border-amber-200 flex items-center justify-center text-amber-700 mb-5 group-hover:scale-110 group-hover:bg-amber-600 group-hover:text-white transition-all">
+                <span class="material-symbols-outlined text-[26px]">verified_user</span>
+              </div>
+              <h3 class="text-base font-display font-bold text-slate-900 mb-2">
+                Auditoría de Cruces
+              </h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Barrido continuo de conflictos guardados, clasificados por tipología (<code class="text-[11px] font-mono text-amber-900 bg-amber-50 px-1 py-0.5 rounded">cruce_ambiente</code>, <code class="text-[11px] font-mono text-amber-900 bg-amber-50 px-1 py-0.5 rounded">cruce_instructor</code>, <code class="text-[11px] font-mono text-amber-900 bg-amber-50 px-1 py-0.5 rounded">cruce_ficha</code>), con acceso directo a resolverlos en el Constructor Ágil.
+              </p>
+            </div>
+            <div class="pt-5 mt-5 border-t border-slate-200/80 flex items-center justify-between text-xs">
+              <span class="text-[11px] font-mono text-amber-800 font-semibold bg-amber-100/70 px-2 py-0.5 rounded">5 Tipologías</span>
+              <span class="text-slate-400 group-hover:text-amber-700 transition-colors material-symbols-outlined text-[16px]">arrow_forward</span>
+            </div>
+          </div>
+
+          <!-- Feature 3: Vistas por Instructor, Ficha y Ambiente -->
+          <div class="p-6 rounded-xl bg-surface-50 border border-slate-200 hover:border-emerald-300 hover:shadow-lg transition-all group flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-emerald-100/70 border border-emerald-200 flex items-center justify-center text-emerald-700 mb-5 group-hover:scale-110 group-hover:bg-[#16a34a] group-hover:text-white transition-all">
+                <span class="material-symbols-outlined text-[26px]">calendar_view_week</span>
+              </div>
+              <h3 class="text-base font-display font-bold text-slate-900 mb-2">
+                Vistas de Horarios Multi-perspectiva
+              </h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Consulta integral y supervisión académica desde cualquier ángulo: matriz general de la sede, filtro directo por docente, agenda de ficha formativa o mapa de ocupación física por laboratorio y taller.
+              </p>
+            </div>
+            <div class="pt-5 mt-5 border-t border-slate-200/80 flex items-center justify-between text-xs">
+              <span class="text-[11px] font-mono text-emerald-800 font-semibold bg-emerald-100/60 px-2 py-0.5 rounded">4 Perspectivas</span>
+              <span class="text-slate-400 group-hover:text-emerald-700 transition-colors material-symbols-outlined text-[16px]">arrow_forward</span>
+            </div>
+          </div>
+
+          <!-- Feature 4: Mi Horario -->
+          <div class="p-6 rounded-xl bg-surface-50 border border-slate-200 hover:border-emerald-300 hover:shadow-lg transition-all group flex flex-col justify-between">
+            <div>
+              <div class="w-12 h-12 rounded-xl bg-emerald-100/70 border border-emerald-200 flex items-center justify-center text-emerald-700 mb-5 group-hover:scale-110 group-hover:bg-[#16a34a] group-hover:text-white transition-all">
+                <span class="material-symbols-outlined text-[26px]">badge</span>
+              </div>
+              <h3 class="text-base font-display font-bold text-slate-900 mb-2">
+                Mi Horario (Portal Docente)
+              </h3>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Autoservicio para que cada instructor consulte su programación semanal consolidada, descargue su horario en formato PDF oficial y radique solicitudes formales de cambio o novedad con trazabilidad.
+              </p>
+            </div>
+            <div class="pt-5 mt-5 border-t border-slate-200/80 flex items-center justify-between text-xs">
+              <span class="text-[11px] font-mono text-emerald-800 font-semibold bg-emerald-100/60 px-2 py-0.5 rounded">Autoservicio</span>
+              <span class="text-slate-400 group-hover:text-emerald-700 transition-colors material-symbols-outlined text-[16px]">arrow_forward</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 4. FRANJA INSTITUCIONAL (Servicio Nacional de Aprendizaje SENA · CGMLTI Calle 52) -->
+    <section class="py-12 bg-gradient-to-r from-emerald-900 via-[#14532d] to-slate-900 text-white relative overflow-hidden">
+      <!-- Decorative background accent -->
+      <div class="absolute inset-0 opacity-10 pattern-grid pointer-events-none"></div>
+      
+      <div class="max-w-7xl mx-auto px-6 relative z-10">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+          
+          <!-- Logo SENA + Entidad -->
+          <div class="flex items-center gap-4 text-center md:text-left">
+            <div class="w-12 h-12 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
+              <span class="font-display font-extrabold text-2xl text-[#7ffc97]">S</span>
+            </div>
+            <div>
+              <div class="text-base sm:text-lg font-display font-bold tracking-tight text-white">
+                Servicio Nacional de Aprendizaje — SENA
+              </div>
+              <div class="text-xs sm:text-sm text-emerald-200 font-normal">
+                Regional Distrito Capital · Centro de Gestión de Mercados, Logística y Tecnologías de la Información (CGMLTI)
+              </div>
+              <div class="text-[11px] text-emerald-300/80 mt-0.5 font-mono">
+                Sede Principal Calle 52 No. 13-65 · Bogotá D.C.
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Access CTA Button -->
+          <div class="flex items-center gap-3 shrink-0">
+            <a href="#login" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-emerald-900 font-semibold text-xs hover:bg-emerald-50 transition-all shadow-md active:scale-95">
+              <span class="material-symbols-outlined text-[16px] text-emerald-700">login</span>
+              <span class="">Ingresar al Sistema</span>
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. CALL TO ACTION PRE-LOGIN (Transición directa a Login/Registro) -->
+    <section id="login" class="py-16 bg-surface-50 border-b border-slate-200">
+      <div class="max-w-4xl mx-auto px-6 text-center space-y-6">
+        <span class="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-block">
+          Acceso Autorizado
+        </span>
+        <h2 class="text-2xl sm:text-3xl font-display font-bold text-slate-900 tracking-tight">
+          ¿Listo para ingresar a tu programación académica?
+        </h2>
+        <p class="text-xs sm:text-sm text-slate-600 max-w-xl mx-auto leading-relaxed">
+          Si eres coordinador académico o instructor del CGMLTI Calle 52, inicia sesión con tus credenciales asignadas o radique tu registro para validación de especialidad.
+        </p>
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+          <a href="#" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-semibold shadow-sm hover:shadow transition-all">
+            <span class="material-symbols-outlined text-[16px]">account_circle</span>
+            <span class="">Iniciar Sesión (Coordinación / Instructor)</span>
+          </a>
+          <a id="registro" href="#" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-200 shadow-sm transition-all">
+            <span class="material-symbols-outlined text-[16px] text-slate-500">how_to_reg</span>
+            <span class="">Solicitar Registro Docente</span>
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 6. FOOTER INSTITUCIONAL (Enlaces idénticos al resto de la suite) -->
+  <footer class="bg-white border-t border-slate-200 py-6 text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+      
+      <!-- Brand & Entity Copyright -->
+      <div class="flex items-center gap-2 text-center sm:text-left">
+        <span class="w-5 h-5 rounded bg-emerald-600 text-white font-bold flex items-center justify-center text-[10px]">S</span>
+        <span class="font-medium text-slate-700">CGMLTI Calle 52</span>
+        <span class="text-slate-300">·</span>
+        <span class="">Regional Distrito Capital · Servicio Nacional de Aprendizaje SENA</span>
+      </div>
+
+      <!-- Footer Shared Links -->
+      <div class="flex items-center gap-6">
+        <a href="#ayuda" class="text-slate-600 hover:text-emerald-700 transition-colors font-medium">
+          Mesa de Ayuda Académica
+        </a>
+        <a href="#normativa" class="text-slate-600 hover:text-emerald-700 transition-colors font-medium">
+          Términos y Normativa
+        </a>
+        <span class="font-mono text-[11px] text-slate-400">
+          Versión 3.8.4
+        </span>
+      </div>
+
+    </div>
+  </footer>
+
+
+
+
+
+</body></html>
