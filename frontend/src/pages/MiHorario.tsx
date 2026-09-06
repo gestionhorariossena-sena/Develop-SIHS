@@ -91,14 +91,19 @@ const ETIQUETA_CONTRATO: Record<string, string> = {
  * Layout reconstruido sobre el mockup Stitch "Mi Horario" — el badge de
  * tipo de contrato y el tope de "Carga Lectiva Semanal" usan
  * `perfil.tipoContrato`/`horasContratadasSemana` (GET /usuarios/me), ya
- * reales; el mockup mostraba además "Ambiente Actual" y una fecha de
- * "última sincronización con SOFIA Plus/SINERGIA" que no tienen ningún
- * dato real detrás — se omiten en vez de inventarlos.
+ * reales.
  *
  * "Mis fichas asignadas" y "Carga semanal" son resúmenes derivados de los
  * mismos horarios ya cargados — no hay endpoint nuevo. "Solicitar cambio
  * de horario" queda deshabilitado: no existe todavía tabla ni endpoint de
  * solicitudes de instructor en el backend.
+ *
+ * Contenido de mockup (Stitch) — pendiente de conectar a un dato real del
+ * backend. No usar como si fuera dinámico sin agregar el fetch/campo
+ * correspondiente primero: "Ambiente Actual", la navegación entre semanas,
+ * "Última sincronización con SOFIA Plus/SINERGIA", y el desglose "En Aula/
+ * Taller" vs "Asesoría/Proyectos" de la carga semanal (el total sí es
+ * real, el desglose por tipo no existe en el backend).
  */
 export function MiHorario() {
   const [horarios, setHorarios] = useState<Horario[] | null>(null)
@@ -175,12 +180,48 @@ export function MiHorario() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-2 text-center">
-            <p className="text-[11px] font-medium uppercase tracking-wide text-on-surface-variant">Horas semanales</p>
-            <p className="text-lg font-bold text-on-surface">{horarios ? horasSemanales : '—'} h activas</p>
+          <div className="flex gap-3">
+            <div className="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-2 text-center">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-on-surface-variant">Horas semanales</p>
+              <p className="text-lg font-bold text-on-surface">{horarios ? horasSemanales : '—'} h activas</p>
+            </div>
+
+            {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
+                real del backend. No hay endpoint de "ambiente actual/en
+                sesión ahora mismo" para un instructor, es un valor fijo de
+                ejemplo. */}
+            <div className="rounded-xl border border-outline-variant bg-surface-container-low px-4 py-2 text-center">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-on-surface-variant">Ambiente actual</p>
+              <p className="text-lg font-bold text-on-surface">Laboratorio 302</p>
+            </div>
           </div>
         </div>
       )}
+
+      {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato real
+          del backend: no hay endpoint que traiga otras semanas, así que la
+          navegación queda deshabilitada en vez de fingir que funciona. */}
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex items-center gap-1 rounded-xl border border-outline-variant bg-surface-container-lowest p-1">
+          <button
+            type="button"
+            disabled
+            title="Aún no implementado en el backend"
+            className="flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-lg text-on-surface-variant/50"
+          >
+            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
+          </button>
+          <span className="px-2 text-xs font-semibold text-on-surface">Semana actual</span>
+          <button
+            type="button"
+            disabled
+            title="Aún no implementado en el backend"
+            className="flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-lg text-on-surface-variant/50"
+          >
+            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+          </button>
+        </div>
+      </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTROS_JORNADA.map((filtro) => (
@@ -201,9 +242,19 @@ export function MiHorario() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 lg:col-span-2">
-          <div className="mb-3 px-1">
-            <h2 className="text-base font-semibold text-on-surface">Calendario Semanal de Formación</h2>
-            <p className="text-xs text-on-surface-variant">Franjas oficiales de formación presencial y asesorías</p>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 px-1">
+            <div>
+              <h2 className="text-base font-semibold text-on-surface">Calendario Semanal de Formación</h2>
+              <p className="text-xs text-on-surface-variant">Franjas oficiales de formación presencial y asesorías</p>
+            </div>
+
+            {/* Contenido de mockup (Stitch) — leyenda de referencia visual,
+                no distingue nada que GridHorario modele hoy (no hay estado
+                "en sesión ahora mismo" vs. "programado"). */}
+            <div className="flex items-center gap-3 text-[11px] font-medium text-on-surface-variant">
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />En sesión</span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-300" />Programado</span>
+            </div>
           </div>
 
           {!horarios && !error ? (
@@ -217,6 +268,25 @@ export function MiHorario() {
           ) : (
             <GridHorario bloques={bloques} grid={grid} hayBloqueActivo={false} soloLectura />
           )}
+
+          {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
+              real del backend. No existe integración con SOFIA Plus/SINERGIA
+              todavía; "Actualizar datos" queda deshabilitado. */}
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant px-1 pt-3 text-xs text-on-surface-variant">
+            <span className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[16px]">info</span>
+              Última sincronización con SOFIA Plus / SINERGIA: Hoy a las 07:15 a. m.
+            </span>
+            <button
+              type="button"
+              disabled
+              title="Aún no implementado en el backend"
+              className="flex cursor-not-allowed items-center gap-1 font-semibold text-on-surface-variant/50"
+            >
+              <span className="material-symbols-outlined text-[16px]">sync</span>
+              Actualizar datos
+            </button>
+          </div>
         </div>
 
         <div className="flex flex-col gap-6">
@@ -244,6 +314,21 @@ export function MiHorario() {
                 />
               </div>
             )}
+
+            {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
+                real del backend. El total de arriba SÍ es real; este
+                desglose por tipo de actividad (aula/taller vs. asesoría) no
+                existe en el backend — son valores fijos de ejemplo. */}
+            <div className="mt-4 grid grid-cols-2 gap-3 border-t border-outline-variant pt-3">
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-on-surface-variant">En aula / taller</p>
+                <p className="text-sm font-bold text-on-surface">30 horas</p>
+              </div>
+              <div>
+                <p className="text-[11px] font-medium uppercase tracking-wide text-on-surface-variant">Asesoría / proyectos</p>
+                <p className="text-sm font-bold text-on-surface">4 horas</p>
+              </div>
+            </div>
           </div>
 
           <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
