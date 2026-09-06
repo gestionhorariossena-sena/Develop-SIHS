@@ -194,10 +194,30 @@ export function AprobarlicitarSolicitudes() {
             </p>
           </div>
         </div>
-        <span className="inline-flex items-center gap-2 rounded-full bg-tertiary-container px-4 py-1.5 text-sm font-semibold text-on-tertiary-container">
-          <span className="h-2 w-2 rounded-full bg-tertiary" />
-          {usuariosSinRol.length} pendiente{usuariosSinRol.length !== 1 ? 's' : ''} de aprobación
-        </span>
+        <div className="flex items-center gap-3">
+          {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
+              real del backend (no hay métrica de tiempo de resolución ni de
+              "eficiencia de matriz" hoy). No usar como si fuera dinámico sin
+              agregar el endpoint/cálculo correspondiente primero. */}
+          <div className="hidden items-center gap-1.5 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-1.5 dark:border-slate-700 dark:bg-slate-800 sm:flex">
+            <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-on-surface-variant">timer</span>
+            <div className="leading-tight">
+              <p className="text-sm font-bold text-on-surface dark:text-slate-100">14 min</p>
+              <p className="text-[11px] text-on-surface-variant dark:text-slate-400">Resolución prom.</p>
+            </div>
+          </div>
+          <div className="hidden items-center gap-1.5 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-1.5 dark:border-slate-700 dark:bg-slate-800 sm:flex">
+            <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-primary">verified</span>
+            <div className="leading-tight">
+              <p className="text-sm font-bold text-on-surface dark:text-slate-100">94.2%</p>
+              <p className="text-[11px] text-on-surface-variant dark:text-slate-400">Eficiencia matriz</p>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-2 rounded-full bg-tertiary-container px-4 py-1.5 text-sm font-semibold text-on-tertiary-container">
+            <span className="h-2 w-2 rounded-full bg-tertiary" />
+            {usuariosSinRol.length} pendiente{usuariosSinRol.length !== 1 ? 's' : ''} de aprobación
+          </span>
+        </div>
       </div>
 
       {/* Mensaje de éxito */}
