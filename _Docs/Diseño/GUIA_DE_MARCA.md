@@ -141,6 +141,27 @@ Material Symbols, usar el más parecido antes de volver a SVG a mano.
   Login/Registro/Recuperar, reskineado a los mismos tokens (logo `h-12 w-12`,
   tarjeta centrada), sin navbar porque esas pantallas no tienen sesión
   todavía.
+- **`frontend/src/pages/Presentacion.tsx`** — página pública en `/`, antes de
+  iniciar sesión. Header propio (sin `AppShell`, sin sesión todavía) + hero +
+  tarjetas de funcionalidades + franja institucional + CTA final. Réplica de
+  `mockups-stitch/presentacion_pre_login_sihs_sena/`. Todo el contenido es de
+  mercadeo/navegación real (`Link` a `/login` y `/registro`) — no pide nada
+  al backend, no le agregues fetches.
+
+## Contenido de vitrina pendiente de conectar
+
+El rediseño 2026-09-06 priorizó fidelidad visual completa a los mockups de
+Stitch por pedido explícito del usuario, incluso donde el backend todavía no
+tiene el dato real detrás. Esos casos quedaron como **contenido estático
+hardcodeado**, cada uno marcado en el código con el comentario `// Contenido
+de mockup (Stitch) — pendiente de conectar a un dato real del backend`
+(buscar ese texto literal encuentra los 16 casos actuales). Ningún control
+sobre ese contenido finge funcionar — si implicaba una acción, quedó
+`disabled` con `title="Aún no implementado en el backend"`.
+
+Ver `backend/OBJETIVO_Y_SERVICIOS_FALTANTES.md` → sección "Contenido de
+vitrina del frontend" para el detalle de qué haría falta en el backend para
+reemplazar cada uno por un dato real.
 
 ## Cómo usar esta guía
 
