@@ -117,8 +117,8 @@ export function Registro() {
 
   return (
     <AuthLayout>
-      <h1 className="mb-2 text-2xl font-bold text-slate-900 dark:text-slate-100">Crear cuenta</h1>
-      <p className="mb-6 text-sm text-slate-500 dark:text-slate-400">
+      <h1 className="mb-2 text-2xl font-bold text-on-surface dark:text-slate-100">Crear cuenta</h1>
+      <p className="mb-6 text-sm text-on-surface-variant dark:text-slate-400">
         Tu solicitud será validada por la coordinación académica del centro.
       </p>
 
@@ -144,14 +144,14 @@ export function Registro() {
 
         <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label htmlFor="tipoDocumento" className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">
+            <label htmlFor="tipoDocumento" className="mb-1.5 block text-sm font-medium text-on-surface-variant dark:text-slate-300">
               Tipo de documento
             </label>
             <select
               id="tipoDocumento"
               value={tipoDocumento}
               onChange={(e) => setTipoDocumento(e.target.value as TipoDocumento)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-slate-900 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3.5 py-2.5 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             >
               <option value="CC">Cédula de ciudadanía</option>
               <option value="CE">Cédula de extranjería</option>
@@ -208,7 +208,7 @@ export function Registro() {
         </div>
 
         <div className="mb-4">
-          <p id="rol-label" className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+          <p id="rol-label" className="mb-2 text-sm font-medium text-on-surface-variant dark:text-slate-300">
             Selecciona tu rol
           </p>
           <div role="radiogroup" aria-labelledby="rol-label" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -221,12 +221,12 @@ export function Registro() {
                 onClick={() => setRol(opcion)}
                 className={`rounded-xl border px-4 py-3 text-left transition-all ${
                   rol === opcion
-                    ? 'border-sena-600 bg-sena-50 shadow-sm ring-1 ring-sena-600 dark:bg-sena-950/50'
-                    : 'border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'
+                    ? 'border-primary bg-primary-container shadow-sm ring-1 ring-primary dark:bg-sena-950/50'
+                    : 'border-outline bg-surface-container-lowest hover:border-outline-variant hover:bg-surface-container-low dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'
                 }`}
               >
-                <span className="block text-base font-semibold text-slate-900 dark:text-slate-100">{opcion}</span>
-                <span className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                <span className="block text-base font-semibold text-on-surface dark:text-slate-100">{opcion}</span>
+                <span className="mt-1 block text-xs text-on-surface-variant dark:text-slate-400">
                   {opcion === 'Coordinador'
                     ? 'Programa y aprueba'
                     : opcion === 'Instructor'
@@ -240,7 +240,7 @@ export function Registro() {
 
         {rol === 'Instructor' && (
           <div className="space-y-3">
-            <div className="rounded-xl border border-sena-200 bg-sena-50 px-3 py-2 text-sm text-sena-800">
+            <div className="rounded-xl border border-primary/30 bg-primary-container px-3 py-2 text-sm text-on-primary-container">
               El código de instructor lo entrega la coordinación y debe coincidir con el generado
               para el registro del docente.
             </div>
@@ -286,19 +286,19 @@ export function Registro() {
           </div>
         )}
 
-        <label className="mb-5 flex items-start gap-2 text-sm text-slate-600">
+        <label className="mb-5 flex items-start gap-2 text-sm text-on-surface-variant">
           <input
             type="checkbox"
             checked={aceptaPolitica}
             onChange={(e) => setAceptaPolitica(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sena-600"
+            className="mt-0.5 h-4 w-4 rounded border-outline text-primary"
           />
           Acepto el tratamiento de mis datos personales conforme a la política institucional del
           SENA.
         </label>
 
         {error && (
-          <p role="alert" className="mb-4 text-sm text-red-600">
+          <p role="alert" className="mb-4 text-sm text-error">
             {error}
           </p>
         )}
@@ -306,15 +306,15 @@ export function Registro() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
+          className="w-full rounded-xl bg-primary py-3 font-semibold text-on-primary transition hover:bg-on-primary-container disabled:opacity-60"
         >
           {loading ? 'Enviando…' : 'Registrarme'}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-on-surface-variant">
         Ya tengo cuenta ·{' '}
-        <Link to="/login" className="font-semibold text-sena-700 hover:underline">
+        <Link to="/login" className="font-semibold text-primary hover:underline">
           Iniciar sesión
         </Link>
       </p>

@@ -95,8 +95,8 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded px-2 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>Horario #{horario.idHorario}</span>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">Jornada {jornada ?? 'sin definir'}</span>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">{trimestre?.nombre ?? 'Sin trimestre'}</span>
+          <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">Jornada {jornada ?? 'sin definir'}</span>
+          <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">{trimestre?.nombre ?? 'Sin trimestre'}</span>
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeEstadoPublicacion(horario.publicado)}`}>
             {horario.publicado ? 'Publicado' : 'Borrador'}
           </span>
@@ -107,18 +107,18 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
             onClick={() => void alternarPublicado()}
             disabled={publicando}
             title={horario.publicado ? 'Deja de mostrarse en "Mi horario" para el instructor' : 'A partir de ahora el instructor lo ve en "Mi horario"'}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+            className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             {publicando ? 'Guardando…' : horario.publicado ? 'Despublicar' : 'Publicar'}
           </button>
           <Link
             to={`/horarios/historial?id=${horario.idHorario}`}
             title="El historial todavía no distingue horarios individuales — se está rediseñando como registro de cambios, por ahora esto abre el listado general."
-            className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400"
+            className="text-sm font-medium text-primary hover:text-on-primary-container dark:text-sena-400"
           >
             Detalles de creación / Modificar →
           </Link>
-          <button type="button" onClick={onCerrar} className="text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
+          <button type="button" onClick={onCerrar} className="text-sm font-medium text-on-surface-variant hover:text-on-surface dark:text-slate-400 dark:hover:text-slate-100">
             Cerrar
           </button>
         </div>
@@ -129,11 +129,11 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
       </SeccionDrawer>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ficha</p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{horario.fichaCodigo ?? 'Sin definir'}</p>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Ficha</p>
+          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.fichaCodigo ?? 'Sin definir'}</p>
           {ficha ? (
-            <dl className="mt-1.5 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+            <dl className="mt-1.5 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
               <div>{ficha.programa.nombrePrograma} ({ficha.programa.codigoPrograma})</div>
               <div>Nivel: {ficha.programa.nivelFormacion ?? 'Sin definir'}</div>
               <div>Trimestre: {ficha.trimestre.nombre} ({ficha.trimestre.fechaInicio} a {ficha.trimestre.fechaFin})</div>
@@ -141,39 +141,39 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
               <div>Jornadas de la ficha: {ficha.jornadas.length ? ficha.jornadas.join(', ') : 'Sin horario'}</div>
             </dl>
           ) : (
-            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Sin más datos disponibles.</p>
+            <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-400">Sin más datos disponibles.</p>
           )}
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-slate-100 pt-2 dark:border-slate-700">
-            <Link to={`/fichas?id=${horario.idFicha}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Más info →</Link>
-            <Link to={`/vista-fichas?id=${horario.idFicha}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Ver horario por ficha →</Link>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-outline-variant pt-2 dark:border-slate-700">
+            <Link to={`/fichas?id=${horario.idFicha}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Más info →</Link>
+            <Link to={`/vista-fichas?id=${horario.idFicha}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Ver horario por ficha →</Link>
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Instructor</p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{horario.instructorNombre ?? 'Sin definir'}</p>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Instructor</p>
+          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.instructorNombre ?? 'Sin definir'}</p>
           {instructor ? (
-            <dl className="mt-1.5 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+            <dl className="mt-1.5 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
               <div>{instructor.email}</div>
               <div>Contrato: {instructor.tipoContrato?.trim() || 'Sin definir'}</div>
               <div>Especialidades: {instructor.especialidades.length ? instructor.especialidades.map((item) => item.nombre).join(', ') : 'Sin asignar'}</div>
             </dl>
           ) : (
-            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Sin más datos disponibles.</p>
+            <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-400">Sin más datos disponibles.</p>
           )}
 
           <div className="mt-2">
-            <p className="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Carga semanal</p>
+            <p className="mb-1 text-xs font-medium text-on-surface-variant dark:text-slate-400">Carga semanal</p>
             {errorCarga ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400">No se pudo calcular.</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">No se pudo calcular.</p>
             ) : !cargaSemanal ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400">Calculando…</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">Calculando…</p>
             ) : cargaSemanal.horasMaximas == null ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400">Sin tope definido (falta tipo de contrato).</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">Sin tope definido (falta tipo de contrato).</p>
             ) : (
               <>
-                <p className="mb-1 text-xs font-medium text-slate-700 dark:text-slate-300">{cargaSemanal.horasAsignadas}h / {cargaSemanal.horasMaximas}h</p>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                <p className="mb-1 text-xs font-medium text-on-surface dark:text-slate-300">{cargaSemanal.horasAsignadas}h / {cargaSemanal.horasMaximas}h</p>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high dark:bg-slate-700">
                   <div
                     className={`h-full rounded-full ${colorBarraCarga(cargaSemanal.horasAsignadas, cargaSemanal.horasMaximas)}`}
                     style={{ width: `${Math.min(100, Math.round((cargaSemanal.horasAsignadas / cargaSemanal.horasMaximas) * 100))}%` }}
@@ -182,36 +182,36 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
               </>
             )}
           </div>
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-slate-100 pt-2 dark:border-slate-700">
-            <Link to={`/instructores?id=${horario.idInstructor}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Más info →</Link>
-            <Link to={`/vista-instructores?id=${horario.idInstructor}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Ver horario por instructor →</Link>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-outline-variant pt-2 dark:border-slate-700">
+            <Link to={`/instructores?id=${horario.idInstructor}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Más info →</Link>
+            <Link to={`/vista-instructores?id=${horario.idInstructor}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Ver horario por instructor →</Link>
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Ambiente</p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{horario.ambienteNombre ?? 'Sin definir'}</p>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Ambiente</p>
+          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.ambienteNombre ?? 'Sin definir'}</p>
           {ambiente ? (
-            <dl className="mt-1.5 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+            <dl className="mt-1.5 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
               <div>Número: {ambiente.numeroAmbiente}</div>
               <div>Tipo: {ambiente.tipoAmbiente}</div>
               <div>Estado: {ambiente.estadoAmbiente}</div>
               <div>Sede: {sedeNombre ?? 'Sin definir'}</div>
             </dl>
           ) : (
-            <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">Sin más datos disponibles.</p>
+            <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-400">Sin más datos disponibles.</p>
           )}
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-slate-100 pt-2 dark:border-slate-700">
-            <Link to={`/ambientes?id=${horario.idAmbiente}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Más info →</Link>
-            <Link to={`/vista-ambientes?id=${horario.idAmbiente}`} className="text-xs font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Ver horario por ambiente →</Link>
+          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-outline-variant pt-2 dark:border-slate-700">
+            <Link to={`/ambientes?id=${horario.idAmbiente}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Más info →</Link>
+            <Link to={`/vista-ambientes?id=${horario.idAmbiente}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Ver horario por ambiente →</Link>
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Tema</p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{horario.resultadoCodigo ?? 'Sin definir'}</p>
-          <p className="mt-1.5 text-xs text-slate-600 dark:text-slate-300">{horario.resultadoDescripcion ?? 'Sin descripción.'}</p>
-          <dl className="mt-2 space-y-1 text-xs text-slate-600 dark:text-slate-300">
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Tema</p>
+          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.resultadoCodigo ?? 'Sin definir'}</p>
+          <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-300">{horario.resultadoDescripcion ?? 'Sin descripción.'}</p>
+          <dl className="mt-2 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
             <div>Días: {nombresDias(horario.dias, diasPorId)}</div>
             <div>Hora: {formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</div>
           </dl>
@@ -308,37 +308,37 @@ export function HorariosCompletos() {
     <AppShell activo="Horarios completos">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Horarios completos</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Cada horario con su ficha, instructor, ambiente y tema en un solo lugar.</p>
+          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Horarios completos</h1>
+          <p className="text-sm text-on-surface-variant dark:text-slate-400">Cada horario con su ficha, instructor, ambiente y tema en un solo lugar.</p>
         </div>
-        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {horarios.length} horarios</p>
+        <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {horarios.length} horarios</p>
       </div>
 
-      <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de horarios">
+      <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de horarios">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Filtrar horarios</p>
-            {filtrosActivos > 0 && <span className="rounded-full bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
+            <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Filtrar horarios</p>
+            {filtrosActivos > 0 && <span className="rounded-full bg-primary-container px-2 py-0.5 text-xs font-semibold text-on-primary-container">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
             {filtrosActivos > 0 && (
-              <button type="button" onClick={() => { setBusqueda(''); setFiltroJornada('todas'); setFiltroTrimestre('todos'); setFiltroEstado('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">
+              <button type="button" onClick={() => { setBusqueda(''); setFiltroJornada('todas'); setFiltroTrimestre('todos'); setFiltroEstado('todos') }} className="text-sm font-medium text-primary hover:text-on-primary-container dark:text-sena-400">
                 Limpiar filtros
               </button>
             )}
           </div>
           <div className="flex gap-4">
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Horarios</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{horarios.length}</p></div>
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Fichas</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{new Set(horarios.map((h) => h.idFicha)).size}</p></div>
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Instructores</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{new Set(horarios.map((h) => h.idInstructor)).size}</p></div>
+            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Horarios</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{horarios.length}</p></div>
+            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Fichas</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{new Set(horarios.map((h) => h.idFicha)).size}</p></div>
+            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Instructores</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{new Set(horarios.map((h) => h.idInstructor)).size}</p></div>
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           <div className="md:col-span-2">
-            <label htmlFor="buscar-horario" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Buscar</label>
-            <input id="buscar-horario" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Ficha, programa, instructor o ambiente" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+            <label htmlFor="buscar-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Buscar</label>
+            <input id="buscar-horario" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Ficha, programa, instructor o ambiente" className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
           </div>
           <div>
-            <label htmlFor="filtro-jornada-horario" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Jornada</label>
-            <select id="filtro-jornada-horario" value={filtroJornada} onChange={(evento) => setFiltroJornada(evento.target.value as FiltroJornada)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <label htmlFor="filtro-jornada-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Jornada</label>
+            <select id="filtro-jornada-horario" value={filtroJornada} onChange={(evento) => setFiltroJornada(evento.target.value as FiltroJornada)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todas">Todas</option>
               <option value="Mañana">Mañana</option>
               <option value="Tarde">Tarde</option>
@@ -346,15 +346,15 @@ export function HorariosCompletos() {
             </select>
           </div>
           <div>
-            <label htmlFor="filtro-trimestre-horario" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Trimestre</label>
-            <select id="filtro-trimestre-horario" value={filtroTrimestre} onChange={(evento) => setFiltroTrimestre(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <label htmlFor="filtro-trimestre-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Trimestre</label>
+            <select id="filtro-trimestre-horario" value={filtroTrimestre} onChange={(evento) => setFiltroTrimestre(evento.target.value)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todos">Todos</option>
               {trimestres.map((trimestre) => <option key={trimestre.idTrimestre} value={trimestre.idTrimestre}>{trimestre.nombre}</option>)}
             </select>
           </div>
           <div>
-            <label htmlFor="filtro-estado-horario" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Estado</label>
-            <select id="filtro-estado-horario" value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value as FiltroEstado)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <label htmlFor="filtro-estado-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Estado</label>
+            <select id="filtro-estado-horario" value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value as FiltroEstado)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todos">Todos</option>
               <option value="publicado">Publicado</option>
               <option value="borrador">Borrador</option>
@@ -363,22 +363,22 @@ export function HorariosCompletos() {
         </div>
       </section>
 
-      {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando horarios...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((horario) => {
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
         const color = colorParaBloque(String(horario.idHorario))
         const expandido = horario.idHorario === idExpandido
         const jornada = jornadaDeHorario(horario)
         const ambiente = ambientePorId.get(horario.idAmbiente)
         return (
           <Fragment key={horario.idHorario}>
-            <tr onClick={() => setIdExpandido(expandido ? null : horario.idHorario)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60">
-              <td className={`border-l-4 px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 ${color.borde}`}>{horario.fichaCodigo}</td>
-              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{horario.instructorNombre ?? 'Sin definir'}</td>
-              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{horario.ambienteNombre ?? 'Sin definir'}</td>
+            <tr onClick={() => setIdExpandido(expandido ? null : horario.idHorario)} className="cursor-pointer hover:bg-surface-container-low dark:hover:bg-slate-700/60">
+              <td className={`border-l-4 px-4 py-3 font-semibold text-on-surface dark:text-slate-100 ${color.borde}`}>{horario.fichaCodigo}</td>
+              <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.instructorNombre ?? 'Sin definir'}</td>
+              <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.ambienteNombre ?? 'Sin definir'}</td>
               <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{jornada ?? 'Sin definir'}</span></td>
-              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{nombresDias(horario.dias, diasPorId)}</td>
-              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</td>
-              <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{trimestrePorId.get(horario.idTrimestre)?.nombre ?? 'Sin definir'}</td>
+              <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{nombresDias(horario.dias, diasPorId)}</td>
+              <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</td>
+              <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{trimestrePorId.get(horario.idTrimestre)?.nombre ?? 'Sin definir'}</td>
               <td className="px-4 py-3">
                 <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeEstadoPublicacion(horario.publicado)}`}>
                   {horario.publicado ? 'Publicado' : 'Borrador'}
@@ -387,7 +387,7 @@ export function HorariosCompletos() {
             </tr>
             {expandido && (
               <tr>
-                <td colSpan={8} className="bg-slate-50 dark:bg-slate-900/40">
+                <td colSpan={8} className="bg-surface dark:bg-slate-900/40">
                   <DetalleHorario
                     horario={horario}
                     ficha={fichaPorId.get(horario.idFicha)}
@@ -408,11 +408,11 @@ export function HorariosCompletos() {
             )}
           </Fragment>
         )
-      })}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay horarios que coincidan con los filtros.</p>}
+      })}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay horarios que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (
-          <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 dark:border-slate-700">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between border-t border-outline-variant px-4 py-3 dark:border-slate-700">
+            <p className="text-xs text-on-surface-variant dark:text-slate-400">
               Página {paginaSegura} de {totalPaginas}
             </p>
             <div className="flex gap-2">
@@ -420,7 +420,7 @@ export function HorariosCompletos() {
                 type="button"
                 onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
                 disabled={paginaSegura === 1}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Anterior
               </button>
@@ -428,7 +428,7 @@ export function HorariosCompletos() {
                 type="button"
                 onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
                 disabled={paginaSegura === totalPaginas}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Siguiente
               </button>

@@ -85,9 +85,9 @@ export function AuditoriaCruces() {
   if (noAutorizado) {
     return (
       <AppShell activo="Auditoría de cruces">
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">No tienes acceso a esta sección.</p>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-8 text-center dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-sm font-semibold text-on-surface">No tienes acceso a esta sección.</p>
+          <p className="mt-1 text-sm text-on-surface-variant">
             La auditoría de cruces es solo para Coordinador/Administrador.
           </p>
         </div>
@@ -108,27 +108,27 @@ export function AuditoriaCruces() {
       <div
         className={
           duro
-            ? 'rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950/40'
-            : 'rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900 dark:bg-amber-950/40'
+            ? 'rounded-xl border border-error/20 bg-error-container px-4 py-3'
+            : 'rounded-xl border border-tertiary/20 bg-tertiary-container px-4 py-3'
         }
       >
-        <p className={duro ? 'text-sm font-semibold text-red-800 dark:text-red-300' : 'text-sm font-semibold text-amber-800 dark:text-amber-300'}>
+        <p className={duro ? 'text-sm font-semibold text-on-error-container' : 'text-sm font-semibold text-on-tertiary-container'}>
           {TITULO_POR_TIPO[conflicto.tipo]}
         </p>
-        <p className={duro ? 'mt-0.5 text-sm text-red-700 dark:text-red-400' : 'mt-0.5 text-sm text-amber-700 dark:text-amber-400'}>
+        <p className={duro ? 'mt-0.5 text-sm text-on-error-container/90' : 'mt-0.5 text-sm text-on-tertiary-container/90'}>
           {conflicto.mensaje}
         </p>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
           <Link
             to={`/horarios/completos?id=${conflicto.idHorario}`}
-            className={duro ? 'text-xs font-medium text-red-800 hover:text-red-900 dark:text-red-300' : 'text-xs font-medium text-amber-800 hover:text-amber-900 dark:text-amber-300'}
+            className={duro ? 'text-xs font-medium text-on-error-container hover:underline' : 'text-xs font-medium text-on-tertiary-container hover:underline'}
           >
             Revisar horario #{conflicto.idHorario} en Horarios completos →
           </Link>
           {conflicto.idHorarioExistente != null && (
             <Link
               to={`/horarios/completos?id=${conflicto.idHorarioExistente}`}
-              className={duro ? 'text-xs font-medium text-red-800 hover:text-red-900 dark:text-red-300' : 'text-xs font-medium text-amber-800 hover:text-amber-900 dark:text-amber-300'}
+              className={duro ? 'text-xs font-medium text-on-error-container hover:underline' : 'text-xs font-medium text-on-tertiary-container hover:underline'}
             >
               Revisar horario #{conflicto.idHorarioExistente} en conflicto →
             </Link>
@@ -141,21 +141,21 @@ export function AuditoriaCruces() {
   return (
     <AppShell activo="Auditoría de cruces">
       <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Auditoría de cruces</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="mb-1 text-2xl font-bold text-on-surface">Auditoría de cruces</h1>
+        <p className="text-sm text-on-surface-variant">
           Cruces detectados entre horarios ya guardados — mismas reglas que el Constructor usa al crear uno nuevo.
         </p>
       </div>
 
-      <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de auditoría">
+      <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de auditoría">
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label htmlFor="filtro-trimestre-auditoria" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Trimestre</label>
+            <label htmlFor="filtro-trimestre-auditoria" className="mb-1.5 block text-xs font-medium text-on-surface-variant">Trimestre</label>
             <select
               id="filtro-trimestre-auditoria"
               value={filtroTrimestre}
               onChange={(evento) => setFiltroTrimestre(evento.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+              className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900"
             >
               <option value="todos">Todos</option>
               {trimestres.map((trimestre) => (
@@ -164,12 +164,12 @@ export function AuditoriaCruces() {
             </select>
           </div>
           <div>
-            <label htmlFor="filtro-sede-auditoria" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Sede</label>
+            <label htmlFor="filtro-sede-auditoria" className="mb-1.5 block text-xs font-medium text-on-surface-variant">Sede</label>
             <select
               id="filtro-sede-auditoria"
               value={filtroSede}
               onChange={(evento) => setFiltroSede(evento.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+              className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900"
             >
               <option value="todas">Todas</option>
               {sedes.map((sede) => (
@@ -180,25 +180,25 @@ export function AuditoriaCruces() {
         </div>
       </section>
 
-      {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm text-on-error-container">{error}</p>}
 
       {cargando ? (
-        <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Auditando horarios…</p>
+        <p className="py-12 text-center text-sm text-on-surface-variant">Auditando horarios…</p>
       ) : conflictos.length === 0 ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-8 text-center dark:border-emerald-900 dark:bg-emerald-950/40">
-          <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">Sin conflictos activos.</p>
-          <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-400">
+        <div className="rounded-xl border border-primary/20 bg-primary-container p-8 text-center">
+          <p className="text-sm font-semibold text-on-primary-container">Sin conflictos activos.</p>
+          <p className="mt-1 text-sm text-on-primary-container/90">
             No hay cruces entre los horarios guardados para este filtro.
           </p>
         </div>
       ) : (
         <>
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-950/50 dark:text-orange-300">
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+            <span className="rounded-full bg-tertiary-container px-2.5 py-1 text-xs font-semibold text-on-tertiary-container">
               {conflictos.length} conflicto{conflictos.length === 1 ? '' : 's'} activo{conflictos.length === 1 ? '' : 's'}
             </span>
             {(datosVigentes?.resumen.tipos ?? []).map((tipo) => (
-              <span key={tipo} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+              <span key={tipo} className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700">
                 {TITULO_POR_TIPO[tipo as TipoConflictoHorario] ?? tipo}: {conteoPorTipo(tipo as TipoConflictoHorario)}
               </span>
             ))}

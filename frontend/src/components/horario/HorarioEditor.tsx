@@ -49,9 +49,9 @@ export function HorarioEditor({ bloquesIniciales, gridInicial, onCambiarEstado, 
         />
       </div>
 
-      <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+      <div className="min-w-0 overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
         {estado.bloqueActivo && (
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg bg-sena-50 px-3 py-2 text-xs text-sena-700 print:hidden dark:bg-sena-950/50">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sena-50 px-3 py-2 text-xs text-sena-700 print:hidden dark:bg-sena-950/50">
             <span>
               Bloque activo: <strong>{estado.bloqueActivo.tematica}</strong> — clic en el grid
               para asignarlo, Shift+clic para rellenar un rango.

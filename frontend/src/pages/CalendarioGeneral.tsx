@@ -189,26 +189,26 @@ export function CalendarioGeneral() {
     <AppShell activo="Calendario general">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Calendario general</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Todas las clases programadas de la institución, mes a mes.</p>
+          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Calendario general</h1>
+          <p className="text-sm text-on-surface-variant dark:text-slate-400">Todas las clases programadas de la institución, mes a mes.</p>
         </div>
         <Link
           to="/horarios/historial"
-          className="rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700"
+          className="rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700"
         >
           Ver historial de horarios
         </Link>
       </div>
 
-      {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
-      <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
+      <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 rounded-lg border border-slate-200 p-1 dark:border-slate-700">
+          <div className="flex items-center gap-1.5 rounded-xl border border-outline-variant p-1 dark:border-slate-700">
             <span className="rounded-md bg-sena-50 px-3 py-1.5 text-sm font-semibold text-sena-700 dark:bg-sena-950/50 dark:text-sena-300">Mes</span>
             <span
               title="Vista semanal — aún no implementada"
-              className="cursor-not-allowed rounded-md px-3 py-1.5 text-sm font-medium text-slate-400 dark:text-slate-500"
+              className="cursor-not-allowed rounded-md px-3 py-1.5 text-sm font-medium text-on-surface-variant dark:text-slate-500"
             >
               Semana
             </span>
@@ -219,25 +219,25 @@ export function CalendarioGeneral() {
               type="button"
               onClick={mesAnterior}
               aria-label="Mes anterior"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-outline text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               ‹
             </button>
             <button
               type="button"
               onClick={irAHoy}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+              className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               Hoy
             </button>
-            <p className="w-36 text-center text-sm font-semibold text-slate-900 dark:text-slate-100">
+            <p className="w-36 text-center text-sm font-semibold text-on-surface dark:text-slate-100">
               {NOMBRES_MES[mesActual.getMonth()]} {mesActual.getFullYear()}
             </p>
             <button
               type="button"
               onClick={mesSiguiente}
               aria-label="Mes siguiente"
-              className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+              className="flex h-8 w-8 items-center justify-center rounded-xl border border-outline text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
             >
               ›
             </button>
@@ -247,12 +247,12 @@ export function CalendarioGeneral() {
         <div className="mb-4 flex flex-wrap items-end justify-end gap-4">
           <div className="flex items-end gap-2">
             <div>
-              <label htmlFor="ir-fecha-dia" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Día</label>
+              <label htmlFor="ir-fecha-dia" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Día</label>
               <select
                 id="ir-fecha-dia"
                 value={selDia}
                 onChange={(evento) => alCambiarDia(Number(evento.target.value))}
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                className="rounded-xl border border-outline bg-surface-container-lowest px-2.5 py-1.5 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
               >
                 {Array.from({ length: diasEnMesSeleccionado }, (_, i) => i + 1).map((dia) => (
                   <option key={dia} value={dia}>{dia}</option>
@@ -260,12 +260,12 @@ export function CalendarioGeneral() {
               </select>
             </div>
             <div>
-              <label htmlFor="ir-fecha-mes" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Mes</label>
+              <label htmlFor="ir-fecha-mes" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Mes</label>
               <select
                 id="ir-fecha-mes"
                 value={selMes}
                 onChange={(evento) => alCambiarMes(Number(evento.target.value))}
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                className="rounded-xl border border-outline bg-surface-container-lowest px-2.5 py-1.5 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
               >
                 {NOMBRES_MES.map((nombre, indice) => (
                   <option key={nombre} value={indice}>{nombre}</option>
@@ -273,12 +273,12 @@ export function CalendarioGeneral() {
               </select>
             </div>
             <div>
-              <label htmlFor="ir-fecha-ano" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Año</label>
+              <label htmlFor="ir-fecha-ano" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Año</label>
               <select
                 id="ir-fecha-ano"
                 value={selAno}
                 onChange={(evento) => alCambiarAno(Number(evento.target.value))}
-                className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                className="rounded-xl border border-outline bg-surface-container-lowest px-2.5 py-1.5 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
               >
                 {añosDisponibles.map((año) => (
                   <option key={año} value={año}>{año}</option>
@@ -289,10 +289,10 @@ export function CalendarioGeneral() {
         </div>
 
         {cargando ? (
-          <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando calendario...</p>
+          <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando calendario...</p>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-slate-700">
-            <div className="grid grid-cols-7 bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+          <div className="overflow-hidden rounded-xl border border-outline-variant dark:border-slate-700">
+            <div className="grid grid-cols-7 bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
               {ENCABEZADOS_SEMANA.map((nombre) => (
                 <div key={nombre} className="px-2 py-2 text-center">{nombre}</div>
               ))}
@@ -310,8 +310,8 @@ export function CalendarioGeneral() {
                     type="button"
                     onClick={() => setFechaSeleccionada(fecha)}
                     aria-label={fecha.toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    className={`min-h-24 border-b border-r border-slate-100 p-1.5 text-left align-top last:border-r-0 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/40 ${
-                      delMes ? '' : 'bg-slate-50/60 dark:bg-slate-900/40'
+                    className={`min-h-24 border-b border-r border-outline-variant p-1.5 text-left align-top last:border-r-0 hover:bg-surface dark:border-slate-700 dark:hover:bg-slate-700/40 ${
+                      delMes ? '' : 'bg-surface/60 dark:bg-slate-900/40'
                     }`}
                   >
                     <span
@@ -319,8 +319,8 @@ export function CalendarioGeneral() {
                         esHoy
                           ? 'bg-sena-600 text-white'
                           : delMes
-                            ? 'text-slate-700 dark:text-slate-300'
-                            : 'text-slate-400 dark:text-slate-600'
+                            ? 'text-on-surface-variant dark:text-slate-300'
+                            : 'text-on-surface-variant dark:text-slate-600'
                       }`}
                     >
                       {fecha.getDate()}
@@ -338,7 +338,7 @@ export function CalendarioGeneral() {
                         )
                       })}
                       {restantes > 0 && (
-                        <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500">+{restantes} más</p>
+                        <p className="text-[11px] font-medium text-on-surface-variant dark:text-slate-500">+{restantes} más</p>
                       )}
                     </div>
                   </button>
@@ -357,26 +357,26 @@ export function CalendarioGeneral() {
           onCerrar={() => setFechaSeleccionada(null)}
         >
           {clasesDeFecha(fechaSeleccionada).length === 0 ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">Sin clases programadas este día.</p>
+            <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin clases programadas este día.</p>
           ) : (
             <ul className="space-y-2">
               {clasesDeFecha(fechaSeleccionada).map((clase) => {
                 const color = colorParaBloque(String(clase.idHorario))
                 return (
-                  <li key={clase.idHorario} className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
+                  <li key={clase.idHorario} className="rounded-xl border border-outline-variant p-3 dark:border-slate-700">
                     <div className="mb-1 flex items-center gap-2">
                       <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${color.fondo} ${color.texto}`}>
                         Horario #{clase.idHorario}
                       </span>
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{clase.programa}</p>
+                      <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{clase.programa}</p>
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-on-surface-variant dark:text-slate-400">
                       Jornada {clase.jornada} · {clase.horarios.map((h) => `${formatoHora(h.horaInicio)}-${formatoHora(h.horaFin)}`).join(', ')}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-on-surface-variant dark:text-slate-400">
                       {[...new Set(clase.horarios.map((h) => h.instructorNombre).filter(Boolean))].join(', ') || 'Sin instructor'}
                     </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                    <p className="text-xs text-on-surface-variant dark:text-slate-400">
                       {[...new Set(clase.horarios.map((h) => h.ambienteNombre).filter(Boolean))].join(', ') || 'Sin ambiente'}
                     </p>
                     <Link

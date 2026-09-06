@@ -35,9 +35,9 @@ type Etapa = 'Lectiva' | 'Productiva' | 'Por iniciar' | 'Finalizada' | 'Sin defi
 const ETAPA_BADGE: Record<Etapa, string> = {
   Lectiva: 'bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300',
   Productiva: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-  'Por iniciar': 'bg-slate-100 text-on-surface-variant dark:bg-slate-700 dark:text-slate-300',
-  Finalizada: 'bg-slate-100 text-on-surface-variant dark:bg-slate-700 dark:text-slate-300',
-  'Sin definir': 'bg-slate-100 text-on-surface-variant dark:bg-slate-700 dark:text-slate-300',
+  'Por iniciar': 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300',
+  Finalizada: 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300',
+  'Sin definir': 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300',
 }
 
 // Deriva la etapa (Lectiva/Productiva) a partir de las 4 fechas reales de

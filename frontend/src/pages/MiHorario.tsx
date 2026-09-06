@@ -86,21 +86,21 @@ export function MiHorario() {
   return (
     <AppShell activo="Mi horario">
       <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Mi horario</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Mi horario</h1>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">
           Tu horario semanal publicado por tu coordinador. Si falta una clase que sabés que ya te
           asignaron, puede que todavía esté en borrador — hablalo con tu coordinador.
         </p>
       </div>
 
-      {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800 lg:col-span-2">
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800 lg:col-span-2">
           {!horarios && !error ? (
-            <p className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">Cargando tu horario…</p>
+            <p className="py-16 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando tu horario…</p>
           ) : bloques.length === 0 ? (
-            <p className="py-16 text-center text-sm text-slate-500 dark:text-slate-400">
+            <p className="py-16 text-center text-sm text-on-surface-variant dark:text-slate-400">
               Todavía no tenés clases publicadas en este trimestre.
             </p>
           ) : (
@@ -109,40 +109,40 @@ export function MiHorario() {
         </div>
 
         <div className="flex flex-col gap-6">
-          <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Carga semanal asignada</p>
-            <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-slate-100">
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
+            <p className="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Carga semanal asignada</p>
+            <p className="mt-1 text-3xl font-bold text-on-surface dark:text-slate-100">
               {horarios ? horasSemanales : '—'}
-              <span className="ml-1 text-base font-medium text-slate-500 dark:text-slate-400">hrs</span>
+              <span className="ml-1 text-base font-medium text-on-surface-variant dark:text-slate-400">hrs</span>
             </p>
 
             <button
               type="button"
               disabled
               title="Aún no implementado en el backend"
-              className="mt-4 w-full cursor-not-allowed rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-600 dark:text-slate-300"
+              className="mt-4 w-full cursor-not-allowed rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant dark:border-slate-600 dark:text-slate-300"
             >
               Solicitar cambio de horario
             </button>
           </div>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-slate-400">Mis fichas asignadas</p>
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-on-surface-variant">Mis fichas asignadas</p>
 
             {!horarios ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">Cargando…</p>
+              <p className="text-sm text-on-surface-variant dark:text-slate-400">Cargando…</p>
             ) : fichas.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">Sin fichas asignadas este trimestre.</p>
+              <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin fichas asignadas este trimestre.</p>
             ) : (
               <ul className="space-y-3">
                 {fichas.map((ficha) => (
-                  <li key={ficha.codigo} className="border-t border-slate-100 pt-3 first:border-t-0 first:pt-0 dark:border-slate-700">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Ficha {ficha.codigo}</p>
+                  <li key={ficha.codigo} className="border-t border-outline-variant pt-3 first:border-t-0 first:pt-0 dark:border-slate-700">
+                    <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Ficha {ficha.codigo}</p>
                     {ficha.temas.length > 0 && (
-                      <p className="text-sm text-slate-600 dark:text-slate-300">{ficha.temas.join(', ')}</p>
+                      <p className="text-sm text-on-surface-variant dark:text-slate-300">{ficha.temas.join(', ')}</p>
                     )}
                     {ficha.ambientes.length > 0 && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{ficha.ambientes.join(' · ')}</p>
+                      <p className="text-xs text-on-surface-variant dark:text-slate-400">{ficha.ambientes.join(' · ')}</p>
                     )}
                   </li>
                 ))}

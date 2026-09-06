@@ -153,39 +153,39 @@ export function Instructores() {
   return (
     <AppShell activo="Instructores">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div><h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Instructores</h1><p className="text-sm text-slate-500 dark:text-slate-400">Planta de instructores y especialidades asignadas.</p></div>
-        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {instructores.length} instructores</p>
+        <div><h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Instructores</h1><p className="text-sm text-on-surface-variant dark:text-slate-400">Planta de instructores y especialidades asignadas.</p></div>
+        <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {instructores.length} instructores</p>
       </div>
 
-      <section className="mb-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de instructores">
+      <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de instructores">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Filtrar instructores</p>
+            <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Filtrar instructores</p>
             {filtrosActivos > 0 && <span className="rounded-full bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
             {filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setEspecialidad('todas'); setTipoContrato('todos'); setFicha('todas'); setAmbiente('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Limpiar filtros</button>}
           </div>
           <div className="flex gap-4">
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Activos</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.estado === 'activo').length}</p></div>
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Con especialidad</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{instructores.filter((item) => item.especialidades.length > 0).length}</p></div>
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Especialidades</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{especialidades.length}</p></div>
+            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Activos</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{instructores.filter((item) => item.estado === 'activo').length}</p></div>
+            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Con especialidad</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{instructores.filter((item) => item.especialidades.length > 0).length}</p></div>
+            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Especialidades</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{especialidades.length}</p></div>
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-          <div className="md:col-span-2 lg:col-span-1"><label htmlFor="buscar-instructor" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Buscar</label><input id="buscar-instructor" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Nombre, correo o especialidad" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></div>
-          <div><label htmlFor="filtro-especialidad" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Especialidad</label><select id="filtro-especialidad" value={especialidad} onChange={(evento) => setEspecialidad(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todas">Todas</option>{especialidades.map((item) => <option key={item}>{item}</option>)}</select></div>
-          <div><label htmlFor="filtro-contrato" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Tipo de contrato</label><select id="filtro-contrato" value={tipoContrato} onChange={(evento) => setTipoContrato(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{contratos.map((item) => <option key={item}>{item}</option>)}</select></div>
-          <div><label htmlFor="filtro-ficha" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Ficha</label><select id="filtro-ficha" value={ficha} onChange={(evento) => setFicha(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todas">Todas</option>{opcionesFicha.map((item) => <option key={item}>{item}</option>)}</select></div>
-          <div><label htmlFor="filtro-ambiente" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Ambiente</label><select id="filtro-ambiente" value={ambiente} onChange={(evento) => setAmbiente(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{opcionesAmbiente.map((item) => <option key={item}>{item}</option>)}</select></div>
-          <div><label htmlFor="orden-instructor" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Ordenar por</label><select id="orden-instructor" value={orden} onChange={(evento) => setOrden(evento.target.value as Orden)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="nombre">Nombre</option><option value="especialidad">Especialidad</option><option value="contrato">Contrato</option></select></div>
+          <div className="md:col-span-2 lg:col-span-1"><label htmlFor="buscar-instructor" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Buscar</label><input id="buscar-instructor" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Nombre, correo o especialidad" className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></div>
+          <div><label htmlFor="filtro-especialidad" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Especialidad</label><select id="filtro-especialidad" value={especialidad} onChange={(evento) => setEspecialidad(evento.target.value)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todas">Todas</option>{especialidades.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="filtro-contrato" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Tipo de contrato</label><select id="filtro-contrato" value={tipoContrato} onChange={(evento) => setTipoContrato(evento.target.value)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{contratos.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="filtro-ficha" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Ficha</label><select id="filtro-ficha" value={ficha} onChange={(evento) => setFicha(evento.target.value)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todas">Todas</option>{opcionesFicha.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="filtro-ambiente" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Ambiente</label><select id="filtro-ambiente" value={ambiente} onChange={(evento) => setAmbiente(evento.target.value)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{opcionesAmbiente.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="orden-instructor" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Ordenar por</label><select id="orden-instructor" value={orden} onChange={(evento) => setOrden(evento.target.value as Orden)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="nombre">Nombre</option><option value="especialidad">Especialidad</option><option value="contrato">Contrato</option></select></div>
         </div>
       </section>
 
-      {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Horas contratadas</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((item) => <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-slate-900 dark:text-slate-100">{item.nombre}</p><p className="text-xs text-slate-500 dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Horas contratadas</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((item) => <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-on-surface dark:text-slate-100">{item.nombre}</p><p className="text-xs text-on-surface-variant dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (
-          <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 dark:border-slate-700">
-            <p className="text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between border-t border-outline-variant px-4 py-3 dark:border-slate-700">
+            <p className="text-xs text-on-surface-variant dark:text-slate-400">
               Página {paginaSegura} de {totalPaginas}
             </p>
             <div className="flex gap-2">
@@ -193,7 +193,7 @@ export function Instructores() {
                 type="button"
                 onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
                 disabled={paginaSegura === 1}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Anterior
               </button>
@@ -201,7 +201,7 @@ export function Instructores() {
                 type="button"
                 onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
                 disabled={paginaSegura === totalPaginas}
-                className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Siguiente
               </button>
@@ -221,18 +221,18 @@ export function Instructores() {
           <SeccionDrawer titulo="Carga semanal">
             <div className="mb-1.5 flex items-center justify-between">
               {cargaVigente?.horasMaximas != null && (
-                <p className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                <p className="text-xs font-medium text-on-surface-variant dark:text-slate-300">
                   {cargaVigente.horasAsignadas}h / {cargaVigente.horasMaximas}h
                 </p>
               )}
             </div>
             {cargandoCarga ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400">Calculando…</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">Calculando…</p>
             ) : errorCarga ? (
-              <p className="text-xs text-slate-500 dark:text-slate-400">No se pudo calcular la carga semanal.</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">No se pudo calcular la carga semanal.</p>
             ) : cargaVigente?.horasMaximas != null ? (
               <>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-surface-container-high dark:bg-slate-700">
                   <div
                     className={`h-full rounded-full ${colorBarraCarga(cargaVigente.horasAsignadas, cargaVigente.horasMaximas)}`}
                     style={{ width: `${Math.min(100, Math.round((cargaVigente.horasAsignadas / cargaVigente.horasMaximas) * 100))}%` }}
@@ -243,19 +243,19 @@ export function Instructores() {
                 )}
               </>
             ) : (
-              <p className="text-xs text-slate-500 dark:text-slate-400">Sin tipo de contrato definido — no se puede calcular el tope de RF-011.</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">Sin tipo de contrato definido — no se puede calcular el tope de RF-011.</p>
             )}
           </SeccionDrawer>
 
           {cargandoHorarios ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">Cargando horarios…</p>
+            <p className="text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p>
           ) : errorHorarios ? (
-            <p className="text-sm text-slate-500 dark:text-slate-400">No se pudieron cargar los horarios del instructor.</p>
+            <p className="text-sm text-on-surface-variant dark:text-slate-400">No se pudieron cargar los horarios del instructor.</p>
           ) : (
             <>
               <SeccionDrawer titulo="Horario semanal">
                 {bloquesGridInstructor.length === 0 ? (
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Sin horario asignado en el trimestre actual.</p>
+                  <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin horario asignado en el trimestre actual.</p>
                 ) : (
                   <div className="text-[10px]">
                     <GridHorario bloques={bloquesGridInstructor} grid={gridInstructor} hayBloqueActivo={false} soloLectura ocultarFilasVacias />

@@ -81,56 +81,48 @@ export function ModalCruce({ bloqueResumen, conflictos, onCancelar, onForzar }: 
     >
       <div
         ref={contenidoRef}
-        className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800"
+        className="w-full max-w-lg rounded-xl bg-surface-container-lowest p-6 shadow-xl dark:bg-slate-800"
       >
         <div className="mb-4 flex items-start gap-3">
           <span
             className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
               conflictosDuros.length > 0
-                ? 'bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400'
-                : 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400'
+                ? 'bg-error-container text-error dark:bg-red-950/50 dark:text-red-400'
+                : 'bg-tertiary-container text-tertiary dark:bg-amber-950/50 dark:text-amber-400'
             }`}
             aria-hidden="true"
           >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-              />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15.75h.007v.008H12v-.008Z" />
-            </svg>
+            <span className="material-symbols-outlined text-[22px]">warning</span>
           </span>
           <div>
-            <h2 id="modal-cruce-titulo" className="text-lg font-bold text-slate-900 dark:text-slate-100">
+            <h2 id="modal-cruce-titulo" className="text-lg font-bold text-on-surface dark:text-slate-100">
               Se detectó un cruce de horario
             </h2>
-            <p id="modal-cruce-descripcion" className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+            <p id="modal-cruce-descripcion" className="mt-1 text-sm text-on-surface-variant dark:text-slate-400">
               El bloque que estás programando choca con horarios que ya existen o con una regla
               institucional. Revisa el detalle y decide si cancelar o programarlo de todas formas.
             </p>
           </div>
         </div>
 
-        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+        <div className="mb-4 rounded-xl border border-outline-variant bg-surface px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">
             Bloque que estás programando
           </p>
-          <p className="mt-0.5 text-sm text-slate-800 dark:text-slate-200">{bloqueResumen}</p>
+          <p className="mt-0.5 text-sm text-on-surface dark:text-slate-200">{bloqueResumen}</p>
         </div>
 
         <div className="max-h-64 space-y-3 overflow-y-auto">
           {conflictosDuros.map((conflicto, i) => (
             <div
               key={`duro-${i}`}
-              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 dark:border-red-900 dark:bg-red-950/40"
+              className="rounded-xl border border-error/30 bg-error-container px-3 py-2.5 dark:border-red-900 dark:bg-red-950/40"
             >
-              <p className="text-sm font-semibold text-red-800 dark:text-red-300">
+              <p className="text-sm font-semibold text-on-error-container dark:text-red-300">
                 {TITULO_POR_TIPO[conflicto.tipo]}
               </p>
-              <p className="mt-0.5 text-sm text-red-700 dark:text-red-400">{conflicto.mensaje}</p>
-              <p className="mt-1 text-xs text-red-600 dark:text-red-400">
+              <p className="mt-0.5 text-sm text-on-error-container dark:text-red-400">{conflicto.mensaje}</p>
+              <p className="mt-1 text-xs text-on-error-container/80 dark:text-red-400">
                 Regla institucional — revísala antes de programar de todas formas.
               </p>
             </div>
@@ -139,26 +131,19 @@ export function ModalCruce({ bloqueResumen, conflictos, onCancelar, onForzar }: 
           {conflictosFisicos.map((conflicto, i) => (
             <div
               key={`fisico-${i}`}
-              className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900 dark:bg-amber-950/40"
+              className="rounded-xl border border-tertiary/30 bg-tertiary-container px-3 py-2.5 dark:border-amber-900 dark:bg-amber-950/40"
             >
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              <p className="text-sm font-semibold text-on-tertiary-container dark:text-amber-300">
                 {TITULO_POR_TIPO[conflicto.tipo]}
               </p>
-              <p className="mt-0.5 text-sm text-amber-700 dark:text-amber-400">{conflicto.mensaje}</p>
+              <p className="mt-0.5 text-sm text-on-tertiary-container dark:text-amber-400">{conflicto.mensaje}</p>
             </div>
           ))}
         </div>
 
         {hayConflictos && (
-          <p className="mb-1 mt-4 flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-            <svg className="mt-0.5 h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M11.25 11.25l.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
-              />
-            </svg>
+          <p className="mb-1 mt-4 flex items-start gap-1.5 text-xs text-on-surface-variant dark:text-slate-400">
+            <span className="material-symbols-outlined mt-px shrink-0 text-[14px]">info</span>
             Si programas de todas formas, queda registrado en auditoría quién lo hizo y contra qué.
           </p>
         )}
@@ -167,7 +152,7 @@ export function ModalCruce({ bloqueResumen, conflictos, onCancelar, onForzar }: 
           <button
             type="button"
             onClick={onCancelar}
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+            className="rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             Cancelar
           </button>
@@ -178,7 +163,7 @@ export function ModalCruce({ bloqueResumen, conflictos, onCancelar, onForzar }: 
               // orange-600 con texto blanco da ~3.56:1 — no pasa el 4.5:1
               // de WCAG AA (mismo problema que sena-600, ver index.css).
               // orange-700 pasa (~5.2:1).
-              className="rounded-lg bg-orange-700 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-800"
+              className="rounded-xl bg-orange-700 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-800"
             >
               Programar de todas formas
             </button>

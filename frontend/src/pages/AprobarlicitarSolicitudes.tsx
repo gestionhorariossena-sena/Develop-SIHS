@@ -152,13 +152,11 @@ export function AprobarlicitarSolicitudes() {
       <AppShell activo="Aprobar solicitudes de registro">
         <div className="flex items-center justify-center py-24">
           <div className="max-w-sm text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-500">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v3.75m0 3.75h.008v.008H12v-.008ZM21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
-              </svg>
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-error-container text-error">
+              <span className="material-symbols-outlined">error</span>
             </div>
-            <h1 className="text-lg font-bold text-slate-900">Acceso denegado</h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <h1 className="text-lg font-bold text-on-surface">Acceso denegado</h1>
+            <p className="mt-1 text-sm text-on-surface-variant">
               Solo un Administrador puede aprobar solicitudes de registro.
             </p>
           </div>
@@ -177,8 +175,8 @@ export function AprobarlicitarSolicitudes() {
           </svg>
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Aprobar solicitudes de registro</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-2xl font-bold text-on-surface">Aprobar solicitudes de registro</h1>
+          <p className="text-sm text-on-surface-variant">
             Usuarios que ya se registraron y están a la espera de que les asignes un rol.
           </p>
         </div>
@@ -194,7 +192,7 @@ export function AprobarlicitarSolicitudes() {
 
       {/* Mensaje de éxito */}
       {mensajeExito && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+        <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
           <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m4.5 12.75 6 6 9-13.5" />
           </svg>
@@ -204,14 +202,14 @@ export function AprobarlicitarSolicitudes() {
 
       {/* Mensajes de error */}
       {error && (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </p>
       )}
 
       {/* Tabla de solicitudes */}
       {cargando ? (
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-slate-500">
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-on-surface-variant">
           <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z" />
@@ -219,21 +217,21 @@ export function AprobarlicitarSolicitudes() {
           Cargando solicitudes…
         </div>
       ) : usuariosSinRol.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white py-16 text-center dark:border-slate-700 dark:bg-slate-800">
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest py-16 text-center dark:border-slate-700 dark:bg-slate-800">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300">
             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="m4.5 12.75 6 6 9-13.5" />
             </svg>
           </div>
           <div>
-            <p className="font-semibold text-slate-900 dark:text-slate-100">No hay solicitudes pendientes</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400">Todos los usuarios ya tienen un rol asignado.</p>
+            <p className="font-semibold text-on-surface dark:text-slate-100">No hay solicitudes pendientes</p>
+            <p className="text-sm text-on-surface-variant dark:text-slate-400">Todos los usuarios ya tienen un rol asignado.</p>
           </div>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+        <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
           <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+            <thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
               <tr>
                 <th scope="col" className="px-4 py-3">Usuario</th>
                 <th scope="col" className="px-4 py-3">Solicitado</th>
@@ -241,21 +239,21 @@ export function AprobarlicitarSolicitudes() {
                 <th scope="col" className="px-4 py-3 text-right">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+            <tbody className="divide-y divide-outline-variant dark:divide-slate-700">
               {usuariosSinRol.map((usuario) => (
-                <tr key={usuario.idUsuario} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
+                <tr key={usuario.idUsuario} className="hover:bg-surface dark:hover:bg-slate-700/60">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-sm font-semibold text-sena-700">
                         {letraInicial(usuario.nombre)}
                       </span>
                       <div>
-                        <p className="font-medium text-slate-900 dark:text-slate-100">{usuario.nombre}</p>
-                        <p className="text-slate-500 dark:text-slate-400">{usuario.email}</p>
+                        <p className="font-medium text-on-surface dark:text-slate-100">{usuario.nombre}</p>
+                        <p className="text-on-surface-variant dark:text-slate-400">{usuario.email}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatFecha(usuario.fechaRegistro)}</td>
+                  <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{formatFecha(usuario.fechaRegistro)}</td>
                   <td className="px-4 py-3">
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 border border-amber-200">
                       <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
@@ -266,7 +264,7 @@ export function AprobarlicitarSolicitudes() {
                     <button
                       onClick={() => abrirModalAsignar(usuario)}
                       disabled={procesandoId === usuario.idUsuario}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-sena-700 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-sena-700 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3M12 12a3.75 3.75 0 1 0 0-7.5 3.75 3.75 0 0 0 0 7.5ZM3 19.5a6.5 6.5 0 0 1 11.34-4.33" />
@@ -290,21 +288,21 @@ export function AprobarlicitarSolicitudes() {
           onKeyDown={manejarTecladoModal}
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
         >
-          <div ref={contenidoModalRef} className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl dark:bg-slate-800">
+          <div ref={contenidoModalRef} className="w-full max-w-md rounded-xl bg-surface-container-lowest p-6 shadow-xl dark:bg-slate-800">
             <div className="mb-5 flex items-center gap-3">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sena-100 text-sm font-semibold text-sena-700">
                 {letraInicial(usuarioSeleccionado.nombre)}
               </span>
               <div>
-                <h2 id="asignar-rol-titulo" className="font-bold text-slate-900 dark:text-slate-100">
+                <h2 id="asignar-rol-titulo" className="font-bold text-on-surface dark:text-slate-100">
                   Asignar rol a {usuarioSeleccionado.nombre}
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">{usuarioSeleccionado.email}</p>
+                <p className="text-xs text-on-surface-variant dark:text-slate-400">{usuarioSeleccionado.email}</p>
               </div>
             </div>
 
             <div className="mb-6">
-              <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">
+              <label className="mb-2 block text-sm font-medium text-on-surface-variant dark:text-slate-300">
                 Selecciona el rol a asignar
               </label>
               <div className="flex flex-col gap-2">
@@ -313,10 +311,10 @@ export function AprobarlicitarSolicitudes() {
                     key={rol.idRol}
                     type="button"
                     onClick={() => setRolSeleccionado(rol.idRol)}
-                    className={`flex items-center justify-between rounded-lg border px-3.5 py-2.5 text-left text-sm font-medium transition-colors ${
+                    className={`flex items-center justify-between rounded-xl border px-3.5 py-2.5 text-left text-sm font-medium transition-colors ${
                       rolSeleccionado === rol.idRol
                         ? 'border-sena-600 bg-sena-50 text-sena-700 dark:bg-sena-950/50'
-                        : 'border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'
+                        : 'border-outline-variant text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700'
                     }`}
                   >
                     {rol.nombre}
@@ -333,14 +331,14 @@ export function AprobarlicitarSolicitudes() {
             <div className="flex gap-3">
               <button
                 onClick={cerrarModalAsignar}
-                className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="flex-1 rounded-xl border border-outline px-4 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Cancelar
               </button>
               <button
                 onClick={asignarRol}
                 disabled={!rolSeleccionado || procesandoId !== null}
-                className="flex-1 rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex-1 rounded-xl bg-sena-700 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {procesandoId ? 'Asignando…' : 'Asignar'}
               </button>

@@ -145,7 +145,7 @@ export function Dashboard() {
               <button
                 key={f.id}
                 onClick={() => setFiltro(f.id)}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition ${
+                className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
                   filtro === f.id
                     ? 'bg-primary-container text-on-primary-container dark:bg-sena-950/50'
                     : 'text-on-surface-variant hover:text-on-surface dark:text-slate-400 dark:hover:text-slate-200'

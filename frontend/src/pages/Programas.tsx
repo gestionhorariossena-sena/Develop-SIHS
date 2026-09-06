@@ -160,7 +160,7 @@ export function Programas() {
                     <td className="px-4 py-3"><span className="rounded-full bg-primary-container px-2.5 py-1 text-xs font-semibold text-primary dark:bg-sena-950/50">{programa.nivelFormacion || 'Sin definir'}</span></td>
                     <td className="px-4 py-3 font-medium text-on-surface dark:text-slate-300">{(fichasPorPrograma.get(programa.idPrograma) ?? []).length}</td>
                     <td className="px-4 py-3">
-                      <span className={programa.activo ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-on-surface-variant dark:bg-slate-700 dark:text-slate-300'}>
+                      <span className={programa.activo ? 'rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'rounded-full bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant dark:bg-slate-700 dark:text-slate-300'}>
                         {programa.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
