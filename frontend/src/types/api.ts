@@ -210,6 +210,19 @@ export interface HorarioDryRunResponse {
   resumen: { totalCruces: number; tipos: string[] }
 }
 
+// Espejo de AuditoriaConflicto/AuditoriaCrucesResponse
+// (backend/app/schemas/horario.py) — GET /horarios/auditoria-cruces.
+// Igual que HorarioDryRunConflict, pero el conflicto es entre dos
+// horarios YA guardados (idHorario), no un candidato sin guardar.
+export interface AuditoriaConflicto extends HorarioDryRunConflict {
+  idHorario: number
+}
+
+export interface AuditoriaCrucesResponse {
+  conflictos: AuditoriaConflicto[]
+  resumen: { totalCruces: number; tipos: string[] }
+}
+
 // Espejo de HorarioGuardadoResponse (backend/app/schemas/horario_guardado.py).
 // "Guardado" a propósito, no "Horario": esto es lo que arma el editor
 // (frontend/src/pages/NuevoHorario.tsx) con ficha/instructor/ambiente como

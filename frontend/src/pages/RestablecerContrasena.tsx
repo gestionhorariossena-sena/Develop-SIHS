@@ -93,10 +93,10 @@ export function RestablecerContrasena() {
 
       {paso === 'codigo' ? (
         <>
-          <h1 className="mb-2 text-center text-2xl font-bold text-slate-900 dark:text-slate-100">
+          <h1 className="mb-2 text-center text-2xl font-bold text-on-surface dark:text-slate-100">
             Ingresa el código
           </h1>
-          <p className="mb-6 text-center text-sm text-slate-500 dark:text-slate-400">
+          <p className="mb-6 text-center text-sm text-on-surface-variant dark:text-slate-400">
             Escribe el código de verificación de 6 dígitos que enviamos a tu correo.
           </p>
 
@@ -132,13 +132,13 @@ export function RestablecerContrasena() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
+              className="w-full rounded-xl bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
             >
               {loading ? 'Verificando…' : 'Verificar código'}
             </button>
           </form>
 
-          <p className="mt-5 text-center text-xs text-slate-500 dark:text-slate-400">
+          <p className="mt-5 text-center text-xs text-on-surface-variant dark:text-slate-400">
             ¿No te llegó nada?{' '}
             <Link to="/recuperar-contrasena" className="font-medium text-sena-700 hover:underline">
               Solicita un código nuevo
@@ -147,10 +147,10 @@ export function RestablecerContrasena() {
         </>
       ) : (
         <>
-          <h1 className="mb-2 text-center text-2xl font-bold text-slate-900 dark:text-slate-100">
+          <h1 className="mb-2 text-center text-2xl font-bold text-on-surface dark:text-slate-100">
             Crea tu nueva contraseña
           </h1>
-          <p className="mb-6 text-center text-sm text-slate-500 dark:text-slate-400">
+          <p className="mb-6 text-center text-sm text-on-surface-variant dark:text-slate-400">
             Código verificado. Ahora define la contraseña con la que vas a iniciar sesión.
           </p>
 
@@ -185,7 +185,7 @@ export function RestablecerContrasena() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
+              className="w-full rounded-xl bg-sena-700 py-3 font-semibold text-white transition hover:bg-sena-800 disabled:opacity-60"
             >
               {loading ? 'Guardando…' : 'Guardar contraseña'}
             </button>
@@ -193,7 +193,7 @@ export function RestablecerContrasena() {
         </>
       )}
 
-      <p className="mt-6 border-t border-slate-100 pt-5 text-center text-sm font-semibold text-sena-700 dark:border-slate-700">
+      <p className="mt-6 border-t border-outline-variant pt-5 text-center text-sm font-semibold text-sena-700 dark:border-slate-700">
         <Link to="/login" className="hover:underline">
           Volver al inicio de sesión
         </Link>

@@ -232,7 +232,7 @@ describe('Fichas', () => {
     expect(link).toHaveAttribute('href', '/vista-fichas?id=1')
   })
 
-  it('con más de 10 fichas, pagina y "Siguiente" avanza a la página 2', async () => {
+  it('con más de 10 fichas, pagina y el botón de página 2 avanza', async () => {
     const muchas: Ficha[] = Array.from({ length: 12 }, (_, i) => ({
       ...FICHAS[0],
       idFicha: i + 1,
@@ -243,16 +243,16 @@ describe('Fichas', () => {
     renderConProviders(<Fichas />)
     await screen.findByText('FICHA-01')
 
-    expect(screen.getByText('Página 1 de 2')).toBeInTheDocument()
+    expect(screen.getByText('Mostrando 10 de 12 registros')).toBeInTheDocument()
     expect(screen.queryByText('FICHA-11')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Anterior' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Página anterior' })).toBeDisabled()
 
-    await usuario.click(screen.getByRole('button', { name: 'Siguiente' }))
+    await usuario.click(screen.getByRole('button', { name: '2' }))
 
-    expect(screen.getByText('Página 2 de 2')).toBeInTheDocument()
+    expect(screen.getByText('Mostrando 2 de 12 registros')).toBeInTheDocument()
     expect(screen.getByText('FICHA-11')).toBeInTheDocument()
     expect(screen.queryByText('FICHA-01')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Página siguiente' })).toBeDisabled()
   })
 
   it('filtra la lista de fichas por instructor usando todos los horarios del sistema', async () => {

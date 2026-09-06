@@ -57,6 +57,19 @@ class HorarioDryRunResponse(BaseModel):
     resumen: dict[str, object]
 
 
+class AuditoriaConflicto(HorarioDryRunConflict):
+    """Igual que HorarioDryRunConflict, pero para GET /horarios/auditoria-cruces:
+    ahí el conflicto no viene de un candidato nuevo sin guardar, sino de un
+    horario YA guardado (`idHorario`) que choca con otro (`idHorarioExistente`)."""
+
+    idHorario: int
+
+
+class AuditoriaCrucesResponse(BaseModel):
+    conflictos: list[AuditoriaConflicto] = []
+    resumen: dict[str, object]
+
+
 class HorarioResponse(HorarioBase):
     model_config = ConfigDict(from_attributes=True)
 
