@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { apiGet, ApiError } from '../services/api'
@@ -149,6 +150,8 @@ export function MiHorario() {
             asignaron, puede que todavía esté en borrador — hablalo con tu coordinador.
           </p>
         </div>
+
+        <ExportarPdfButton etiqueta="Descargar Horario PDF" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container" />
       </div>
 
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
@@ -198,6 +201,11 @@ export function MiHorario() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 lg:col-span-2">
+          <div className="mb-3 px-1">
+            <h2 className="text-base font-semibold text-on-surface">Calendario Semanal de Formación</h2>
+            <p className="text-xs text-on-surface-variant">Franjas oficiales de formación presencial y asesorías</p>
+          </div>
+
           {!horarios && !error ? (
             <p className="py-16 text-center text-sm text-on-surface-variant">Cargando tu horario…</p>
           ) : bloques.length === 0 ? (
@@ -236,15 +244,6 @@ export function MiHorario() {
                 />
               </div>
             )}
-
-            <button
-              type="button"
-              disabled
-              title="Aún no implementado en el backend"
-              className="mt-4 w-full cursor-not-allowed rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant"
-            >
-              Solicitar cambio de horario
-            </button>
           </div>
 
           <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
@@ -264,18 +263,39 @@ export function MiHorario() {
             ) : (
               <ul className="space-y-3">
                 {fichas.map((ficha) => (
-                  <li key={ficha.codigo} className="border-t border-outline-variant pt-3 first:border-t-0 first:pt-0">
+                  <li key={ficha.codigo} className="rounded-lg border border-outline-variant bg-surface-container-low p-3">
                     <p className="text-sm font-semibold text-on-surface">Ficha {ficha.codigo}</p>
                     {ficha.temas.length > 0 && (
-                      <p className="text-sm text-on-surface-variant">{ficha.temas.join(', ')}</p>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5">
+                        {ficha.temas.map((tema) => (
+                          <span key={tema} className="rounded-full bg-primary-container px-2 py-0.5 text-[11px] font-medium text-on-primary-container">
+                            {tema}
+                          </span>
+                        ))}
+                      </div>
                     )}
                     {ficha.ambientes.length > 0 && (
-                      <p className="text-xs text-on-surface-variant">{ficha.ambientes.join(' · ')}</p>
+                      <p className="mt-1.5 text-xs text-on-surface-variant">{ficha.ambientes.join(' · ')}</p>
                     )}
                   </li>
                 ))}
               </ul>
             )}
+          </div>
+
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+            <p className="mb-1 text-xs font-medium uppercase tracking-wide text-on-surface-variant">Solicitud de novedad</p>
+            <p className="text-sm text-on-surface-variant">
+              ¿Tenés un cruce formativo o necesitás una permuta de ambiente? Podés radicar tu novedad directamente.
+            </p>
+            <button
+              type="button"
+              disabled
+              title="Aún no implementado en el backend"
+              className="mt-3 w-full cursor-not-allowed rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant"
+            >
+              + Solicitar cambio de horario
+            </button>
           </div>
         </div>
       </div>
