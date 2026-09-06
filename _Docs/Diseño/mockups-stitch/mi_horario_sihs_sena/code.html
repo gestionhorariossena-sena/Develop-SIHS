@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+
+<html lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mi Horario Semanal - SENA Portal Instructor</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=Hanken+Grotesk:wght@500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;700&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-secondary-container": "#14532d",
+            "surface-tint": "#006e2d",
+            "inverse-surface": "#1e293b",
+            "outline-variant": "#bdcaba",
+            "on-secondary-fixed-variant": "#185200",
+            "surface-container-highest": "#dae2fd",
+            "primary-container": "#dcfce7",
+            "tertiary-container": "#b15f00",
+            "surface-bright": "#ffffff",
+            "on-background": "#131b2e",
+            "surface-container": "#eaedff",
+            "error-container": "#ffdad6",
+            "surface-container-low": "#f2f3ff",
+            "on-surface": "#131b2e",
+            "on-error-container": "#93000a",
+            "outline": "#cbd5e1",
+            "tertiary": "#8d4b00",
+            "surface-dim": "#e2e8f0",
+            "on-tertiary-fixed-variant": "#6e3900",
+            "error": "#dc2626",
+            "surface-container-lowest": "#ffffff",
+            "inverse-on-surface": "#f8fafc",
+            "on-primary-fixed-variant": "#005320",
+            "on-surface-variant": "#3e4a3d",
+            "on-secondary": "#ffffff",
+            "surface-variant": "#dae2fd",
+            "secondary": "#226d00",
+            "on-primary-container": "#14532d",
+            "on-tertiary-container": "#92400e",
+            "secondary-fixed": "#8afd5d",
+            "tertiary-fixed": "#ffdcc3",
+            "primary-fixed": "#7ffc97",
+            "secondary-container": "#eaf7ec",
+            "tertiary-fixed-dim": "#ffb77d",
+            "on-secondary-fixed": "#052100",
+            "on-primary": "#ffffff",
+            "on-tertiary-fixed": "#2f1500",
+            "surface-container-high": "#e2e7ff",
+            "on-primary-fixed": "#002109",
+            "on-error": "#ffffff",
+            "surface": "#f8fafc",
+            "on-tertiary": "#ffffff",
+            "secondary-fixed-dim": "#6fdf43",
+            "primary-fixed-dim": "#62df7d",
+            "background": "#faf8ff",
+            "inverse-primary": "#62df7d",
+            "primary": "#006b2c"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-2xs": "0.125rem",
+            "space-sm": "0.5rem",
+            "margin-desktop": "1.5rem",
+            "space-2xl": "2rem",
+            "space-md": "0.75rem",
+            "gutter": "1rem",
+            "space-3xl": "3rem",
+            "margin-mobile": "1rem",
+            "space-xl": "1.5rem",
+            "space-xs": "0.25rem",
+            "space-base": "1rem",
+            "space-lg": "1.25rem"
+          },
+          "fontFamily": {
+            "headline-md": ["Hanken Grotesk"],
+            "body-sm": ["Geist"],
+            "label-sm": ["Geist"],
+            "display-lg": ["Hanken Grotesk"],
+            "headline-lg": ["Hanken Grotesk"],
+            "body-md": ["Geist"],
+            "body-lg": ["Geist"],
+            "headline-sm": ["Hanken Grotesk"],
+            "label-md": ["Geist"]
+          },
+          "fontSize": {
+            "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "display-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+            "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }],
+            "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined';
+      font-weight: normal;
+      font-style: normal;
+      font-size: 20px;
+      line-height: 1;
+      display: inline-block;
+      text-transform: none;
+      letter-spacing: normal;
+      word-wrap: normal;
+      white-space: nowrap;
+      direction: ltr;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface antialiased font-body-md selection:bg-primary-container selection:text-on-primary-container">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-[#f8fbf9] group/design-root overflow-x-hidden" style='font-family: "Be Vietnam Pro", "Noto Sans", sans-serif;'>
+<div class="layout-container flex h-full grow flex-col">
+<div class="px-40 flex flex-1 justify-center py-5">
+<div class="layout-content-container flex flex-col max-w-[960px] flex-1">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-b-[#e8f3ec] px-10 py-3">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-4 text-[#0e1b13]">
+<div class="size-4">
+<svg fill="none" viewbox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+<path clip-rule="evenodd" d="M39.475 21.6262C40.358 21.4363 40.6863 21.5589 40.7581 21.5934C40.7876 21.655 40.8547 21.857 40.8082 22.3336C40.7408 23.0255 40.4502 24.0046 39.8572 25.2301C38.6799 27.6631 36.5085 30.6631 33.5858 33.5858C30.6631 36.5085 27.6632 38.6799 25.2301 39.8572C24.0046 40.4502 23.0255 40.7407 22.3336 40.8082C21.8571 40.8547 21.6551 40.7875 21.5934 40.7581C21.5589 40.6863 21.4363 40.358 21.6262 39.475C21.8562 38.4054 22.4689 36.9657 23.5038 35.2817C24.7575 33.2417 26.5497 30.9744 28.7621 28.762C30.9744 26.5497 33.2417 24.7574 35.2817 23.5037C36.9657 22.4689 38.4054 21.8562 39.475 21.6262ZM4.41189 29.2403L18.7597 43.5881C19.8813 44.7097 21.4027 44.9179 22.7217 44.7893C24.0585 44.659 25.5148 44.1631 26.9723 43.4579C29.9052 42.0387 33.2618 39.5667 36.4142 36.4142C39.5667 33.2618 42.0387 29.9052 43.4579 26.9723C44.1631 25.5148 44.659 24.0585 44.7893 22.7217C44.9179 21.4027 44.7097 19.8813 43.5881 18.7597L29.2403 4.41187C27.8527 3.02428 25.8765 3.02573 24.2861 3.36776C22.6081 3.72863 20.7334 4.58419 18.8396 5.74801C16.4978 7.18716 13.9881 9.18353 11.5858 11.5858C9.18354 13.988 7.18717 16.4978 5.74802 18.8396C4.58421 20.7334 3.72865 22.6081 3.36778 24.2861C3.02574 25.8765 3.02429 27.8527 4.41189 29.2403Z" fill="currentColor" fill-rule="evenodd"></path>
+</svg>
+</div>
+<h2 class="text-[#0e1b13] text-lg font-bold leading-tight tracking-[-0.015em]">SENA - Portal Instructor</h2>
+</div>
+<div class="flex items-center gap-9">
+<a class="text-[#0e1b13] text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-[#0e1b13] text-sm font-medium leading-normal" href="#">Mi Horario</a>
+<a class="text-[#0e1b13] text-sm font-medium leading-normal" href="#">Fichas</a>
+<a class="text-[#0e1b13] text-sm font-medium leading-normal" href="#">Ambientes</a>
+<a class="text-[#0e1b13] text-sm font-medium leading-normal" href="#">Solicitudes</a>
+</div>
+</div>
+<div class="flex flex-1 justify-end gap-8">
+<label class="flex flex-col min-w-40 !h-10 max-w-64">
+<div class="flex w-full flex-1 items-stretch rounded h-full">
+<div class="text-[#50956a] flex border-none bg-[#e8f3ec] items-center justify-center pl-4 rounded-l border-r-0" data-icon="MagnifyingGlass" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="24px" viewbox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"></path>
+</svg>
+</div>
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded text-[#0e1b13] focus:outline-0 focus:ring-0 border-none bg-[#e8f3ec] focus:border-none h-full placeholder:text-[#50956a] px-4 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal" placeholder="Search" value=""/>
+</div>
+</label>
+<div class="flex gap-2">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded h-10 bg-[#e8f3ec] text-[#0e1b13] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+<div class="text-[#0e1b13]" data-icon="Bell" data-size="20px" data-weight="regular">
+<svg fill="currentColor" height="20px" viewbox="0 0 256 256" width="20px" xmlns="http://www.w3.org/2000/svg">
+<path d="M221.8,175.94C216.25,166.38,208,139.33,208,104a80,80,0,1,0-160,0c0,35.34-8.26,62.38-13.81,71.94A16,16,0,0,0,48,200H88.81a40,40,0,0,0,78.38,0H208a16,16,0,0,0,13.8-24.06ZM128,216a24,24,0,0,1-22.62-16h45.24A24,24,0,0,1,128,216ZM48,184c7.7-13.24,16-43.92,16-80a64,64,0,1,1,128,0c0,36.05,8.28,66.73,16,80Z"></path>
+</svg>
+</div>
+</button>
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded h-10 bg-[#e8f3ec] text-[#0e1b13] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-2.5">
+<div class="text-[#0e1b13]" data-icon="Question" data-size="20px" data-weight="regular">
+<svg fill="currentColor" height="20px" viewbox="0 0 256 256" width="20px" xmlns="http://www.w3.org/2000/svg">
+<path d="M140,180a12,12,0,1,1-12-12A12,12,0,0,1,140,180ZM128,72c-22.06,0-40,16.15-40,36v4a8,8,0,0,0,16,0v-4c0-11,10.77-20,24-20s24,9,24,20-10.77,20-24,20a8,8,0,0,0-8,8v8a8,8,0,0,0,16,0v-.72c18.24-3.35,32-17.9,32-35.28C168,88.15,150.06,72,128,72Zm104,56A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"></path>
+</svg>
+</div>
+</button>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCx4_v0c_djv8SlUj8d9A4maEj-p1aEoOjvvVavYJSGymfSr3pzFmNlhQVgS6eROM6Tn9oOyNleq19mCY0G07EY6tc4RZdcsMOfq8AVaAHSKZ2W59crMLNzl4OYoVZHt0lgx6Qfeb1kph9lj7cfoXxwzFLUL_2DCjTVV_82aicrtxfvA9UqF64g48o5WzBagtx5GrUAccV8-qzSX8HhTEW9EW4XaT9GMu-k2bRpQQi3IR1BFY3-MkCL");'></div>
+</div>
+</header>
+<div class="flex flex-wrap gap-2 p-4">
+<a class="text-[#50956a] text-base font-medium leading-normal" href="#">Dashboard</a>
+<span class="text-[#50956a] text-base font-medium leading-normal">/</span>
+<span class="text-[#0e1b13] text-base font-medium leading-normal">Mi Horario</span>
+</div>
+<div class="flex flex-wrap justify-between gap-3 p-4">
+<div class="flex min-w-72 flex-col gap-3">
+<p class="text-[#0e1b13] text-4xl font-black leading-tight tracking-[-0.033em]">Mi Horario Semanal</p>
+<p class="text-[#50956a] text-base font-normal leading-normal">Semana 8 · 19 al 23 Mayo 2025</p>
+</div>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded h-10 px-4 bg-[#e8f3ec] text-[#0e1b13] text-sm font-bold leading-normal tracking-[0.015em]">
+<span class="truncate">Descargar Horario PDF</span>
+</button>
+</div>
+<div class="flex justify-between gap-2 px-4 py-3">
+<div class="flex gap-2">
+<button class="p-2 text-[#0e1b13]">
+<div class="text-[#0e1b13]" data-icon="CaretLeft" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="24px" viewbox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"></path>
+</svg>
+</div>
+</button>
+<button class="p-2 text-[#0e1b13]">
+<div class="text-[#0e1b13]" data-icon="Calendar" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="24px" viewbox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM72,48v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80H48V48ZM208,208H48V96H208V208Zm-96-88v64a8,8,0,0,1-16,0V132.94l-4.42,2.22a8,8,0,0,1-7.16-14.32l16-8A8,8,0,0,1,112,120Zm59.16,30.45L152,176h16a8,8,0,0,1,0,16H136a8,8,0,0,1-6.4-12.8l28.78-38.37A8,8,0,1,0,145.07,132a8,8,0,1,1-13.85-8A24,24,0,0,1,176,136,23.76,23.76,0,0,1,171.16,150.45Z"></path>
+</svg>
+</div>
+</button>
+<button class="p-2 text-[#0e1b13]">
+<div class="text-[#0e1b13]" data-icon="CaretRight" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="24px" viewbox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"></path>
+</svg>
+</div>
+</button>
+</div>
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded h-10 bg-green-600 text-[#f8fbf9] gap-2 text-sm font-bold leading-normal tracking-[0.015em] min-w-0 px-4">
+<div class="text-[#f8fbf9]" data-icon="CalendarBlank" data-size="20px" data-weight="fill">
+<svg fill="currentColor" height="20px" viewbox="0 0 256 256" width="20px" xmlns="http://www.w3.org/2000/svg">
+<path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Zm0,48H48V48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24Z"></path>
+</svg>
+</div>
+<span class="truncate">Vista Semana</span>
+</button>
+</div>
+<div class="flex gap-3 p-3 overflow-x-hidden">
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded bg-[#e8f3ec] pl-4 pr-4">
+<p class="text-[#0e1b13] text-sm font-medium leading-normal">Todas las Jornadas</p>
+</div>
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded bg-[#e8f3ec] pl-4 pr-4">
+<p class="text-[#0e1b13] text-sm font-medium leading-normal">Mañana (06:00 - 12:00)</p>
+</div>
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded bg-[#e8f3ec] pl-4 pr-4">
+<p class="text-[#0e1b13] text-sm font-medium leading-normal">Tarde (12:00 - 18:00)</p>
+</div>
+<div class="flex h-8 shrink-0 items-center justify-center gap-x-2 rounded bg-[#e8f3ec] pl-4 pr-4">
+<p class="text-[#0e1b13] text-sm font-medium leading-normal">Noche (18:00 - 22:00)</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<main class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<!-- Perfil rápido de Instructor -->
+<div class="bg-surface-bright border border-outline/40 rounded-xl p-5 mb-6 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+<div class="flex items-center gap-4">
+<div class="size-12 rounded-full bg-primary/10 text-primary flex items-center justify-center font-headline-md text-lg font-bold border border-primary/20">
+        CM
+      </div>
+<div>
+<div class="flex items-center gap-2">
+<h1 class="font-headline-md text-lg text-on-surface">Ing. Carlos Morales</h1>
+<span class="bg-primary-container text-on-primary-container text-label-sm px-2 py-0.5 rounded font-medium">Instructor de Planta</span>
+</div>
+<p class="text-body-sm text-on-surface-variant">Centro de Servicios y Gestión Empresarial · Regional Antioquia</p>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<div class="bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline/30 text-right">
+<span class="text-label-sm text-on-surface-variant block">Horas Semanales</span>
+<span class="font-headline-sm text-primary text-sm font-bold">34 h activas</span>
+</div>
+<div class="bg-surface-container-low px-3 py-1.5 rounded-lg border border-outline/30 text-right">
+<span class="text-label-sm text-on-surface-variant block">Ambiente Actual</span>
+<span class="font-headline-sm text-on-surface text-sm font-bold">Laboratorio 302</span>
+</div>
+</div>
+</div>
+<!-- Layout de Dos Columnas: 8 cols (Grilla interactiva) / 4 cols (Paneles laterales) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- Columna Izquierda Principal (8 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-5">
+<div class="bg-surface-bright border border-outline/40 rounded-xl overflow-hidden shadow-sm">
+<!-- Header de la grilla horaria -->
+<div class="flex items-center justify-between px-5 py-4 border-b border-outline/20 bg-surface-container-low/40">
+<div>
+<h2 class="font-headline-md text-base text-on-surface">Calendario Semanal de Formación</h2>
+<p class="text-body-sm text-on-surface-variant">Franjas oficiales de formación presencial y asesorías</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="flex items-center gap-1.5 text-label-sm text-on-surface-variant">
+<span class="size-2.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+              En Sesión
+            </span>
+<span class="flex items-center gap-1.5 text-label-sm text-on-surface-variant ml-2">
+<span class="size-2.5 rounded-full bg-primary/40 inline-block"></span>
+              Programado
+            </span>
+</div>
+</div>
+<!-- Tabla / Grid Horario -->
+<div class="overflow-x-auto">
+<table class="w-full border-collapse text-left">
+<thead>
+<tr class="border-b border-outline/20 bg-surface-container-low/60 text-label-md text-on-surface-variant">
+<th class="py-3 px-3 w-28 text-center font-semibold border-r border-outline/20">Jornada / Franja</th>
+<th class="py-3 px-3 font-semibold text-center w-1/5">Lunes <span class="block text-label-sm font-normal text-on-surface-variant/80">19 Mayo</span></th>
+<th class="py-3 px-3 font-semibold text-center w-1/5">Martes <span class="block text-label-sm font-normal text-on-surface-variant/80">20 Mayo</span></th>
+<th class="py-3 px-3 font-semibold text-center w-1/5">Miércoles <span class="block text-label-sm font-normal text-on-surface-variant/80">21 Mayo</span></th>
+<th class="py-3 px-3 font-semibold text-center w-1/5">Jueves <span class="block text-label-sm font-normal text-on-surface-variant/80">22 Mayo</span></th>
+<th class="py-3 px-3 font-semibold text-center w-1/5">Viernes <span class="block text-label-sm font-normal text-on-surface-variant/80">23 Mayo</span></th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline/20">
+<!-- BLOQUE 1: MAÑANA -->
+<tr class="bg-surface/50">
+<td class="p-2 border-r border-outline/20 align-top bg-surface-container-low/20">
+<div class="text-center py-2">
+<span class="inline-block bg-primary/10 text-primary font-bold text-label-sm px-2 py-0.5 rounded mb-1">Mañana</span>
+<span class="block font-headline-sm text-xs text-on-surface font-semibold">06:00 - 12:00</span>
+<span class="block text-label-sm text-on-surface-variant">6 horas</span>
+</div>
+</td>
+<!-- LUNES MAÑANA (En sesión) -->
+<td class="p-2 align-top">
+<div class="bg-emerald-50/90 border-2 border-emerald-500/80 rounded-lg p-2.5 shadow-sm transition hover:shadow-md flex flex-col justify-between h-full min-h-[140px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="bg-emerald-200 text-on-secondary-container text-label-sm font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+<span class="size-1.5 rounded-full bg-emerald-700 animate-ping"></span>
+                          En sesión
+                        </span>
+<span class="text-label-sm font-bold text-emerald-800">Lab 302</span>
+</div>
+<p class="font-headline-sm text-xs font-bold text-emerald-950 leading-snug">Ficha 2670142</p>
+<p class="text-body-sm text-emerald-800 font-medium text-[11px] leading-tight mt-0.5">ADSO - Anál. y Desar. Software</p>
+</div>
+<div class="mt-2 pt-2 border-t border-emerald-200/80 flex items-center justify-between text-label-sm text-emerald-900">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">groups</span> 28 apr.</span>
+<span class="text-[10px] bg-white/80 px-1 py-0.5 rounded">06:00-12:00</span>
+</div>
+</div>
+</td>
+<!-- MARTES MAÑANA (Programado) -->
+<td class="p-2 align-top">
+<div class="bg-secondary-container/60 border border-primary/20 rounded-lg p-2.5 transition hover:shadow-md flex flex-col justify-between h-full min-h-[140px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="bg-primary-container text-on-primary-container text-label-sm font-medium px-1.5 py-0.5 rounded">
+                          Programado
+                        </span>
+<span class="text-label-sm font-medium text-on-surface-variant">Lab 302</span>
+</div>
+<p class="font-headline-sm text-xs font-bold text-on-surface leading-snug">Ficha 2670142</p>
+<p class="text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">ADSO - Bases de Datos</p>
+</div>
+<div class="mt-2 pt-2 border-t border-outline/20 flex items-center justify-between text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">groups</span> 28 apr.</span>
+<span class="text-[10px] bg-surface-bright px-1 py-0.5 rounded border border-outline/30">06:00-12:00</span>
+</div>
+</div>
+</td>
+<!-- MIÉRCOLES MAÑANA (Libre) -->
+<td class="p-2 align-top">
+<div class="h-full min-h-[140px] border border-dashed border-outline rounded-lg flex flex-col items-center justify-center text-center p-2 bg-surface/30">
+<span class="material-symbols-outlined text-outline text-xl mb-1">free_cancellation</span>
+<span class="text-label-sm font-medium text-on-surface-variant/70">Franja Libre</span>
+<span class="text-[10px] text-on-surface-variant/50">Disponible</span>
+</div>
+</td>
+<!-- JUEVES MAÑANA (Programado) -->
+<td class="p-2 align-top">
+<div class="bg-secondary-container/60 border border-primary/20 rounded-lg p-2.5 transition hover:shadow-md flex flex-col justify-between h-full min-h-[140px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="bg-primary-container text-on-primary-container text-label-sm font-medium px-1.5 py-0.5 rounded">
+                          Programado
+                        </span>
+<span class="text-label-sm font-medium text-on-surface-variant">Lab 302</span>
+</div>
+<p class="font-headline-sm text-xs font-bold text-on-surface leading-snug">Ficha 2670142</p>
+<p class="text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">ADSO - Sprint Review</p>
+</div>
+<div class="mt-2 pt-2 border-t border-outline/20 flex items-center justify-between text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">groups</span> 28 apr.</span>
+<span class="text-[10px] bg-surface-bright px-1 py-0.5 rounded border border-outline/30">06:00-12:00</span>
+</div>
+</div>
+</td>
+<!-- VIERNES MAÑANA (08:00 - 12:00 Asesoría) -->
+<td class="p-2 align-top">
+<div class="bg-amber-50/70 border border-amber-300/80 rounded-lg p-2.5 transition hover:shadow-md flex flex-col justify-between h-full min-h-[140px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="bg-amber-100 text-amber-900 text-label-sm font-medium px-1.5 py-0.5 rounded">
+                          Libre / Asesoría
+                        </span>
+<span class="text-label-sm font-medium text-amber-800">Coworking</span>
+</div>
+<p class="font-headline-sm text-xs font-bold text-on-surface leading-snug">Proyectos Formativos</p>
+<p class="text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">Asesoría técnica y retroalimentación</p>
+</div>
+<div class="mt-2 pt-2 border-t border-amber-200 flex items-center justify-between text-label-sm text-amber-900">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">forum</span> Semillero</span>
+<span class="text-[10px] bg-white px-1 py-0.5 rounded border border-amber-300">08:00-12:00</span>
+</div>
+</div>
+</td>
+</tr>
+<!-- BLOQUE 2: TARDE -->
+<tr class="bg-surface/50">
+<td class="p-2 border-r border-outline/20 align-top bg-surface-container-low/20">
+<div class="text-center py-2">
+<span class="inline-block bg-primary/10 text-primary font-bold text-label-sm px-2 py-0.5 rounded mb-1">Tarde</span>
+<span class="block font-headline-sm text-xs text-on-surface font-semibold">12:00 - 18:00</span>
+<span class="block text-label-sm text-on-surface-variant">6 horas</span>
+</div>
+</td>
+<!-- LUNES TARDE (Libre) -->
+<td class="p-2 align-top">
+<div class="h-full min-h-[130px] border border-dashed border-outline rounded-lg flex flex-col items-center justify-center text-center p-2 bg-surface/30">
+<span class="material-symbols-outlined text-outline text-xl mb-1">schedule</span>
+<span class="text-label-sm font-medium text-on-surface-variant/70">Sin Asignación</span>
+</div>
+</td>
+<!-- MARTES TARDE (Libre) -->
+<td class="p-2 align-top">
+<div class="h-full min-h-[130px] border border-dashed border-outline rounded-lg flex flex-col items-center justify-center text-center p-2 bg-surface/30">
+<span class="material-symbols-outlined text-outline text-xl mb-1">schedule</span>
+<span class="text-label-sm font-medium text-on-surface-variant/70">Sin Asignación</span>
+</div>
+</td>
+<!-- MIÉRCOLES TARDE (Programado Ficha Logística) -->
+<td class="p-2 align-top">
+<div class="bg-secondary-container/60 border border-primary/20 rounded-lg p-2.5 transition hover:shadow-md flex flex-col justify-between h-full min-h-[130px]">
+<div>
+<div class="flex items-center justify-between mb-1.5">
+<span class="bg-primary-container text-on-primary-container text-label-sm font-medium px-1.5 py-0.5 rounded">
+                          Programado
+                        </span>
+<span class="text-label-sm font-medium text-on-surface-variant">Taller 104</span>
+</div>
+<p class="font-headline-sm text-xs font-bold text-on-surface leading-snug">Ficha 2712903</p>
+<p class="text-body-sm text-on-surface-variant text-[11px] leading-tight mt-0.5">Gestión Logística Integral</p>
+</div>
+<div class="mt-2 pt-2 border-t border-outline/20 flex items-center justify-between text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">groups</span> 32 apr.</span>
+<span class="text-[10px] bg-surface-bright px-1 py-0.5 rounded border border-outline/30">12:00-18:00</span>
+</div>
+</div>
+</td>
+<!-- JUEVES TARDE (Libre) -->
+<td class="p-2 align-top">
+<div class="h-full min-h-[130px] border border-dashed border-outline rounded-lg flex flex-col items-center justify-center text-center p-2 bg-surface/30">
+<span class="material-symbols-outlined text-outline text-xl mb-1">schedule</span>
+<span class="text-label-sm font-medium text-on-surface-variant/70">Sin Asignación</span>
+</div>
+</td>
+<!-- VIERNES TARDE (Libre) -->
+<td class="p-2 align-top">
+<div class="h-full min-h-[130px] border border-dashed border-outline rounded-lg flex flex-col items-center justify-center text-center p-2 bg-surface/30">
+<span class="material-symbols-outlined text-outline text-xl mb-1">schedule</span>
+<span class="text-label-sm font-medium text-on-surface-variant/70">Sin Asignación</span>
+</div>
+</td>
+</tr>
+<!-- BLOQUE 3: NOCHE -->
+<tr class="bg-surface/50">
+<td class="p-2 border-r border-outline/20 align-top bg-surface-container-low/20">
+<div class="text-center py-2">
+<span class="inline-block bg-primary/10 text-primary font-bold text-label-sm px-2 py-0.5 rounded mb-1">Noche</span>
+<span class="block font-headline-sm text-xs text-on-surface font-semibold">18:00 - 22:00</span>
+<span class="block text-label-sm text-on-surface-variant">4 horas</span>
+</div>
+</td>
+<!-- Lunes a Viernes Noche (Vacío) -->
+<td class="p-3 text-center bg-surface-container-low/10" colspan="5">
+<div class="flex items-center justify-center gap-2 text-on-surface-variant/60 text-body-sm py-3 border border-dashed border-outline/30 rounded-lg">
+<span class="material-symbols-outlined text-sm">bedtime</span>
+<span>Sin carga académica nocturna asignada en esta semana</span>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Footer interactivo del horario -->
+<div class="p-4 bg-surface-container-low/30 border-t border-outline/20 flex flex-wrap items-center justify-between gap-3 text-body-sm">
+<div class="flex items-center gap-2 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary text-[18px]">info</span>
+<span>Última sincronización con SOFIA Plus / SINERGIA: <strong>Hoy a las 07:15 AM</strong></span>
+</div>
+<div class="flex items-center gap-3">
+<button class="text-primary hover:underline font-semibold flex items-center gap-1 text-label-md">
+<span class="material-symbols-outlined text-[16px]">sync</span> Actualizar datos
+            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Columna Derecha (4 cols): Fichas, Solicitud y Carga Docente -->
+<div class="lg:col-span-4 flex flex-col gap-6">
+<!-- Card: Resumen de Carga Docente -->
+<div class="bg-surface-bright border border-outline/40 rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<h3 class="font-headline-md text-base text-on-surface">Carga Lectiva Semanal</h3>
+<span class="text-xs font-bold text-primary bg-primary-container px-2.5 py-0.5 rounded-full">85% asignado</span>
+</div>
+<div class="flex items-baseline gap-2 mb-2">
+<span class="text-3xl font-black font-display-lg text-on-surface">34</span>
+<span class="text-body-md text-on-surface-variant">/ 40 hrs semanales</span>
+</div>
+<!-- Progress bar -->
+<div class="w-full bg-surface-container h-2.5 rounded-full overflow-hidden mb-3">
+<div class="bg-primary h-full rounded-full transition-all duration-500" style="width: 85%;"></div>
+</div>
+<div class="grid grid-cols-2 gap-2 text-xs border-t border-outline/20 pt-3">
+<div class="bg-surface-container-low p-2 rounded">
+<span class="text-on-surface-variant block text-[11px]">En Aula / Taller</span>
+<strong class="text-on-surface font-semibold">30 horas</strong>
+</div>
+<div class="bg-surface-container-low p-2 rounded">
+<span class="text-on-surface-variant block text-[11px]">Asesoría / Proyectos</span>
+<strong class="text-on-surface font-semibold">4 horas</strong>
+</div>
+</div>
+</div>
+<!-- Card: Mis Fichas Asignadas -->
+<div class="bg-surface-bright border border-outline/40 rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">folder_shared</span>
+<h3 class="font-headline-md text-base text-on-surface">Mis Fichas Asignadas</h3>
+</div>
+<span class="text-label-sm font-semibold text-on-surface-variant bg-surface-container px-2 py-0.5 rounded">3 Fichas</span>
+</div>
+<div class="flex flex-col gap-3">
+<!-- Ficha 1 -->
+<div class="p-3 rounded-lg border border-outline/40 hover:border-primary/50 transition bg-surface/50">
+<div class="flex items-start justify-between gap-2">
+<div>
+<span class="inline-block bg-primary/10 text-primary font-bold text-xs px-1.5 py-0.5 rounded mb-1">Ficha 2670142</span>
+<h4 class="font-headline-sm text-sm text-on-surface leading-tight">ADSO - Anál. y Desarrollo Software</h4>
+</div>
+<span class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full">Activa</span>
+</div>
+<div class="mt-2.5 pt-2 border-t border-outline/20 flex flex-wrap items-center justify-between gap-2 text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">group</span> 28 aprendices</span>
+<span class="text-[11px]">Vocero: <strong class="text-on-surface">Juan Pérez</strong></span>
+</div>
+</div>
+<!-- Ficha 2 -->
+<div class="p-3 rounded-lg border border-outline/40 hover:border-primary/50 transition bg-surface/50">
+<div class="flex items-start justify-between gap-2">
+<div>
+<span class="inline-block bg-primary/10 text-primary font-bold text-xs px-1.5 py-0.5 rounded mb-1">Ficha 2712903</span>
+<h4 class="font-headline-sm text-sm text-on-surface leading-tight">Tecnólogo en Gestión Logística</h4>
+</div>
+<span class="text-xs bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded-full">Activa</span>
+</div>
+<div class="mt-2.5 pt-2 border-t border-outline/20 flex flex-wrap items-center justify-between gap-2 text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">group</span> 32 aprendices</span>
+<span class="text-[11px]">Vocera: <strong class="text-on-surface">María Gómez</strong></span>
+</div>
+</div>
+<!-- Ficha 3 -->
+<div class="p-3 rounded-lg border border-outline/40 hover:border-primary/50 transition bg-surface/50">
+<div class="flex items-start justify-between gap-2">
+<div>
+<span class="inline-block bg-primary/10 text-primary font-bold text-xs px-1.5 py-0.5 rounded mb-1">Ficha 2694180</span>
+<h4 class="font-headline-sm text-sm text-on-surface leading-tight">Admin. Redes y Comunicaciones</h4>
+</div>
+<span class="text-xs bg-blue-100 text-blue-800 font-medium px-2 py-0.5 rounded-full">En Etapa Práctica</span>
+</div>
+<div class="mt-2.5 pt-2 border-t border-outline/20 flex flex-wrap items-center justify-between gap-2 text-label-sm text-on-surface-variant">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">group</span> 25 aprendices</span>
+<span class="text-[11px]">Seguimiento virtual</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card: Solicitud de Novedad / Cambio de Horario -->
+<div class="bg-surface-bright border border-outline/40 rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">edit_calendar</span>
+<h3 class="font-headline-md text-base text-on-surface">Solicitud de Novedad</h3>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-base cursor-help" title="Se remite a Coordinación Académica">help_outline</span>
+</div>
+<p class="text-body-sm text-on-surface-variant mb-4">
+          ¿Tiene un cruce formativo o requiere permuta de ambiente? Puede radicar su novedad directamente.
+        </p>
+<!-- Botón para expandir formulario interactivo -->
+<button class="w-full flex items-center justify-center gap-2 bg-primary hover:bg-surface-tint text-on-primary font-semibold py-2.5 px-4 rounded-lg shadow-sm transition text-label-md" id="toggleNoveltyBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>+ Solicitar cambio de horario</span>
+</button>
+<!-- Formulario expandido / modal desplegable -->
+<form class="hidden mt-4 pt-4 border-t border-outline/20 flex flex-col gap-3" id="noveltyForm">
+<div>
+<label class="block text-label-sm font-semibold text-on-surface mb-1" for="currentFranja">Franja actual a modificar</label>
+<select class="w-full text-body-sm rounded-lg border border-outline bg-surface-container-low px-3 py-2 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary" id="currentFranja">
+<option value="lun-06">Lunes 06:00 - 12:00 (Ficha 2670142)</option>
+<option value="mar-06">Martes 06:00 - 12:00 (Ficha 2670142)</option>
+<option value="mie-12">Miércoles 12:00 - 18:00 (Ficha 2712903)</option>
+<option value="jue-06">Jueves 06:00 - 12:00 (Ficha 2670142)</option>
+</select>
+</div>
+<div>
+<label class="block text-label-sm font-semibold text-on-surface mb-1" for="reason">Motivo de la solicitud</label>
+<select class="w-full text-body-sm rounded-lg border border-outline bg-surface-container-low px-3 py-2 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary" id="reason">
+<option value="cruce">Cruce académico con ficha</option>
+<option value="fuerza_mayor">Fuerza mayor / Justificación médica</option>
+<option value="cambio_ambiente">Cambio de ambiente / Equipamiento</option>
+<option value="permuta">Permuta consensuada con otro instructor</option>
+</select>
+</div>
+<div>
+<label class="block text-label-sm font-semibold text-on-surface mb-1" for="requestedFranja">Franja y ambiente solicitados</label>
+<input class="w-full text-body-sm rounded-lg border border-outline bg-surface-container-low px-3 py-2 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary" id="requestedFranja" placeholder="Ej. Miércoles 08:00 - 12:00 en Lab 305" type="text"/>
+</div>
+<div>
+<label class="block text-label-sm font-semibold text-on-surface mb-1" for="observaciones">Observaciones / Justificación</label>
+<textarea class="w-full text-body-sm rounded-lg border border-outline bg-surface-container-low px-3 py-2 text-on-surface focus:border-primary focus:ring-1 focus:ring-primary" id="observaciones" placeholder="Detalle el requerimiento para revisión de coordinación..." rows="2"></textarea>
+</div>
+<div class="bg-surface-container-low p-2.5 rounded border border-outline/30 text-xs text-on-surface-variant flex items-start gap-2">
+<span class="material-symbols-outlined text-primary text-[18px] shrink-0 mt-0.5">assignment_turned_in</span>
+<span>Se remitirá automáticamente al módulo de <strong>Solicitudes</strong> para aprobación y firma de la Coordinación Académica.</span>
+</div>
+<div class="flex items-center gap-2 pt-2">
+<button class="flex-1 bg-primary text-on-primary font-semibold py-2 px-3 rounded text-label-md hover:bg-surface-tint transition" type="submit">
+              Radicar Solicitud
+            </button>
+<button class="bg-surface-container text-on-surface font-medium py-2 px-3 rounded text-label-md hover:bg-surface-container-high transition" id="cancelNoveltyBtn" type="button">
+              Cancelar
+            </button>
+</div>
+</form>
+</div>
+</div>
+</div>
+</main>
+<script>
+  // Micro-interacción: Expandir y colapsar formulario de Solicitud de Novedad
+  const toggleBtn = document.getElementById('toggleNoveltyBtn');
+  const noveltyForm = document.getElementById('noveltyForm');
+  const cancelBtn = document.getElementById('cancelNoveltyBtn');
+
+  if (toggleBtn && noveltyForm && cancelBtn) {
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = noveltyForm.classList.contains('hidden');
+      if (isHidden) {
+        noveltyForm.classList.remove('hidden');
+        toggleBtn.classList.add('hidden');
+      }
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      noveltyForm.classList.add('hidden');
+      toggleBtn.classList.remove('hidden');
+    });
+
+    noveltyForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      alert('Solicitud de cambio radicada con éxito. Número de radicado: #SEN-2025-0849. Remitido a Coordinación.');
+      noveltyForm.reset();
+      noveltyForm.classList.add('hidden');
+      toggleBtn.classList.remove('hidden');
+    });
+  }
+</script>
+</body></html>
