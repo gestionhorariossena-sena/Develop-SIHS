@@ -200,6 +200,16 @@ export function Fichas() {
   const niveles = [...new Set(fichas.map(nivel))].sort()
   const jornadas = [...new Set(fichas.flatMap((ficha) => ficha.jornadas))].sort()
   const indiceInstructoresPorFicha = indexarPorFicha(todosLosHorarios)
+  // Ambiente(s) reales asignados a cada ficha — derivado de los horarios ya
+  // cargados (mismo patrón que indiceInstructoresPorFicha), para la columna
+  // "Ambiente" de la tabla (sección del mockup Directorio de Fichas).
+  const ambientesPorFicha = new Map<number, string[]>()
+  for (const horario of todosLosHorarios) {
+    if (!horario.ambienteNombre) continue
+    const lista = ambientesPorFicha.get(horario.idFicha) ?? []
+    if (!lista.includes(horario.ambienteNombre)) lista.push(horario.ambienteNombre)
+    ambientesPorFicha.set(horario.idFicha, lista)
+  }
   const instructores = opcionesInstructor(todosLosHorarios)
   const texto = busqueda.trim().toLocaleLowerCase('es-CO')
   const filtrosActivos =
@@ -262,7 +272,10 @@ export function Fichas() {
   }
 
   const totalLectiva = fichas.filter((ficha) => etapaFicha(ficha) === 'Lectiva').length
-  const totalAprendices = fichas.reduce((total, ficha) => total + ficha.aprendicesTotales, 0)
+  // "Franjas pendientes" del mockup: fichas sin ninguna jornada programada
+  // todavía (dato real, derivado de ficha.jornadas — no de un endpoint
+  // agregado que no existe).
+  const fichasSinJornada = fichas.filter((ficha) => ficha.jornadas.length === 0).length
 
   const chips: { etiqueta: string; quitar: () => void }[] = []
   if (busqueda.trim()) chips.push({ etiqueta: `"${busqueda.trim()}"`, quitar: () => setBusqueda('') })
@@ -310,9 +323,9 @@ export function Fichas() {
           <p className="mt-0.5 text-xs text-on-surface-variant/70">{fichas.length ? Math.round((totalLectiva / fichas.length) * 100) : 0}% del total</p>
         </div>
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-medium text-on-surface-variant dark:text-slate-400">Aprendices matriculados</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{totalAprendices}</p>
-          <p className="mt-0.5 text-xs text-on-surface-variant/70">En todas las fichas activas</p>
+          <p className="text-xs font-medium text-on-surface-variant dark:text-slate-400">Franjas pendientes</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{fichasSinJornada}</p>
+          <p className="mt-0.5 text-xs text-tertiary">{fichasSinJornada > 0 ? 'Requieren asignación' : 'Todas programadas'}</p>
         </div>
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
           <p className="text-xs font-medium text-on-surface-variant dark:text-slate-400">Programas formativos</p>
@@ -379,29 +392,50 @@ export function Fichas() {
       )}
 
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Nivel</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Etapa</th><th className="px-4 py-3">Sede</th><th className="px-4 py-3">Aprendices</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th>{puedeGestionar && <th className="px-4 py-3">Acciones</th>}</tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((ficha) => <tr key={ficha.idFicha} onClick={() => setSeleccionada(ficha)} className="cursor-pointer border-l-4 border-l-transparent hover:border-l-primary hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-on-surface dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-on-surface-variant/70">{ficha.programa.codigoPrograma}</p></td><td className="px-4 py-3"><span className="rounded-full bg-primary-container px-2.5 py-1 text-xs font-semibold text-primary dark:bg-sena-950/50">{nivel(ficha)}</span></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{ficha.jornadas.length ? ficha.jornadas.map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-on-surface-variant/70">Sin horario</span>}</div></td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ETAPA_BADGE[etapaFicha(ficha)]}`}>{etapaFicha(ficha)}</span></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{ficha.sede?.nombreSede ?? 'Sin sede'}</td><td className="px-4 py-3 font-medium text-on-surface dark:text-slate-300">{ficha.aprendicesTotales}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{ficha.trimestre.nombre}</td><td className="px-4 py-3"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{ficha.trimestre.estado}</span></td>{puedeGestionar && <td className="px-4 py-3"><button type="button" onClick={(evento) => { evento.stopPropagation(); abrirEditar(ficha) }} className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button></td>}</tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Nivel</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Etapa</th><th className="px-4 py-3">Sede</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Aprendices</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th>{puedeGestionar && <th className="px-4 py-3">Acciones</th>}</tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((ficha) => <tr key={ficha.idFicha} onClick={() => setSeleccionada(ficha)} className="cursor-pointer border-l-4 border-l-transparent hover:border-l-primary hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-on-surface dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-on-surface-variant/70">{ficha.programa.codigoPrograma}</p></td><td className="px-4 py-3"><span className="rounded-full bg-primary-container px-2.5 py-1 text-xs font-semibold text-primary dark:bg-sena-950/50">{nivel(ficha)}</span></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{ficha.jornadas.length ? ficha.jornadas.map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-on-surface-variant/70">Sin horario</span>}</div></td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ETAPA_BADGE[etapaFicha(ficha)]}`}>{etapaFicha(ficha)}</span></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{ficha.sede?.nombreSede ?? 'Sin sede'}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{(ambientesPorFicha.get(ficha.idFicha) ?? []).join(', ') || 'Sin asignar'}</td><td className="px-4 py-3 font-medium text-on-surface dark:text-slate-300">{ficha.aprendicesTotales}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{ficha.trimestre.nombre}</td><td className="px-4 py-3"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{ficha.trimestre.estado}</span></td>{puedeGestionar && <td className="px-4 py-3"><button type="button" onClick={(evento) => { evento.stopPropagation(); abrirEditar(ficha) }} className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button></td>}</tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (
           <div className="flex items-center justify-between border-t border-outline-variant px-4 py-3 dark:border-slate-700">
             <p className="text-xs text-on-surface-variant dark:text-slate-400">
-              Página {paginaSegura} de {totalPaginas}
+              Mostrando {visiblesPagina.length} de {visibles.length} registros
             </p>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
                 disabled={paginaSegura === 1}
-                className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                aria-label="Página anterior"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-700"
               >
-                Anterior
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_left</span>
               </button>
+              {Array.from({ length: totalPaginas }, (_, indice) => indice + 1)
+                .filter((numero) => numero === 1 || numero === totalPaginas || Math.abs(numero - paginaSegura) <= 1)
+                .map((numero, indice, lista) => (
+                  <span key={numero} className="flex items-center gap-1.5">
+                    {indice > 0 && lista[indice - 1] !== numero - 1 && <span className="px-1 text-on-surface-variant/70">…</span>}
+                    <button
+                      type="button"
+                      onClick={() => setPaginaActual(numero)}
+                      aria-current={numero === paginaSegura ? 'page' : undefined}
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm font-semibold ${
+                        numero === paginaSegura
+                          ? 'bg-primary text-on-primary'
+                          : 'text-on-surface-variant hover:bg-surface dark:text-slate-300 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      {numero}
+                    </button>
+                  </span>
+                ))}
               <button
                 type="button"
                 onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
                 disabled={paginaSegura === totalPaginas}
-                className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                aria-label="Página siguiente"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-700"
               >
-                Siguiente
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_right</span>
               </button>
             </div>
           </div>
