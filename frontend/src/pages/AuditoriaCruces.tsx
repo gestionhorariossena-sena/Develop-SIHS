@@ -15,6 +15,18 @@ const TITULO_POR_TIPO: Record<TipoConflictoHorario, string> = {
   regla_instructor: 'Regla institucional (RF-011)',
 }
 
+// Mismo texto explicativo real de cada regla — panel "Tipología de
+// Conflictos" del mockup, con las 5 categorías reales (no una taxonomía
+// nueva) y su conteo de activos.
+const DESCRIPCION_POR_TIPO: Record<TipoConflictoHorario, string> = {
+  cruce_ambiente: 'Dos o más fichas programadas en el mismo ambiente en franja idéntica.',
+  cruce_instructor: 'Un instructor asignado simultáneamente a dos sesiones.',
+  cruce_ficha: 'El mismo grupo de aprendices tiene doble franja lectiva solapada.',
+  resultado_repetido: 'Resultado de aprendizaje ya evaluado o duplicado en el mismo trimestre.',
+  regla_instructor: 'Exceso del tope de horas lectivas semanales (32-40 hrs según contrato).',
+}
+const ORDEN_TIPOS: TipoConflictoHorario[] = ['cruce_ambiente', 'cruce_instructor', 'cruce_ficha', 'resultado_repetido', 'regla_instructor']
+
 function construirQuery(idTrimestre: string, idSede: string) {
   const params = new URLSearchParams()
   if (idTrimestre !== 'todos') params.set('idTrimestre', idTrimestre)
@@ -182,38 +194,82 @@ export function AuditoriaCruces() {
 
       {error && <p className="mb-4 rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm text-on-error-container">{error}</p>}
 
-      {cargando ? (
-        <p className="py-12 text-center text-sm text-on-surface-variant">Auditando horarios…</p>
-      ) : conflictos.length === 0 ? (
-        <div className="rounded-xl border border-primary/20 bg-primary-container p-8 text-center">
-          <p className="text-sm font-semibold text-on-primary-container">Sin conflictos activos.</p>
-          <p className="mt-1 text-sm text-on-primary-container/90">
-            No hay cruces entre los horarios guardados para este filtro.
-          </p>
-        </div>
-      ) : (
-        <>
-          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-            <span className="rounded-full bg-tertiary-container px-2.5 py-1 text-xs font-semibold text-on-tertiary-container">
-              {conflictos.length} conflicto{conflictos.length === 1 ? '' : 's'} activo{conflictos.length === 1 ? '' : 's'}
-            </span>
-            {(datosVigentes?.resumen.tipos ?? []).map((tipo) => (
-              <span key={tipo} className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700">
-                {TITULO_POR_TIPO[tipo as TipoConflictoHorario] ?? tipo}: {conteoPorTipo(tipo as TipoConflictoHorario)}
-              </span>
-            ))}
-          </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="min-w-0">
+          {cargando ? (
+            <p className="py-12 text-center text-sm text-on-surface-variant">Auditando horarios…</p>
+          ) : conflictos.length === 0 ? (
+            <div className="rounded-xl border border-primary/20 bg-primary-container p-8 text-center">
+              <p className="text-sm font-semibold text-on-primary-container">Sin conflictos activos.</p>
+              <p className="mt-1 text-sm text-on-primary-container/90">
+                No hay cruces entre los horarios guardados para este filtro.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-tertiary/20 bg-tertiary-container p-4">
+                <span aria-hidden="true" className="material-symbols-outlined text-on-tertiary-container">warning</span>
+                <span className="text-sm font-semibold text-on-tertiary-container">
+                  {conflictos.length} conflicto{conflictos.length === 1 ? '' : 's'} crítico{conflictos.length === 1 ? '' : 's'} activo{conflictos.length === 1 ? '' : 's'}
+                </span>
+              </div>
 
-          <div className="space-y-3">
-            {conflictosDuros.map((conflicto, i) => (
-              <TarjetaConflicto key={`duro-${i}`} conflicto={conflicto} duro />
-            ))}
-            {conflictosFisicos.map((conflicto, i) => (
-              <TarjetaConflicto key={`fisico-${i}`} conflicto={conflicto} duro={false} />
-            ))}
-          </div>
-        </>
-      )}
+              <div className="space-y-3">
+                {conflictosDuros.map((conflicto, i) => (
+                  <TarjetaConflicto key={`duro-${i}`} conflicto={conflicto} duro />
+                ))}
+                {conflictosFisicos.map((conflicto, i) => (
+                  <TarjetaConflicto key={`fisico-${i}`} conflicto={conflicto} duro={false} />
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <aside className="space-y-4">
+          <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              <h2 className="flex items-center gap-1.5 text-sm font-bold text-on-surface dark:text-slate-100">
+                <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-primary">rule</span>
+                Tipología de Conflictos SIHS
+              </h2>
+              <span className="rounded-full bg-surface-container px-2 py-0.5 text-xs font-semibold text-on-surface-variant dark:bg-slate-700">
+                {ORDEN_TIPOS.length} reglas
+              </span>
+            </div>
+            <div className="space-y-2">
+              {ORDEN_TIPOS.map((tipo) => {
+                const activos = conteoPorTipo(tipo)
+                return (
+                  <div key={tipo} className={`rounded-lg border p-2.5 ${activos > 0 ? 'border-tertiary/30 bg-tertiary-container' : 'border-outline-variant dark:border-slate-700'}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`text-xs font-semibold ${activos > 0 ? 'text-on-tertiary-container' : 'text-on-surface dark:text-slate-100'}`}>{TITULO_POR_TIPO[tipo]}</p>
+                      <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${activos > 0 ? 'bg-tertiary text-on-tertiary' : 'bg-surface-container text-on-surface-variant dark:bg-slate-700'}`}>
+                        {activos} activo{activos === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                    <p className={`mt-0.5 text-[11px] ${activos > 0 ? 'text-on-tertiary-container/90' : 'text-on-surface-variant dark:text-slate-400'}`}>{DESCRIPCION_POR_TIPO[tipo]}</p>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+
+          <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+            <h2 className="mb-1 text-sm font-bold text-on-surface dark:text-slate-100">Resolución en Constructor Ágil</h2>
+            <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
+              Para ajustar ambientes, reasignar fichas o corregir cruces, use el módulo Constructor.
+            </p>
+            <Link
+              to="/horarios/nuevo"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
+            >
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">edit_calendar</span>
+              Abrir Constructor
+            </Link>
+          </section>
+        </aside>
+      </div>
     </AppShell>
   )
 }

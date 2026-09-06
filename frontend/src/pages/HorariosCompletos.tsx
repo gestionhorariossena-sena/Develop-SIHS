@@ -10,7 +10,19 @@ import type { Jornada } from './horario/tipos'
 import { colorParaBloque } from './horario/gridLogic'
 import type { ColorBloque } from './horario/gridLogic'
 import { apiGet, apiPatch, ApiError } from '../services/api'
-import type { Ambiente, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
+import type { Ambiente, AuditoriaCrucesResponse, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
+
+// Mismos 4 "modos" que el mockup de Stitch (Vista General/Por Instructor/
+// Por Ficha/Por Ambiente), pero acá son links reales a las rutas que YA
+// existen (VistaInstructores/VistaFichas/VistaAmbientes) en vez de tabs que
+// cambian de contenido en el mismo componente — evita duplicar esas 3
+// pantallas dentro de esta.
+const MODOS_VISTA = [
+  { etiqueta: 'Vista General', ruta: '/horarios/completos', icono: 'grid_view' },
+  { etiqueta: 'Por Instructor', ruta: '/vista-instructores', icono: 'person' },
+  { etiqueta: 'Por Ficha', ruta: '/vista-fichas', icono: 'groups' },
+  { etiqueta: 'Por Ambiente', ruta: '/vista-ambientes', icono: 'meeting_room' },
+] as const
 
 type FiltroJornada = 'todas' | Jornada
 type FiltroEstado = 'todos' | 'publicado' | 'borrador'
@@ -251,6 +263,14 @@ export function HorariosCompletos() {
   const [idExpandido, setIdExpandido] = useState<number | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Resumen real de conflictos (mismo endpoint que AuditoriaCruces.tsx) para
+  // el panel lateral "Auditoría" del mockup — no es un dato nuevo inventado,
+  // es el mismo GET /horarios/auditoria-cruces ya construido.
+  const [auditoria, setAuditoria] = useState<AuditoriaCrucesResponse | null>(null)
+
+  useEffect(() => {
+    apiGet<AuditoriaCrucesResponse>('/horarios/auditoria-cruces').then(setAuditoria).catch(() => {})
+  }, [])
 
   useEffect(() => {
     apiGet<Horario[]>('/horarios/')
@@ -314,6 +334,28 @@ export function HorariosCompletos() {
         <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {horarios.length} horarios</p>
       </div>
 
+      {/* Selector de perspectiva — mismos 4 modos del mockup, como links
+       * reales a las vistas que ya existen (evita duplicar Vista por
+       * fichas/instructores/ambientes dentro de esta pantalla). */}
+      <nav aria-label="Cambiar vista de horarios" className="mb-4 inline-flex items-center gap-1 rounded-full bg-surface-container-low p-1 dark:bg-slate-900">
+        {MODOS_VISTA.map((modo) => (
+          <Link
+            key={modo.ruta}
+            to={modo.ruta}
+            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
+              modo.etiqueta === 'Vista General'
+                ? 'bg-surface-container-lowest text-on-surface shadow-sm dark:bg-slate-800 dark:text-slate-100'
+                : 'text-on-surface-variant hover:text-on-surface dark:text-slate-400'
+            }`}
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-[18px]">{modo.icono}</span>
+            {modo.etiqueta}
+          </Link>
+        ))}
+      </nav>
+
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="min-w-0">
       <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de horarios">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -436,6 +478,63 @@ export function HorariosCompletos() {
           </div>
         )}
       </div>}
+      </div>
+
+      <aside className="space-y-4">
+        <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="flex items-center gap-1.5 text-sm font-bold text-on-surface dark:text-slate-100">
+              <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-primary">insights</span>
+              Auditoría de cruces
+            </h2>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+              (auditoria?.conflictos.length ?? 0) > 0 ? 'bg-error-container text-on-error-container' : 'bg-primary-container text-on-primary-container'
+            }`}>
+              {auditoria === null ? '…' : auditoria.conflictos.length}
+            </span>
+          </div>
+          {auditoria === null ? (
+            <p className="text-xs text-on-surface-variant dark:text-slate-400">Auditando horarios…</p>
+          ) : auditoria.conflictos.length === 0 ? (
+            <p className="text-xs text-on-surface-variant dark:text-slate-400">Sin conflictos activos entre los horarios guardados.</p>
+          ) : (
+            <>
+              <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
+                {auditoria.conflictos.length} conflicto{auditoria.conflictos.length === 1 ? '' : 's'} activo{auditoria.conflictos.length === 1 ? '' : 's'} entre horarios ya guardados.
+              </p>
+              <div className="space-y-1.5">
+                {auditoria.resumen.tipos.map((tipo) => (
+                  <div key={tipo} className="flex items-center justify-between rounded-lg bg-surface-container-low px-2.5 py-1.5 text-xs dark:bg-slate-900">
+                    <span className="text-on-surface-variant dark:text-slate-300">{tipo}</span>
+                    <span className="font-semibold text-on-surface dark:text-slate-100">{auditoria.conflictos.filter((c) => c.tipo === tipo).length}</span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          <Link
+            to="/horarios/auditoria"
+            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-on-primary-container dark:text-sena-400"
+          >
+            Ver auditoría completa →
+          </Link>
+        </section>
+
+        <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="mb-1 text-sm font-bold text-on-surface dark:text-slate-100">Resolución en Constructor Ágil</h2>
+          <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
+            Para ajustar ambientes, reasignar fichas o corregir cruces, use el módulo Constructor.
+          </p>
+          <Link
+            to="/horarios/nuevo"
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-[18px]">edit_calendar</span>
+            Abrir Constructor
+          </Link>
+        </section>
+      </aside>
+      </div>
     </AppShell>
   )
 }
