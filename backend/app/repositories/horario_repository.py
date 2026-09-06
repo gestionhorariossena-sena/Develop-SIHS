@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.models.ambiente import Ambiente
 from app.models.horario import Horario, horario_dia
 
 
@@ -106,6 +107,25 @@ class HorarioRepository:
     def obtener_por_ambiente(db: Session, id_ambiente: int) -> list[Horario]:
         """GET /ambientes/{id}/horarios (SCRUM-48) — relacionados de un ambiente."""
         return db.query(Horario).filter(Horario.idAmbiente == id_ambiente).all()
+
+    @staticmethod
+    def obtener_activos(
+        db: Session, id_trimestre: int | None = None, id_sede: int | None = None
+    ) -> list[Horario]:
+        """Horarios activos vigentes, opcionalmente acotados a un trimestre
+        y/o sede — usado por HorarioService.auditar_conflictos para el
+        barrido de "Auditoría de Cruces" (a diferencia de buscar_solape,
+        que compara UN candidato contra lo existente, acá se listan los
+        horarios ya guardados sobre los que después se re-valida cada
+        uno)."""
+        query = db.query(Horario).filter(Horario.activo.is_(True))
+        if id_trimestre is not None:
+            query = query.filter(Horario.idTrimestre == id_trimestre)
+        if id_sede is not None:
+            query = query.join(Ambiente, Horario.idAmbiente == Ambiente.id).filter(
+                Ambiente.sede_id == id_sede
+            )
+        return query.all()
 
     @staticmethod
     def buscar_resultado_en_ficha(
