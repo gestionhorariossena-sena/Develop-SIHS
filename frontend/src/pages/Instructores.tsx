@@ -150,24 +150,55 @@ export function Instructores() {
   const inicioPagina = (paginaSegura - 1) * POR_PAGINA
   const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
 
+  const activos = instructores.filter((item) => item.estado === 'activo').length
+  const conEspecialidad = instructores.filter((item) => item.especialidades.length > 0).length
+  const horasContratadasTotales = instructores.reduce((suma, item) => suma + (item.horasContratadasSemana ?? 0), 0)
+
   return (
     <AppShell activo="Instructores">
+      <nav className="mb-2 text-xs text-on-surface-variant">
+        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <span className="mx-1.5 text-outline">/</span>
+        <span className="font-semibold text-on-surface">Instructores</span>
+      </nav>
+
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div><h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Instructores</h1><p className="text-sm text-on-surface-variant dark:text-slate-400">Planta de instructores y especialidades asignadas.</p></div>
+        <div>
+          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Directorio y Disponibilidad</h1>
+          <p className="text-sm text-on-surface-variant dark:text-slate-400">Planta de instructores y especialidades asignadas.</p>
+        </div>
         <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {instructores.length} instructores</p>
+      </div>
+
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Total instructores</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{instructores.length}</p>
+          <p className="mt-1 text-xs text-on-surface-variant">{activos} activos</p>
+        </div>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Con especialidad asignada</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{conEspecialidad}</p>
+          <p className="mt-1 text-xs text-on-surface-variant">{especialidades.length} especialidades distintas</p>
+        </div>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Tipos de vinculación</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{contratos.length}</p>
+          <p className="mt-1 truncate text-xs text-on-surface-variant" title={contratos.join(', ')}>{contratos.join(', ') || 'Sin definir'}</p>
+        </div>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Horas contratadas / semana</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{horasContratadasTotales.toLocaleString('es-CO')} h</p>
+          <p className="mt-1 text-xs text-on-surface-variant">entre {instructores.length || 1} instructores</p>
+        </div>
       </div>
 
       <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de instructores">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Filtrar instructores</p>
-            {filtrosActivos > 0 && <span className="rounded-full bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
-            {filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setEspecialidad('todas'); setTipoContrato('todos'); setFicha('todas'); setAmbiente('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Limpiar filtros</button>}
-          </div>
-          <div className="flex gap-4">
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Activos</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{instructores.filter((item) => item.estado === 'activo').length}</p></div>
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Con especialidad</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{instructores.filter((item) => item.especialidades.length > 0).length}</p></div>
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Especialidades</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{especialidades.length}</p></div>
+            {filtrosActivos > 0 && <span className="rounded-full bg-primary-container px-2 py-0.5 text-xs font-semibold text-on-primary-container">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
+            {filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setEspecialidad('todas'); setTipoContrato('todos'); setFicha('todas'); setAmbiente('todos') }} className="text-sm font-medium text-primary hover:text-on-primary-container">Limpiar filtros</button>}
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
