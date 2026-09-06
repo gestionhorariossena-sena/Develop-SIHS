@@ -330,6 +330,24 @@ export function Instructores() {
                 {cargaVigente.horasAsignadas > cargaVigente.horasMaximas && (
                   <p className="mt-1 text-xs text-red-600 dark:text-red-400">Supera el máximo de RF-011.</p>
                 )}
+                {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
+                    real del backend. CargaSemanal solo trae horasAsignadas/
+                    horasMaximas totales, no la distribución Lectiva/Proyectos/
+                    Preparación que muestra el mockup. No usar como si fuera
+                    dinámico sin agregar el campo correspondiente primero. */}
+                <div className="mt-3 border-t border-outline-variant pt-3 dark:border-slate-700">
+                  <p className="mb-1.5 text-xs font-medium text-on-surface-variant dark:text-slate-400">Distribución de carga (ejemplo)</p>
+                  <div className="flex h-2 w-full overflow-hidden rounded-full bg-surface-container-high dark:bg-slate-700">
+                    <div className="h-full bg-emerald-600" style={{ width: '75%' }} title="30h Lectiva" />
+                    <div className="h-full bg-sky-500" style={{ width: '10%' }} title="4h Proyectos" />
+                    <div className="h-full bg-amber-400" style={{ width: '15%' }} title="6h Preparación" />
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-on-surface-variant dark:text-slate-400">
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-600" />30h Lectiva</span>
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-sky-500" />4h Proyectos</span>
+                    <span className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-amber-400" />6h Preparación</span>
+                  </div>
+                </div>
               </>
             ) : (
               <p className="text-xs text-on-surface-variant dark:text-slate-400">Sin tipo de contrato definido — no se puede calcular el tope de RF-011.</p>
@@ -356,10 +374,43 @@ export function Instructores() {
                 >
                   Ver horario completo →
                 </Link>
+                {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
+                    real del backend. No existe un campo de "ambiente fijo
+                    asignado" por instructor (un instructor puede dictar en
+                    varios ambientes distintos según el horario real). No usar
+                    como si fuera dinámico sin agregar el campo correspondiente
+                    primero. */}
+                <p className="mt-2 text-xs text-on-surface-variant dark:text-slate-400">
+                  Ambiente fijo asignado (ejemplo): <span className="font-medium text-on-surface dark:text-slate-200">Laboratorio 302 · Calle 52</span>
+                </p>
               </SeccionDrawer>
               <SeccionFichasAsignadas horarios={horariosVigentes ?? []} diasPorId={diasPorId} />
               <SeccionTemasQueDicta horarios={horariosVigentes ?? []} />
               <SeccionAmbientesAsignados horarios={horariosVigentes ?? []} />
+
+              {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
+                  real del backend. No existe ninguna tabla ni endpoint de
+                  "solicitud de cambio de horario" todavía (confirmado en
+                  auditorías previas de esta sesión). Es un ejemplo fijo de
+                  cómo se vería la alerta, no una solicitud real de este
+                  instructor — por eso el botón queda deshabilitado. */}
+              <div className="mt-3 flex items-start gap-3 rounded-xl border border-tertiary-container bg-tertiary-container/40 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+                <span className="material-symbols-outlined mt-0.5 text-[18px] text-on-tertiary-container dark:text-amber-300">notifications_active</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-on-tertiary-container dark:text-amber-200">Alerta de solicitud de cambio (ejemplo)</p>
+                  <p className="text-xs text-on-tertiary-container/80 dark:text-amber-300/80">
+                    Un instructor solicita permuta de ambiente por cruce técnico detectado — así se vería cuando el flujo esté conectado al backend.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  disabled
+                  title="Aún no implementado en el backend"
+                  className="shrink-0 cursor-not-allowed rounded-lg border border-outline px-2.5 py-1 text-xs font-semibold text-on-surface-variant opacity-60 dark:border-slate-700"
+                >
+                  Revisar
+                </button>
+              </div>
             </>
           )}
         </DrawerRelacionados>
