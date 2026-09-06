@@ -356,6 +356,12 @@ export function NuevoHorario() {
 
   return (
     <AppShell activo="Horarios">
+      <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant print:hidden">
+        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <span className="text-outline">/</span>
+        <span className="font-semibold text-primary">Constructor de Horarios</span>
+      </nav>
+
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">
@@ -417,77 +423,94 @@ export function NuevoHorario() {
         </p>
       )}
 
-      <div className="mb-6 grid gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 sm:grid-cols-4 dark:border-slate-700 dark:bg-slate-800">
-        <Campo etiqueta="Ficha (referencia del formulario)">
-          <input
-            value={ficha}
-            onChange={(e) => setFicha(e.target.value)}
-            placeholder="Ej. 3228973 B"
-            className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-          />
-        </Campo>
-        <Campo etiqueta="Aprendices en formación a la fecha">
-          <input
-            value={aprendices}
-            onChange={(e) => setAprendices(e.target.value)}
-            className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-          />
-        </Campo>
-        <Campo etiqueta="Horas asignadas trimestre">
-          <input
-            value={horasTrimestre}
-            onChange={(e) => setHorasTrimestre(e.target.value)}
-            className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-          />
-        </Campo>
-        <Campo etiqueta="Inicio / fin de trimestre">
-          <div className="flex items-center gap-1.5">
-            <input
-              type="date"
-              value={fechaInicio}
-              onChange={(e) => setFechaInicio(e.target.value)}
-              className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-2 py-2 text-xs text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            />
-            <input
-              type="date"
-              value={fechaFin}
-              onChange={(e) => setFechaFin(e.target.value)}
-              className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-2 py-2 text-xs text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            />
+      <div className="grid gap-4 xl:grid-cols-[1fr_280px]">
+        <div className="min-w-0">
+          <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+            <Campo etiqueta="Ficha (referencia del formulario)">
+              <input
+                value={ficha}
+                onChange={(e) => setFicha(e.target.value)}
+                placeholder="Ej. 3228973 B"
+                className="w-40 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              />
+            </Campo>
+            <Campo etiqueta="Aprendices en formación a la fecha">
+              <input
+                value={aprendices}
+                onChange={(e) => setAprendices(e.target.value)}
+                className="w-24 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              />
+            </Campo>
+            <Campo etiqueta="Horas asignadas trimestre">
+              <input
+                value={horasTrimestre}
+                onChange={(e) => setHorasTrimestre(e.target.value)}
+                className="w-24 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              />
+            </Campo>
+            <Campo etiqueta="Inicio / fin de trimestre">
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="date"
+                  value={fechaInicio}
+                  onChange={(e) => setFechaInicio(e.target.value)}
+                  className="rounded-xl border border-outline-variant bg-surface-container-lowest px-2 py-2 text-xs text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                />
+                <input
+                  type="date"
+                  value={fechaFin}
+                  onChange={(e) => setFechaFin(e.target.value)}
+                  className="rounded-xl border border-outline-variant bg-surface-container-lowest px-2 py-2 text-xs text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                />
+              </div>
+            </Campo>
           </div>
-        </Campo>
-      </div>
 
-      <div className="mb-6">
-        {catalogos && !cargandoEdicion ? (
-          <HorarioEditor
-            bloquesIniciales={datosEdicion?.bloques ?? []}
-            gridInicial={datosEdicion?.grid ?? gridVacio()}
-            onCambiarEstado={capturarEstadoActual}
-            catalogos={catalogos}
-          />
-        ) : (
-          !errorCatalogos && !errorEdicion && <p className="text-sm text-on-surface-variant">Cargando…</p>
-        )}
-      </div>
+          {catalogos && !cargandoEdicion ? (
+            <HorarioEditor
+              bloquesIniciales={datosEdicion?.bloques ?? []}
+              gridInicial={datosEdicion?.grid ?? gridVacio()}
+              onCambiarEstado={capturarEstadoActual}
+              catalogos={catalogos}
+            />
+          ) : (
+            !errorCatalogos && !errorEdicion && <p className="text-sm text-on-surface-variant">Cargando…</p>
+          )}
+        </div>
 
-      <div className="mt-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-        <p className="mb-2 font-semibold text-on-surface dark:text-slate-100">Dirección sede principal y sedes</p>
-        <ul className="space-y-0.5">
-          {SEDES.map((sede) => (
-            <li key={sede.nombre}>
-              <span className="font-medium text-on-surface-variant dark:text-slate-300">{sede.nombre}:</span> {sede.direccion}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-3 text-xs text-on-surface-variant print:hidden dark:text-slate-400">
-          Plantilla base:{' '}
-          <code className="rounded bg-surface-container px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">
-            _Docs/Diseño/plantillas-institucionales/disponibilidad-ficha-3228973B.pdf
-          </code>
-          . Reglas de color/tipografía en{' '}
-          <code className="rounded bg-surface-container px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">_Docs/Diseño/GUIA_DE_MARCA.md</code>.
-        </p>
+        <aside className="flex flex-col gap-4 print:hidden">
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+            <p className="mb-1 text-sm font-semibold text-on-surface dark:text-slate-100">Auditoría de cruces</p>
+            <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
+              Revisa los cruces ya detectados entre horarios guardados de la sede antes de programar más clases.
+            </p>
+            <Link
+              to="/horarios/auditoria"
+              className="inline-flex items-center gap-1 rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface-container-high dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              Ver auditoría de cruces →
+            </Link>
+          </div>
+
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            <p className="mb-2 font-semibold text-on-surface dark:text-slate-100">Dirección sede principal y sedes</p>
+            <ul className="space-y-0.5">
+              {SEDES.map((sede) => (
+                <li key={sede.nombre}>
+                  <span className="font-medium text-on-surface-variant dark:text-slate-300">{sede.nombre}:</span> {sede.direccion}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs text-on-surface-variant dark:text-slate-400">
+              Plantilla base:{' '}
+              <code className="rounded bg-surface-container px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">
+                _Docs/Diseño/plantillas-institucionales/disponibilidad-ficha-3228973B.pdf
+              </code>
+              . Reglas de color/tipografía en{' '}
+              <code className="rounded bg-surface-container px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">_Docs/Diseño/GUIA_DE_MARCA.md</code>.
+            </p>
+          </div>
+        </aside>
       </div>
 
       {conflictoPendiente && (
