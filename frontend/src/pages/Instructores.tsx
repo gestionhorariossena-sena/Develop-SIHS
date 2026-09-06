@@ -27,6 +27,31 @@ function colorBarraCarga(horasAsignadas: number, horasMaximas: number) {
   return 'bg-emerald-600 dark:bg-emerald-500'
 }
 
+/** Tope semanal por tipo de contrato (RF-011: 32h planta / 40h contrato —
+ * mismo umbral que HORAS_MAX_PLANTA/HORAS_MAX_CONTRATO en
+ * backend/app/services/horario_service.py). Se replica acá SOLO para
+ * poder pintar la barra de carga en cada fila de la tabla sin pedir
+ * /usuarios/{id}/carga-semanal 92 veces (esa llamada real sigue siendo la
+ * fuente de verdad y es la que se usa en el drawer). */
+function horasMaximasPara(instructor: Usuario) {
+  return instructor.tipoContrato?.trim().toLocaleLowerCase('es-CO') === 'planta' ? 32 : 40
+}
+
+/** Horas ya asignadas por semana, derivadas de los mismos `todosLosHorarios`
+ * que la página ya carga para los filtros de ficha/ambiente — mismo cálculo
+ * que `_duracion_horas` del backend (horaFin - horaInicio, por cada día que
+ * se repite), sin pedir nada nuevo al backend. */
+function horasAsignadasPara(idInstructor: string, horarios: Horario[]) {
+  let total = 0
+  for (const horario of horarios) {
+    if (horario.idInstructor !== idInstructor) continue
+    const [hi, mi] = horario.horaInicio.split(':').map(Number)
+    const [hf, mf] = horario.horaFin.split(':').map(Number)
+    total += ((hf * 60 + mf) - (hi * 60 + mi)) / 60 * horario.dias.length
+  }
+  return total
+}
+
 export function Instructores() {
   const [searchParams] = useSearchParams()
   const idDesdeUrl = searchParams.get('id')
@@ -151,8 +176,20 @@ export function Instructores() {
   const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
 
   const activos = instructores.filter((item) => item.estado === 'activo').length
-  const conEspecialidad = instructores.filter((item) => item.especialidades.length > 0).length
   const horasContratadasTotales = instructores.reduce((suma, item) => suma + (item.horasContratadasSemana ?? 0), 0)
+
+  // Carga real derivada de todosLosHorarios (ya cargado para los filtros),
+  // igual que el mockup "Directorio y Disponibilidad" — sin pedir
+  // carga-semanal de cada instructor una por una.
+  const cargaPorInstructor = instructores.map((item) => ({
+    idUsuario: item.idUsuario,
+    asignadas: horasAsignadasPara(item.idUsuario, todosLosHorarios),
+    maximas: horasMaximasPara(item),
+  }))
+  const conCargaCompleta = cargaPorInstructor.filter((item) => item.asignadas >= item.maximas).length
+  const disponibles = cargaPorInstructor.filter((item) => item.asignadas === 0).length
+  const horasAsignadasTotales = cargaPorInstructor.reduce((suma, item) => suma + item.asignadas, 0)
+  const horasMaximasTotales = cargaPorInstructor.reduce((suma, item) => suma + item.maximas, 0)
 
   return (
     <AppShell activo="Instructores">
@@ -164,10 +201,29 @@ export function Instructores() {
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Directorio y Disponibilidad</h1>
+          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">
+            Directorio y Disponibilidad <span className="font-normal text-on-surface-variant">| CGMLTI Calle 52</span>
+          </h1>
           <p className="text-sm text-on-surface-variant dark:text-slate-400">Planta de instructores y especialidades asignadas.</p>
         </div>
-        <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {instructores.length} instructores</p>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            disabled
+            title="Aún no implementado en el backend"
+            className="cursor-not-allowed rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant opacity-60 dark:border-slate-700"
+          >
+            Exportar carga docente
+          </button>
+          <button
+            type="button"
+            disabled
+            title="Aún no implementado en el backend"
+            className="cursor-not-allowed rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary opacity-60"
+          >
+            + Registrar instructor
+          </button>
+        </div>
       </div>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -177,21 +233,23 @@ export function Instructores() {
           <p className="mt-1 text-xs text-on-surface-variant">{activos} activos</p>
         </div>
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Con especialidad asignada</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{conEspecialidad}</p>
-          <p className="mt-1 text-xs text-on-surface-variant">{especialidades.length} especialidades distintas</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Con carga completa</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{conCargaCompleta}</p>
+          <p className="mt-1 text-xs text-on-surface-variant">{instructores.length ? Math.round((conCargaCompleta / instructores.length) * 100) : 0}% asignados</p>
         </div>
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Tipos de vinculación</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{contratos.length}</p>
-          <p className="mt-1 truncate text-xs text-on-surface-variant" title={contratos.join(', ')}>{contratos.join(', ') || 'Sin definir'}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Disponibles asignación</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{disponibles}</p>
+          <p className="mt-1 text-xs text-on-surface-variant">sin horario asignado este trimestre</p>
         </div>
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Horas contratadas / semana</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{horasContratadasTotales.toLocaleString('es-CO')} h</p>
-          <p className="mt-1 text-xs text-on-surface-variant">entre {instructores.length || 1} instructores</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Horas semanales totales</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{horasAsignadasTotales.toLocaleString('es-CO')} h</p>
+          <p className="mt-1 text-xs text-on-surface-variant">Capacidad {horasMaximasTotales.toLocaleString('es-CO')} h · contratadas {horasContratadasTotales.toLocaleString('es-CO')} h</p>
         </div>
       </div>
+
+      <p className="mb-3 text-sm text-on-surface-variant">{visibles.length} de {instructores.length} instructores</p>
 
       <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de instructores">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -212,7 +270,7 @@ export function Instructores() {
       </section>
 
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Horas contratadas</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((item) => <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-on-surface dark:text-slate-100">{item.nombre}</p><p className="text-xs text-on-surface-variant dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Carga horaria</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Horas contratadas</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((item) => { const asignadas = horasAsignadasPara(item.idUsuario, todosLosHorarios); const maximas = horasMaximasPara(item); return <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-on-surface dark:text-slate-100">{item.nombre}</p><p className="text-xs text-on-surface-variant dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="min-w-[140px] px-4 py-3"><div className="mb-1 flex items-center justify-between text-xs font-medium text-on-surface-variant dark:text-slate-300"><span>{asignadas}h / {maximas}h</span><span>{Math.round((asignadas / maximas) * 100)}%</span></div><div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high dark:bg-slate-700"><div className={`h-full rounded-full ${colorBarraCarga(asignadas, maximas)}`} style={{ width: `${Math.min(100, Math.round((asignadas / maximas) * 100))}%` }} /></div></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr> })}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (
           <div className="flex items-center justify-between border-t border-outline-variant px-4 py-3 dark:border-slate-700">
