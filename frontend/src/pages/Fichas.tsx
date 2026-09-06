@@ -30,6 +30,37 @@ function nivel(ficha: Ficha) {
   return ficha.programa.nivelFormacion || 'Sin definir'
 }
 
+type Etapa = 'Lectiva' | 'Productiva' | 'Por iniciar' | 'Finalizada' | 'Sin definir'
+
+const ETAPA_BADGE: Record<Etapa, string> = {
+  Lectiva: 'bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300',
+  Productiva: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
+  'Por iniciar': 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+  Finalizada: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+  'Sin definir': 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+}
+
+// Deriva la etapa (Lectiva/Productiva) a partir de las 4 fechas reales de
+// la ficha (fechaInicioLectiva/fechaFinLectiva/fechaInicioProductiva/
+// fechaFinProductiva) — el backend no tiene una columna "estado" para
+// esto, solo las fechas, así que se calcula contra la fecha de hoy.
+function etapaFicha(ficha: Ficha): Etapa {
+  const hoy = new Date().toISOString().slice(0, 10)
+  const { fechaInicioLectiva, fechaFinLectiva, fechaInicioProductiva, fechaFinProductiva } = ficha
+
+  if (!fechaInicioLectiva && !fechaInicioProductiva) return 'Sin definir'
+  if (fechaInicioProductiva && fechaFinProductiva && hoy >= fechaInicioProductiva && hoy <= fechaFinProductiva) return 'Productiva'
+  if (fechaInicioLectiva && fechaFinLectiva && hoy >= fechaInicioLectiva && hoy <= fechaFinLectiva) return 'Lectiva'
+  if (fechaInicioLectiva && hoy < fechaInicioLectiva) return 'Por iniciar'
+  if (fechaFinProductiva && hoy > fechaFinProductiva) return 'Finalizada'
+  return 'Sin definir'
+}
+
+function formatFecha(fecha: string | null | undefined) {
+  if (!fecha) return null
+  return new Date(fecha).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
 export function Fichas() {
   const [searchParams] = useSearchParams()
   const idDesdeUrl = searchParams.get('id')
@@ -39,6 +70,7 @@ export function Fichas() {
   const [nivelFormacion, setNivelFormacion] = useState('todos')
   const [jornada, setJornada] = useState('todas')
   const [instructor, setInstructor] = useState('todos')
+  const [etapa, setEtapa] = useState('todas')
   const [orden, setOrden] = useState<Orden>('codigo')
   const [paginaActual, setPaginaActual] = useState(1)
   const [seleccionada, setSeleccionada] = useState<Ficha | null>(null)
@@ -171,12 +203,13 @@ export function Fichas() {
   const instructores = opcionesInstructor(todosLosHorarios)
   const texto = busqueda.trim().toLocaleLowerCase('es-CO')
   const filtrosActivos =
-    Number(Boolean(busqueda.trim())) + Number(programa !== 'todos') + Number(nivelFormacion !== 'todos') + Number(jornada !== 'todas') + Number(instructor !== 'todos')
+    Number(Boolean(busqueda.trim())) + Number(programa !== 'todos') + Number(nivelFormacion !== 'todos') + Number(jornada !== 'todas') + Number(instructor !== 'todos') + Number(etapa !== 'todas')
   const visibles = fichas.filter((ficha) => {
     const coincideTexto = !texto || `${ficha.codigoFicha} ${ficha.programa.nombrePrograma} ${ficha.programa.codigoPrograma}`.toLocaleLowerCase('es-CO').includes(texto)
     const coincideJornada = jornada === 'todas' || ficha.jornadas.includes(jornada)
     const coincideInstructor = instructor === 'todos' || (indiceInstructoresPorFicha.get(ficha.idFicha)?.has(instructor) ?? false)
-    return coincideTexto && coincideJornada && coincideInstructor && (programa === 'todos' || ficha.programa.nombrePrograma === programa) && (nivelFormacion === 'todos' || nivel(ficha) === nivelFormacion)
+    const coincideEtapa = etapa === 'todas' || etapaFicha(ficha) === etapa
+    return coincideTexto && coincideJornada && coincideInstructor && coincideEtapa && (programa === 'todos' || ficha.programa.nombrePrograma === programa) && (nivelFormacion === 'todos' || nivel(ficha) === nivelFormacion)
   }).sort((primera, segunda) => {
     if (orden === 'programa') return primera.programa.nombrePrograma.localeCompare(segunda.programa.nombrePrograma, 'es-CO')
     if (orden === 'trimestre') return primera.trimestre.nombre.localeCompare(segunda.trimestre.nombre, 'es-CO')
@@ -246,7 +279,7 @@ export function Fichas() {
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Filtrar fichas</p>
             {filtrosActivos > 0 && <span className="rounded-full bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
-            {filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setPrograma('todos'); setNivelFormacion('todos'); setJornada('todas'); setInstructor('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Limpiar filtros</button>}
+            {filtrosActivos > 0 && <button type="button" onClick={() => { setBusqueda(''); setPrograma('todos'); setNivelFormacion('todos'); setJornada('todas'); setInstructor('todos'); setEtapa('todas') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">Limpiar filtros</button>}
           </div>
           <div className="flex gap-4">
             <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Activas</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{fichas.filter((ficha) => ficha.trimestre.estado === 'activo').length}</p></div>
@@ -254,18 +287,19 @@ export function Fichas() {
             <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Programas</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{programas.length}</p></div>
           </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-7">
           <div className="md:col-span-2 lg:col-span-1"><label htmlFor="buscar-ficha" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Buscar</label><input id="buscar-ficha" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Código o programa" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" /></div>
           <div><label htmlFor="filtro-programa" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Programa</label><select id="filtro-programa" value={programa} onChange={(evento) => setPrograma(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{programas.map((item) => <option key={item}>{item}</option>)}</select></div>
           <div><label htmlFor="filtro-nivel" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Nivel</label><select id="filtro-nivel" value={nivelFormacion} onChange={(evento) => setNivelFormacion(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{niveles.map((item) => <option key={item}>{item}</option>)}</select></div>
           <div><label htmlFor="filtro-jornada" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Jornada</label><select id="filtro-jornada" value={jornada} onChange={(evento) => setJornada(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todas">Todas</option>{jornadas.map((item) => <option key={item}>{item}</option>)}</select></div>
           <div><label htmlFor="filtro-instructor" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Instructor</label><select id="filtro-instructor" value={instructor} onChange={(evento) => setInstructor(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todos">Todos</option>{instructores.map((item) => <option key={item}>{item}</option>)}</select></div>
+          <div><label htmlFor="filtro-etapa" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Etapa</label><select id="filtro-etapa" value={etapa} onChange={(evento) => setEtapa(evento.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="todas">Todas</option><option value="Lectiva">Lectiva</option><option value="Productiva">Productiva</option><option value="Por iniciar">Por iniciar</option><option value="Finalizada">Finalizada</option><option value="Sin definir">Sin definir</option></select></div>
           <div><label htmlFor="orden-ficha" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Ordenar por</label><select id="orden-ficha" value={orden} onChange={(evento) => setOrden(evento.target.value as Orden)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="codigo">Código</option><option value="programa">Programa</option><option value="trimestre">Trimestre</option></select></div>
         </div>
       </section>
 
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Nivel</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Aprendices</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th>{puedeGestionar && <th className="px-4 py-3">Acciones</th>}</tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((ficha) => <tr key={ficha.idFicha} onClick={() => setSeleccionada(ficha)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-slate-400">{ficha.programa.codigoPrograma}</p></td><td className="px-4 py-3"><span className="rounded-full bg-sena-50 px-2.5 py-1 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{nivel(ficha)}</span></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{ficha.jornadas.length ? ficha.jornadas.map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-slate-400">Sin horario</span>}</div></td><td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">{ficha.aprendicesTotales}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{ficha.trimestre.nombre}</td><td className="px-4 py-3"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{ficha.trimestre.estado}</span></td>{puedeGestionar && <td className="px-4 py-3"><button type="button" onClick={(evento) => { evento.stopPropagation(); abrirEditar(ficha) }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button></td>}</tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[900px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Nivel</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Etapa</th><th className="px-4 py-3">Sede</th><th className="px-4 py-3">Aprendices</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th>{puedeGestionar && <th className="px-4 py-3">Acciones</th>}</tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((ficha) => <tr key={ficha.idFicha} onClick={() => setSeleccionada(ficha)} className="cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-slate-400">{ficha.programa.codigoPrograma}</p></td><td className="px-4 py-3"><span className="rounded-full bg-sena-50 px-2.5 py-1 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{nivel(ficha)}</span></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{ficha.jornadas.length ? ficha.jornadas.map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-slate-400">Sin horario</span>}</div></td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ETAPA_BADGE[etapaFicha(ficha)]}`}>{etapaFicha(ficha)}</span></td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{ficha.sede?.nombreSede ?? 'Sin sede'}</td><td className="px-4 py-3 font-medium text-slate-700 dark:text-slate-300">{ficha.aprendicesTotales}</td><td className="px-4 py-3 text-slate-600 dark:text-slate-300">{ficha.trimestre.nombre}</td><td className="px-4 py-3"><span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{ficha.trimestre.estado}</span></td>{puedeGestionar && <td className="px-4 py-3"><button type="button" onClick={(evento) => { evento.stopPropagation(); abrirEditar(ficha) }} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button></td>}</tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-slate-500 dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (
           <div className="flex items-center justify-between border-t border-slate-200 px-4 py-3 dark:border-slate-700">
@@ -316,10 +350,28 @@ export function Fichas() {
           <dl className="space-y-4 text-sm">
             <div><dt className="text-slate-500 dark:text-slate-400">Programa</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionada.programa.nombrePrograma}</dd></div>
             <div><dt className="text-slate-500 dark:text-slate-400">Nivel de formación</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{nivel(seleccionada)}</dd></div>
+            <div><dt className="text-slate-500 dark:text-slate-400">Sede</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionada.sede?.nombreSede ?? 'Sin sede asignada'}</dd></div>
             <div><dt className="text-slate-500 dark:text-slate-400">Jornadas programadas</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionada.jornadas.length ? seleccionada.jornadas.join(', ') : 'Sin horario'}</dd></div>
             <div><dt className="text-slate-500 dark:text-slate-400">Aprendices matriculados</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionada.aprendicesTotales}</dd></div>
             <div><dt className="text-slate-500 dark:text-slate-400">Trimestre</dt><dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{seleccionada.trimestre.nombre}</dd></div>
             <div><dt className="text-slate-500 dark:text-slate-400">Estado del trimestre</dt><dd className="mt-1 font-medium capitalize text-slate-900 dark:text-slate-100">{seleccionada.trimestre.estado}</dd></div>
+            <div>
+              <dt className="text-slate-500 dark:text-slate-400">Etapa actual</dt>
+              <dd className="mt-1"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${ETAPA_BADGE[etapaFicha(seleccionada)]}`}>{etapaFicha(seleccionada)}</span></dd>
+            </div>
+            {(seleccionada.fechaInicioLectiva || seleccionada.fechaInicioProductiva) && (
+              <div>
+                <dt className="text-slate-500 dark:text-slate-400">Fechas</dt>
+                <dd className="mt-1 space-y-0.5 font-medium text-slate-900 dark:text-slate-100">
+                  {seleccionada.fechaInicioLectiva && (
+                    <p>Lectiva: {formatFecha(seleccionada.fechaInicioLectiva)} — {formatFecha(seleccionada.fechaFinLectiva) ?? 'sin fin definido'}</p>
+                  )}
+                  {seleccionada.fechaInicioProductiva && (
+                    <p>Productiva: {formatFecha(seleccionada.fechaInicioProductiva)} — {formatFecha(seleccionada.fechaFinProductiva) ?? 'sin fin definido'}</p>
+                  )}
+                </dd>
+              </div>
+            )}
           </dl>
 
           {cargandoHorarios ? (
