@@ -8,6 +8,7 @@ import { NuevoHorario } from '../pages/NuevoHorario'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { CalendarioGeneral } from '../pages/CalendarioGeneral'
 import { HorariosCompletos } from '../pages/HorariosCompletos'
+import { AuditoriaCruces } from '../pages/AuditoriaCruces'
 import { Ambientes } from '../pages/Ambientes'
 import { Sedes } from '../pages/Sedes'
 import { Instructores } from '../pages/Instructores'
@@ -82,6 +83,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <HistorialHorarios />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/horarios/auditoria"
+        element={
+          <ProtectedRoute>
+            <AuditoriaCruces />
           </ProtectedRoute>
         }
       />

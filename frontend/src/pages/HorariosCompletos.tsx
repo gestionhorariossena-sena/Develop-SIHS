@@ -13,7 +13,14 @@ import { apiGet, apiPatch, ApiError } from '../services/api'
 import type { Ambiente, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
 
 type FiltroJornada = 'todas' | Jornada
+type FiltroEstado = 'todos' | 'publicado' | 'borrador'
 const POR_PAGINA = 10
+
+function badgeEstadoPublicacion(publicado: boolean) {
+  return publicado
+    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+    : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+}
 
 function jornadaDeHorario(horario: Horario): Jornada | null {
   return BLOQUES.find((bloque) => bloque.horaInicio24 === horario.horaInicio)?.jornada ?? null
@@ -90,13 +97,7 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
           <span className={`rounded px-2 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>Horario #{horario.idHorario}</span>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">Jornada {jornada ?? 'sin definir'}</span>
           <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-700 dark:text-slate-300">{trimestre?.nombre ?? 'Sin trimestre'}</span>
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-              horario.publicado
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-                : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
-            }`}
-          >
+          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeEstadoPublicacion(horario.publicado)}`}>
             {horario.publicado ? 'Publicado' : 'Borrador'}
           </span>
         </div>
@@ -245,6 +246,7 @@ export function HorariosCompletos() {
   const [busqueda, setBusqueda] = useState('')
   const [filtroJornada, setFiltroJornada] = useState<FiltroJornada>('todas')
   const [filtroTrimestre, setFiltroTrimestre] = useState('todos')
+  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos')
   const [paginaActual, setPaginaActual] = useState(1)
   const [idExpandido, setIdExpandido] = useState<number | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -283,7 +285,7 @@ export function HorariosCompletos() {
   const diasPorId = Object.fromEntries(diasSemana.map((dia) => [dia.idDia, dia.nombreDia]))
 
   const texto = busqueda.trim().toLocaleLowerCase('es-CO')
-  const filtrosActivos = Number(Boolean(busqueda.trim())) + Number(filtroJornada !== 'todas') + Number(filtroTrimestre !== 'todos')
+  const filtrosActivos = Number(Boolean(busqueda.trim())) + Number(filtroJornada !== 'todas') + Number(filtroTrimestre !== 'todos') + Number(filtroEstado !== 'todos')
   const visibles = horarios.filter((horario) => {
     const programa = fichaPorId.get(horario.idFicha)?.programa.nombrePrograma ?? ''
     const coincideTexto =
@@ -291,7 +293,10 @@ export function HorariosCompletos() {
       `${horario.fichaCodigo} ${programa} ${horario.instructorNombre} ${horario.ambienteNombre}`.toLocaleLowerCase('es-CO').includes(texto)
     const coincideJornada = filtroJornada === 'todas' || jornadaDeHorario(horario) === filtroJornada
     const coincideTrimestre = filtroTrimestre === 'todos' || horario.idTrimestre === Number(filtroTrimestre)
-    return coincideTexto && coincideJornada && coincideTrimestre
+    const coincideEstado =
+      filtroEstado === 'todos' ||
+      (filtroEstado === 'publicado' ? horario.publicado : !horario.publicado)
+    return coincideTexto && coincideJornada && coincideTrimestre && coincideEstado
   })
 
   const totalPaginas = Math.max(1, Math.ceil(visibles.length / POR_PAGINA))
@@ -315,7 +320,7 @@ export function HorariosCompletos() {
             <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Filtrar horarios</p>
             {filtrosActivos > 0 && <span className="rounded-full bg-sena-50 px-2 py-0.5 text-xs font-semibold text-sena-700 dark:bg-sena-950/50">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
             {filtrosActivos > 0 && (
-              <button type="button" onClick={() => { setBusqueda(''); setFiltroJornada('todas'); setFiltroTrimestre('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">
+              <button type="button" onClick={() => { setBusqueda(''); setFiltroJornada('todas'); setFiltroTrimestre('todos'); setFiltroEstado('todos') }} className="text-sm font-medium text-sena-700 hover:text-sena-600 dark:text-sena-400">
                 Limpiar filtros
               </button>
             )}
@@ -326,7 +331,7 @@ export function HorariosCompletos() {
             <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">Instructores</p><p className="text-sm font-bold text-slate-900 dark:text-slate-100">{new Set(horarios.map((h) => h.idInstructor)).size}</p></div>
           </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
           <div className="md:col-span-2">
             <label htmlFor="buscar-horario" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Buscar</label>
             <input id="buscar-horario" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Ficha, programa, instructor o ambiente" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
@@ -347,11 +352,19 @@ export function HorariosCompletos() {
               {trimestres.map((trimestre) => <option key={trimestre.idTrimestre} value={trimestre.idTrimestre}>{trimestre.nombre}</option>)}
             </select>
           </div>
+          <div>
+            <label htmlFor="filtro-estado-horario" className="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">Estado</label>
+            <select id="filtro-estado-horario" value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value as FiltroEstado)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+              <option value="todos">Todos</option>
+              <option value="publicado">Publicado</option>
+              <option value="borrador">Borrador</option>
+            </select>
+          </div>
         </div>
       </section>
 
       {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando horarios...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Trimestre</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((horario) => {
+      {cargando ? <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando horarios...</p> : <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-slate-100 dark:divide-slate-700">{visiblesPagina.map((horario) => {
         const color = colorParaBloque(String(horario.idHorario))
         const expandido = horario.idHorario === idExpandido
         const jornada = jornadaDeHorario(horario)
@@ -366,10 +379,15 @@ export function HorariosCompletos() {
               <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{nombresDias(horario.dias, diasPorId)}</td>
               <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</td>
               <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{trimestrePorId.get(horario.idTrimestre)?.nombre ?? 'Sin definir'}</td>
+              <td className="px-4 py-3">
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeEstadoPublicacion(horario.publicado)}`}>
+                  {horario.publicado ? 'Publicado' : 'Borrador'}
+                </span>
+              </td>
             </tr>
             {expandido && (
               <tr>
-                <td colSpan={7} className="bg-slate-50 dark:bg-slate-900/40">
+                <td colSpan={8} className="bg-slate-50 dark:bg-slate-900/40">
                   <DetalleHorario
                     horario={horario}
                     ficha={fichaPorId.get(horario.idFicha)}

@@ -144,7 +144,10 @@ export function VistaFichas() {
                       </span>
                       <span className="min-w-0">
                         <span className="block truncate font-medium">{ficha.codigoFicha}</span>
-                        <span className="block truncate text-xs text-slate-400">{ficha.programa.nombrePrograma}</span>
+                        <span className="block truncate text-xs text-slate-400">
+                          {ficha.programa.nombrePrograma}
+                          {ficha.sede && ` · ${ficha.sede.nombreSede}`}
+                        </span>
                       </span>
                     </button>
                   </li>
@@ -171,7 +174,10 @@ export function VistaFichas() {
                   </span>
                   <div>
                     <p className="font-semibold text-slate-900 dark:text-slate-100">{seleccionada.codigoFicha}</p>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{seleccionada.programa.nombrePrograma}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      {seleccionada.programa.nombrePrograma}
+                      {seleccionada.sede && ` · ${seleccionada.sede.nombreSede}`}
+                    </p>
                   </div>
                 </div>
                 <Link

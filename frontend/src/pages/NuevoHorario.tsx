@@ -389,19 +389,19 @@ export function NuevoHorario() {
       </div>
 
       {errorCatalogos && (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
           {errorCatalogos}
         </p>
       )}
 
       {errorEdicion && (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
           {errorEdicion}
         </p>
       )}
 
       {erroresGuardar.length > 0 && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
           <p className="mb-1 font-semibold">El sistema encontró cruces — esto no se guardó:</p>
           <ul className="list-disc space-y-0.5 pl-5">
             {erroresGuardar.map((e) => (
@@ -412,7 +412,7 @@ export function NuevoHorario() {
       )}
 
       {mensajeExito && (
-        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 print:hidden">
+        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 print:hidden dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
           {mensajeExito}
         </p>
       )}

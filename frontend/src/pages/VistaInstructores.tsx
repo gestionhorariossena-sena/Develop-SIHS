@@ -158,6 +158,7 @@ export function VistaInstructores() {
             <ul className="max-h-[28rem] space-y-1 overflow-y-auto">
               {visibles.map((instructor) => {
                 const esActivo = instructor.idUsuario === seleccionado?.idUsuario
+                const cantidadFichas = indiceAsociaciones.get(instructor.idUsuario)?.fichas.size ?? 0
                 return (
                   <li key={instructor.idUsuario}>
                     <button
@@ -172,11 +173,21 @@ export function VistaInstructores() {
                       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">
                         {iniciales(instructor.nombre)}
                       </span>
-                      <span className="min-w-0">
+                      <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">{instructor.nombre}</span>
                         <span className="block truncate text-xs text-slate-400">
                           {instructor.especialidades[0]?.nombre ?? 'Sin especialidad'}
                         </span>
+                      </span>
+                      <span
+                        className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                          cantidadFichas === 0
+                            ? 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                            : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
+                        }`}
+                        title={cantidadFichas === 0 ? 'Sin fichas asignadas este trimestre' : `${cantidadFichas} ficha${cantidadFichas === 1 ? '' : 's'} asignada${cantidadFichas === 1 ? '' : 's'}`}
+                      >
+                        {cantidadFichas}
                       </span>
                     </button>
                   </li>

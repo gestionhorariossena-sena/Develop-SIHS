@@ -297,6 +297,64 @@ class HorarioService:
         return conflictos
 
     @staticmethod
+    def auditar_conflictos(db, id_trimestre: int | None = None, id_sede: int | None = None) -> list[dict]:
+        """Barrido de cruces entre horarios YA guardados (activos) — para
+        la pantalla "Auditoría de Cruces". A diferencia de validar_dry_run
+        (que valida UN candidato nuevo contra lo existente), acá se
+        re-valida cada horario ya guardado contra todos los demás,
+        reutilizando validar_dry_run tal cual para no duplicar ni desviarse
+        de las reglas de negocio (RF-011, solapes, resultado repetido).
+
+        Deduplicación: un cruce por solape (ficha/instructor/ambiente/
+        resultado repetido) es simétrico — h1 choca con h2 y viceversa —
+        así que se reporta una sola vez por par (idHorario menor primero).
+        `regla_instructor` (tope de horas semanales) no es un cruce entre
+        dos horarios sino un estado del instructor, así que se reporta una
+        sola vez por instructor aunque tenga varios horarios que la violen.
+        """
+        from app.schemas.horario import HorarioDryRunRequest  # evita import circular a nivel de módulo
+
+        horarios = HorarioRepository.obtener_activos(db, id_trimestre=id_trimestre, id_sede=id_sede)
+
+        pares_vistos: set[tuple[int, int, str]] = set()
+        instructores_vistos: set = set()
+        resultado: list[dict] = []
+
+        for horario in horarios:
+            candidato = HorarioDryRunRequest(
+                horaInicio=horario.horaInicio,
+                horaFin=horario.horaFin,
+                idJornada=horario.idJornada,
+                idTrimestre=horario.idTrimestre,
+                idAmbiente=horario.idAmbiente,
+                idInstructor=horario.idInstructor,
+                idFicha=horario.idFicha,
+                idResultado=horario.idResultado,
+                dias=HorarioRepository.obtener_dias(db, horario.idHorario),
+            )
+
+            for conflicto in HorarioService.validar_dry_run(db, candidato, excluir_id=horario.idHorario):
+                if conflicto["tipo"] == "regla_instructor":
+                    if horario.idInstructor in instructores_vistos:
+                        continue
+                    instructores_vistos.add(horario.idInstructor)
+                    resultado.append({**conflicto, "idHorario": horario.idHorario})
+                    continue
+
+                existente = conflicto.get("idHorarioExistente")
+                if existente is None:
+                    resultado.append({**conflicto, "idHorario": horario.idHorario})
+                    continue
+
+                par = (min(horario.idHorario, existente), max(horario.idHorario, existente), conflicto["tipo"])
+                if par in pares_vistos:
+                    continue
+                pares_vistos.add(par)
+                resultado.append({**conflicto, "idHorario": horario.idHorario})
+
+        return resultado
+
+    @staticmethod
     def _duracion_horas(hora_inicio, hora_fin) -> float:
         inicio = hora_inicio.hour + hora_inicio.minute / 60
         fin = hora_fin.hour + hora_fin.minute / 60
