@@ -1,31 +1,93 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Hanken+Grotesk:wght@600;700&display=swap');
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Verde institucional SENA — usarlo como `bg-sena-600`, `text-sena-600`, etc.
- * sena-600 (#39a900, el verde oficial) da ~3.07:1 de contraste con texto
- * blanco encima — pasa el mínimo de 3:1 para elementos no textuales (bordes,
- * anillos de foco, checkboxes) pero NO alcanza el 4.5:1 que exige WCAG AA
- * para texto normal (RNF-14). Por eso los botones con texto blanco usan
- * sena-700 (4.64:1, si pasa) de reposo y sena-800 (6.6:1) en hover — ver
- * cualquier botón "bg-sena-700 ... hover:bg-sena-800" en las páginas. */
+/* Sistema de diseño SIHS v2 (rediseño 2026-09-06, ver GUIA_DE_MARCA.md) —
+ * tokens tipo Material Design 3 tomados literalmente de los mockups Stitch
+ * (stitch_sena_schedule_management_mockups). `sena-*` se mantiene por
+ * compatibilidad con clases ya escritas en páginas no migradas todavía —
+ * apunta a los mismos valores que `primary`/`secondary` de acá. */
 @theme {
-  --color-sena-50: #f0f9ec;
-  --color-sena-100: #ddf0d1;
-  --color-sena-500: #4caf15;
+  --color-surface: #f8fafc;
+  --color-surface-dim: #e2e8f0;
+  --color-surface-bright: #ffffff;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f1f5f9;
+  --color-surface-container: #e2e8f0;
+  --color-surface-container-high: #cbd5e1;
+  --color-surface-container-highest: #94a3b8;
+  --color-on-surface: #0f172a;
+  --color-on-surface-variant: #475569;
+  --color-inverse-surface: #1e293b;
+  --color-inverse-on-surface: #f8fafc;
+  --color-outline: #cbd5e1;
+  --color-outline-variant: #e2e8f0;
+
+  --color-primary: #16a34a;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #dcfce7;
+  --color-on-primary-container: #14532d;
+  --color-inverse-primary: #4ade80;
+
+  --color-secondary: #39a900;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #eaf7ec;
+  --color-on-secondary-container: #14532d;
+
+  --color-tertiary: #d97706;
+  --color-on-tertiary: #ffffff;
+  --color-tertiary-container: #fef3c7;
+  --color-on-tertiary-container: #92400e;
+
+  --color-error: #dc2626;
+  --color-on-error: #ffffff;
+  --color-error-container: #fee2e2;
+  --color-on-error-container: #991b1b;
+
+  --color-background: #ffffff;
+  --color-on-background: #0f172a;
+
+  --font-display: "Hanken Grotesk", system-ui, sans-serif;
+  --font-body: "Geist", system-ui, sans-serif;
+
+  /* Compat: clases bg-sena-*/text-sena-* ya escritas antes del rediseño. */
+  --color-sena-50: #eaf7ec;
+  --color-sena-100: #dcfce7;
+  --color-sena-500: #16a34a;
   --color-sena-600: #39a900;
-  --color-sena-700: #2e8600;
-  --color-sena-800: #256b00;
+  --color-sena-700: #14532d;
+  --color-sena-800: #14532d;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
 }
 
 body {
   margin: 0;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: "Geist", system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Hanken Grotesk", system-ui, sans-serif;
 }
 
 html.dark {
