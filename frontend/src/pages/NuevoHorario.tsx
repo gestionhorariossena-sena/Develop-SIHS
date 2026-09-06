@@ -509,6 +509,57 @@ export function NuevoHorario() {
             </div>
           </div>
 
+          {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
+              real del backend. No existe un motor de sugerencias algorítmicas
+              ni un endpoint de ocupación agregada por sede: los textos y el
+              87.4% de acá son de vitrina, tal como los muestra el mockup
+              constructor_de_horarios_sihs_sena. No usar como si fuera
+              dinámico sin agregar el fetch/campo correspondiente primero. */}
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wide text-on-surface dark:text-slate-100">Sugerencias del Sistema</p>
+              <span className="material-symbols-outlined text-[16px] text-primary" aria-hidden="true">auto_awesome</span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="rounded-lg bg-surface p-2 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-xs font-bold text-primary">
+                    <span className="material-symbols-outlined text-[14px]" aria-hidden="true">bolt</span>
+                    Capacidad Óptima
+                  </span>
+                  <span className="font-mono text-[10px] text-on-surface-variant dark:text-slate-400">+15% eficiencia</span>
+                </div>
+                <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
+                  Mover Ficha 2689104 al Lab 306 permite liberar 12 puestos subutilizados en Bloque Mañana.
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-surface p-2 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-xs font-bold text-tertiary">
+                    <span className="material-symbols-outlined text-[14px]" aria-hidden="true">timelapse</span>
+                    Ventana de Docente
+                  </span>
+                  <span className="font-mono text-[10px] text-on-surface-variant dark:text-slate-400">Sin huecos</span>
+                </div>
+                <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
+                  Compactar franja de Ing. Sonia Méndez para evitar 2 horas muertas el día Miércoles.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg bg-secondary-container/50 p-2">
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-on-secondary-container">Ocupación Sede Calle 52</span>
+                  <span className="text-lg font-bold text-primary">87.4%</span>
+                </div>
+                <svg className="h-8 w-20 text-primary" fill="none" viewBox="0 0 100 30" aria-hidden="true">
+                  <path d="M0 25 L20 18 L40 22 L60 8 L80 14 L100 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
           <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
             <p className="mb-2 font-semibold text-on-surface dark:text-slate-100">Dirección sede principal y sedes</p>
             <ul className="space-y-0.5">
