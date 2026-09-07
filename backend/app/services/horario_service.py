@@ -3,7 +3,9 @@ from app.models.dia_semana import DiaSemana
 from app.models.horario import Horario
 from app.models.jornada import Jornada
 from app.models.usuario import Usuario
+from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
 from app.repositories.horario_repository import HorarioRepository
+from app.services.notificacion_service import NotificacionService
 
 # RF-011 (Requisitos Funcionales V4.pdf, pág. 15-16): "Los instructores de
 # planta podrán estar asignados máximo 32 horas a la semana, mientras que
@@ -117,6 +119,9 @@ class HorarioService:
         if not horario:
             return None, []
 
+        cambio_ambiente = horario.idAmbiente != data.idAmbiente
+        cambio_instructor = horario.idInstructor != data.idInstructor
+
         errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
         if errores and not forzar:
             raise CruceHorarioError(errores)
@@ -131,7 +136,35 @@ class HorarioService:
         horario.idResultado = data.idResultado
 
         actualizado = HorarioRepository.actualizar(db, horario, data.dias)
+        HorarioService._notificar_cambio_asignacion(
+            db, actualizado, cambio_ambiente, cambio_instructor
+        )
         return actualizado, errores if forzar else []
+
+    @staticmethod
+    def _notificar_cambio_asignacion(
+        db, horario, cambio_ambiente: bool, cambio_instructor: bool
+    ) -> None:
+        if not (cambio_ambiente or cambio_instructor):
+            return
+
+        ficha_codigo = horario.ficha.codigoFicha if horario.ficha else horario.idFicha
+        ambiente_nombre = horario.ambiente.nombre if horario.ambiente else "Sin ambiente"
+        instructor_nombre = horario.instructor.nombre if horario.instructor else "Sin instructor"
+        mensaje = (
+            f"Se actualizó el horario de tu ficha {ficha_codigo}: "
+            f"ambiente {ambiente_nombre} e instructor {instructor_nombre}."
+        )
+
+        for vinculo in FichaUsuarioRepository.obtener_aprendices_por_ficha(db, horario.idFicha):
+            NotificacionService.crear(
+                db,
+                id_usuario=vinculo.idUsuario,
+                tipo="Cambios de Aula & Horario",
+                mensaje=mensaje,
+                entidad_relacionada="horarios",
+                id_entidad_relacionada=horario.idHorario,
+            )
 
     @staticmethod
     def eliminar(db, id_horario):
