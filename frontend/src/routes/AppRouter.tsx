@@ -23,6 +23,7 @@ import { Usuarios } from '../pages/Usuarios'
 import { CodigoInstructor } from '../pages/CodigoInstructor'
 import { Roles } from '../pages/Roles'
 import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
+import { PanelAdministracion } from '../pages/PanelAdministracion'
 import { ProtectedRoute } from './ProtectedRoute'
 import { Programas } from '../pages/Programas'
 
@@ -197,6 +198,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <AprobarlicitarSolicitudes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/panel-administracion"
+        element={
+          <ProtectedRoute>
+            <PanelAdministracion />
           </ProtectedRoute>
         }
       />

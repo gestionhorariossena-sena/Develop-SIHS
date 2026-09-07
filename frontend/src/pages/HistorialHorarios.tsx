@@ -204,7 +204,7 @@ export function HistorialHorarios() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">
-                        {h.bloques.length} bloque{h.bloques.length === 1 ? '' : 's'}
+                        {h.programaNombre ?? 'Sin programa vinculado'}
                       </td>
                       <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{h.creadorNombre ?? '—'}</td>
                       <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{formatearFecha(h.fechaCreacion)}</td>
