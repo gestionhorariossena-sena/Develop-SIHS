@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import type { Horario } from '../../types/api'
 import type { Jornada } from '../../pages/horario/tipos'
 
@@ -84,6 +85,12 @@ export function GridSemanalInstructor({ horarios, jornadasVisibles, aprendicesPo
                         {aprendices != null && (
                           <p className="text-[10px] font-semibold text-on-primary-container">{aprendices} aprendices convocados</p>
                         )}
+                        <Link
+                          to={`/mi-horario/detalle-franja?horario=${bloque.idHorario}&dia=${encodeURIComponent(dia)}`}
+                          className="mt-0.5 text-right text-[10px] font-bold text-primary hover:underline"
+                        >
+                          Detalle →
+                        </Link>
                       </div>
                     )
                   })

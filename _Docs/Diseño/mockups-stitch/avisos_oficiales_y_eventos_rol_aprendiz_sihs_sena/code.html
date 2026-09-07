@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>SENA SIHS - Portal del Aprendiz CGMLTI</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=Hanken+Grotesk:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; } @keyframes pulse-soft { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.9); } } .pulse-badge { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "primary": "#006b2c", "secondary-fixed-dim": "#6fdf43", "on-tertiary-container": "#fffbff", "tertiary-container": "#b15f00", "on-surface-variant": "#3e4a3d", "on-primary-fixed-variant": "#005320", "surface": "#f8fafc", "surface-bright": "#ffffff", "primary-fixed-dim": "#62df7d", "inverse-surface": "#1e293b", "on-error": "#ffffff", "surface-container": "#e2e8f0", "background": "#faf8ff", "surface-container-high": "#e2e7ff", "on-tertiary-fixed-variant": "#6e3900", "on-primary-container": "#f7fff2", "on-tertiary-fixed": "#2f1500", "surface-dim": "#d2d9f4", "surface-container-low": "#f1f5f9", "on-secondary": "#ffffff", "primary-container": "#00873a", "on-secondary-fixed": "#052100", "on-primary": "#ffffff", "secondary-fixed": "#8afd5d", "secondary-container": "#eaf7ec", "tertiary": "#8d4b00", "inverse-primary": "#62df7d", "error-container": "#ffdad6", "on-secondary-container": "#257400", "surface-tint": "#006e2d", "surface-container-lowest": "#ffffff", "on-background": "#131b2e", "tertiary-fixed": "#ffdcc3", "surface-variant": "#dae2fd", "primary-fixed": "#7ffc97", "secondary": "#226d00", "on-error-container": "#93000a", "on-primary-fixed": "#002109", "inverse-on-surface": "#f8fafc", "surface-container-highest": "#94a3b8", "error": "#dc2626", "on-tertiary": "#ffffff", "outline-variant": "#e2e8f0", "on-secondary-fixed-variant": "#185200", "on-surface": "#131b2e", "tertiary-fixed-dim": "#ffb77d", "outline": "#cbd5e1" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin-mobile": "1rem", "margin-desktop": "1.5rem", "space-xl": "1.5rem", "gutter": "1rem", "space-sm": "0.5rem", "space-xs": "0.25rem", "space-3xl": "3rem", "space-base": "1rem", "space-2xs": "0.125rem", "space-lg": "1.25rem", "space-md": "0.75rem", "space-2xl": "2rem" }, "fontFamily": { "body-lg": ["Geist"], "label-sm": ["Geist"], "headline-sm": ["Hanken Grotesk"], "display-lg": ["Hanken Grotesk"], "headline-lg": ["Hanken Grotesk"], "label-md": ["Geist"], "body-md": ["Geist"], "body-sm": ["Geist"], "headline-md": ["Hanken Grotesk"] }, "fontSize": { "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" }], "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }], "display-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }], "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }] } } } };</script></head><body class="min-h-full bg-surface text-on-surface font-body-md text-body-md antialiased selection:bg-secondary-container selection:text-primary"><header class="fixed top-0 left-0 right-0 z-50 bg-surface-bright/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 w-full px-margin-desktop flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-xl"><div class="flex items-center gap-space-md"><div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm ring-2 ring-secondary-container"><span class="material-symbols-outlined text-[22px]">domain</span></div><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">SENA</span><span class="px-1.5 py-0.5 rounded-lg bg-secondary-container text-primary font-label-sm text-label-sm uppercase">SIHS</span></div><span class="font-label-sm text-label-sm text-on-surface-variant font-medium tracking-wide">Portal Aprendiz</span></div></div><div class="hidden xl:flex items-center gap-space-sm pl-space-base"><div class="flex items-center gap-2 px-space-md py-1.5 rounded-full bg-surface-container-low"><span class="w-2 h-2 rounded-full bg-primary-container pulse-badge"></span><span class="font-label-sm text-label-sm text-on-surface font-semibold">CGMLTI Calle 52</span><span class="text-outline">|</span><span class="font-label-sm text-label-sm text-on-surface-variant">Trimestre II · Sincronizado</span></div></div></div><nav class="hidden lg:flex items-center gap-space-xs p-1 rounded-xl bg-surface-container-low" data-active-classes="bg-secondary-container text-primary font-semibold rounded-xl"><a class="flex items-center px-space-md py-2 rounded-xl text-on-surface-variant hover:bg-surface-bright hover:text-on-surface transition-colors font-label-md text-label-md" data-path="mi-horario" href="#">Mi Horario</a><a aria-current="page" class="flex items-center px-space-md py-2 transition-colors bg-secondary-container text-primary font-semibold rounded-xl" data-path="avisos-y-eventos" href="#">Avisos &amp; Eventos</a><a class="flex items-center px-space-md py-2 rounded-xl text-on-surface-variant hover:bg-surface-bright hover:text-on-surface transition-colors font-label-md text-label-md relative" data-path="mensajes-docentes" href="#">Mensajes Docentes<span class="ml-1.5 px-1.5 py-0.2 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm text-[10px]">2</span></a><a class="flex items-center px-space-md py-2 rounded-xl text-on-surface-variant hover:bg-surface-bright hover:text-on-surface transition-colors font-label-md text-label-md relative" data-path="notificaciones" href="#">Notificaciones<span class="ml-1.5 px-1.5 py-0.2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-sm text-label-sm text-[10px]">3</span></a><a class="flex items-center px-space-md py-2 rounded-xl text-on-surface-variant hover:bg-surface-bright hover:text-on-surface transition-colors font-label-md text-label-md" data-path="ambientes" href="#">Ambientes</a></nav><div class="flex items-center gap-space-md"><button class="hidden sm:flex items-center gap-space-md px-space-md py-1.5 rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">search</span><span class="font-body-sm text-body-sm hidden md:inline">Buscar en SIHS...</span><kbd class="px-1.5 py-0.5 rounded bg-surface-bright text-on-surface-variant font-label-sm text-[10px] shadow-sm font-mono">⌘K</kbd></button><button aria-label="Alertas institucionales" class="relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-tertiary-container"></span></button><div class="flex items-center gap-space-md pl-space-sm"><div class="hidden md:flex flex-col text-right"><span class="font-label-md text-label-md text-on-surface font-semibold">Sara Rodríguez M.</span><span class="font-label-sm text-label-sm text-on-surface-variant">Ficha 2670142 (ADSO)</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="w-full pt-20 min-h-[calc(100vh-80px)] bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_60%)]"><div class="flex flex-col w-full">
+<!-- Dynamic Notification Bar for Urgent Operations -->
+<section class="w-full px-margin-desktop pt-space-lg">
+<div class="w-full bg-secondary-container text-on-secondary-container rounded-xl p-space-md flex flex-wrap items-center justify-between gap-space-md shadow-sm">
+<div class="flex items-center gap-space-md min-w-0">
+<span class="flex h-3 w-3 relative">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
+</span>
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-label-md text-label-md uppercase tracking-wider text-primary font-bold">Canal Oficial Verificado</span>
+<span class="text-outline">·</span>
+<p class="font-body-sm text-body-sm text-on-surface truncate">Todos los boletines emitidos cuentan con firma digital de Coordinación CGMLTI Calle 52.</p>
+</div>
+</div>
+<div class="flex items-center gap-space-sm text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">verified_user</span>
+<span>Autenticación SGA-SENA activa</span>
+</div>
+</div>
+</section>
+<!-- Header & Taxonomy Filter Bar -->
+<section class="w-full px-margin-desktop pt-space-xl">
+<div class="flex flex-col gap-space-lg">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div>
+<div class="flex items-center gap-space-xs mb-space-xs">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm font-semibold">CGMLTI · Calle 52</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">Boletín Oficial</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Comunicados &amp; Novedades de Coordinación</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Resoluciones, cancelaciones de ficha, jornadas pedagógicas y convocatorias vigentes.</p>
+</div>
+<!-- Quick Metatags / Counter -->
+<div class="flex items-center gap-space-md self-start md:self-auto">
+<div class="flex flex-col items-end px-space-md py-1.5 rounded-xl bg-surface-bright shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Trimestre Lectivo</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">II - 2025</span>
+</div>
+<div class="flex flex-col items-end px-space-md py-1.5 rounded-xl bg-surface-bright shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Vigentes Hoy</span>
+<span class="font-headline-sm text-headline-sm text-tertiary font-bold">4 Avisos</span>
+</div>
+</div>
+</div>
+<!-- Search and Filter Control Deck -->
+<div class="bg-surface-bright p-space-md rounded-xl shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-space-md">
+<!-- Interactive Pill Categories -->
+<div class="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0" id="filterPillsContainer">
+<button class="filter-btn px-space-md py-2 rounded-xl font-label-md text-label-md bg-primary text-on-primary transition-all shadow-sm" data-category="all" type="button">
+            Todos los comunicados
+          </button>
+<button class="filter-btn px-space-md py-2 rounded-xl font-label-md text-label-md bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-category="reprog" type="button">
+            Cancelaciones &amp; Reprogramaciones
+          </button>
+<button class="filter-btn px-space-md py-2 rounded-xl font-label-md text-label-md bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-category="eventos" type="button">
+            Eventos &amp; Convocatorias
+          </button>
+<button class="filter-btn px-space-md py-2 rounded-xl font-label-md text-label-md bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all" data-category="sede" type="button">
+            Circulares de Sede
+          </button>
+</div>
+<!-- Search Bar & Jornada Dropdown -->
+<div class="flex items-center gap-space-sm w-full lg:w-auto">
+<div class="relative flex-1 lg:w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full pl-9 pr-space-md py-2 bg-surface-container-low rounded-xl text-on-surface font-body-sm text-body-sm focus:bg-surface-bright focus:outline-none transition-colors" id="searchInput" placeholder="Buscar por tema, ficha o ambiente..." type="text"/>
+</div>
+<div class="relative">
+<select class="appearance-none pl-space-md pr-8 py-2 bg-surface-container-low text-on-surface font-label-md text-label-md rounded-xl cursor-pointer hover:bg-surface-container focus:outline-none transition-colors" id="jornadaSelect">
+<option value="diurna">Jornada Diurna - Mañana</option>
+<option value="general">General Sede Calle 52</option>
+<option value="tarde">Jornada Tarde</option>
+<option value="nocturna">Jornada Nocturna</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[16px] pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Core Content Grid: Hero Highlight, Notices Stream, Sidebar -->
+<section class="w-full px-margin-desktop py-space-xl">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+<!-- Left & Center: Notices Feed (Columns 1-8) -->
+<div class="lg:col-span-8 flex flex-col gap-space-xl">
+<!-- Destacado / High-Impact Hero Card -->
+<article class="bg-surface-bright rounded-xl p-space-lg md:p-space-xl shadow-md relative overflow-hidden">
+<!-- Decorative subtle ambient corner glow -->
+<div class="absolute -top-12 -right-12 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+<div class="flex flex-col gap-space-md relative z-10">
+<!-- Badges Row -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="px-2.5 py-1 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">campaign</span>
+                  COMUNICADO EXTRAORDINARIO
+                </span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">
+                  Vigencia: Todas las fichas diurnas
+                </span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px]">schedule</span>
+<span>Publicado hace 3 horas · 08:30 AM</span>
+</div>
+</div>
+<!-- Title -->
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight">
+              Aviso Importante: Reprogramación de jornada presencial del Viernes 30 de Mayo por Encuentro Pedagógico de Instructores
+            </h2>
+<!-- Origin Metadata Box -->
+<div class="flex items-center gap-space-md p-space-sm bg-surface-container-low rounded-xl">
+<div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm flex-shrink-0">
+<span class="material-symbols-outlined text-[20px]">account_balance</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Coordinación Académica · Ing. Maritza Benítez Cardona</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Centro de Gestión de Mercados, Logística y Tecnologías de la Información</span>
+</div>
+</div>
+<!-- Descriptive Body -->
+<div class="bg-surface-container-low/60 rounded-xl p-space-md space-y-space-sm font-body-md text-body-md text-on-surface">
+<p>
+                Por directriz de la Dirección Regional y el comité pedagógico del centro, se informa a toda la comunidad de aprendices que las sesiones sincrónicas presenciales correspondientes al <strong>Viernes 30 de Mayo de 2025</strong> en el rango de <strong>06:00 a 12:00</strong> serán reemplazadas por <strong>jornada de autoformación e investigación en plataforma Zajuna/Territorium</strong>.
+              </p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm pt-space-xs">
+<div class="flex items-start gap-space-xs p-space-sm rounded-lg bg-surface-bright shadow-sm">
+<span class="material-symbols-outlined text-error text-[18px] mt-0.5">lock_clock</span>
+<div>
+<span class="font-label-sm text-label-sm font-bold block text-on-surface">Ambientes Cerrados</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Laboratorios 301, 302, 303, 304, 305 y 306 de Torre TIC.</span>
+</div>
+</div>
+<div class="flex items-start gap-space-xs p-space-sm rounded-lg bg-surface-bright shadow-sm">
+<span class="material-symbols-outlined text-primary text-[18px] mt-0.5">cloud_done</span>
+<div>
+<span class="font-label-sm text-label-sm font-bold block text-on-surface">Compromiso en Plataforma</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cargue de evidencias asincrónicas activo hasta las 23:59 hrs.</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Area -->
+<div class="flex flex-wrap items-center justify-between gap-space-md pt-space-xs">
+<div class="flex items-center gap-space-sm">
+<button class="px-space-md py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md flex items-center gap-2 hover:bg-primary-container transition-all shadow-sm" type="button">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                  Descargar Circular Oficial PDF
+                </button>
+<button class="px-space-md py-2.5 rounded-xl bg-surface-container text-on-surface font-label-md text-label-md flex items-center gap-2 hover:bg-surface-container-high transition-all" id="btnImpact" type="button">
+<span class="material-symbols-outlined text-[18px]">event_repeat</span>
+                  Ver cómo afecta mi horario
+                </button>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">ID: CIR-CGMLTI-2025-089</span>
+</div>
+<!-- Collapsible schedule impact container -->
+<div class="hidden p-space-md rounded-xl bg-secondary-container text-on-secondary-container" id="impactDetail">
+<div class="flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">info</span>
+<div>
+<h4 class="font-headline-sm text-headline-sm font-bold text-primary">Impacto directo para tu Ficha: 2670142 (ADSO)</h4>
+<p class="font-body-sm text-body-sm mt-0.5">
+                    Tu sesión de <em>'Arquitectura de Software y Cloud'</em> con el Instructor Carlos Méndez en el <strong>Ambiente 304</strong> pasa a modalidad de trabajo independiente. Se habilitó un foro de dudas en Zajuna para entrega de avances.
+                  </p>
+</div>
+</div>
+</div>
+</div>
+</article>
+<!-- Notices Stream Title -->
+<div class="flex items-center justify-between pt-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">dynamic_feed</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Tablón de Comunicados Recientes</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant" id="noticesCount">Mostrando 4 avisos</span>
+</div>
+<!-- 4 Structured Notice Cards -->
+<div class="flex flex-col gap-space-md" id="cardsStream">
+<!-- Notice 1: Academic novelty / Class rescheduling -->
+<article class="notice-card bg-surface-bright p-space-lg rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col gap-space-sm" data-category="reprog" data-search="metodologias agiles cancelada incapacidad docente ficha 2670142">
+<div class="flex flex-wrap items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">event_busy</span>
+                  Novedad de Sesión
+                </span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm">
+                  Ficha 2670142 · ADSO
+                </span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Publicado ayer · 16:40</span>
+</div>
+<div class="flex flex-col md:flex-row md:items-start justify-between gap-space-md">
+<div class="space-y-1 max-w-2xl">
+<h4 class="font-headline-sm text-headline-sm text-on-surface font-bold">
+                  Sesión de Metodologías Ágiles del Jueves cancelada por incapacidad médica docente
+                </h4>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  Se informa a los aprendices del programa Análisis y Desarrollo de Software (Ficha 2670142) que la clase sincrónica prevista para este jueves con la Instructora Diana Marcela López queda suspendida. 
+                </p>
+</div>
+<div class="flex flex-col items-start md:items-end justify-center p-space-sm bg-surface-container-low rounded-xl flex-shrink-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Reprogramación Asignada</span>
+<span class="font-label-md text-label-md text-primary font-bold">Martes 3 Junio · 07:00</span>
+<span class="font-label-sm text-label-sm text-on-surface">Ambiente 302 Torre TIC</span>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs border-t-0">
+<div class="flex items-center gap-space-md text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]">badge</span>
+                  Coord. Mónica Peláez
+                </span>
+<span>•</span>
+<span class="text-primary font-medium">Asistencia justificada en SofíaPlus</span>
+</div>
+<button class="text-primary font-label-sm text-label-sm hover:underline flex items-center gap-1" type="button">
+                Ver detalle de sesión <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+</article>
+<!-- Notice 2: Institutional Event -->
+<article class="notice-card bg-surface-bright p-space-lg rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col gap-space-sm" data-category="eventos" data-search="feria empleabilidad sena tech 2025 proyectos auditorio 5 de junio multimedia adso">
+<div class="flex flex-wrap items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">rocket_launch</span>
+                  Evento Académico &amp; Empleo
+                </span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm">
+                  Inter-programas
+                </span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Mayo 26, 2025</span>
+</div>
+<div class="flex flex-col md:flex-row gap-space-md items-start">
+<div class="w-full md:w-44 h-28 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="Modern high-tech auditorium at SENA technological campus in Bogota with Colombian vocational students presenting software prototypes to business recruiters, clean professional corporate lighting with deep green accents" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFVE-866ZJmpevbMtPaP7A25OgmSJr5_1VVhkkq6difvC_wALAQlfOteLqxiUNUlNgqtVIz2Wh0ITsGiPt4Avy4gKOd_R6LntYZNVQaH9-NBZWMG4PphSTXA2XRexZuZqJMN-BocboSsNUOF8TRHJbkNJAPJy3TPr78wlVmQX9BN35lJWrjQly7DaTOuIuLNSg6SeocSAFXn-65AqnuFF_L07XqHGZfEHKyJpm2Y5R4-eBec95Ii50"/>
+<div class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-surface-bright/90 text-on-surface font-label-sm text-[10px] font-bold">
+                  5 DE JUNIO
+                </div>
+</div>
+<div class="flex-1 space-y-1">
+<h4 class="font-headline-sm text-headline-sm text-on-surface font-bold">
+                  Feria de Empleabilidad y Rueda de Proyectos SENA Tech 2025
+                </h4>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  Convocatoria abierta para stands de exhibición de proyectos formativos y entrevistas directas con empresas aliadas del sector TI. Auditorio Principal Calle 52 de 08:00 a 17:00. Aprendices de ADSO y Multimedia pueden inscribir sus prototipos.
+                </p>
+<div class="flex flex-wrap items-center gap-space-sm pt-1">
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+                    Lugar: Auditorio Piso 1
+                  </span>
+<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm">
+                    Cupos de Stand: 45 disponibles
+                  </span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm text-tertiary font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px]">timer</span>
+                Cierre de inscripciones: 1 de Junio
+              </span>
+<button class="px-space-md py-1.5 rounded-xl bg-surface-container-low text-on-surface font-label-md text-label-md hover:bg-secondary-container hover:text-primary transition-colors flex items-center gap-1.5" type="button">
+                Inscribir Proyecto <span class="material-symbols-outlined text-[15px]">open_in_new</span>
+</button>
+</div>
+</article>
+<!-- Notice 3: Campus Infrastructure / Services -->
+<article class="notice-card bg-surface-bright p-space-lg rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col gap-space-sm" data-category="sede" data-search="mantenimiento data center red wi-fi institucional sabado 31 corte temporal conectividad">
+<div class="flex flex-wrap items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">build</span>
+                  Infraestructura &amp; Telecomunicaciones
+                </span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm">
+                  Sede Calle 52
+                </span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Mayo 25, 2025</span>
+</div>
+<div class="space-y-1">
+<h4 class="font-headline-sm text-headline-sm text-on-surface font-bold">
+                Mantenimiento preventivo de Data Center y Red Wi-Fi institucional el Sábado 31 de Mayo
+              </h4>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                La Unidad de Telemática CGMLTI llevará a cabo tareas de migración y balanceo en la red troncal de fibra óptica de la sede. Habrá suspensión temporal del servicio de red cableada en ambientes y Wi-Fi ‘SENA-APRENDICES’ entre las <strong>14:00 y las 18:00 horas</strong>.
+              </p>
+</div>
+<div class="p-space-sm bg-surface-container-low rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-space-sm text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px] text-tertiary">wifi_off</span>
+<span>Los servicios en la nube (Correo institucional M365 y Zajuna) continuarán operando fuera de sede sin alteraciones.</span>
+</div>
+<span class="font-label-sm text-label-sm font-mono text-on-surface-variant hidden sm:inline">OT: TEL-9021</span>
+</div>
+</article>
+<!-- Notice 4: SENNOVA Research Call -->
+<article class="notice-card bg-surface-bright p-space-lg rounded-xl shadow-sm hover:shadow-md transition-all flex flex-col gap-space-sm" data-category="eventos" data-search="convocatoria sennova semillero investigacion inteligencia artificial cloud aprendices">
+<div class="flex flex-wrap items-center justify-between gap-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">psychology</span>
+                  Convocatoria SENNOVA
+                </span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm">
+                  Investigación Aplicada
+                </span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Mayo 24, 2025</span>
+</div>
+<div class="flex flex-col md:flex-row gap-space-md items-start">
+<div class="w-full md:w-44 h-28 rounded-xl overflow-hidden flex-shrink-0 bg-surface-container relative">
+<img class="w-full h-full object-cover" data-alt="Bright technology laboratory inside SENA vocational training facility in Colombia with young female and male programmers collaborating over dual monitors on AI neural networks and cloud databases" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgEr-vlhqAJnXs3rXcCKWVfCM4yjfzeatc6jwlylyCYE6XnxsvOijxnWzIIm9yfdwKMkSnjwi-IRdOOz0HgrVKh1SofIBsqLQIN_5lexi4j_FNzmeEe2cGu5wdgebuwvkiq1loNy4gBFqJtknFGHjs4DGphIkmGCXbNqUvZ80Ucq74G2urhOygvmHHPtPoLu1eVQakrmSU1csHvlIeqEeQJ5QFS9r4XYuHyCA3YREZlycwFkle-JT0"/>
+<div class="absolute bottom-2 left-2 px-1.5 py-0.5 rounded bg-primary text-on-primary font-label-sm text-[10px] font-bold">
+                  I+D+i
+                </div>
+</div>
+<div class="flex-1 space-y-1">
+<h4 class="font-headline-sm text-headline-sm text-on-surface font-bold">
+                  Semillero de Investigación en Inteligencia Artificial y Computación en la Nube
+                </h4>
+<p class="font-body-md text-body-md text-on-surface-variant">
+                  El grupo de investigación SENNOVA CGMLTI abre cupos para aprendices con desempeño sobresaliente interesados en proyectos de Visión Artificial, Microservicios y Big Data. Los seleccionados recibirán certificación avalada por MinCiencias y apoyo en prototipado.
+                </p>
+<div class="flex flex-wrap items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm pt-1">
+<span class="font-semibold text-on-surface">Requisitos:</span> Estar cursando trimestre II en adelante, no tener llamados de atención académicos.
+                </div>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs">
+<span class="font-label-sm text-label-sm text-on-surface-variant">
+                Líder SENNOVA: MSc. Andrés Felipe Gómez
+              </span>
+<button class="px-space-md py-1.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:bg-primary-container transition-colors flex items-center gap-1" type="button">
+                Descargar Términos de Referencia
+              </button>
+</div>
+</article>
+</div>
+<!-- Pagination & Archives -->
+<div class="flex items-center justify-between p-space-md bg-surface-bright rounded-xl shadow-sm text-on-surface-variant font-label-sm text-label-sm">
+<span>Mostrando 4 de 18 comunicados de Mayo</span>
+<div class="flex items-center gap-space-xs">
+<button class="px-space-md py-1.5 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors disabled:opacity-50" disabled="">Anteriores</button>
+<button class="px-space-md py-1.5 rounded-xl bg-surface-container-low text-on-surface hover:bg-surface-container transition-colors">Histórico 2025</button>
+</div>
+</div>
+</div>
+<!-- Right Column: Institutional Directory & Campus Status (Columns 9-12) -->
+<aside class="lg:col-span-4 flex flex-col gap-space-lg">
+<!-- Campus Operational Status Card -->
+<div class="bg-surface-bright p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md font-bold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">domain_verification</span>
+              Estado de Sede Calle 52
+            </span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+              Operando Normal
+            </span>
+</div>
+<!-- Quick Metrics Bar -->
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ambientes Activos</span>
+<span class="font-headline-sm text-headline-sm font-bold text-on-surface">38 / 42</span>
+</div>
+<div class="bg-surface-container-low p-space-sm rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Aforo en Sede</span>
+<span class="font-headline-sm text-headline-sm font-bold text-primary">74% Confort</span>
+</div>
+</div>
+<!-- Visual Mini Chart: Ambientes Availability inline SVG -->
+<div class="bg-surface-container-low/60 p-space-sm rounded-xl flex flex-col gap-1">
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span>Capacidad de Ambientes Especializados</span>
+<span class="font-semibold text-primary">90.4%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2 overflow-hidden">
+<div class="bg-primary h-2 rounded-full" style="width: 90.4%"></div>
+</div>
+<span class="font-label-sm text-[10px] text-on-surface-variant">Torre TIC, Redes y Talleres de Mercadeo</span>
+</div>
+</div>
+<!-- Academic Calendar Widget: Trimestre II -->
+<div class="bg-surface-bright p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center justify-between">
+<h4 class="font-headline-sm text-headline-sm font-bold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">calendar_month</span>
+              Hitos Trimestre II - 2025
+            </h4>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CGMLTI</span>
+</div>
+<div class="space-y-space-md">
+<!-- Timeline Item 1 -->
+<div class="flex gap-space-md items-start">
+<div class="flex flex-col items-center flex-shrink-0">
+<span class="w-8 h-8 rounded-lg bg-surface-container-low text-primary font-label-md text-label-md font-bold flex items-center justify-center">
+                  30
+                </span>
+<span class="font-label-sm text-[10px] uppercase text-on-surface-variant">MAY</span>
+</div>
+<div class="flex-1">
+<span class="font-label-md text-label-md font-bold text-on-surface block">Jornada Pedagógica Docente</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Trabajo autónomo sin asistencia a sede.</span>
+</div>
+</div>
+<!-- Timeline Item 2 -->
+<div class="flex gap-space-md items-start">
+<div class="flex flex-col items-center flex-shrink-0">
+<span class="w-8 h-8 rounded-lg bg-secondary-container text-on-secondary-container font-label-md text-label-md font-bold flex items-center justify-center">
+                  05
+                </span>
+<span class="font-label-sm text-[10px] uppercase text-on-surface-variant">JUN</span>
+</div>
+<div class="flex-1">
+<span class="font-label-md text-label-md font-bold text-on-surface block">SENA Tech &amp; Empleabilidad</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Muestra final de proyectos formativos.</span>
+</div>
+</div>
+<!-- Timeline Item 3 -->
+<div class="flex gap-space-md items-start">
+<div class="flex flex-col items-center flex-shrink-0">
+<span class="w-8 h-8 rounded-lg bg-surface-container-low text-tertiary font-label-md text-label-md font-bold flex items-center justify-center">
+                  20
+                </span>
+<span class="font-label-sm text-[10px] uppercase text-on-surface-variant">JUN</span>
+</div>
+<div class="flex-1">
+<span class="font-label-md text-label-md font-bold text-on-surface block">Cierre de Evaluaciones SofíaPlus</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Fecha límite para concertar juicios de evaluación.</span>
+</div>
+</div>
+<!-- Timeline Item 4 -->
+<div class="flex gap-space-md items-start">
+<div class="flex flex-col items-center flex-shrink-0">
+<span class="w-8 h-8 rounded-lg bg-surface-container-low text-on-surface font-label-md text-label-md font-bold flex items-center justify-center">
+                  30
+                </span>
+<span class="font-label-sm text-[10px] uppercase text-on-surface-variant">JUN</span>
+</div>
+<div class="flex-1">
+<span class="font-label-md text-label-md font-bold text-on-surface block">Finalización de Etapa Lectiva</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Inicio del periodo de receso intertrimestral.</span>
+</div>
+</div>
+</div>
+<button class="w-full py-2 bg-surface-container-low hover:bg-surface-container text-on-surface rounded-xl font-label-md text-label-md text-center transition-colors" type="button">
+            Descargar Calendario Completo (PDF)
+          </button>
+</div>
+<!-- Coordination Contact Directory Card -->
+<div class="bg-surface-bright p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">contacts</span>
+<h4 class="font-headline-sm text-headline-sm font-bold text-on-surface">Directorio de Coordinación</h4>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+            Atención personalizada a representantes de ficha, aprendices e instructores.
+          </p>
+<div class="space-y-space-sm">
+<!-- Officer 1 -->
+<div class="p-space-sm rounded-xl bg-surface-container-low flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-label-sm">
+                MB
+              </div>
+<div class="flex flex-col min-w-0 flex-1">
+<span class="font-label-md text-label-md font-semibold text-on-surface truncate">Ing. Maritza Benítez C.</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Coordinadora Académica TIC</span>
+<div class="flex items-center gap-1 mt-1 text-primary font-label-sm text-label-sm truncate">
+<span class="material-symbols-outlined text-[14px]">mail</span>
+<a class="hover:underline" href="mailto:mbenitezc@sena.edu.co">mbenitezc@sena.edu.co</a>
+</div>
+</div>
+</div>
+<!-- Officer 2 -->
+<div class="p-space-sm rounded-xl bg-surface-container-low flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-secondary text-on-primary flex items-center justify-center font-bold text-label-sm">
+                MP
+              </div>
+<div class="flex flex-col min-w-0 flex-1">
+<span class="font-label-md text-label-md font-semibold text-on-surface truncate">Dra. Mónica Peláez V.</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Coordinación de Formación &amp; Fichas</span>
+<div class="flex items-center gap-1 mt-1 text-primary font-label-sm text-label-sm truncate">
+<span class="material-symbols-outlined text-[14px]">mail</span>
+<a class="hover:underline" href="mailto:mpelaez@sena.edu.co">mpelaez@sena.edu.co</a>
+</div>
+</div>
+</div>
+</div>
+<!-- In-person hours info -->
+<div class="p-space-sm rounded-xl bg-surface-container-low/80 flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px] flex-shrink-0">meeting_room</span>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Oficina 201 · Torre A</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Lunes a Viernes: 08:00 - 12:00 y 14:00 - 17:00</span>
+</div>
+</div>
+<a class="w-full py-2 bg-primary text-on-primary rounded-xl font-label-md text-label-md text-center hover:bg-primary-container transition-colors flex items-center justify-center gap-1.5 shadow-sm" href="https://mesadeayuda.sena.edu.co" target="_blank">
+<span class="material-symbols-outlined text-[16px]">support_agent</span>
+            Crear Radicado en Mesa de Ayuda
+          </a>
+</div>
+<!-- Safety & Institutional Protocols Note -->
+<div class="p-space-md rounded-xl bg-surface-container-low text-on-surface-variant flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[18px] mt-0.5">verified</span>
+<div class="space-y-0.5">
+<span class="font-label-sm text-label-sm font-bold text-on-surface block">Canales Digitales Oficiales</span>
+<p class="font-body-sm text-body-sm">
+              Ningún instructor o funcionario está autorizado para emitir cancelaciones de clases o cambios de ambiente por canales de mensajería informal ajenos al SIHS o correo institucional @sena.edu.co.
+            </p>
+</div>
+</div>
+</aside>
+</div>
+</section>
+</div>
+<script>
+  // Interactive Toggle for "Ver cómo afecta mi horario"
+  const btnImpact = document.getElementById('btnImpact');
+  const impactDetail = document.getElementById('impactDetail');
+  if (btnImpact && impactDetail) {
+    btnImpact.addEventListener('click', () => {
+      impactDetail.classList.toggle('hidden');
+      if (!impactDetail.classList.contains('hidden')) {
+        btnImpact.classList.add('bg-secondary-container', 'text-primary');
+      } else {
+        btnImpact.classList.remove('bg-secondary-container', 'text-primary');
+      }
+    });
+  }
+
+  // Interactive Category Filter Pills
+  const filterBtns = document.querySelectorAll('.filter-btn');
+  const noticeCards = document.querySelectorAll('.notice-card');
+  const noticesCount = document.getElementById('noticesCount');
+  const searchInput = document.getElementById('searchInput');
+
+  function applyFilters() {
+    const activeBtn = document.querySelector('.filter-btn.bg-primary');
+    const selectedCategory = activeBtn ? activeBtn.getAttribute('data-category') : 'all';
+    const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+
+    let visibleCount = 0;
+
+    noticeCards.forEach(card => {
+      const cardCategory = card.getAttribute('data-category');
+      const cardSearchText = card.getAttribute('data-search') || '';
+
+      const matchesCategory = (selectedCategory === 'all') || (cardCategory === selectedCategory);
+      const matchesQuery = query === '' || cardSearchText.includes(query) || card.innerText.toLowerCase().includes(query);
+
+      if (matchesCategory && matchesQuery) {
+        card.style.display = 'flex';
+        visibleCount++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    if (noticesCount) {
+      noticesCount.textContent = `Mostrando ${visibleCount} aviso${visibleCount === 1 ? '' : 's'}`;
+    }
+  }
+
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filterBtns.forEach(b => {
+        b.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+        b.classList.add('bg-surface-container-low', 'text-on-surface-variant');
+      });
+      btn.classList.remove('bg-surface-container-low', 'text-on-surface-variant');
+      btn.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
+      applyFilters();
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener('input', applyFilters);
+  }
+</script></main><footer class="w-full bg-surface-bright shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full px-margin-desktop py-space-xl flex flex-col md:flex-row items-center justify-between gap-space-md"><div class="flex items-center gap-space-md"><div class="w-6 h-6 rounded-lg bg-primary flex items-center justify-center text-on-primary"><span class="material-symbols-outlined text-[15px]">school</span></div><span class="font-label-md text-label-md text-on-surface-variant">© SENA CGMLTI Calle 52 · Regional Distrito Capital · Sistema Integrado de Horarios y Sedes</span></div><div class="flex items-center gap-space-lg text-on-surface-variant font-label-sm text-label-sm"><a class="hover:text-primary transition-colors" data-path="soporte-tecnico" href="#">Mesa de Ayuda</a><span class="text-outline">•</span><a class="hover:text-primary transition-colors" data-path="directorio-centro" href="#">Directorio Coordinación</a><span class="text-outline">•</span><a class="hover:text-primary transition-colors" data-path="reglamento-aprendiz" href="#">Reglamento del Aprendiz</a></div></div></footer></body></html>
