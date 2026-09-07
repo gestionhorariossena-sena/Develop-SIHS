@@ -3,6 +3,9 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.models.ficha_usuario import FichaUsuario
+from app.models.rol import Rol
+from app.models.usuario import Usuario
+from app.models.usuario_rol import UsuarioRol
 
 
 class FichaUsuarioRepository:
@@ -12,6 +15,27 @@ class FichaUsuarioRepository:
             db.query(FichaUsuario)
             .filter(FichaUsuario.idUsuario == id_usuario)
             .first()
+        )
+
+    @staticmethod
+    def obtener_voceros_por_ficha(db: Session, id_ficha: int):
+        """SCRUM-108: filas con rolEnFicha en ('vocero', 'subvocero') para
+        una ficha — junto con el Usuario para exponer nombre/email."""
+        return (
+            db.query(FichaUsuario, Usuario)
+            .join(Usuario, Usuario.idUsuario == FichaUsuario.idUsuario)
+            .filter(FichaUsuario.idFicha == id_ficha, FichaUsuario.rolEnFicha.isnot(None))
+            .all()
+        )
+
+    @staticmethod
+    def obtener_aprendices_por_ficha(db: Session, id_ficha: int):
+        return (
+            db.query(FichaUsuario)
+            .join(UsuarioRol, UsuarioRol.idUsuario == FichaUsuario.idUsuario)
+            .join(Rol, Rol.idRol == UsuarioRol.idRol)
+            .filter(FichaUsuario.idFicha == id_ficha, Rol.nombre == "Aprendiz")
+            .all()
         )
 
     @staticmethod

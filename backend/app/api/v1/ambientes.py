@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import require_admin, require_lectura_catalogo
+from app.core.supabase_auth import require_admin, require_lectura_catalogo, require_lectura_catalogo_o_instructor
 from app.schemas.ambiente import AmbienteCreate, AmbienteResponse, AmbienteUpdate
 from app.schemas.horario import HorarioResponse
 from app.services.ambiente_service import AmbienteService
@@ -14,12 +14,12 @@ service = AmbienteService()
 
 
 @router.get("", response_model=list[AmbienteResponse])
-def list_ambientes(sede_id: int | None = None, db: Session = Depends(get_db), usuario=Depends(require_lectura_catalogo)):
+def list_ambientes(sede_id: int | None = None, db: Session = Depends(get_db), usuario=Depends(require_lectura_catalogo_o_instructor)):
     return service.list(db, sede_id)
 
 
 @router.get("/{ambiente_id}", response_model=AmbienteResponse)
-def get_ambiente(ambiente_id: int, db: Session = Depends(get_db), usuario=Depends(require_lectura_catalogo)):
+def get_ambiente(ambiente_id: int, db: Session = Depends(get_db), usuario=Depends(require_lectura_catalogo_o_instructor)):
     return service.get(db, ambiente_id)
 
 

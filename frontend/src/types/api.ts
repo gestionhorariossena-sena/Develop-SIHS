@@ -123,6 +123,14 @@ export interface ResultadoAprendizaje {
   horasAsignadas: number | null
 }
 
+// Espejo de CompetenciaFormacionResponse (backend/app/schemas/competencia_formacion.py).
+export interface CompetenciaFormacion {
+  idCompetencia: number
+  codigo: string | null
+  descripcion: string
+  idPrograma: number
+}
+
 // Espejo de HorarioResponse (backend/app/schemas/horario.py) — el módulo
 // real, con las 4 validaciones de cruce en el backend. Distinto de
 // HorarioGuardado (más abajo), que es el puente JSONB anterior.
@@ -233,6 +241,7 @@ export interface HorarioGuardado {
   idHorarioGuardado: number
   idUsuario: string
   creadorNombre: string | null
+  programaNombre: string | null
   ficha: string
   aprendices: string | null
   horasTrimestre: string | null
@@ -256,4 +265,26 @@ export interface Notificacion {
   fechaCreacion: string
   entidadRelacionada: string | null
   idEntidadRelacionada: string | null
+}
+
+// Espejo de la tabla `solicitudes_acceso` (ticket "[DB/Arquitectura] Tabla
+// solicitudes_acceso...", Epic SCRUM-96) y de `SolicitudAccesoResponse` del
+// endpoint `GET /solicitudes-acceso/` (ticket "[Backend] Endpoints
+// /solicitudes-acceso", mismo Epic) — ninguno de los dos existe en el
+// backend todavía. Los nombres de campo acá son el contrato documentado en
+// esos tickets de Jira (SCRUM-103/SCRUM-109), no una adivinanza: cuando el
+// backend exista debería devolver exactamente esta forma.
+export interface SolicitudAcceso {
+  idSolicitud: number
+  nombre: string
+  email: string
+  numeroDocumento: string
+  idRolSolicitado: number
+  rolSolicitado: Rol
+  motivo: string
+  estado: 'pendiente' | 'aprobada' | 'rechazada'
+  motivoRechazo: string | null
+  fechaSolicitud: string
+  fechaResolucion: string | null
+  idAdminResolvio: string | null
 }
