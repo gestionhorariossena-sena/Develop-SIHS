@@ -34,3 +34,7 @@ psycopg[binary]>=3.2
 alembic>=1.13
 # Import de datos reales (épica E, backend/scripts/importar_datos_reales.py)
 openpyxl==3.1.5
+# Exportación a PDF (SCRUM-120) -- pura Python, sin dependencias nativas
+# (Cairo/Pango) a diferencia de WeasyPrint, instala sin fricción en Windows
+# y en el despliegue de Railway.
+reportlab==5.0.1

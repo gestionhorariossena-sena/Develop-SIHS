@@ -2,6 +2,7 @@ from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -24,6 +25,7 @@ from app.schemas.usuario import (
 )
 from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import HorarioService
+from app.services.pdf_service import PdfService
 from app.services.usuario_service import UsuarioService
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
@@ -83,6 +85,37 @@ def obtener_mis_horarios(
     request). Solo devuelve lo publicado — un instructor no debe ver un
     borrador que el coordinador todavía está armando."""
     return HorarioService.obtener_publicados_por_instructor(db, usuario.idUsuario)
+
+
+@router.get("/me/horarios/pdf")
+def descargar_mis_horarios_pdf(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """SCRUM-120: primer consumidor concreto de `PdfService.generar_tabla`
+    (transversal, no atado a horarios) — mismo criterio de autoservicio que
+    `/me/horarios`, sin exigir rol de gestión."""
+    horarios = HorarioService.obtener_publicados_por_instructor(db, usuario.idUsuario)
+
+    columnas = ["Ficha", "Ambiente", "Resultado", "Días", "Horario"]
+    filas = [
+        [
+            h["fichaCodigo"] or "—",
+            h["ambienteNombre"] or "—",
+            h["resultadoDescripcion"] or "—",
+            ", ".join(str(d) for d in h["dias"]) or "—",
+            f"{str(h['horaInicio'])[:5]}–{str(h['horaFin'])[:5]}",
+        ]
+        for h in horarios
+    ]
+
+    pdf_bytes = PdfService.generar_tabla(f"Horario de {usuario.nombre}", columnas, filas)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="mi_horario.pdf"'},
+    )
 
 
 @router.get("/", response_model=list[UsuarioResponse])

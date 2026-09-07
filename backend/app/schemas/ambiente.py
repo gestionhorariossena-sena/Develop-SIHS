@@ -20,6 +20,10 @@ class AmbienteBase(BaseModel):
     tipo_ambiente: TipoAmbiente = Field(alias="tipoAmbiente")
     estado_ambiente: EstadoAmbiente = Field(default=EstadoAmbiente.DISPONIBLE, alias="estadoAmbiente")
     sede_id: int = Field(gt=0, alias="idSede")
+    piso: str | None = Field(default=None)
+    capacidad: int | None = Field(default=None, gt=0)
+    especialidad_sala: str | None = Field(default=None, alias="especialidadSala")
+    responsable_llaves: str | None = Field(default=None, alias="responsableLlaves")
 
     model_config = ConfigDict(populate_by_name=True)
 
