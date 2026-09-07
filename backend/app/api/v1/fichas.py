@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import get_current_user, require_admin, require_lectura_catalogo
+from app.core.supabase_auth import (
+    get_current_user,
+    require_admin,
+    require_lectura_catalogo,
+    require_lectura_catalogo_o_instructor,
+)
 from app.schemas.ficha import FichaCreate, FichaResponse, FichaUpdate
 from app.schemas.ficha_usuario import VoceroResponse
 from app.schemas.horario import HorarioResponse
@@ -28,7 +33,7 @@ def crear_ficha(
 @router.get("/", response_model=list[FichaResponse])
 def obtener_fichas(
     db: Session = Depends(get_db),
-    usuario=Depends(require_lectura_catalogo),
+    usuario=Depends(require_lectura_catalogo_o_instructor),
 ):
     return FichaService.obtener_todos(db)
 
@@ -37,7 +42,7 @@ def obtener_fichas(
 def obtener_ficha(
     id_ficha: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_lectura_catalogo),
+    usuario=Depends(require_lectura_catalogo_o_instructor),
 ):
     ficha = FichaService.obtener_por_id(db, id_ficha)
 
