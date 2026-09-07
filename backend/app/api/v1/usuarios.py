@@ -111,13 +111,22 @@ def obtener_usuario(
 def obtener_carga_semanal(
     id_usuario: UUID,
     db: Session = Depends(get_db),
-    usuario=Depends(require_lectura_catalogo),
+    usuario: Usuario = Depends(get_current_user),
 ):
     """Horas ya asignadas por semana vs. el tope de RF-011 — alimenta la
-    sección "Carga semanal" del drawer de instructor en Instructores.tsx.
+    sección "Carga semanal" del drawer de instructor en Instructores.tsx
+    y el ribbon de KPIs de "Mi Horario" (MiHorario.tsx). Autoservicio
+    igual que /me/horarios: un usuario siempre puede pedir SU PROPIA carga
+    semanal sin tener rol Coordinador/Administrador; para consultar la de
+    OTRO instructor sí se exige `require_lectura_catalogo`.
     No es un módulo "instructores" aparte (no existe en este backend, ver
     ESTRUCTURA.md) — un instructor es un Usuario con rol Instructor, así
     que vive bajo /usuarios como el resto de sus datos."""
+    es_propio = usuario.idUsuario == id_usuario
+    es_lectura_catalogo = any(rol.nombre in ("Coordinador", "Administrador") for rol in usuario.roles)
+    if not es_propio and not es_lectura_catalogo:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
+
     carga = HorarioService.calcular_carga_semanal(db, id_usuario)
 
     if carga is None:

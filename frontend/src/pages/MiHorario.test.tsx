@@ -27,8 +27,52 @@ describe('MiHorario', () => {
     renderConProviders(<MiHorario />)
 
     expect(apiGetMock).toHaveBeenCalledWith('/usuarios/me/horarios')
-    expect(await screen.findByText('CPL18')).toBeInTheDocument()
-    expect(screen.getByText('Erick Granados')).toBeInTheDocument()
+    expect(await screen.findByText('Gestión de inventarios')).toBeInTheDocument()
+    expect(screen.getAllByText('3228973 B').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Ambiente 101').length).toBeGreaterThan(0)
+  })
+
+  it('celdas sin clase muestran "Franja Libre" y el filtro de jornada oculta las otras filas', async () => {
+    apiGetMock.mockImplementation((path: string) =>
+      path === '/usuarios/me/horarios' ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
+    )
+    const usuario = userEvent.setup()
+    renderConProviders(<MiHorario />)
+
+    // HORARIO es Lunes en la mañana — el resto de celdas de esa jornada
+    // (y de las otras dos jornadas) quedan como "Franja Libre".
+    expect((await screen.findAllByText('Franja Libre')).length).toBeGreaterThan(0)
+
+    await usuario.click(screen.getByRole('button', { name: 'Tarde (12:00 - 18:00)' }))
+
+    // Al filtrar por Tarde, el bloque real (que es de Mañana) desaparece
+    // del grid y ya no queda nada publicado en esa jornada.
+    expect(await screen.findByText('No tenés clases publicadas en esa jornada.')).toBeInTheDocument()
+  })
+
+  it('el botón "Abrir Detalle de Franja y Ambiente" está deshabilitado (pantalla de otro ticket, mismo epic)', async () => {
+    apiGetMock.mockImplementation((path: string) =>
+      path === '/usuarios/me/horarios' ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
+    )
+    renderConProviders(<MiHorario />)
+
+    expect(await screen.findByRole('button', { name: /Abrir Detalle de Franja y Ambiente/ })).toBeDisabled()
+  })
+
+  it('el ribbon de KPIs usa GET /usuarios/{id}/carga-semanal para la carga lectiva semanal', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/me') {
+        return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', tipoContrato: 'planta', roles: [{ idRol: 1, nombre: 'Instructor' }] })
+      }
+      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path === '/usuarios/u1/carga-semanal') return Promise.resolve({ idUsuario: 'u1', tipoContrato: 'planta', horasAsignadas: 12, horasMaximas: 32 })
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<MiHorario />)
+
+    expect(await screen.findByText('/ 32 hrs semanales')).toBeInTheDocument()
+    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(apiGetMock).toHaveBeenCalledWith('/usuarios/u1/carga-semanal')
   })
 
   it('sin clases publicadas, muestra el mensaje correspondiente', async () => {
