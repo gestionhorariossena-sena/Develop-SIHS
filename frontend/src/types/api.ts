@@ -258,3 +258,25 @@ export interface Notificacion {
   entidadRelacionada: string | null
   idEntidadRelacionada: string | null
 }
+
+// Espejo de la tabla `solicitudes_acceso` (ticket "[DB/Arquitectura] Tabla
+// solicitudes_acceso...", Epic SCRUM-96) y de `SolicitudAccesoResponse` del
+// endpoint `GET /solicitudes-acceso/` (ticket "[Backend] Endpoints
+// /solicitudes-acceso", mismo Epic) — ninguno de los dos existe en el
+// backend todavía. Los nombres de campo acá son el contrato documentado en
+// esos tickets de Jira (SCRUM-103/SCRUM-109), no una adivinanza: cuando el
+// backend exista debería devolver exactamente esta forma.
+export interface SolicitudAcceso {
+  idSolicitud: number
+  nombre: string
+  email: string
+  numeroDocumento: string
+  idRolSolicitado: number
+  rolSolicitado: Rol
+  motivo: string
+  estado: 'pendiente' | 'aprobada' | 'rechazada'
+  motivoRechazo: string | null
+  fechaSolicitud: string
+  fechaResolucion: string | null
+  idAdminResolvio: string | null
+}
