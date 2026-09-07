@@ -1,3 +1,31 @@
+from datetime import time
+
+from app.models.ambiente import Ambiente
+from app.models.dia_semana import DiaSemana
+from app.models.ficha_usuario import FichaUsuario
+from app.models.horario import Horario, horario_dia
+from app.models.jornada import Jornada
+from app.models.resultado_aprendizaje import ResultadoAprendizaje
+from app.models.sede import Sede
+
+
+def _crear_tablas_horario(db_session):
+    from app.core.database import Base
+
+    Base.metadata.create_all(
+        bind=db_session.bind,
+        tables=[
+            Ambiente.__table__,
+            Sede.__table__,
+            Jornada.__table__,
+            DiaSemana.__table__,
+            ResultadoAprendizaje.__table__,
+            Horario.__table__,
+            horario_dia,
+        ],
+    )
+
+
 def test_vincular_requiere_aprendiz(client, autenticar_como, crear_ficha):
     ficha = crear_ficha(codigo="2874521")
     _, headers = autenticar_como("Instructor")
@@ -71,3 +99,78 @@ def test_mi_ficha_sin_vincular_da_404(client, autenticar_como):
     respuesta = client.get("/api/v1/ficha-usuario/mi-ficha", headers=headers)
 
     assert respuesta.status_code == 404
+
+
+def test_mi_horario_requiere_aprendiz(client, autenticar_como):
+    _, headers = autenticar_como("Instructor")
+
+    respuesta = client.get("/api/v1/ficha-usuario/mi-horario", headers=headers)
+
+    assert respuesta.status_code == 403
+
+
+def test_mi_horario_sin_vincular_da_404(client, autenticar_como):
+    _, headers = autenticar_como("Aprendiz")
+
+    respuesta = client.get("/api/v1/ficha-usuario/mi-horario", headers=headers)
+
+    assert respuesta.status_code == 404
+    assert respuesta.json()["detail"] == "No tienes una ficha vinculada"
+
+
+def test_mi_horario_devuelve_horario_enriquecido_de_la_ficha(
+    client, db_session, autenticar_como, crear_ficha
+):
+    _crear_tablas_horario(db_session)
+    ficha = crear_ficha(codigo="2874521")
+    aprendiz, headers = autenticar_como("Aprendiz")
+    db_session.add(FichaUsuario(idFicha=ficha.idFicha, idUsuario=aprendiz.idUsuario))
+
+    sede = Sede(id=1, nombre="Sede Norte", direccion="Calle 1", tipo="principal")
+    ambiente = Ambiente(
+        id=1,
+        numero_ambiente=101,
+        nombre="Ambiente",
+        tipo_ambiente="regular",
+        estado_ambiente="disponible",
+        sede_id=sede.id,
+    )
+    jornada = Jornada(idJornada=1, nombreJornada="Mañana")
+    dia = DiaSemana(idDia=1, nombreDia="Lunes")
+    resultado = ResultadoAprendizaje(
+        idResultado=1,
+        codigo="RA-1",
+        descripcion="Resultado de prueba",
+        idCompetencia=1,
+        horasAsignadas=10,
+    )
+    db_session.add_all([sede, ambiente, jornada, dia, resultado])
+    db_session.commit()
+
+    horario = Horario(
+        idHorario=1,
+        horaInicio=time(7, 0),
+        horaFin=time(9, 0),
+        idJornada=jornada.idJornada,
+        idTrimestre=ficha.idTrimestre,
+        idAmbiente=ambiente.id,
+        idInstructor=aprendiz.idUsuario,
+        idFicha=ficha.idFicha,
+        idResultado=resultado.idResultado,
+    )
+    db_session.add(horario)
+    db_session.commit()
+    db_session.execute(horario_dia.insert().values(idHorario=horario.idHorario, idDia=dia.idDia))
+    db_session.commit()
+
+    respuesta = client.get("/api/v1/ficha-usuario/mi-horario", headers=headers)
+
+    assert respuesta.status_code == 200
+    body = respuesta.json()
+    assert len(body) == 1
+    assert body[0]["idFicha"] == ficha.idFicha
+    assert body[0]["dias"] == [1]
+    assert body[0]["fichaCodigo"] == ficha.codigoFicha
+    assert body[0]["ambienteNombre"] == "Ambiente"
+    assert body[0]["resultadoCodigo"] == "RA-1"
+    assert body[0]["resultadoDescripcion"] == "Resultado de prueba"
