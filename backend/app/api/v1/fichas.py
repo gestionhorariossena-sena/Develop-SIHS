@@ -2,12 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import (
-    get_current_user,
-    require_admin,
-    require_lectura_catalogo,
-    require_lectura_catalogo_o_instructor,
-)
+from app.core.supabase_auth import get_current_user, require_admin, require_lectura_catalogo, require_lectura_catalogo_o_instructor
 from app.schemas.ficha import FichaCreate, FichaResponse, FichaUpdate
 from app.schemas.ficha_usuario import VoceroResponse
 from app.schemas.horario import HorarioResponse
