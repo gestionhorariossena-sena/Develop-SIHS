@@ -27,6 +27,7 @@ const SNAPSHOT_CON_VINCULO: HorarioGuardado = {
   idHorarioGuardado: 10,
   idUsuario: 'u1',
   creadorNombre: 'Erick Granados',
+  programaNombre: 'Análisis y Desarrollo de Software',
   ficha: 'FICHA-SNAPSHOT',
   aprendices: '30',
   horasTrimestre: '40',
@@ -69,6 +70,7 @@ describe('HistorialHorarios', () => {
     renderConProviders(<HistorialHorarios />)
 
     expect(await screen.findByText('FICHA-SNAPSHOT')).toBeInTheDocument()
+    expect(screen.getByText('Análisis y Desarrollo de Software')).toBeInTheDocument()
     // FICHA-1/FICHA-SUELTA son clases individuales (GET /horarios/) — no
     // deben aparecer como filas propias antes de abrir un horario.
     expect(screen.queryByText('FICHA-1')).not.toBeInTheDocument()
@@ -181,6 +183,13 @@ describe('HistorialHorarios', () => {
     expect(screen.queryByText('Clases de este horario')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Publicar' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Despublicar' })).not.toBeInTheDocument()
+  })
+
+  it('muestra un fallback si el snapshot no tiene programa vinculado', async () => {
+    mockeaBase([CLASE_1, CLASE_SUELTA], [{ ...SNAPSHOT_CON_VINCULO, programaNombre: null }])
+    renderConProviders(<HistorialHorarios />)
+
+    expect(await screen.findByText('Sin programa vinculado')).toBeInTheDocument()
   })
 
   it('muestra el error del backend si la carga de clases reales falla', async () => {
