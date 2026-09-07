@@ -123,6 +123,14 @@ export interface ResultadoAprendizaje {
   horasAsignadas: number | null
 }
 
+// Espejo de CompetenciaFormacionResponse (backend/app/schemas/competencia_formacion.py).
+export interface CompetenciaFormacion {
+  idCompetencia: number
+  codigo: string | null
+  descripcion: string
+  idPrograma: number
+}
+
 // Espejo de HorarioResponse (backend/app/schemas/horario.py) — el módulo
 // real, con las 4 validaciones de cruce en el backend. Distinto de
 // HorarioGuardado (más abajo), que es el puente JSONB anterior.

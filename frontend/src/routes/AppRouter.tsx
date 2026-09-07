@@ -18,6 +18,7 @@ import { Fichas } from '../pages/Fichas'
 import { VistaFichas } from '../pages/VistaFichas'
 import { VistaAmbientes } from '../pages/VistaAmbientes'
 import { MiHorario } from '../pages/MiHorario'
+import { DetalleFranjaAmbiente } from '../pages/DetalleFranjaAmbiente'
 import { Usuarios } from '../pages/Usuarios'
 import { CodigoInstructor } from '../pages/CodigoInstructor'
 import { Roles } from '../pages/Roles'
@@ -61,6 +62,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <MiHorario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mi-horario/detalle-franja"
+        element={
+          <ProtectedRoute>
+            <DetalleFranjaAmbiente />
           </ProtectedRoute>
         }
       />
