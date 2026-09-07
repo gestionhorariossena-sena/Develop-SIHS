@@ -244,3 +244,29 @@ def test_actualizar_horario_notifica_al_aprendiz_si_cambia_ambiente_o_instructor
     )
     assert respuesta_sin_cambio.status_code == 200
     assert len(client.get("/api/v1/notificaciones/", headers=aprendiz_headers).json()) == 1
+
+
+def test_vocero_de_ficha_devuelve_solo_los_marcados(client, db_session, autenticar_como, crear_ficha, crear_usuario):
+    ficha = crear_ficha(codigo="2874521")
+    vocera, headers = autenticar_como("Aprendiz")
+    aprendiz_normal = crear_usuario(nombre="Aprendiz sin rol en ficha")
+
+    db_session.add(FichaUsuario(idFicha=ficha.idFicha, idUsuario=vocera.idUsuario, rolEnFicha="vocero"))
+    db_session.add(FichaUsuario(idFicha=ficha.idFicha, idUsuario=aprendiz_normal.idUsuario, rolEnFicha=None))
+    db_session.commit()
+
+    respuesta = client.get(f"/api/v1/fichas/{ficha.idFicha}/vocero", headers=headers)
+
+    assert respuesta.status_code == 200
+    cuerpo = respuesta.json()
+    assert len(cuerpo) == 1
+    assert cuerpo[0]["idUsuario"] == str(vocera.idUsuario)
+    assert cuerpo[0]["rolEnFicha"] == "vocero"
+
+
+def test_vocero_de_ficha_inexistente_da_404(client, autenticar_como):
+    _, headers = autenticar_como("Instructor")
+
+    respuesta = client.get("/api/v1/fichas/9999/vocero", headers=headers)
+
+    assert respuesta.status_code == 404

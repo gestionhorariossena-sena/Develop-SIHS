@@ -42,6 +42,7 @@ class UsuarioResponse(BaseModel):
     codigoInstructor: str | None = None
     idTrimestre: int | None = None
     sigla: str | None = None
+    debeCambiarClave: bool = False
     roles: list[RolResponse] = []
     especialidades: list[EspecialidadResponse] = []
 
