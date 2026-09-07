@@ -3,7 +3,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { MiHorario } from './MiHorario'
-import type { Horario } from '../types/api'
+import type { Ficha, Horario } from '../types/api'
 
 const HORARIO: Horario = {
   idHorario: 1, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
@@ -11,6 +11,15 @@ const HORARIO: Horario = {
   fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
   instructorNombre: 'Erick Granados', fichaCodigo: '3228973 B', ambienteNombre: 'Ambiente 101',
   resultadoCodigo: 'CPL18', resultadoDescripcion: 'Gestión de inventarios',
+}
+
+const FICHA: Ficha = {
+  idFicha: 1, codigoFicha: '3228973 B', idPrograma: 1, idTrimestre: 1, idSede: 1,
+  programa: { idPrograma: 1, codigoPrograma: 'ADSO', nombrePrograma: 'Tecnólogo en Análisis y Desarrollo de Software', nivelFormacion: 'Tecnólogo', activo: true, idCoordinacion: 1 },
+  trimestre: { idTrimestre: 1, nombre: 'Trimestre II', fechaInicio: '2026-01-01', fechaFin: '2026-03-01', estado: 'activo' },
+  sede: null,
+  aprendicesTotales: 28,
+  jornadas: ['Mañana'],
 }
 
 const apiGetMock = vi.fn()
@@ -73,6 +82,35 @@ describe('MiHorario', () => {
     expect(await screen.findByText('/ 32 hrs semanales')).toBeInTheDocument()
     expect(screen.getByText('12')).toBeInTheDocument()
     expect(apiGetMock).toHaveBeenCalledWith('/usuarios/u1/carga-semanal')
+  })
+
+  it('Alertas Operativas: no inventa alertas de ejemplo y deja "Solicitar Novedad o Permuta" deshabilitado', async () => {
+    apiGetMock.mockImplementation((path: string) =>
+      path === '/usuarios/me/horarios' ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
+    )
+    renderConProviders(<MiHorario />)
+
+    expect(await screen.findByText('Alertas Operativas')).toBeInTheDocument()
+    // El mockup trae alertas de ejemplo ("Registro de Asistencia Hoy",
+    // "Permuta Aprobada") — no deben aparecer, no hay backend real todavía.
+    expect(screen.queryByText('Registro de Asistencia Hoy')).not.toBeInTheDocument()
+    expect(screen.queryByText('Permuta Aprobada')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Solicitar Novedad o Permuta/ })).toBeDisabled()
+  })
+
+  it('Mis Fichas Activas: programa y aprendices son reales; vocero/avance curricular quedan como pendientes, no inventados', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path === '/fichas/') return Promise.resolve([FICHA])
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<MiHorario />)
+
+    expect(await screen.findByText('Tecnólogo en Análisis y Desarrollo de Software')).toBeInTheDocument()
+    expect(screen.getByText('28 aprendices')).toBeInTheDocument()
+    expect(screen.getByText('Vocero: No disponible')).toBeInTheDocument()
+    expect(screen.getByText('Avance curricular: No disponible')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Contactar/ })).toBeDisabled()
   })
 
   it('Estatus Normativo RF-011: dentro del tope muestra "Aprobado"', async () => {

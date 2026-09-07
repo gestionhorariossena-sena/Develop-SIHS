@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { GridSemanalInstructor } from '../components/horario/GridSemanalInstructor'
-import { SeccionAmbientesAsignados, SeccionFichasAsignadas } from '../components/relacionados/SeccionesInstructor'
+import { SeccionAmbientesAsignados } from '../components/relacionados/SeccionesInstructor'
 import { apiGet, ApiError } from '../services/api'
-import type { CargaSemanal, DiaSemana, Ficha, Horario, Usuario } from '../types/api'
+import type { CargaSemanal, Ficha, Horario, Usuario } from '../types/api'
 import type { Jornada } from './horario/tipos'
 
 const TODAS_LAS_JORNADAS: Jornada[] = ['Mañana', 'Tarde', 'Noche']
@@ -67,10 +67,9 @@ const ETIQUETA_CONTRATO: Record<string, string> = {
  * para que un usuario pueda pedir SU PROPIA carga sin esos roles, igual que
  * ya pasaba con /me/horarios. "Fichas Activas" y "Ambientes en Uso" se
  * derivan de los mismos horarios ya cargados (+ GET /fichas/ para los
- * aprendices convocados por ficha). El bloque "Fichas asignadas"/
- * "Ambientes asignados" reutiliza las secciones ya construidas del drawer
- * de instructor (SCRUM-62/64, `SeccionesInstructor.tsx`) en vez de
- * rehacerlas.
+ * aprendices convocados por ficha). "Ambientes asignados" reutiliza la
+ * sección ya construida del drawer de instructor (SCRUM-64,
+ * `SeccionesInstructor.tsx`) en vez de rehacerla.
  *
  * "Estatus Normativo" (tarjeta RF-011 del mockup) es 100% derivado de
  * `cargaSemanal`: si `horasAsignadas <= horasMaximas` es "Aprobado"; si el
@@ -81,6 +80,24 @@ const ETIQUETA_CONTRATO: Record<string, string> = {
  * uno reinventado acá. Si el usuario no tiene tipoContrato definido
  * (`horasMaximas` null) no hay tope que evaluar — se muestra ese caso
  * aparte, no como "Aprobado".
+ *
+ * "Alertas Operativas" (columna derecha del mockup) depende del Módulo de
+ * Asistencia y de Solicitudes de cambio/permuta — ninguno de los dos existe
+ * en el backend todavía (tickets aparte, mismo epic), así que la sección se
+ * queda en un estado disabled+tooltip explicando por qué, en vez de mostrar
+ * las alertas de ejemplo del mockup (asistencia pendiente, permuta
+ * aprobada) como si fueran reales. El botón "Solicitar Novedad o Permuta"
+ * vive en esa misma tarjeta (igual que el mockup) y abre el formulario del
+ * ticket de Solicitudes de cambio/permuta — deshabilitado por la misma
+ * razón.
+ *
+ * "Mis Fichas Activas" (columna derecha) sí es real en la parte que puede
+ * serlo: código de ficha, nombre del programa y aprendices totales vienen
+ * de GET /fichas/ cruzado con las fichas de `horarios`. "Vocero" (ticket de
+ * vocero/subvocero) y "Avance curricular" (ticket de avance curricular) no
+ * tienen endpoint todavía — se muestran como pendientes explícitos, no como
+ * datos inventados. "Contactar" queda deshabilitado hasta que exista
+ * mensajería instructor-aprendiz (Epic "Vistas del Aprendiz").
  *
  * No incluye (tickets aparte, mismo epic): selector de semana real ni
  * sincronización con SofiaPlus — esa última es decorativa en el mockup y no
@@ -93,7 +110,6 @@ export function MiHorario() {
   const [filtroJornada, setFiltroJornada] = useState<Jornada | 'todas'>('todas')
 
   const [fichas, setFichas] = useState<Ficha[]>([])
-  const [diasPorId, setDiasPorId] = useState<Record<number, string>>({})
 
   const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
   const [errorCarga, setErrorCarga] = useState(false)
@@ -108,12 +124,6 @@ export function MiHorario() {
       .catch(() => {})
 
     apiGet<Ficha[]>('/fichas/').then(setFichas).catch(() => {})
-
-    // Sin .catch dedicado no rompe nada visible (nombresDias cae a "?" por
-    // día si falta el mapa), mismo patrón que Instructores.tsx.
-    apiGet<DiaSemana[]>('/dias-semana/')
-      .then((dias) => setDiasPorId(Object.fromEntries(dias.map((d) => [d.idDia, d.nombreDia]))))
-      .catch(() => {})
   }, [])
 
   // La carga semanal (SCRUM-49) requiere el propio idUsuario — se pide
@@ -140,6 +150,13 @@ export function MiHorario() {
   }, [fichas])
 
   const fichasActivas = useMemo(() => new Set((horarios ?? []).map((h) => h.idFicha)), [horarios])
+  // "Mis Fichas Activas" (columna derecha) necesita el objeto Ficha completo
+  // (nombre de programa, aprendicesTotales), no solo el código que ya trae
+  // Horario — se cruza con GET /fichas/ acá.
+  const fichasActivasCompletas = useMemo(
+    () => fichas.filter((f) => fichasActivas.has(f.idFicha)),
+    [fichas, fichasActivas],
+  )
   const aprendicesConvocados = useMemo(
     () => [...fichasActivas].reduce((total, idFicha) => total + (aprendicesPorFicha[idFicha] ?? 0), 0),
     [fichasActivas, aprendicesPorFicha],
@@ -388,27 +405,77 @@ export function MiHorario() {
         </div>
 
         <div className="flex flex-col gap-6">
+          {/* "Alertas Operativas" (mockup) depende de dos backends que no
+              existen todavía (Módulo de Asistencia, Solicitudes de cambio/
+              permuta) — no se inventan alertas de ejemplo, la sección queda
+              disabled+tooltip explicando la dependencia. */}
           <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
-            <SeccionFichasAsignadas horarios={horarios ?? []} diasPorId={diasPorId} />
-          </div>
-
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
-            <SeccionAmbientesAsignados horarios={horarios ?? []} />
-          </div>
-
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
-            <p className="mb-1 text-xs font-medium tracking-wide text-on-surface-variant uppercase">Solicitud de novedad</p>
-            <p className="text-sm text-on-surface-variant">
-              ¿Tenés un cruce formativo o necesitás una permuta de ambiente? Podés radicar tu novedad directamente.
+            <div className="mb-1 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px] text-tertiary">notification_important</span>
+              <p className="text-sm font-semibold text-on-surface">Alertas Operativas</p>
+            </div>
+            <p
+              className="text-sm text-on-surface-variant"
+              title="Disponible cuando existan el Módulo de Asistencia y Solicitudes de cambio/permuta (mismo epic)"
+            >
+              Todavía no hay alertas de asistencia ni de permutas conectadas — esta sección se activa cuando esos
+              módulos estén disponibles.
             </p>
             <button
               type="button"
               disabled
-              title="Aún no implementado en el backend"
-              className="mt-3 w-full cursor-not-allowed rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant"
+              title="Disponible cuando exista el módulo de Solicitudes de cambio/permuta (mismo epic)"
+              className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-1.5 rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant"
             >
-              + Solicitar cambio de horario
+              <span className="material-symbols-outlined text-[16px]">swap_horiz</span>
+              Solicitar Novedad o Permuta
             </button>
+          </div>
+
+          {/* "Mis Fichas Activas" (mockup): código, programa y aprendices
+              son reales (GET /fichas/); vocero y avance curricular todavía
+              no tienen endpoint (tickets aparte, mismo epic) — se marcan
+              como pendientes en vez de inventar un nombre o un porcentaje. */}
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+            <div className="mb-3 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px] text-primary">badge</span>
+              <p className="text-sm font-semibold text-on-surface">Mis Fichas Activas</p>
+            </div>
+            {!horarios ? (
+              <p className="text-sm text-on-surface-variant">Cargando…</p>
+            ) : fichasActivasCompletas.length === 0 ? (
+              <p className="text-sm text-on-surface-variant">Sin fichas asignadas este trimestre.</p>
+            ) : (
+              <ul className="space-y-3">
+                {fichasActivasCompletas.map((ficha) => (
+                  <li key={ficha.idFicha} className="rounded-xl bg-surface-container-low/60 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-sm font-bold text-on-surface">{ficha.codigoFicha}</span>
+                      <span className="text-[11px] text-on-surface-variant">{ficha.aprendicesTotales} aprendices</span>
+                    </div>
+                    <p className="mt-1 text-xs font-medium leading-tight text-on-surface">{ficha.programa.nombrePrograma}</p>
+                    <div className="mt-2 flex items-center justify-between text-[11px] text-on-surface-variant">
+                      <span title="Pendiente: ticket de vocero/subvocero (mismo epic)">Vocero: No disponible</span>
+                      <button
+                        type="button"
+                        disabled
+                        title="Disponible cuando exista mensajería instructor-aprendiz (Epic Vistas del Aprendiz)"
+                        className="flex cursor-not-allowed items-center gap-1 font-bold text-on-surface-variant/50"
+                      >
+                        <span className="material-symbols-outlined text-[13px]">chat</span> Contactar
+                      </button>
+                    </div>
+                    <p className="mt-1 text-[11px] text-on-surface-variant" title="Pendiente: ticket de avance curricular (mismo epic)">
+                      Avance curricular: No disponible
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+            <SeccionAmbientesAsignados horarios={horarios ?? []} />
           </div>
         </div>
       </div>
