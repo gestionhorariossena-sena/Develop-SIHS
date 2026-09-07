@@ -53,4 +53,5 @@ class HorarioGuardadoResponse(HorarioGuardadoBase):
     idHorarioGuardado: int
     idUsuario: UUID
     creadorNombre: str | None = None
+    programaNombre: str | None = None
     fechaCreacion: datetime

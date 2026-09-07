@@ -143,6 +143,48 @@ def test_listar_horarios_guardados_con_idshorarios_null_no_da_500(client, db_ses
     assert cuerpo[0]["idsHorarios"] == []
 
 
+def test_listar_horarios_guardados_expone_programa_de_la_ficha(client, db_session, autenticar_como):
+    _crear_tablas_extra(db_session)
+    _poblar(db_session)
+    usuario, headers = autenticar_como("Coordinador")
+
+    guardado = HorarioGuardado(
+        idUsuario=usuario.idUsuario,
+        ficha="FICHA-001",
+        bloques=[],
+        grid=[],
+    )
+    db_session.add(guardado)
+    db_session.commit()
+
+    respuesta = client.get("/api/v1/horarios-guardados/", headers=headers)
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()[0]["programaNombre"] == "Tecnología"
+
+
+def test_listar_horarios_guardados_sin_ficha_catalogada_deja_programa_nulo(
+    client, db_session, autenticar_como
+):
+    _crear_tablas_extra(db_session)
+    _poblar(db_session)
+    usuario, headers = autenticar_como("Coordinador")
+
+    guardado = HorarioGuardado(
+        idUsuario=usuario.idUsuario,
+        ficha="FICHA-MANUAL",
+        bloques=[],
+        grid=[],
+    )
+    db_session.add(guardado)
+    db_session.commit()
+
+    respuesta = client.get("/api/v1/horarios-guardados/", headers=headers)
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()[0]["programaNombre"] is None
+
+
 def test_instructor_no_puede_ver_el_historial_de_horarios_de_otros(client, db_session, autenticar_como):
     """Reportado 2026-09-03: un Instructor podía pedir GET
     /horarios-guardados/ directo (sin pasar por el sidebar) y ver los

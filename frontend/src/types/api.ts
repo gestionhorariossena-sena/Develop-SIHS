@@ -233,6 +233,7 @@ export interface HorarioGuardado {
   idHorarioGuardado: number
   idUsuario: string
   creadorNombre: string | null
+  programaNombre: string | null
   ficha: string
   aprendices: string | null
   horasTrimestre: string | null
