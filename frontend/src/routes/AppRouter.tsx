@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { Presentacion } from '../pages/Presentacion'
 import { Login } from '../pages/Login'
 import { Registro } from '../pages/Registro'
 import { RecuperarContrasena } from '../pages/RecuperarContrasena'
@@ -190,7 +191,7 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Presentacion />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )
