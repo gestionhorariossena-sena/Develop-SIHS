@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import require_admin
+from app.core.supabase_auth import require_admin, require_lectura_catalogo_o_instructor
 from app.schemas.competencia_formacion import (
     CompetenciaFormacionCreate,
     CompetenciaFormacionResponse,
@@ -25,7 +25,7 @@ def crear_competencia(
 @router.get("/", response_model=list[CompetenciaFormacionResponse])
 def obtener_competencias(
     db: Session = Depends(get_db),
-    usuario=Depends(require_admin),
+    usuario=Depends(require_lectura_catalogo_o_instructor),
 ):
     return CompetenciaFormacionService.obtener_todos(db)
 
@@ -34,7 +34,7 @@ def obtener_competencias(
 def obtener_competencia(
     id_competencia: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_admin),
+    usuario=Depends(require_lectura_catalogo_o_instructor),
 ):
     competencia = CompetenciaFormacionService.obtener_por_id(db, id_competencia)
 

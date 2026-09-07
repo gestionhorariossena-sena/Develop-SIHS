@@ -19,6 +19,14 @@ class Ambiente(Base):
     tipo_ambiente: Mapped[str] = mapped_column("tipoAmbiente", String(20), nullable=False)
     estado_ambiente: Mapped[str] = mapped_column("estadoAmbiente", String(30), nullable=False, default="disponible")
     sede_id: Mapped[int] = mapped_column("idSede", ForeignKey("sedes.idSede"), nullable=False)
+    # SCRUM-117: ficha técnica del ambiente — mockup
+    # detalle_de_franja_y_ambiente_sihs_sena. Todas nullable a propósito,
+    # se completan a mano con el import real; el inventario técnico
+    # detallado (marca de equipos, conectividad) queda fuera de alcance.
+    piso: Mapped[str | None] = mapped_column("piso", String(30), nullable=True)
+    capacidad: Mapped[int | None] = mapped_column("capacidad", Integer, nullable=True)
+    especialidad_sala: Mapped[str | None] = mapped_column("especialidadSala", String(100), nullable=True)
+    responsable_llaves: Mapped[str | None] = mapped_column("responsableLlaves", String(100), nullable=True)
 
     sede: Mapped["Sede"] = relationship(back_populates="ambientes")
 

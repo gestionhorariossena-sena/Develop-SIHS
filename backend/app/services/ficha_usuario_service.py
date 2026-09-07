@@ -27,3 +27,16 @@ class FichaUsuarioService:
             return None
 
         return FichaRepository.obtener_por_id(db, relacion.idFicha)
+
+    @staticmethod
+    def obtener_voceros(db, id_ficha):
+        filas = FichaUsuarioRepository.obtener_voceros_por_ficha(db, id_ficha)
+        return [
+            {
+                "idUsuario": usuario.idUsuario,
+                "nombre": usuario.nombre,
+                "email": usuario.email,
+                "rolEnFicha": relacion.rolEnFicha,
+            }
+            for relacion, usuario in filas
+        ]

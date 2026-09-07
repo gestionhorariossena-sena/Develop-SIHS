@@ -2,6 +2,7 @@ from uuid import UUID
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -24,6 +25,7 @@ from app.schemas.usuario import (
 )
 from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import HorarioService
+from app.services.pdf_service import PdfService
 from app.services.usuario_service import UsuarioService
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
@@ -85,6 +87,37 @@ def obtener_mis_horarios(
     return HorarioService.obtener_publicados_por_instructor(db, usuario.idUsuario)
 
 
+@router.get("/me/horarios/pdf")
+def descargar_mis_horarios_pdf(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """SCRUM-120: primer consumidor concreto de `PdfService.generar_tabla`
+    (transversal, no atado a horarios) — mismo criterio de autoservicio que
+    `/me/horarios`, sin exigir rol de gestión."""
+    horarios = HorarioService.obtener_publicados_por_instructor(db, usuario.idUsuario)
+
+    columnas = ["Ficha", "Ambiente", "Resultado", "Días", "Horario"]
+    filas = [
+        [
+            h["fichaCodigo"] or "—",
+            h["ambienteNombre"] or "—",
+            h["resultadoDescripcion"] or "—",
+            ", ".join(str(d) for d in h["dias"]) or "—",
+            f"{str(h['horaInicio'])[:5]}–{str(h['horaFin'])[:5]}",
+        ]
+        for h in horarios
+    ]
+
+    pdf_bytes = PdfService.generar_tabla(f"Horario de {usuario.nombre}", columnas, filas)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="mi_horario.pdf"'},
+    )
+
+
 @router.get("/", response_model=list[UsuarioResponse])
 def listar_usuarios(
     db: Session = Depends(get_db),
@@ -111,13 +144,22 @@ def obtener_usuario(
 def obtener_carga_semanal(
     id_usuario: UUID,
     db: Session = Depends(get_db),
-    usuario=Depends(require_lectura_catalogo),
+    usuario: Usuario = Depends(get_current_user),
 ):
     """Horas ya asignadas por semana vs. el tope de RF-011 — alimenta la
-    sección "Carga semanal" del drawer de instructor en Instructores.tsx.
+    sección "Carga semanal" del drawer de instructor en Instructores.tsx
+    y el ribbon de KPIs de "Mi Horario" (MiHorario.tsx). Autoservicio
+    igual que /me/horarios: un usuario siempre puede pedir SU PROPIA carga
+    semanal sin tener rol Coordinador/Administrador; para consultar la de
+    OTRO instructor sí se exige `require_lectura_catalogo`.
     No es un módulo "instructores" aparte (no existe en este backend, ver
     ESTRUCTURA.md) — un instructor es un Usuario con rol Instructor, así
     que vive bajo /usuarios como el resto de sus datos."""
+    es_propio = usuario.idUsuario == id_usuario
+    es_lectura_catalogo = any(rol.nombre in ("Coordinador", "Administrador") for rol in usuario.roles)
+    if not es_propio and not es_lectura_catalogo:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
+
     carga = HorarioService.calcular_carga_semanal(db, id_usuario)
 
     if carga is None:
