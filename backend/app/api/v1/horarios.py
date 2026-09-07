@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.supabase_auth import require_roles
 from app.schemas.horario import (
+    AuditoriaCrucesResponse,
     HorarioCreate,
     HorarioDryRunRequest,
     HorarioDryRunResponse,
@@ -57,6 +58,31 @@ def validar_dry_run_horario(
         "resumen": {
             "totalCruces": 0,
             "tipos": [],
+        },
+    }
+
+
+@router.get("/auditoria-cruces", response_model=AuditoriaCrucesResponse)
+def auditar_cruces(
+    idTrimestre: int | None = None,
+    idSede: int | None = None,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_puede_programar),
+):
+    """Barrido de cruces entre horarios ya guardados (activos) — pantalla
+    "Auditoría de Cruces" de Coordinación. Reutiliza la misma lógica de
+    validar_dry_run por cada horario existente (ver
+    HorarioService.auditar_conflictos), así que los tipos de conflicto son
+    exactamente los mismos que ya devuelve /horarios/validar:
+    cruce_ficha, cruce_instructor, cruce_ambiente, resultado_repetido,
+    regla_instructor."""
+    conflictos = HorarioService.auditar_conflictos(db, id_trimestre=idTrimestre, id_sede=idSede)
+
+    return {
+        "conflictos": conflictos,
+        "resumen": {
+            "totalCruces": len(conflictos),
+            "tipos": sorted({c["tipo"] for c in conflictos}),
         },
     }
 

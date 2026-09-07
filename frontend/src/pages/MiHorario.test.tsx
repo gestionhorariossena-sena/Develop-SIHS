@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { MiHorario } from './MiHorario'
 import type { Horario } from '../types/api'
@@ -76,12 +77,20 @@ describe('MiHorario', () => {
       if (path === '/usuarios/me/horarios') return Promise.resolve([])
       return Promise.reject(new Error('no mockeado'))
     })
+    const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
 
     await screen.findByText('Todavía no tenés clases publicadas en este trimestre.')
     expect(screen.queryByRole('link', { name: 'Mi horario' })).not.toBeInTheDocument()
+
+    // "Fichas" e "Instructores" ahora viven en desplegables del navbar
+    // ("Formación"/"Recursos") — hay que abrirlos para que el link exista
+    // en el DOM.
+    await usuario.click(await screen.findByRole('button', { name: 'Formación' }))
     expect(await screen.findByRole('link', { name: 'Fichas' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Instructores' })).toBeInTheDocument()
+
+    await usuario.click(await screen.findByRole('button', { name: 'Recursos' }))
+    expect(await screen.findByRole('link', { name: 'Instructores' })).toBeInTheDocument()
   })
 
   it('un usuario con roles Instructor y Coordinador a la vez ve ambos mundos', async () => {
@@ -95,9 +104,12 @@ describe('MiHorario', () => {
       if (path === '/usuarios/me/horarios') return Promise.resolve([])
       return Promise.reject(new Error('no mockeado'))
     })
+    const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
 
     expect(await screen.findByRole('link', { name: 'Mi horario' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Fichas' })).toBeInTheDocument()
+
+    await usuario.click(await screen.findByRole('button', { name: 'Formación' }))
+    expect(await screen.findByRole('link', { name: 'Fichas' })).toBeInTheDocument()
   })
 })

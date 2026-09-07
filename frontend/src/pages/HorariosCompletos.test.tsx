@@ -167,12 +167,14 @@ describe('HorariosCompletos', () => {
     await screen.findByText('3228973 B')
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    expect(await screen.findByText('Publicado')).toBeInTheDocument()
+    // "Publicado" ahora aparece dos veces con la fila expandida: el badge de
+    // la columna "Estado" en la fila y el badge dentro del detalle expandido.
+    expect((await screen.findAllByText('Publicado')).length).toBeGreaterThan(0)
 
     await usuario.click(screen.getByRole('button', { name: 'Despublicar' }))
 
     expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
-    expect(await screen.findByText('Borrador')).toBeInTheDocument()
+    expect((await screen.findAllByText('Borrador')).length).toBeGreaterThan(0)
     expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument()
   })
 

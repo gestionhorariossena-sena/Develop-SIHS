@@ -159,33 +159,33 @@ export function HistorialHorarios() {
   return (
     <AppShell activo="Historial de horarios">
       <div className="mb-6 print:hidden">
-        <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Historial de horarios</h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400">
+        <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Historial de horarios</h1>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">
           Horarios completos guardados desde el creador. Abre uno para ver sus clases, modificarlo,
           exportarlo a PDF o activar/desactivar/borrar una clase puntual.
         </p>
       </div>
 
       {(error || errorReales) && (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
           {error ?? errorReales}
         </p>
       )}
 
       {!seleccionado && (
         <div className="print:hidden">
-          {cargando && <p className="text-sm text-slate-500">Cargando…</p>}
+          {cargando && <p className="text-sm text-on-surface-variant">Cargando…</p>}
 
           {!cargando && !hayFilas && (
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-on-surface-variant">
               Todavía no se ha guardado ningún horario — créalo desde "Horarios" en el menú.
             </p>
           )}
 
           {hayFilas && (
-            <div className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+            <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
               <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50 text-xs font-semibold uppercase text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                <thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
                   <tr>
                     <th scope="col" className="px-4 py-3">Ficha</th>
                     <th scope="col" className="px-4 py-3">Detalle</th>
@@ -194,24 +194,24 @@ export function HistorialHorarios() {
                     <th scope="col" className="px-4 py-3" />
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                <tbody className="divide-y divide-outline-variant dark:divide-slate-700">
                   {snapshotsOrdenados.map((h) => (
-                    <tr key={`snap-${h.idHorarioGuardado}`} className="hover:bg-slate-50 dark:hover:bg-slate-700/60">
-                      <td className="px-4 py-3 font-medium text-slate-900 dark:text-slate-100">
+                    <tr key={`snap-${h.idHorarioGuardado}`} className="hover:bg-surface dark:hover:bg-slate-700/60">
+                      <td className="px-4 py-3 font-medium text-on-surface dark:text-slate-100">
                         {h.ficha}
-                        <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-sky-700">
+                        <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
                           Horario completo
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
+                      <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">
                         {h.bloques.length} bloque{h.bloques.length === 1 ? '' : 's'}
                       </td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{h.creadorNombre ?? '—'}</td>
-                      <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{formatearFecha(h.fechaCreacion)}</td>
+                      <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{h.creadorNombre ?? '—'}</td>
+                      <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{formatearFecha(h.fechaCreacion)}</td>
                       <td className="px-4 py-3 text-right">
                         {confirmandoSnapshotId === h.idHorarioGuardado ? (
                           <div className="flex items-center justify-end gap-1.5">
-                            <span className="text-xs text-slate-500">¿Borrar?</span>
+                            <span className="text-xs text-on-surface-variant dark:text-slate-400">¿Borrar?</span>
                             <button
                               type="button"
                               onClick={() => void confirmarEliminarSnapshot(h.idHorarioGuardado)}
@@ -225,7 +225,7 @@ export function HistorialHorarios() {
                               type="button"
                               onClick={() => setConfirmandoSnapshotId(null)}
                               aria-label={`Cancelar borrar horario de ${h.ficha}`}
-                              className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                              className="rounded border border-outline px-2 py-1 text-[11px] font-medium text-on-surface-variant hover:bg-surface dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                             >
                               Cancelar
                             </button>
@@ -235,13 +235,13 @@ export function HistorialHorarios() {
                             <button
                               type="button"
                               onClick={() => setSeleccionadoId(h.idHorarioGuardado)}
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                              className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                             >
                               Ver horario
                             </button>
                             <Link
                               to={`/horarios/nuevo?editar=${h.idHorarioGuardado}`}
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                              className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                             >
                               Modificar
                             </Link>
@@ -249,7 +249,7 @@ export function HistorialHorarios() {
                               type="button"
                               onClick={() => setConfirmandoSnapshotId(h.idHorarioGuardado)}
                               aria-label={`Borrar horario de ${h.ficha}`}
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-red-50 hover:text-red-600"
+                              className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-red-950/50"
                             >
                               Borrar
                             </button>
@@ -272,7 +272,7 @@ export function HistorialHorarios() {
               <button
                 type="button"
                 onClick={() => setSeleccionadoId(null)}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 ← Volver al historial
               </button>
@@ -281,7 +281,7 @@ export function HistorialHorarios() {
                   className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
                     horarioCompletoPublicado
                       ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
-                      : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                      : 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300'
                   }`}
                 >
                   {horarioCompletoPublicado ? 'Publicado' : 'Borrador'}
@@ -299,14 +299,14 @@ export function HistorialHorarios() {
                       ? 'Deja de mostrarse en "Mi horario" para el instructor'
                       : 'Publica todas las clases de este horario — a partir de ahora el instructor las ve en "Mi horario"'
                   }
-                  className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-xl bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {publicando ? 'Guardando…' : horarioCompletoPublicado ? 'Despublicar' : 'Publicar'}
                 </button>
               )}
               <Link
                 to={`/horarios/nuevo?editar=${seleccionado.idHorarioGuardado}`}
-                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Modificar
               </Link>
@@ -314,7 +314,7 @@ export function HistorialHorarios() {
             </div>
           </div>
 
-          <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-4 dark:border-slate-700 dark:bg-slate-800">
+          <div className="mb-6 grid gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 sm:grid-cols-4 dark:border-slate-700 dark:bg-slate-800">
             <Campo etiqueta="Ficha">{seleccionado.ficha}</Campo>
             <Campo etiqueta="Aprendices en formación">{seleccionado.aprendices ?? '—'}</Campo>
             <Campo etiqueta="Horas asignadas trimestre">{seleccionado.horasTrimestre ?? '—'}</Campo>
@@ -324,7 +324,7 @@ export function HistorialHorarios() {
           </div>
 
           {vistaSnapshotEnVivo ? (
-            <div className="mb-6 min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+            <div className="mb-6 min-w-0 overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
               <GridHorario
                 bloques={vistaSnapshotEnVivo.bloques}
                 grid={vistaSnapshotEnVivo.grid}
@@ -334,11 +334,11 @@ export function HistorialHorarios() {
             </div>
           ) : (
             <>
-              <p className="mb-3 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              <p className="mb-3 rounded-xl bg-surface px-3 py-2 text-xs text-on-surface-variant dark:bg-slate-800 dark:text-slate-400">
                 Este horario se guardó antes de vincularse a las clases reales — se muestra tal como quedó al
                 crearlo, no refleja cambios posteriores.
               </p>
-              <div className="mb-6 min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+              <div className="mb-6 min-w-0 overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
                 <GridHorario
                   bloques={seleccionado.bloques}
                   grid={seleccionado.grid}
@@ -350,16 +350,16 @@ export function HistorialHorarios() {
           )}
 
           {horariosDelSnapshot.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5 print:hidden dark:border-slate-700 dark:bg-slate-800">
-              <p className="mb-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Clases de este horario</p>
-              <ul className="divide-y divide-slate-100 dark:divide-slate-700">
+            <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 print:hidden dark:border-slate-700 dark:bg-slate-800">
+              <p className="mb-3 text-sm font-semibold text-on-surface dark:text-slate-100">Clases de este horario</p>
+              <ul className="divide-y divide-outline-variant dark:divide-slate-700">
                 {horariosDelSnapshot.map((h) => (
                   <li key={h.idHorario} className={`flex flex-wrap items-center justify-between gap-2 py-2.5 ${h.activo ? '' : 'opacity-60'}`}>
-                    <div className="text-sm text-slate-700 dark:text-slate-300">
+                    <div className="text-sm text-on-surface-variant dark:text-slate-300">
                       {h.instructorNombre ?? '—'} · {h.ambienteNombre ?? '—'} ·{' '}
                       {h.dias.map((d) => diasPorId[d] ?? d).join(', ')} · {formatearHora(h.horaInicio)}–{formatearHora(h.horaFin)}
                       {!h.activo && (
-                        <span className="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                        <span className="ml-2 rounded bg-surface-container-high px-1.5 py-0.5 text-[10px] font-semibold uppercase text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">
                           Inactivo
                         </span>
                       )}
@@ -371,7 +371,7 @@ export function HistorialHorarios() {
                     </div>
                     {confirmandoId === h.idHorario ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-slate-500">¿Borrar?</span>
+                        <span className="text-xs text-on-surface-variant dark:text-slate-400">¿Borrar?</span>
                         <button
                           type="button"
                           onClick={() => void confirmarEliminar(h.idHorario)}
@@ -385,7 +385,7 @@ export function HistorialHorarios() {
                           type="button"
                           onClick={() => setConfirmandoId(null)}
                           aria-label={`Cancelar borrar clase de ${h.fichaCodigo}`}
-                          className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50"
+                          className="rounded border border-outline px-2 py-1 text-[11px] font-medium text-on-surface-variant hover:bg-surface dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
                         >
                           Cancelar
                         </button>
@@ -397,7 +397,7 @@ export function HistorialHorarios() {
                           onClick={() => void cambiarEstado(h.idHorario, !h.activo)}
                           disabled={cambiandoEstadoId === h.idHorario}
                           aria-label={`${h.activo ? 'Desactivar' : 'Activar'} clase de ${h.fichaCodigo}`}
-                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:text-slate-300"
+                          className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
                         >
                           {cambiandoEstadoId === h.idHorario ? '…' : h.activo ? 'Desactivar' : 'Activar'}
                         </button>
@@ -405,7 +405,7 @@ export function HistorialHorarios() {
                           type="button"
                           onClick={() => setConfirmandoId(h.idHorario)}
                           aria-label={`Borrar clase de ${h.fichaCodigo}`}
-                          className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-red-50 hover:text-red-600"
+                          className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-red-950/50"
                         >
                           Borrar
                         </button>
@@ -425,8 +425,8 @@ export function HistorialHorarios() {
 function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
     <div>
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">{etiqueta}</span>
-      <p className="text-sm text-slate-900 dark:text-slate-100">{children}</p>
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-on-surface-variant dark:text-slate-400">{etiqueta}</span>
+      <p className="text-sm text-on-surface dark:text-slate-100">{children}</p>
     </div>
   )
 }

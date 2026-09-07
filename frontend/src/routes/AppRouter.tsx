@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { Presentacion } from '../pages/Presentacion'
 import { Login } from '../pages/Login'
 import { Registro } from '../pages/Registro'
 import { RecuperarContrasena } from '../pages/RecuperarContrasena'
@@ -8,6 +9,7 @@ import { NuevoHorario } from '../pages/NuevoHorario'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { CalendarioGeneral } from '../pages/CalendarioGeneral'
 import { HorariosCompletos } from '../pages/HorariosCompletos'
+import { AuditoriaCruces } from '../pages/AuditoriaCruces'
 import { Ambientes } from '../pages/Ambientes'
 import { Sedes } from '../pages/Sedes'
 import { Instructores } from '../pages/Instructores'
@@ -82,6 +84,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <HistorialHorarios />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/horarios/auditoria"
+        element={
+          <ProtectedRoute>
+            <AuditoriaCruces />
           </ProtectedRoute>
         }
       />
@@ -181,7 +191,7 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Presentacion />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )

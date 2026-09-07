@@ -13,9 +13,9 @@ const estiloTipo: Record<TipoNotificacion, string> = {
   horario:
     'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
   ambiente:
-    'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300',
+    'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300',
   sistema:
-    'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-300',
+    'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300',
 }
 
 function IconoTipo({ tipo }: { tipo: TipoNotificacion }) {
@@ -219,16 +219,16 @@ export function NotificacionesPanel({
   }
 
   return (
-    <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-800">
-      <span className="absolute -top-1 right-3 h-2 w-2 rotate-45 border-l border-t border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800" />
+    <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-outline-variant bg-surface-container-lowest shadow-xl dark:border-slate-700 dark:bg-slate-800">
+      <span className="absolute -top-1 right-3 h-2 w-2 rotate-45 border-l border-t border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800" />
 
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 dark:border-slate-700">
+      <div className="flex items-center justify-between gap-3 border-b border-outline-variant px-4 py-3 dark:border-slate-700">
         <div>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">
             Notificaciones
           </p>
 
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-on-surface-variant dark:text-slate-400">
             {cantidadNoLeidas > 0
               ? `${cantidadNoLeidas} sin leer`
               : 'Al día'}
@@ -247,7 +247,7 @@ export function NotificacionesPanel({
             }
             className={`text-xs font-medium ${
               cantidadNoLeidas === 0 || marcandoTodas
-                ? 'cursor-not-allowed text-slate-400 dark:text-slate-500'
+                ? 'cursor-not-allowed text-on-surface-variant dark:text-slate-500'
                 : 'text-sena-600 hover:text-sena-700 dark:text-sena-400 dark:hover:text-sena-300'
             }`}
           >
@@ -259,7 +259,7 @@ export function NotificacionesPanel({
             onClick={onCerrar}
             title="Cerrar"
             aria-label="Cerrar notificaciones"
-            className="flex h-5 w-5 items-center justify-center rounded text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+            className="flex h-5 w-5 items-center justify-center rounded text-on-surface-variant hover:bg-surface hover:text-on-surface-variant dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
           >
             <svg
               className="h-3.5 w-3.5"
@@ -280,7 +280,7 @@ export function NotificacionesPanel({
 
       <div className="max-h-80 overflow-y-auto">
         {notificaciones.length === 0 && (
-          <p className="px-4 py-6 text-center text-sm text-slate-500 dark:text-slate-400">
+          <p className="px-4 py-6 text-center text-sm text-on-surface-variant dark:text-slate-400">
             No tienes notificaciones.
           </p>
         )}
@@ -295,7 +295,7 @@ export function NotificacionesPanel({
 
           return (
             <div key={grupo}>
-              <p className="px-4 pb-1 pt-3 text-[11px] font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              <p className="px-4 pb-1 pt-3 text-[11px] font-medium uppercase tracking-wide text-on-surface-variant dark:text-slate-400">
                 {grupo}
               </p>
 
@@ -312,7 +312,7 @@ export function NotificacionesPanel({
                     notificacion.leida ||
                     marcandoId === notificacion.idNotificacion
                   }
-                  className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left hover:bg-slate-50 disabled:cursor-default dark:hover:bg-slate-700/60"
+                  className="flex w-full items-start gap-2.5 px-4 py-2.5 text-left hover:bg-surface disabled:cursor-default dark:hover:bg-slate-700/60"
                 >
                   <span className="mt-1.5 w-1.5 shrink-0">
                     {!notificacion.leida && (
@@ -321,7 +321,7 @@ export function NotificacionesPanel({
                   </span>
 
                   <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
                       estiloTipo[notificacion.tipo]
                     }`}
                   >
@@ -333,22 +333,22 @@ export function NotificacionesPanel({
                       <p
                         className={`text-sm ${
                           notificacion.leida
-                            ? 'font-medium text-slate-700 dark:text-slate-300'
-                            : 'font-semibold text-slate-900 dark:text-slate-100'
+                            ? 'font-medium text-on-surface-variant dark:text-slate-300'
+                            : 'font-semibold text-on-surface dark:text-slate-100'
                         }`}
                       >
                         {notificacion.tipo.charAt(0).toUpperCase() +
                           notificacion.tipo.slice(1)}
                       </p>
 
-                      <span className="shrink-0 text-[11px] text-slate-500 dark:text-slate-400">
+                      <span className="shrink-0 text-[11px] text-on-surface-variant dark:text-slate-400">
                         {formatearHora(
                           notificacion.fechaCreacion,
                         )}
                       </span>
                     </div>
 
-                    <p className="mt-0.5 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+                    <p className="mt-0.5 line-clamp-2 text-xs text-on-surface-variant dark:text-slate-400">
                       {notificacion.mensaje}
                     </p>
                   </div>

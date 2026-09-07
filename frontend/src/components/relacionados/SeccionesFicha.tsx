@@ -19,13 +19,13 @@ export function SeccionInstructoresAsignados({ horarios, diasPorId }: { horarios
   return (
     <SeccionDrawer titulo="Instructores">
       {instructores.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">Sin instructores asignados en el trimestre actual.</p>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin instructores asignados en el trimestre actual.</p>
       ) : (
         <ul className="space-y-2">
           {instructores.map((instructor) => (
-            <li key={instructor.nombre} className="rounded-lg border border-slate-200 p-2.5 dark:border-slate-700">
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{instructor.nombre}</p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+            <li key={instructor.nombre} className="rounded-xl border border-outline-variant p-2.5 dark:border-slate-700">
+              <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{instructor.nombre}</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">
                 {instructor.bloques.map((bloque) => `${nombresDias(bloque.dias, diasPorId)} ${formatoHora(bloque.horaInicio)}-${formatoHora(bloque.horaFin)}`).join(' · ')}
               </p>
             </li>
