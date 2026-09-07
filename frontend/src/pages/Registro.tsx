@@ -1,11 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
 import { FormField } from '../components/FormField'
-import { apiPost } from '../services/api'
+import { apiPost, ApiError } from '../services/api'
 import { supabase } from '../services/supabaseClient'
 
-type RolSolicitado = 'Coordinador' | 'Instructor' | 'Aprendiz'
+type RolSolicitado = 'Instructor' | 'Aprendiz'
 type TipoDocumento = 'CC' | 'CE' | 'TI' | 'PAS'
 
 /**
@@ -16,6 +16,16 @@ type TipoDocumento = 'CC' | 'CE' | 'TI' | 'PAS'
  * backend/app/api/v1/usuario_rol.py). Por eso el mensaje de éxito dice
  * "quedó pendiente de aprobación" en vez de meter a la persona directo al
  * dashboard — coincide con lo que dice el mockup 02-registro.png.
+ *
+ * "Coordinador" salió de este selector (pedido 2026-09-07): un registro
+ * directo con contraseña propia era demasiado abierto para un rol que
+ * administra el resto del sistema. En su lugar, "¿Eres coordinador?
+ * Solicita acceso" abre un formulario corto (nombre, correo, documento,
+ * motivo) que llama a `POST /solicitudes-acceso/` — endpoint público del
+ * ticket "[Backend] Endpoints /solicitudes-acceso" (mismo Epic SCRUM-96).
+ * Este paso NO crea cuenta de Supabase Auth: solo registra la solicitud
+ * para que un Administrador la apruebe desde el Panel de Administración,
+ * que es quien de verdad crea la cuenta y envía la credencial temporal.
  */
 export function Registro() {
   const navigate = useNavigate()
@@ -27,7 +37,7 @@ export function Registro() {
   const [telefono, setTelefono] = useState('')
   const [password, setPassword] = useState('')
   const [confirmarPassword, setConfirmarPassword] = useState('')
-  const [rol, setRol] = useState<RolSolicitado>('Coordinador')
+  const [rol, setRol] = useState<RolSolicitado>('Instructor')
   const [codigoInstructor, setCodigoInstructor] = useState('')
   const [especialidad, setEspecialidad] = useState('')
   const [codigoFicha, setCodigoFicha] = useState('')
@@ -35,6 +45,8 @@ export function Registro() {
   const [aceptaPolitica, setAceptaPolitica] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  const [mostrarSolicitudCoordinador, setMostrarSolicitudCoordinador] = useState(false)
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
@@ -211,8 +223,8 @@ export function Registro() {
           <p id="rol-label" className="mb-2 text-sm font-medium text-on-surface-variant dark:text-slate-300">
             Selecciona tu rol
           </p>
-          <div role="radiogroup" aria-labelledby="rol-label" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            {(['Coordinador', 'Instructor', 'Aprendiz'] as const).map((opcion) => (
+          <div role="radiogroup" aria-labelledby="rol-label" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {(['Instructor', 'Aprendiz'] as const).map((opcion) => (
               <button
                 key={opcion}
                 type="button"
@@ -227,11 +239,7 @@ export function Registro() {
               >
                 <span className="block text-base font-semibold text-on-surface dark:text-slate-100">{opcion}</span>
                 <span className="mt-1 block text-xs text-on-surface-variant dark:text-slate-400">
-                  {opcion === 'Coordinador'
-                    ? 'Programa y aprueba'
-                    : opcion === 'Instructor'
-                      ? 'Consulta su carga'
-                      : 'Consulta su ficha'}
+                  {opcion === 'Instructor' ? 'Consulta su carga' : 'Consulta su ficha'}
                 </span>
               </button>
             ))}
@@ -312,12 +320,182 @@ export function Registro() {
         </button>
       </form>
 
+      <p className="mt-4 text-center text-sm text-on-surface-variant">
+        ¿Eres coordinador?{' '}
+        <button
+          type="button"
+          onClick={() => setMostrarSolicitudCoordinador(true)}
+          className="font-semibold text-primary hover:underline"
+        >
+          Solicita acceso
+        </button>
+      </p>
+
       <p className="mt-6 text-center text-sm text-on-surface-variant">
         Ya tengo cuenta ·{' '}
         <Link to="/login" className="font-semibold text-primary hover:underline">
           Iniciar sesión
         </Link>
       </p>
+
+      {mostrarSolicitudCoordinador && (
+        <SolicitudAccesoCoordinador onCerrar={() => setMostrarSolicitudCoordinador(false)} />
+      )}
     </AuthLayout>
+  )
+}
+
+interface SolicitudAccesoCoordinadorProps {
+  onCerrar: () => void
+}
+
+/**
+ * Formulario corto de "¿Eres coordinador? Solicita acceso" — campos vistos
+ * en el mockup del Panel de Administración (cada solicitud trae nombre,
+ * correo, documento y el texto completo de motivo/justificación). Llama a
+ * `POST /solicitudes-acceso/` (público, sin sesión) y muestra confirmación;
+ * no crea cuenta acá, eso ocurre solo si un Administrador aprueba la
+ * solicitud desde el Panel de Administración.
+ */
+function SolicitudAccesoCoordinador({ onCerrar }: SolicitudAccesoCoordinadorProps) {
+  const [nombre, setNombre] = useState('')
+  const [email, setEmail] = useState('')
+  const [numeroDocumento, setNumeroDocumento] = useState('')
+  const [motivo, setMotivo] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [enviada, setEnviada] = useState(false)
+
+  useEffect(() => {
+    function manejarTeclado(evento: KeyboardEvent) {
+      if (evento.key === 'Escape') onCerrar()
+    }
+    window.addEventListener('keydown', manejarTeclado)
+    return () => window.removeEventListener('keydown', manejarTeclado)
+  }, [onCerrar])
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    setError(null)
+    setEnviando(true)
+
+    try {
+      await apiPost('/solicitudes-acceso/', {
+        nombre: nombre.trim(),
+        email: email.trim(),
+        numeroDocumento: numeroDocumento.trim(),
+        motivo: motivo.trim(),
+      })
+      setEnviada(true)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo enviar tu solicitud. Inténtalo nuevamente.')
+    } finally {
+      setEnviando(false)
+    }
+  }
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="solicitud-acceso-titulo"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
+    >
+      <div className="w-full max-w-md rounded-xl bg-surface-container-lowest p-6 shadow-xl dark:bg-slate-800">
+        {enviada ? (
+          <>
+            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-primary-container text-primary">
+              <span className="material-symbols-outlined text-[22px]">check_circle</span>
+            </div>
+            <h2 className="mb-1 text-lg font-bold text-on-surface dark:text-slate-100">Solicitud enviada</h2>
+            <p className="mb-5 text-sm text-on-surface-variant dark:text-slate-400">
+              Tu solicitud fue enviada, un Administrador la revisará. Si la aprueba, recibirás una
+              credencial temporal en el correo que indicaste.
+            </p>
+            <button
+              type="button"
+              onClick={onCerrar}
+              className="w-full rounded-xl bg-primary py-2.5 font-semibold text-on-primary hover:bg-on-primary-container"
+            >
+              Cerrar
+            </button>
+          </>
+        ) : (
+          <>
+            <h2 id="solicitud-acceso-titulo" className="mb-1 text-lg font-bold text-on-surface dark:text-slate-100">
+              Solicita acceso como Coordinador
+            </h2>
+            <p className="mb-4 text-sm text-on-surface-variant dark:text-slate-400">
+              Un Administrador revisará tu solicitud. Si la aprueba, te llegará una credencial
+              temporal por correo.
+            </p>
+
+            <form onSubmit={handleSubmit}>
+              <FormField
+                id="solicitud-nombre"
+                label="Nombre completo"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                required
+              />
+              <FormField
+                id="solicitud-email"
+                label="Correo institucional"
+                type="email"
+                placeholder="nombre.apellido@sena.edu.co"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+              <FormField
+                id="solicitud-documento"
+                label="Número de documento"
+                inputMode="numeric"
+                value={numeroDocumento}
+                onChange={(e) => setNumeroDocumento(e.target.value)}
+                required
+              />
+              <div className="mb-4">
+                <label htmlFor="solicitud-motivo" className="mb-1.5 block text-sm font-medium text-on-surface-variant dark:text-slate-300">
+                  Motivo y justificación
+                </label>
+                <textarea
+                  id="solicitud-motivo"
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  required
+                  rows={3}
+                  placeholder="Ej. Asumí funciones de coordinación académica de la jornada..."
+                  className="w-full rounded-xl border border-outline px-3.5 py-2.5 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                />
+              </div>
+
+              {error && (
+                <p role="alert" className="mb-4 text-sm text-error">
+                  {error}
+                </p>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={onCerrar}
+                  className="flex-1 rounded-xl border border-outline px-4 py-2.5 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={enviando}
+                  className="flex-1 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-on-primary-container disabled:opacity-60"
+                >
+                  {enviando ? 'Enviando…' : 'Enviar solicitud'}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </div>
+    </div>
   )
 }
