@@ -16,6 +16,11 @@ interface ItemNav {
   /** Solo para quien tenga el rol Instructor — pantallas de autoservicio
    * ("Mi horario"), no tiene sentido que las vea un Coordinador/Aprendiz. */
   soloInstructor?: boolean
+  /** Solo Administrador — más estricto que `soloGestion` (que también deja
+   * pasar a Coordinador). Panel de Administración de solicitudes de acceso
+   * (SCRUM-121): "Ni Coordinador ni ningún otro rol la ve" es regla de
+   * negocio explícita, un Coordinador no debe aprobar otros Coordinadores. */
+  soloAdmin?: boolean
 }
 
 interface GrupoNav {
@@ -82,7 +87,6 @@ const NAV: GrupoNav[] = [
   {
     grupo: 'Operación',
     items: [
-      { etiqueta: 'Aprobar solicitudes de registro', ruta: '/aprobar-solicitudes', soloGestion: true },
       { etiqueta: 'Cambios', soloGestion: true },
       { etiqueta: 'Notificaciones', soloGestion: true },
     ],
@@ -93,6 +97,10 @@ const NAV: GrupoNav[] = [
       { etiqueta: 'Usuarios', ruta: '/usuarios', soloGestion: true },
       { etiqueta: 'Código de instructor', ruta: '/codigo-instructor', soloGestion: true },
       { etiqueta: 'Roles', ruta: '/roles', soloGestion: true },
+      // SCRUM-121: reemplaza funcionalmente el ítem "Aprobar solicitudes de
+      // registro" (antes acá, apuntaba a AprobarlicitarSolicitudes.tsx) —
+      // esa ruta sigue viva, solo se retiró como entrada de navegación.
+      { etiqueta: 'Solicitudes de acceso', ruta: '/panel-administracion', soloAdmin: true },
       { etiqueta: 'Configuración', soloGestion: true },
     ],
   },
@@ -141,15 +149,20 @@ export function AppShell({ activo, children }: AppShellProps) {
   const esInstructor =
     miPerfil?.roles.some((rol) => rol.nombre === 'Instructor') ?? false
 
+  const esAdministrador =
+    miPerfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
+
   // Los ítems marcados soloGestion solo tienen sentido para un
   // Administrador o Coordinador — mismo criterio que antes tenía "Usuarios".
-  // soloInstructor es el espejo para el grupo "Mi trabajo".
+  // soloInstructor es el espejo para el grupo "Mi trabajo". soloAdmin es más
+  // estricto: ni Coordinador la ve (Panel de Administración, SCRUM-121).
   const nav = NAV.map((grupo) => ({
     ...grupo,
     items: grupo.items.filter(
       (item) =>
         (!item.soloGestion || puedeGestionarUsuarios) &&
-        (!item.soloInstructor || esInstructor),
+        (!item.soloInstructor || esInstructor) &&
+        (!item.soloAdmin || esAdministrador),
     ),
   })).filter((grupo) => grupo.items.length > 0)
 
