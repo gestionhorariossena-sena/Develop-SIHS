@@ -75,6 +75,53 @@ describe('MiHorario', () => {
     expect(apiGetMock).toHaveBeenCalledWith('/usuarios/u1/carga-semanal')
   })
 
+  it('Estatus Normativo RF-011: dentro del tope muestra "Aprobado"', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/me') {
+        return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', tipoContrato: 'planta', roles: [{ idRol: 1, nombre: 'Instructor' }] })
+      }
+      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path === '/usuarios/u1/carga-semanal') return Promise.resolve({ idUsuario: 'u1', tipoContrato: 'planta', horasAsignadas: 12, horasMaximas: 32 })
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<MiHorario />)
+
+    expect(await screen.findByText('Aprobado')).toBeInTheDocument()
+    expect(screen.getByText('Validado por Coordinación Académica')).toBeInTheDocument()
+    expect(screen.getByText('Tope 32h')).toBeInTheDocument()
+  })
+
+  it('Estatus Normativo RF-011: sobre el tope NO inventa "Aprobado", muestra el estado real de alerta', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/me') {
+        return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', tipoContrato: 'planta', roles: [{ idRol: 1, nombre: 'Instructor' }] })
+      }
+      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path === '/usuarios/u1/carga-semanal') return Promise.resolve({ idUsuario: 'u1', tipoContrato: 'planta', horasAsignadas: 36, horasMaximas: 32 })
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<MiHorario />)
+
+    expect(await screen.findByText('Excede el tope')).toBeInTheDocument()
+    expect(screen.getByText('Supera el máximo de RF-011')).toBeInTheDocument()
+    expect(screen.queryByText('Aprobado')).not.toBeInTheDocument()
+  })
+
+  it('Estatus Normativo RF-011: sin tipoContrato no hay tope que evaluar, no muestra "Aprobado"', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/me') {
+        return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', roles: [{ idRol: 1, nombre: 'Instructor' }] })
+      }
+      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path === '/usuarios/u1/carga-semanal') return Promise.resolve({ idUsuario: 'u1', tipoContrato: null, horasAsignadas: 6, horasMaximas: null })
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<MiHorario />)
+
+    expect(await screen.findByText('Sin tipo de contrato definido — no hay tope de RF-011 que evaluar.')).toBeInTheDocument()
+    expect(screen.queryByText('Aprobado')).not.toBeInTheDocument()
+  })
+
   it('sin clases publicadas, muestra el mensaje correspondiente', async () => {
     apiGetMock.mockImplementation((path: string) =>
       path === '/usuarios/me/horarios' ? Promise.resolve([]) : Promise.reject(new Error('no mockeado')),

@@ -62,19 +62,29 @@ const ETIQUETA_CONTRATO: Record<string, string> = {
  * puede visitarla y ve sus propias clases (o ninguna, si no dicta clases).
  *
  * El ribbon de KPIs usa `GET /usuarios/{id}/carga-semanal` (SCRUM-49) para
- * "Carga Lectiva Semanal" — ese endpoint solo permitía Coordinador/
- * Administrador; se amplió (ver app/api/v1/usuarios.py) para que un
- * usuario pueda pedir SU PROPIA carga sin esos roles, igual que ya pasaba
- * con /me/horarios. "Fichas Activas" y "Ambientes en Uso" se derivan de
- * los mismos horarios ya cargados (+ GET /fichas/ para los aprendices
- * convocados por ficha). El bloque "Fichas asignadas"/"Ambientes
- * asignados" reutiliza las secciones ya construidas del drawer de
- * instructor (SCRUM-62/64, `SeccionesInstructor.tsx`) en vez de rehacerlas.
+ * "Carga Lectiva Semanal" y "Estatus Normativo RF-011" — ese endpoint solo
+ * permitía Coordinador/Administrador; se amplió (ver app/api/v1/usuarios.py)
+ * para que un usuario pueda pedir SU PROPIA carga sin esos roles, igual que
+ * ya pasaba con /me/horarios. "Fichas Activas" y "Ambientes en Uso" se
+ * derivan de los mismos horarios ya cargados (+ GET /fichas/ para los
+ * aprendices convocados por ficha). El bloque "Fichas asignadas"/
+ * "Ambientes asignados" reutiliza las secciones ya construidas del drawer
+ * de instructor (SCRUM-62/64, `SeccionesInstructor.tsx`) en vez de
+ * rehacerlas.
  *
- * No incluye (tickets aparte, mismo epic): selector de semana real,
- * indicador de cumplimiento RF-011, ni sincronización con SofiaPlus — esa
- * última es decorativa en el mockup y no hay integración real, así que no
- * se agrega nada que finja sincronizar.
+ * "Estatus Normativo" (tarjeta RF-011 del mockup) es 100% derivado de
+ * `cargaSemanal`: si `horasAsignadas <= horasMaximas` es "Aprobado"; si el
+ * instructor está sobre el tope se muestra el estado real de alerta ("Excede
+ * el tope") en vez de inventar "Aprobado" — mismo criterio de tope que
+ * `HorarioService.calcular_carga_semanal`/`_validar_reglas_instructor`
+ * (HORAS_MAX_PLANTA=32 / HORAS_MAX_CONTRATO=40, ver horario_service.py), no
+ * uno reinventado acá. Si el usuario no tiene tipoContrato definido
+ * (`horasMaximas` null) no hay tope que evaluar — se muestra ese caso
+ * aparte, no como "Aprobado".
+ *
+ * No incluye (tickets aparte, mismo epic): selector de semana real ni
+ * sincronización con SofiaPlus — esa última es decorativa en el mockup y no
+ * hay integración real, así que no se agrega nada que finja sincronizar.
  */
 export function MiHorario() {
   const [horarios, setHorarios] = useState<Horario[] | null>(null)
@@ -147,6 +157,17 @@ export function MiHorario() {
   const cargandoCarga = Boolean(perfil) && !cargaSemanal && !errorCarga
   const jornadasVisibles = filtroJornada === 'todas' ? TODAS_LAS_JORNADAS : [filtroJornada]
 
+  // RF-011 (backend/app/services/horario_service.py, HORAS_MAX_PLANTA=32 /
+  // HORAS_MAX_CONTRATO=40): mismo criterio de tope que usa el backend para
+  // calcular `cargaSemanal.horasMaximas` — acá solo se COMPARA, no se
+  // reinventa el tope. `horasMaximas` es null cuando el usuario no tiene
+  // tipoContrato definido, caso en el que no hay tope que evaluar (no es lo
+  // mismo que "Aprobado"). Si excede el tope no se muestra "Aprobado": se
+  // muestra el estado real de alerta, igual que el drawer de instructor en
+  // Instructores.tsx ("Supera el máximo de RF-011").
+  const excedeTopeRf011 =
+    cargaSemanal?.horasMaximas != null && cargaSemanal.horasAsignadas > cargaSemanal.horasMaximas
+
   return (
     <AppShell activo="Mi horario">
       <nav className="mb-3 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
@@ -188,9 +209,10 @@ export function MiHorario() {
         </div>
       )}
 
-      {/* Ribbon de KPIs: Carga Lectiva Semanal (SCRUM-49), Fichas Activas y
-          Ambientes en Uso — todo derivado de datos ya reales. */}
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* Ribbon de KPIs: Carga Lectiva Semanal (SCRUM-49), Fichas Activas,
+          Ambientes en Uso y Estatus Normativo RF-011 — todo derivado de
+          datos ya reales. */}
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Carga Lectiva Semanal</p>
@@ -245,6 +267,42 @@ export function MiHorario() {
             <span className="material-symbols-outlined text-[18px] text-on-surface-variant">domain</span>
           </div>
           <p className="text-2xl font-bold text-on-surface">{horarios ? ambientesEnUso.size : '—'}</p>
+        </div>
+
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Estatus Normativo</p>
+            <span className="material-symbols-outlined text-[18px] text-primary">verified_user</span>
+          </div>
+          {!perfil || cargandoCarga ? (
+            <p className="text-sm text-on-surface-variant">{!perfil ? 'Cargando…' : 'Calculando…'}</p>
+          ) : errorCarga ? (
+            <p className="text-sm text-on-surface-variant">No se pudo validar el tope de RF-011.</p>
+          ) : cargaSemanal?.horasMaximas == null ? (
+            <p className="text-sm text-on-surface-variant">Sin tipo de contrato definido — no hay tope de RF-011 que evaluar.</p>
+          ) : excedeTopeRf011 ? (
+            <>
+              <p className="text-2xl font-bold text-red-600">
+                Excede el tope
+                <span className="ml-1 text-sm font-medium text-on-surface-variant">Tope {cargaSemanal.horasMaximas}h</span>
+              </p>
+              <p className="mt-1 flex items-center gap-1 text-xs font-medium text-red-600">
+                <span className="material-symbols-outlined text-[15px]">error</span>
+                Supera el máximo de RF-011
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-2xl font-bold text-primary">
+                Aprobado
+                <span className="ml-1 text-sm font-medium text-on-surface-variant">Tope {cargaSemanal.horasMaximas}h</span>
+              </p>
+              <p className="mt-1 flex items-center gap-1 text-xs font-medium text-secondary">
+                <span className="material-symbols-outlined text-[15px]">check_circle</span>
+                Validado por Coordinación Académica
+              </p>
+            </>
+          )}
         </div>
       </div>
 
