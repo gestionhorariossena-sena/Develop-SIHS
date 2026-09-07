@@ -47,6 +47,19 @@ def test_carga_semanal_requiere_lectura_catalogo(client, autenticar_como, crear_
     assert respuesta.status_code == 403
 
 
+def test_carga_semanal_propia_no_requiere_lectura_catalogo(client, db_session, autenticar_como):
+    """Autoservicio (SCRUM-49 reutilizado en MiHorario.tsx): un Instructor
+    sin rol Coordinador/Administrador sí puede pedir SU PROPIA carga
+    semanal — solo la de otro usuario exige `require_lectura_catalogo`."""
+    _crear_tablas_extra(db_session)
+    instructor, headers = autenticar_como("Instructor")
+
+    respuesta = client.get(f"/api/v1/usuarios/{instructor.idUsuario}/carga-semanal", headers=headers)
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["idUsuario"] == str(instructor.idUsuario)
+
+
 def test_carga_semanal_usuario_inexistente_da_404(client, autenticar_como):
     _, headers = autenticar_como("Coordinador")
 
