@@ -45,6 +45,14 @@ type Paso = 1 | 2 | 3 | 4
 const TIMEOUT_ASISTENTE_MS = 45000
 
 const NOMBRES_DIA: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes' }
+
+// ¿Esta fila trajo algo del archivo complementario? Para distinguir "se
+// prellenó por el cruce" de "el coordinador eligió agregarlo a mano sin
+// tener esos datos" -- cambia el mensaje que se muestra, no la lógica.
+function filaTieneDatosCruzados(fila: FilaImportada): boolean {
+  return Boolean(fila.codigoPrograma || fila.nivelFormacion || fila.coordinacion)
+}
+
 const JORNADAS: { valor: JornadaAsistente; etiqueta: string }[] = [
   { valor: 'MAÑANA', etiqueta: 'Mañana' },
   { valor: 'TARDE', etiqueta: 'Tarde' },
@@ -535,8 +543,26 @@ export function AsistenteHorarios() {
 
                               {!formCreacion.programaCoincidido && formCreacion.crearProgramaNuevo && (
                                 <div className="w-full rounded-lg border border-sena-200 bg-sena-50 p-3 text-xs dark:border-sena-900 dark:bg-sena-950/20">
-                                  <p className="mb-2 font-semibold text-on-surface dark:text-slate-100">
-                                    "{f.programa}" no está en el catálogo -- lo reconocimos cruzando con {previsualizacion?.archivoComplementario}. Confirma para crearlo:
+                                  <p className="mb-2 flex items-center justify-between font-semibold text-on-surface dark:text-slate-100">
+                                    <span>
+                                      {filaTieneDatosCruzados(f) ? (
+                                        <>
+                                          "{f.programa}" no está en el catálogo -- lo reconocimos cruzando con{' '}
+                                          {previsualizacion?.archivoComplementario}. Confirma para crearlo:
+                                        </>
+                                      ) : (
+                                        <>"{f.programa ?? 'Programa nuevo'}" no está en el catálogo -- completa los datos para crearlo:</>
+                                      )}
+                                    </span>
+                                    {programas.length > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setFormCreacion((s) => ({ ...s, crearProgramaNuevo: false }))}
+                                        className="font-normal text-primary hover:underline dark:text-sena-400"
+                                      >
+                                        volver a la lista
+                                      </button>
+                                    )}
                                   </p>
                                   <div className="flex flex-wrap items-end gap-3">
                                     <label className="text-on-surface-variant dark:text-slate-300">
@@ -607,7 +633,11 @@ export function AsistenteHorarios() {
                                   {f.programa ? `No encontramos "${f.programa}" -- selecciona el programa:` : 'Programa'}
                                   <select
                                     value={formCreacion.idPrograma}
-                                    onChange={(e) => setFormCreacion((s) => ({ ...s, idPrograma: e.target.value }))}
+                                    onChange={(e) =>
+                                      e.target.value === '__nuevo__'
+                                        ? setFormCreacion((s) => ({ ...s, crearProgramaNuevo: true, idPrograma: '' }))
+                                        : setFormCreacion((s) => ({ ...s, idPrograma: e.target.value }))
+                                    }
                                     className="mt-1 block rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
                                   >
                                     <option value="">Selecciona…</option>
@@ -616,6 +646,7 @@ export function AsistenteHorarios() {
                                         {p.nombrePrograma}
                                       </option>
                                     ))}
+                                    <option value="__nuevo__">+ No está en la lista -- agregarlo</option>
                                   </select>
                                 </label>
                               )}
