@@ -216,6 +216,55 @@ def test_generar_propuesta_genera_un_bloque_real(db_session):
     assert bloque.idAmbiente == 1
 
 
+def test_generar_propuesta_filtra_por_fase_actual_de_la_ficha(db_session):
+    # Caso real que colgaba el asistente: un programa con currículo de
+    # varias fases (TRIM I..IV) y una ficha que solo debería programar la
+    # fase en la que va, no las demás. resultado 1 = fase 1 (coincide con
+    # faseActual de la ficha), resultado 2 = fase 2 (no debe aparecer).
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=100)
+    db_session.query(Ficha).filter(Ficha.idFicha == 100).update({"faseActual": 1})
+    db_session.add(ResultadoAprendizaje(idResultado=2, codigo="RA-2", descripcion="Resultado fase 2", idCompetencia=1, numeroFase=2))
+    db_session.query(ResultadoAprendizaje).filter(ResultadoAprendizaje.idResultado == 1).update({"numeroFase": 1})
+    instructor_id = uuid.uuid4()
+    db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana@demo.sihs", tipoContrato="contrato", estado="activo"))
+    db_session.commit()
+
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
+
+    assert resultado.factible is True
+    assert len(resultado.bloques) == 1
+    assert resultado.bloques[0].idResultado == 1
+
+
+def test_generar_propuesta_infactible_da_mensaje_con_diagnostico(db_session):
+    # Volumen real que hacía fallar el solver: varios resultados
+    # pendientes compitiendo por muy pocos instructores/ambientes. El
+    # mensaje debe explicar la capacidad, no solo decir "no se encontró".
+    _crear_tablas_extra(db_session)
+    db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
+    db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="ADSO", activo=True, idCoordinacion=1))
+    db_session.add(Trimestre(idTrimestre=1, nombre="2026-3", fechaInicio=date(2026, 7, 1), fechaFin=date(2026, 9, 30), estado="activo"))
+    db_session.add(Sede(id=1, nombre="Sede Demo", direccion="Calle 1", tipo="principal"))
+    db_session.add(Ambiente(id=1, numero_ambiente=101, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1))
+    db_session.add(Ficha(idFicha=100, codigoFicha="100", idPrograma=1, idTrimestre=1, idSede=1))
+    db_session.add(CompetenciaFormacion(idCompetencia=1, codigo="C1", descripcion="Competencia demo", idPrograma=1))
+    # Un solo instructor, un solo ambiente: como mucho caben 5 días × 3
+    # franjas = 15 bloques en la semana. 20 resultados pendientes no caben.
+    for i in range(1, 21):
+        db_session.add(ResultadoAprendizaje(idResultado=i, codigo=f"RA-{i}", descripcion=f"Resultado {i}", idCompetencia=1))
+    instructor_id = uuid.uuid4()
+    db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana@demo.sihs", tipoContrato="contrato", estado="activo"))
+    db_session.commit()
+
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
+
+    assert resultado.factible is False
+    assert "20 resultado" in resultado.mensaje
+    assert "capacidad" in resultado.mensaje
+    assert "Reduce cuántas fichas" in resultado.mensaje
+
+
 def test_generar_propuesta_jornada_invalida_lanza_value_error(db_session):
     _crear_tablas_extra(db_session)
     _catalogo_base(db_session, id_ficha=100)

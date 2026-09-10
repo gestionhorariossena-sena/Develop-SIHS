@@ -14,3 +14,9 @@ class ResultadoAprendizaje(Base):
     # digitalizada todavía — ver PLAN_INTEGRACION_LOGICA_Y_BD.md §2.1.
     idGuia = Column(Integer, ForeignKey("guias.idGuia"))
     horasAsignadas = Column(Integer)
+    # Fase del pénsum en la que se dicta (1=TRIM I .. 4=TRIM IV). Un mismo
+    # resultado puede repetirse en dos fases consecutivas en el Excel real
+    # (se dicta progresivamente) -- por eso va en el resultado, no en la
+    # competencia. Nullable: currículos importados antes de esto no la
+    # traen. Ver migración 2fcba25519cd.
+    numeroFase = Column(Integer, nullable=True)

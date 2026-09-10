@@ -308,6 +308,62 @@ restricción, pero construir el modelo pasa a ser lineal en
 reproduce ese volumen real (80 necesidades, 4 instructores, 6
 ambientes) y falla si tarda más de 15s.
 
+### Bug real #2: el solver quedaba infactible con programas de 2 años (v1 hecho)
+
+Con el fix anterior el paso 3 dejó de colgarse, pero apareció un
+problema de fondo: "No se encontró una combinación sin choques". Con 8
+fichas seleccionadas, `_resultados_pendientes` traía TODOS los
+resultados de aprendizaje del programa que no tuvieran horario todavía
+-- para un programa de 2 años eso son las ~29 resultados del pénsum
+completo, no solo los que tocan este trimestre. El generador trataba
+cada uno como si necesitara su propio bloque semanal permanente,
+compitiendo con los de las demás fichas por los mismos pocos
+instructores/ambientes reales -- matemáticamente imposible de encajar
+en una sola semana, sin importar qué tan bueno sea el solver.
+
+Se confirmó con el archivo real "Planeación Cadena de Formación.xlsx":
+además de la hoja combinada con todo el pénsum (la que se leía hasta
+ahora), trae hojas separadas por trimestre (`TRIM I`..`TRIM IV`) con
+los mismos resultados repartidos por fase -- un mismo resultado puede
+aparecer en dos hojas consecutivas (se dicta progresivamente).
+
+**v1 pragmático** (decisión del usuario: modelar bien, pero sin
+bloquear por falta de un dato que ningún Excel real trae todavía):
+
+- `resultados_aprendizaje.numeroFase` (nullable, migración
+  `2fcba25519cd`): 1=TRIM I..4=TRIM IV. Va en el RESULTADO, no en la
+  competencia, porque el Excel real repite resultados entre fases
+  consecutivas.
+- `fichas.faseActual` (nullable, misma migración): en qué fase de SU
+  pénsum va la ficha ahora. **Manual, provisional** -- ningún archivo
+  real trae este dato por ficha todavía; se llena a mano en Fichas
+  (select TRIM I-IV, igual que Sede/fechas hoy). Cuando lleguen
+  archivos con más información se puede automatizar sin romper nada
+  (el campo ya existe, solo cambia quién lo llena).
+- `curriculo_service.previsualizar_curriculo`: si el workbook tiene
+  hojas que matchean `TRIM [IVX]+`, las usa TODAS en vez de la
+  combinada, etiquetando cada resultado con su fase (agrupando
+  competencias por nombre igual que antes, ahora across hojas). Si no
+  hay hojas TRIM, se comporta exactamente igual que antes (sin fase).
+- `_resultados_pendientes`: si la ficha tiene `faseActual` Y el
+  programa tiene currículo con fase, filtra por esa fase. Si el
+  currículo no tiene fase cargada (import viejo), no filtra -- para no
+  hacer desaparecer todos los resultados por no calzar con ningún
+  número.
+- Diagnóstico determinista (sin IA) cuando el solver da infactible:
+  `_diagnostico_infactibilidad` calcula una cota simple de capacidad
+  (instructores/ambientes × franjas × 5 días) vs demanda y sugiere la
+  palanca correcta -- reducir el lote o definir la fase de la ficha --
+  en vez del mensaje genérico anterior.
+- Tests: `test_curriculo_service.py` (parseo multi-hoja TRIM,
+  resultado repetido en dos fases, y que sin hojas TRIM no etiqueta
+  nada), `test_asistente_horario_service.py` (filtra por fase, mensaje
+  de diagnóstico con volumen real infactible).
+- Pendiente (fuera de v1): que la fase de la ficha se calcule sola
+  quedó descartado por ahora (no hay dato confiable de qué duración
+  tiene cada fase) -- cuando lleguen los archivos con más información
+  que mencionó el usuario, retomar ahí.
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un

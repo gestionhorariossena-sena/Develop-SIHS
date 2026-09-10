@@ -123,6 +123,7 @@ export function Programas() {
               descripcion: resultado.descripcion,
               idCompetencia: creada.idCompetencia,
               horasAsignadas: resultado.horasAsignadas,
+              numeroFase: resultado.numeroFase,
             } satisfies ResultadoAprendizajeCreate)
             resultadosCreados++
           } catch (error) {
@@ -338,12 +339,22 @@ export function Programas() {
                   resultados de aprendizaje -- nada se ha guardado todavía.
                 </p>
                 <ul className="max-h-64 space-y-2 overflow-auto text-sm">
-                  {previewCurriculo.competencias.map((competencia, i) => (
-                    <li key={i} className="rounded-lg bg-surface p-2 dark:bg-slate-900">
-                      <p className="font-medium text-on-surface dark:text-slate-100">{competencia.descripcion.split('\n')[0]}</p>
-                      <p className="text-xs text-on-surface-variant dark:text-slate-400">{competencia.resultados.length} resultado(s)</p>
-                    </li>
-                  ))}
+                  {previewCurriculo.competencias.map((competencia, i) => {
+                    const fases = [...new Set(competencia.resultados.map((r) => r.numeroFase).filter((f): f is number => f !== null))].sort()
+                    return (
+                      <li key={i} className="rounded-lg bg-surface p-2 dark:bg-slate-900">
+                        <p className="font-medium text-on-surface dark:text-slate-100">{competencia.descripcion.split('\n')[0]}</p>
+                        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-on-surface-variant dark:text-slate-400">
+                          <span>{competencia.resultados.length} resultado(s)</span>
+                          {fases.map((fase) => (
+                            <span key={fase} className="rounded-full bg-sky-50 px-2 py-0.5 font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
+                              TRIM {['I', 'II', 'III', 'IV'][fase - 1] ?? fase}
+                            </span>
+                          ))}
+                        </div>
+                      </li>
+                    )
+                  })}
                 </ul>
                 <button
                   type="button"
