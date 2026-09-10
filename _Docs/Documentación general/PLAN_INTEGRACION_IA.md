@@ -90,13 +90,39 @@ el frontend (fuera de esta sesión): el botón "Resumir con IA" en
 
 ## Fase 3 — Importador tolerante a estructura
 
-Depende de que exista la épica de importadores (`backend/importers/` no
-existe todavía — hoy la carga de Excel real es
-`backend/scripts/importar_datos_reales.py`, un script puntual, no un
-módulo reusable). Cuando se aborde: usar `ai.tasks.classify_document`
-(ya construido en la Fase 1) para mapear columnas desconocidas, y el
-patrón de confianza documentado en la arquitectura para decidir qué se
-importa solo y qué va a revisión humana.
+`backend/app/services/asistente_horario_service.py::previsualizar_excel`
+(la Fase del Asistente de programación, más abajo) ya cubre el caso
+**tabla plana**: una fila por ficha, columnas limpias, `classify_document`
+mapea encabezados con confianza. Probado con `LIDERES DE FICHA
+2026_pruebas.xlsx` — funciona de punta a punta.
+
+**Hallazgo real de esta sesión, probando con
+`PROGRAMACIÓN CGMLTI I TRM 2026 (4).xlsx`, hoja `PLANEACION`**: ese
+archivo (la programación real más autoritativa que existe, no un caso de
+borde) usa un formato **de matriz/pivote** completamente distinto:
+
+```
+Fila 2: [..., 'ficha ', 'M', 'M', 'T', 'T', 'N', 'N', ...]   -- encabezado de 2 filas
+Fila 3: ['TEMAS_', 1, 'TEMAS_7_TRM_2996161_(DM)_...', 'TDPM16', ...]
+Fila 4: ['INSTRUCTOR_', None, '7_TRM_2996161_(DM)_...', 'LA', ...]
+Fila 5: ['AMBIENTE_.', None, 'AMBIENTE_.7_TRM_2996161_(DM)_...', 505, ...]
+```
+
+Cada ficha ocupa 3 filas (temas/instructor/ambiente), el número de ficha
+viene mezclado dentro de un texto compuesto (no en su propia celda), y el
+grid día×jornada se reparte horizontalmente en ~40 columnas. No es un
+problema de clasificación de columnas — es una forma de tabla distinta,
+necesita su propio decodificador (detectar el patrón de 3 filas por
+grupo, extraer el número de ficha con un patrón del texto compuesto,
+reacomodar el grid horizontal en registros). Fuera de alcance de esta
+sesión a propósito: es una pieza de trabajo separada, no un ajuste del
+importador de tabla plana.
+
+**Mitigación ya aplicada mientras tanto**: cuando ninguna fila trae una
+ficha reconocible, `previsualizar_excel` devuelve `advertenciaGeneral`
+explicando la causa probable (formato de matriz vs. columna rota) en vez
+de repetir la misma advertencia sin contexto en cada fila — evita que el
+coordinador tenga que adivinar por qué falló.
 
 ## Fase 4 — Motor optimizador con OR-Tools (MVP hecho)
 

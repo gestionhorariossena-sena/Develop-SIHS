@@ -97,6 +97,20 @@ def test_previsualizar_excel_marca_ficha_inexistente(db_session, monkeypatch):
     assert "no existe" in resultado.filas[0].advertencia
 
 
+def test_previsualizar_excel_sin_columna_de_ficha_da_advertencia_general(db_session, monkeypatch):
+    # Caso real encontrado en pruebas: un formato de matriz/pivote donde
+    # ninguna columna se clasifica como "ficha" -- en vez de 40 filas con
+    # el mismo mensaje sin contexto, un solo aviso a nivel de archivo.
+    _crear_tablas_extra(db_session)
+    contenido = _xlsx_con_encabezado([["ITEMS", "TEMAS_"], ["a", "TEMAS_7_TRM_2996161_(DM)_ALGO"]])
+    _mock_clasificacion(monkeypatch, {"ITEMS": (None, 0.0), "TEMAS_": (None, 0.0)})
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    assert resultado.advertenciaGeneral is not None
+    assert "formato de matriz o pivote" in resultado.advertenciaGeneral
+
+
 def test_previsualizar_excel_reconoce_ficha_existente(db_session, monkeypatch):
     _crear_tablas_extra(db_session)
     _catalogo_base(db_session, id_ficha=100)
