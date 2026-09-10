@@ -767,7 +767,7 @@ export function AsistenteHorarios() {
 
             {generando && <p className="text-sm text-on-surface-variant dark:text-slate-400">Armando tu horario…</p>}
             {errorPropuesta && <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorPropuesta}</p>}
-            {propuesta && !propuesta.factible && (
+            {propuesta && propuesta.bloques.length === 0 && (
               <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{propuesta.mensaje}</p>
             )}
 
@@ -775,6 +775,16 @@ export function AsistenteHorarios() {
               <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
                 {bloquesConConflicto.length} bloque(s) tuvieron un cruce al revisarlos de nuevo y no se van a guardar. Puedes generar la propuesta otra vez.
               </div>
+            )}
+
+            {!generando && (
+              <button
+                type="button"
+                onClick={() => void generarPropuesta()}
+                className="text-sm font-medium text-primary hover:underline dark:text-sena-400"
+              >
+                ↻ Generar propuesta de nuevo
+              </button>
             )}
 
             {bloques.length > 0 && (

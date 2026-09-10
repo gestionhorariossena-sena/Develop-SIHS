@@ -174,6 +174,29 @@ def test_generar_propuesta_sin_resultados_pendientes(db_session):
     assert "ya tienen todos sus resultados" in resultado.mensaje
 
 
+def test_generar_propuesta_programa_sin_resultados_definidos_da_mensaje_distinto(db_session):
+    # Caso real encontrado en pruebas: crear una ficha con un Programa
+    # nuevo (sin ninguna CompetenciaFormacion/ResultadoAprendizaje
+    # cargada todavía) no debe confundirse con "ya está todo programado"
+    # -- son causas y remedios distintos.
+    _crear_tablas_extra(db_session)
+    db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
+    db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="Programa nuevo", activo=True, idCoordinacion=1))
+    db_session.add(Trimestre(idTrimestre=1, nombre="2026-3", fechaInicio=date(2026, 7, 1), fechaFin=date(2026, 9, 30), estado="activo"))
+    db_session.add(Sede(id=1, nombre="Sede Demo", direccion="Calle 1", tipo="principal"))
+    db_session.add(Ambiente(id=1, numero_ambiente=101, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1))
+    db_session.add(Ficha(idFicha=200, codigoFicha="200", idPrograma=1, idTrimestre=1, idSede=1))
+    instructor_id = uuid.uuid4()
+    db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana2@demo.sihs", tipoContrato="contrato", estado="activo"))
+    db_session.commit()
+
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[200], jornada="MAÑANA")
+
+    assert resultado.bloques == []
+    assert resultado.factible is True
+    assert "no tiene resultados de aprendizaje" in resultado.mensaje
+
+
 def test_generar_propuesta_genera_un_bloque_real(db_session):
     _crear_tablas_extra(db_session)
     _catalogo_base(db_session, id_ficha=100)
