@@ -6,6 +6,7 @@ import { RecuperarContrasena } from '../pages/RecuperarContrasena'
 import { RestablecerContrasena } from '../pages/RestablecerContrasena'
 import { Dashboard } from '../pages/Dashboard'
 import { NuevoHorario } from '../pages/NuevoHorario'
+import { AsistenteHorarios } from '../pages/AsistenteHorarios'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { CalendarioGeneral } from '../pages/CalendarioGeneral'
 import { HorariosCompletos } from '../pages/HorariosCompletos'
@@ -78,6 +79,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <NuevoHorario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/horarios/asistente-ia"
+        element={
+          <ProtectedRoute>
+            <AsistenteHorarios />
           </ProtectedRoute>
         }
       />
