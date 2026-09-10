@@ -45,6 +45,40 @@ const ETIQUETA_CONTRATO: Record<string, string> = {
   contrato: 'Instructor de Contrato',
 }
 
+const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
+
+function inicioSemana(fecha: Date): Date {
+  const inicio = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate())
+  const dia = inicio.getDay()
+  inicio.setDate(inicio.getDate() - (dia === 0 ? 6 : dia - 1))
+  return inicio
+}
+
+function isoLocal(fecha: Date): string {
+  const año = fecha.getFullYear()
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0')
+  const dia = String(fecha.getDate()).padStart(2, '0')
+  return `${año}-${mes}-${dia}`
+}
+
+function etiquetaSemana(inicio: Date): string {
+  const fin = new Date(inicio)
+  fin.setDate(fin.getDate() + 4)
+  const mesInicio = MESES[inicio.getMonth()]
+  const mesFin = MESES[fin.getMonth()]
+  const rango = mesInicio === mesFin
+    ? `${inicio.getDate()} al ${fin.getDate()} ${mesFin}`
+    : `${inicio.getDate()} ${mesInicio} al ${fin.getDate()} ${mesFin}`
+  return `Semana ${semanaISO(inicio)}: ${rango} ${fin.getFullYear()}`
+}
+
+function semanaISO(fecha: Date): number {
+  const jueves = new Date(fecha)
+  jueves.setDate(jueves.getDate() + 3)
+  const primerDia = new Date(jueves.getFullYear(), 0, 1)
+  return Math.ceil((((jueves.getTime() - primerDia.getTime()) / 86400000) + 1) / 7)
+}
+
 /**
  * Autoservicio del instructor — "Mi horario" (pedido 2026-09-03,
  * rediseño 2026-09-07 sobre el mockup Stitch "Mi Horario Semanal", ver
@@ -99,15 +133,15 @@ const ETIQUETA_CONTRATO: Record<string, string> = {
  * datos inventados. "Contactar" queda deshabilitado hasta que exista
  * mensajería instructor-aprendiz (Epic "Vistas del Aprendiz").
  *
- * No incluye (tickets aparte, mismo epic): selector de semana real ni
- * sincronización con SofiaPlus — esa última es decorativa en el mockup y no
- * hay integración real, así que no se agrega nada que finja sincronizar.
+ * No incluye (ticket aparte, mismo epic): sincronización con SofiaPlus — esa
+ * integración es decorativa en el mockup y no hay backend real conectado.
  */
 export function MiHorario() {
   const [horarios, setHorarios] = useState<Horario[] | null>(null)
   const [perfil, setPerfil] = useState<Usuario | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [filtroJornada, setFiltroJornada] = useState<Jornada | 'todas'>('todas')
+  const [semanaInicio, setSemanaInicio] = useState(() => inicioSemana(new Date()))
 
   const [fichas, setFichas] = useState<Ficha[]>([])
 
@@ -115,7 +149,10 @@ export function MiHorario() {
   const [errorCarga, setErrorCarga] = useState(false)
 
   useEffect(() => {
-    apiGet<Horario[]>('/usuarios/me/horarios')
+    const semanaFin = new Date(semanaInicio)
+    semanaFin.setDate(semanaFin.getDate() + 4)
+    const query = `?fechaInicio=${isoLocal(semanaInicio)}&fechaFin=${isoLocal(semanaFin)}`
+    apiGet<Horario[]>(`/usuarios/me/horarios${query}`)
       .then(setHorarios)
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar tu horario.'))
 
@@ -124,7 +161,7 @@ export function MiHorario() {
       .catch(() => {})
 
     apiGet<Ficha[]>('/fichas/').then(setFichas).catch(() => {})
-  }, [])
+  }, [semanaInicio])
 
   // La carga semanal (SCRUM-49) requiere el propio idUsuario — se pide
   // aparte una vez que /usuarios/me responde, igual que el patrón de
@@ -323,9 +360,6 @@ export function MiHorario() {
         </div>
       </div>
 
-      {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
-          real del backend: no hay endpoint que traiga otras semanas, así que
-          la navegación queda deshabilitada en vez de fingir que funciona. */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {FILTROS_JORNADA.map((filtro) => (
@@ -348,22 +382,38 @@ export function MiHorario() {
           <div className="flex items-center gap-1 rounded-xl border border-outline-variant bg-surface-container-lowest p-1">
             <button
               type="button"
-              disabled
-              title="Aún no implementado en el backend"
-              className="flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-lg text-on-surface-variant/50"
+              aria-label="Semana anterior"
+              onClick={() => {
+                const anterior = new Date(semanaInicio)
+                anterior.setDate(anterior.getDate() - 7)
+                setSemanaInicio(anterior)
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
-            <span className="px-2 text-xs font-semibold text-on-surface">Semana actual</span>
+            <span className="px-2 text-center text-xs font-semibold text-on-surface">{etiquetaSemana(semanaInicio)}</span>
             <button
               type="button"
-              disabled
-              title="Aún no implementado en el backend"
-              className="flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-lg text-on-surface-variant/50"
+              aria-label="Semana siguiente"
+              onClick={() => {
+                const siguiente = new Date(semanaInicio)
+                siguiente.setDate(siguiente.getDate() + 7)
+                setSemanaInicio(siguiente)
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_right</span>
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setSemanaInicio(inicioSemana(new Date()))}
+            className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-xs font-semibold text-on-surface hover:bg-surface-container-high"
+          >
+            Hoy
+          </button>
 
           {/* Pantalla del ticket "[Frontend] Pantalla Detalle de Franja y
               Ambiente" (mismo epic) todavía no existe — deshabilitado en vez
