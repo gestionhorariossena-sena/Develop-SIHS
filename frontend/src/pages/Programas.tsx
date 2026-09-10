@@ -2,8 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
-import { apiGet, ApiError } from '../services/api'
-import type { Ficha, Programa } from '../types/api'
+import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
+import type {
+  CompetenciaFormacionCreate,
+  CompetenciaFormacionResponse,
+  Ficha,
+  PreviewCurriculoResponse,
+  Programa,
+  ResultadoAprendizajeCreate,
+} from '../types/api'
 
 type Orden = 'codigo' | 'nombre' | 'nivel'
 type Estado = 'todos' | 'activo' | 'inactivo'
@@ -23,6 +30,16 @@ export function Programas() {
   const [seleccionado, setSeleccionado] = useState<Programa | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Importar competencias/resultados de aprendizaje desde el Formato de
+  // Planeación Pedagógica real de SENA -- ver PLAN_INTEGRACION_IA.md.
+  // Solo Administrador puede confirmar (mismo permiso que
+  // POST /competencias-formacion/ y /resultados-aprendizaje/ ya exigían).
+  const [subiendoCurriculo, setSubiendoCurriculo] = useState(false)
+  const [previewCurriculo, setPreviewCurriculo] = useState<PreviewCurriculoResponse | null>(null)
+  const [errorCurriculo, setErrorCurriculo] = useState<string | null>(null)
+  const [importandoCurriculo, setImportandoCurriculo] = useState(false)
+  const [resultadoImportacion, setResultadoImportacion] = useState<string | null>(null)
 
   useEffect(() => {
     apiGet<Programa[]>('/programas/')
@@ -59,6 +76,71 @@ export function Programas() {
   }, [fichas])
 
   const fichasDelSeleccionado = seleccionado ? fichasPorPrograma.get(seleccionado.idPrograma) ?? [] : []
+
+  async function subirCurriculo(evento: React.ChangeEvent<HTMLInputElement>) {
+    const archivo = evento.target.files?.[0]
+    evento.target.value = ''
+    if (!archivo) return
+
+    setSubiendoCurriculo(true)
+    setErrorCurriculo(null)
+    setResultadoImportacion(null)
+    try {
+      const formData = new FormData()
+      formData.append('archivo', archivo)
+      const resultado = await apiPostForm<PreviewCurriculoResponse>(
+        '/competencias-formacion/importar-vista-previa',
+        formData,
+        45000
+      )
+      setPreviewCurriculo(resultado)
+    } catch (error) {
+      setErrorCurriculo(error instanceof ApiError ? error.message : 'No se pudo leer el archivo.')
+    } finally {
+      setSubiendoCurriculo(false)
+    }
+  }
+
+  async function confirmarImportacionCurriculo() {
+    if (!previewCurriculo || !seleccionado) return
+    setImportandoCurriculo(true)
+    setResultadoImportacion(null)
+    let competenciasCreadas = 0
+    let resultadosCreados = 0
+    const errores: string[] = []
+
+    for (const competencia of previewCurriculo.competencias) {
+      try {
+        const creada = await apiPost<CompetenciaFormacionResponse>('/competencias-formacion/', {
+          descripcion: competencia.descripcion,
+          idPrograma: seleccionado.idPrograma,
+        } satisfies CompetenciaFormacionCreate)
+        competenciasCreadas++
+
+        for (const resultado of competencia.resultados) {
+          try {
+            await apiPost('/resultados-aprendizaje/', {
+              descripcion: resultado.descripcion,
+              idCompetencia: creada.idCompetencia,
+              horasAsignadas: resultado.horasAsignadas,
+            } satisfies ResultadoAprendizajeCreate)
+            resultadosCreados++
+          } catch (error) {
+            errores.push(error instanceof ApiError ? error.message : 'No se pudo crear un resultado.')
+          }
+        }
+      } catch (error) {
+        errores.push(error instanceof ApiError ? error.message : 'No se pudo crear una competencia.')
+      }
+    }
+
+    setResultadoImportacion(
+      `${competenciasCreadas} competencias y ${resultadosCreados} resultados creados.` +
+        (errores.length > 0 ? ` ${errores.length} fallaron.` : '')
+    )
+    setPreviewCurriculo(null)
+    setImportandoCurriculo(false)
+  }
 
   const niveles = [...new Set(programas.map((programa) => programa.nivelFormacion || 'Sin definir'))].sort()
   const texto = busqueda.trim().toLocaleLowerCase('es-CO')
@@ -154,7 +236,16 @@ export function Programas() {
               </thead>
               <tbody className="divide-y divide-outline-variant dark:divide-slate-700">
                 {visiblesPagina.map((programa) => (
-                  <tr key={programa.idPrograma} onClick={() => setSeleccionado(programa)} className="cursor-pointer hover:bg-surface dark:hover:bg-slate-700/60">
+                  <tr
+                    key={programa.idPrograma}
+                    onClick={() => {
+                      setSeleccionado(programa)
+                      setPreviewCurriculo(null)
+                      setErrorCurriculo(null)
+                      setResultadoImportacion(null)
+                    }}
+                    className="cursor-pointer hover:bg-surface dark:hover:bg-slate-700/60"
+                  >
                     <td className="px-4 py-3 font-semibold text-on-surface dark:text-slate-100">{programa.codigoPrograma}</td>
                     <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{programa.nombrePrograma}</td>
                     <td className="px-4 py-3"><span className="rounded-full bg-primary-container px-2.5 py-1 text-xs font-semibold text-primary dark:bg-sena-950/50">{programa.nivelFormacion || 'Sin definir'}</span></td>
@@ -202,7 +293,12 @@ export function Programas() {
           iniciales={seleccionado.codigoPrograma.slice(0, 2).toUpperCase()}
           titulo={seleccionado.nombrePrograma}
           subtitulo={seleccionado.codigoPrograma}
-          onCerrar={() => setSeleccionado(null)}
+          onCerrar={() => {
+            setSeleccionado(null)
+            setPreviewCurriculo(null)
+            setErrorCurriculo(null)
+            setResultadoImportacion(null)
+          }}
         >
           <dl className="space-y-4 text-sm">
             <div><dt className="text-on-surface-variant dark:text-slate-400">Código del programa</dt><dd className="mt-1 font-medium text-on-surface dark:text-slate-100">{seleccionado.codigoPrograma}</dd></div>
@@ -210,6 +306,56 @@ export function Programas() {
             <div><dt className="text-on-surface-variant dark:text-slate-400">Estado</dt><dd className="mt-1 font-medium text-on-surface dark:text-slate-100">{seleccionado.activo ? 'Activo' : 'Inactivo'}</dd></div>
             <div><dt className="text-on-surface-variant dark:text-slate-400">Fichas asociadas</dt><dd className="mt-1 font-medium text-on-surface dark:text-slate-100">{fichasDelSeleccionado.length}</dd></div>
           </dl>
+
+          <SeccionDrawer titulo="Competencias y resultados de aprendizaje">
+            <p className="mb-3 text-sm text-on-surface-variant dark:text-slate-400">
+              Sube el Formato de Planeación Pedagógica de este programa (Excel real de SENA, columnas "COMPETENCIA" /
+              "RESULTADOS DE APRENDIZAJE") para cargar su contenido curricular -- sin esto, el asistente de
+              programación no tiene qué programar en las fichas de este programa. Requiere rol Administrador.
+            </p>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(e) => void subirCurriculo(e)}
+              disabled={subiendoCurriculo}
+              aria-label="Seleccionar archivo de plan curricular"
+              className="block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-sena-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sena-700 dark:text-slate-300 dark:file:bg-sena-950/50 dark:file:text-sena-400"
+            />
+            {subiendoCurriculo && <p className="mt-2 text-sm text-on-surface-variant dark:text-slate-400">Leyendo el archivo…</p>}
+            {errorCurriculo && (
+              <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorCurriculo}</p>
+            )}
+            {resultadoImportacion && (
+              <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
+                {resultadoImportacion}
+              </p>
+            )}
+
+            {previewCurriculo && (
+              <div className="mt-3 rounded-xl border border-outline-variant p-3 dark:border-slate-700">
+                <p className="mb-2 text-sm font-semibold text-on-surface dark:text-slate-100">
+                  Se encontraron {previewCurriculo.totalCompetencias} competencias y {previewCurriculo.totalResultados}{' '}
+                  resultados de aprendizaje -- nada se ha guardado todavía.
+                </p>
+                <ul className="max-h-64 space-y-2 overflow-auto text-sm">
+                  {previewCurriculo.competencias.map((competencia, i) => (
+                    <li key={i} className="rounded-lg bg-surface p-2 dark:bg-slate-900">
+                      <p className="font-medium text-on-surface dark:text-slate-100">{competencia.descripcion.split('\n')[0]}</p>
+                      <p className="text-xs text-on-surface-variant dark:text-slate-400">{competencia.resultados.length} resultado(s)</p>
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  type="button"
+                  disabled={importandoCurriculo}
+                  onClick={() => void confirmarImportacionCurriculo()}
+                  className="mt-3 rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {importandoCurriculo ? 'Creando…' : `Confirmar e importar a ${seleccionado.nombrePrograma}`}
+                </button>
+              </div>
+            )}
+          </SeccionDrawer>
 
           <SeccionDrawer titulo="Fichas y trimestres">
             {fichasDelSeleccionado.length === 0 ? (
