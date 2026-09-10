@@ -286,6 +286,28 @@ Pendiente para más adelante: permitir varios bloques por necesidad, y
 filtrar candidatos por especialidad real (hoy usa todos los instructores
 activos, no cruza por especialidad/competencia).
 
+### Bug real: el paso 3 se colgaba y terminaba en timeout
+
+Con datos reales el paso 3 ("armando tu horario") se quedaba colgado y
+el frontend terminaba mostrando el timeout genérico de 45s sin nunca
+llegar a habilitar el botón del paso 4. La causa no era el solver: era
+que `generar_horario` comparaba **cada opción de cada necesidad contra
+cada opción de cada otra necesidad** para detectar choques —
+`O(necesidades² × opciones²)`. Con varias fichas del mismo programa
+compitiendo por las mismas decenas de resultados de aprendizaje (caso
+real: 4 fichas de ADSO, 20-29 resultados pendientes cada una, 648
+opciones por necesidad con solo 4 instructores × 6 ambientes reales),
+eso son miles de millones de comparaciones en Python puro *antes* de
+llamarle al solver. Se arregló indexando cada opción por el recurso que
+ocupa en cada `(franja, día)` (`ocupacion_instructor`,
+`ocupacion_ambiente`, `ocupacion_ficha`) y usando
+`AddAtMostOne` por slot en vez de la comparación par a par — misma
+restricción, pero construir el modelo pasa a ser lineal en
+`necesidades × opciones`. Se agregó
+`test_volumen_realista_no_se_cuelga_construyendo_el_modelo` que
+reproduce ese volumen real (80 necesidades, 4 instructores, 6
+ambientes) y falla si tarda más de 15s.
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un

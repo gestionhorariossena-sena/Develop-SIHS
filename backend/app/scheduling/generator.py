@@ -85,12 +85,6 @@ def _opciones_validas(necesidad: NecesidadHorario) -> list[_Opcion]:
     ]
 
 
-def _se_solapan_en_tiempo(opcion_a: _Opcion, opcion_b: _Opcion) -> bool:
-    franja_a, dias_a, _, _ = opcion_a
-    franja_b, dias_b, _, _ = opcion_b
-    return franja_a == franja_b and bool(set(dias_a) & set(dias_b))
-
-
 def generar_horario(
     necesidades: list[NecesidadHorario], tiempo_limite_seg: float = 10.0
 ) -> list[BloqueAsignado] | None:
@@ -122,17 +116,33 @@ def generar_horario(
 
     # Ninguna pareja de necesidades puede chocar: mismo instructor, mismo
     # ambiente, o misma ficha, coincidiendo en franja y en al menos un día.
-    for i in range(len(necesidades)):
-        for j in range(i + 1, len(necesidades)):
-            misma_ficha = necesidades[i].id_ficha == necesidades[j].id_ficha
-            for oi, opcion_i in enumerate(opciones_por_necesidad[i]):
-                for oj, opcion_j in enumerate(opciones_por_necesidad[j]):
-                    if not _se_solapan_en_tiempo(opcion_i, opcion_j):
-                        continue
-                    mismo_instructor = opcion_i[2] == opcion_j[2]
-                    mismo_ambiente = opcion_i[3] == opcion_j[3]
-                    if misma_ficha or mismo_instructor or mismo_ambiente:
-                        modelo.Add(x[i][oi] + x[j][oj] <= 1)
+    #
+    # Comparar cada opción de cada necesidad contra cada opción de cada
+    # otra necesidad (como se hacía antes) es O(necesidades² × opciones²):
+    # con datos reales (una ficha compitiendo por varias decenas de
+    # resultados, cientos de opciones por necesidad) eso son miles de
+    # millones de comparaciones en Python puro antes de llamar al solver,
+    # y el asistente se queda colgado hasta hacer timeout. La restricción
+    # es la misma pero se indexa por el recurso que cada opción ocupa en
+    # cada (franja, día): como mucho una variable activa por slot. Eso
+    # hace que construir el modelo sea lineal en necesidades × opciones.
+    ocupacion_instructor: dict[tuple[str, tuple[time, time], int], list] = {}
+    ocupacion_ambiente: dict[tuple[int, tuple[time, time], int], list] = {}
+    ocupacion_ficha: dict[tuple[int, tuple[time, time], int], list] = {}
+
+    for i, opciones in enumerate(opciones_por_necesidad):
+        id_ficha = necesidades[i].id_ficha
+        for o, (franja, patron, instructor, ambiente) in enumerate(opciones):
+            variable = x[i][o]
+            for dia in patron:
+                ocupacion_instructor.setdefault((instructor, franja, dia), []).append(variable)
+                ocupacion_ambiente.setdefault((ambiente, franja, dia), []).append(variable)
+                ocupacion_ficha.setdefault((id_ficha, franja, dia), []).append(variable)
+
+    for ocupacion in (ocupacion_instructor, ocupacion_ambiente, ocupacion_ficha):
+        for variables in ocupacion.values():
+            if len(variables) > 1:
+                modelo.AddAtMostOne(variables)
 
     solver = cp_model.CpSolver()
     solver.parameters.max_time_in_seconds = tiempo_limite_seg
