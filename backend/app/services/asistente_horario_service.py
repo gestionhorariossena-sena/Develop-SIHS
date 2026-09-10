@@ -327,6 +327,11 @@ def generar_propuesta(
     necesidades: list[NecesidadHorario] = []
     fichas_por_id: dict[int, Ficha] = {}
     resultados_por_id: dict[int, ResultadoAprendizaje] = {}
+    # Para distinguir "ya está todo programado" (tiene resultados, todos
+    # con horario) de "este programa no tiene resultados de aprendizaje
+    # definidos todavía" (nada que programar porque no hay currículo
+    # cargado) -- son causas muy distintas y el mensaje debe decir cuál es.
+    hay_programas_sin_resultados = False
 
     for id_ficha in ids_ficha:
         ficha = db.get(Ficha, id_ficha)
@@ -341,6 +346,15 @@ def generar_propuesta(
         if not ids_ambiente:
             continue
 
+        tiene_algun_resultado_definido = (
+            db.query(CompetenciaFormacion.idCompetencia)
+            .filter(CompetenciaFormacion.idPrograma == ficha.idPrograma)
+            .first()
+            is not None
+        )
+        if not tiene_algun_resultado_definido:
+            hay_programas_sin_resultados = True
+
         for resultado in _resultados_pendientes(db, ficha, id_trimestre):
             resultados_por_id[resultado.idResultado] = resultado
             necesidades.append(
@@ -354,9 +368,15 @@ def generar_propuesta(
             )
 
     if not necesidades:
-        return GenerarPropuestaResponse(
-            bloques=[], factible=True, mensaje="Las fichas seleccionadas ya tienen todos sus resultados programados."
-        )
+        if hay_programas_sin_resultados:
+            mensaje = (
+                "El programa de una o más de las fichas seleccionadas no tiene resultados de "
+                "aprendizaje (competencias) definidos todavía -- no hay nada que programar hasta que "
+                "se cargue ese contenido curricular."
+            )
+        else:
+            mensaje = "Las fichas seleccionadas ya tienen todos sus resultados programados."
+        return GenerarPropuestaResponse(bloques=[], factible=True, mensaje=mensaje)
 
     asignacion = generar_horario(necesidades)
     if asignacion is None:
