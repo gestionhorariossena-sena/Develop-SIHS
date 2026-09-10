@@ -38,3 +38,7 @@ openpyxl==3.1.5
 # (Cairo/Pango) a diferencia de WeasyPrint, instala sin fricción en Windows
 # y en el despliegue de Railway.
 reportlab==5.0.1
+# Motor optimizador de horarios (Fase 4 de
+# _Docs/Documentación general/PLAN_INTEGRACION_IA.md) -- CP-SAT resuelve
+# la asignación día/franja/instructor/ambiente, sin IA de por medio.
+ortools==9.15.6755
