@@ -18,3 +18,13 @@ class ClasificacionColumna(BaseModel):
 class ClasificacionColumnas(RootModel[dict[str, ClasificacionColumna]]):
     """Encabezado original de Excel -> clasificación. Ej.:
     {"JORNADA": {"campo": "jornada", "confianza": 1.0}}"""
+
+
+class ResumenAuditoriaIA(BaseModel):
+    """Resumen en lenguaje natural de una auditoría de cruces completa
+    (HorarioService.auditar_conflictos). La IA no decide qué es un
+    conflicto -- eso ya lo calculó Python de forma determinista -- solo
+    lo explica y sugiere por dónde empezar a revisar."""
+
+    resumen: str
+    prioridades: list[str] = Field(default_factory=list)
