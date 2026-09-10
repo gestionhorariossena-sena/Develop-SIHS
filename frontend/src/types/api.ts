@@ -345,6 +345,45 @@ export interface FichaCreate {
   idSede?: number | null
 }
 
+// Espejo de app/schemas/curriculo.py -- importar competencias/resultados
+// desde el Formato de Planeación Pedagógica real de SENA (Programas.tsx,
+// drawer de un programa). Sin IA: el formato tiene encabezados fijos.
+export interface ResultadoExtraido {
+  descripcion: string
+  horasAsignadas: number | null
+}
+
+export interface CompetenciaExtraida {
+  descripcion: string
+  resultados: ResultadoExtraido[]
+}
+
+export interface PreviewCurriculoResponse {
+  nombreArchivo: string
+  hoja: string
+  competencias: CompetenciaExtraida[]
+  totalCompetencias: number
+  totalResultados: number
+}
+
+export interface CompetenciaFormacionCreate {
+  codigo?: string | null
+  descripcion: string
+  idPrograma: number
+}
+
+export interface CompetenciaFormacionResponse extends CompetenciaFormacionCreate {
+  idCompetencia: number
+}
+
+export interface ResultadoAprendizajeCreate {
+  codigo?: string | null
+  descripcion: string
+  idCompetencia: number
+  idGuia?: number | null
+  horasAsignadas?: number | null
+}
+
 export interface ImportarExcelPreviewResponse {
   nombreArchivo: string
   hoja: string
