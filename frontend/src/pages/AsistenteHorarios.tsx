@@ -1,14 +1,19 @@
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
 import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
 import type {
   BloquePropuesto,
+  Ficha,
+  FichaCreate,
+  FilaImportada,
   GenerarPropuestaResponse,
   HorarioDryRunRequest,
   HorarioDryRunResponse,
   ImportarExcelPreviewResponse,
   JornadaAsistente,
+  Programa,
   RespuestaPreguntaHorario,
+  Sede,
   Trimestre,
 } from '../types/api'
 
@@ -67,6 +72,20 @@ export function AsistenteHorarios() {
   const [idTrimestre, setIdTrimestre] = useState<number | null>(null)
   const [jornada, setJornada] = useState<JornadaAsistente>('MAÑANA')
 
+  // Paso 2 -- botón "Crear ficha" por fila, para las que no existen
+  // todavía en el catálogo. `filaCreandoFicha` es el número de fila cuyo
+  // formulario está abierto (uno a la vez).
+  const [programas, setProgramas] = useState<Programa[]>([])
+  const [sedes, setSedes] = useState<Sede[]>([])
+  const [filaCreandoFicha, setFilaCreandoFicha] = useState<number | null>(null)
+  const [formCreacion, setFormCreacion] = useState<{ idPrograma: string; idTrimestre: string; idSede: string }>({
+    idPrograma: '',
+    idTrimestre: '',
+    idSede: '',
+  })
+  const [creandoFicha, setCreandoFicha] = useState(false)
+  const [errorCreacionFicha, setErrorCreacionFicha] = useState<string | null>(null)
+
   const [generando, setGenerando] = useState(false)
   const [propuesta, setPropuesta] = useState<GenerarPropuestaResponse | null>(null)
   const [bloques, setBloques] = useState<BloqueValidado[]>([])
@@ -87,7 +106,57 @@ export function AsistenteHorarios() {
         if (activo) setIdTrimestre(activo.idTrimestre)
       })
       .catch(() => {})
+    apiGet<Programa[]>('/programas/').then(setProgramas).catch(() => {})
+    apiGet<Sede[]>('/sedes').then(setSedes).catch(() => {})
   }, [])
+
+  function abrirCreacionFicha(fila: FilaImportada) {
+    setFilaCreandoFicha(fila.fila)
+    setErrorCreacionFicha(null)
+    // Intento simple de pre-selección: si el nombre del programa leído del
+    // Excel coincide (sin importar mayúsculas) con uno ya existente, se
+    // preselecciona -- el coordinador igual puede cambiarlo antes de crear.
+    const coincidencia = fila.programa
+      ? programas.find((p) => p.nombrePrograma.trim().toLowerCase() === fila.programa!.trim().toLowerCase())
+      : undefined
+    setFormCreacion({
+      idPrograma: coincidencia ? String(coincidencia.idPrograma) : '',
+      idTrimestre: idTrimestre ? String(idTrimestre) : '',
+      idSede: '',
+    })
+  }
+
+  async function crearFicha(fila: FilaImportada) {
+    if (!fila.codigoFicha || !formCreacion.idPrograma || !formCreacion.idTrimestre) return
+    setCreandoFicha(true)
+    setErrorCreacionFicha(null)
+    try {
+      const data: FichaCreate = {
+        codigoFicha: fila.codigoFicha,
+        idPrograma: Number(formCreacion.idPrograma),
+        idTrimestre: Number(formCreacion.idTrimestre),
+        idSede: formCreacion.idSede ? Number(formCreacion.idSede) : null,
+      }
+      const creada = await apiPost<Ficha>('/fichas/', data)
+      // Se actualiza la fila en el estado local -- no hace falta re-importar
+      // el archivo entero solo para reflejar que esta ficha ya existe.
+      setPrevisualizacion((previo) =>
+        previo
+          ? {
+              ...previo,
+              filas: previo.filas.map((f) =>
+                f.fila === fila.fila ? { ...f, fichaExiste: true, idFicha: creada.idFicha, advertencia: null } : f
+              ),
+            }
+          : previo
+      )
+      setFilaCreandoFicha(null)
+    } catch (error) {
+      setErrorCreacionFicha(error instanceof ApiError ? error.message : 'No se pudo crear la ficha.')
+    } finally {
+      setCreandoFicha(false)
+    }
+  }
 
   const idsFichaListas = useMemo(() => {
     if (!previsualizacion) return []
@@ -300,22 +369,103 @@ export function AsistenteHorarios() {
                     <th className="px-3 py-2">Programa</th>
                     <th className="px-3 py-2">Jornada</th>
                     <th className="px-3 py-2">Estado</th>
+                    <th className="px-3 py-2">Acción</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant dark:divide-slate-700">
                   {previsualizacion.filas.map((f) => (
-                    <tr key={f.fila}>
-                      <td className="px-3 py-2 text-on-surface dark:text-slate-200">{f.idFicha ?? '—'}</td>
-                      <td className="px-3 py-2 text-on-surface-variant dark:text-slate-300">{f.programa ?? '—'}</td>
-                      <td className="px-3 py-2 text-on-surface-variant dark:text-slate-300">{f.jornada ?? '—'}</td>
-                      <td className="px-3 py-2">
-                        {f.advertencia ? (
-                          <span className="text-amber-700 dark:text-amber-400">{f.advertencia}</span>
-                        ) : (
-                          <span className="text-emerald-700 dark:text-emerald-400">Listo</span>
-                        )}
-                      </td>
-                    </tr>
+                    <Fragment key={f.fila}>
+                      <tr>
+                        <td className="px-3 py-2 text-on-surface dark:text-slate-200">{f.codigoFicha ?? '—'}</td>
+                        <td className="px-3 py-2 text-on-surface-variant dark:text-slate-300">{f.programa ?? '—'}</td>
+                        <td className="px-3 py-2 text-on-surface-variant dark:text-slate-300">{f.jornada ?? '—'}</td>
+                        <td className="px-3 py-2">
+                          {f.advertencia ? (
+                            <span className="text-amber-700 dark:text-amber-400">{f.advertencia}</span>
+                          ) : (
+                            <span className="text-emerald-700 dark:text-emerald-400">Listo</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2">
+                          {!f.fichaExiste && f.codigoFicha && (
+                            <button
+                              type="button"
+                              onClick={() => (filaCreandoFicha === f.fila ? setFilaCreandoFicha(null) : abrirCreacionFicha(f))}
+                              className="font-medium text-primary hover:underline dark:text-sena-400"
+                            >
+                              {filaCreandoFicha === f.fila ? 'Cancelar' : 'Crear ficha'}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                      {filaCreandoFicha === f.fila && (
+                        <tr>
+                          <td colSpan={5} className="bg-surface px-3 py-3 dark:bg-slate-900">
+                            <div className="flex flex-wrap items-end gap-3">
+                              <label className="text-xs text-on-surface-variant dark:text-slate-300">
+                                Programa
+                                <select
+                                  value={formCreacion.idPrograma}
+                                  onChange={(e) => setFormCreacion((s) => ({ ...s, idPrograma: e.target.value }))}
+                                  className="mt-1 block rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
+                                >
+                                  <option value="">Selecciona…</option>
+                                  {programas.map((p) => (
+                                    <option key={p.idPrograma} value={p.idPrograma}>
+                                      {p.nombrePrograma}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="text-xs text-on-surface-variant dark:text-slate-300">
+                                Trimestre
+                                <select
+                                  value={formCreacion.idTrimestre}
+                                  onChange={(e) => setFormCreacion((s) => ({ ...s, idTrimestre: e.target.value }))}
+                                  className="mt-1 block rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
+                                >
+                                  <option value="">Selecciona…</option>
+                                  {trimestres.map((t) => (
+                                    <option key={t.idTrimestre} value={t.idTrimestre}>
+                                      {t.nombre}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="text-xs text-on-surface-variant dark:text-slate-300">
+                                Sede (opcional)
+                                <select
+                                  value={formCreacion.idSede}
+                                  onChange={(e) => setFormCreacion((s) => ({ ...s, idSede: e.target.value }))}
+                                  className="mt-1 block rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
+                                >
+                                  <option value="">Sin definir</option>
+                                  {sedes.map((s) => (
+                                    <option key={s.idSede} value={s.idSede}>
+                                      {s.nombreSede}
+                                    </option>
+                                  ))}
+                                </select>
+                              </label>
+                              <button
+                                type="button"
+                                disabled={creandoFicha || !formCreacion.idPrograma || !formCreacion.idTrimestre}
+                                onClick={() => void crearFicha(f)}
+                                className="rounded-lg bg-sena-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
+                              >
+                                {creandoFicha ? 'Creando…' : `Crear ficha ${f.codigoFicha}`}
+                              </button>
+                              {!programas.some((p) => String(p.idPrograma) === formCreacion.idPrograma) && f.programa && (
+                                <span className="text-xs text-amber-700 dark:text-amber-400">
+                                  No encontramos "{f.programa}" en Programas -- créalo ahí primero si no existe.
+                                </span>
+                              )}
+                              {errorCreacionFicha && <span className="text-xs text-red-700 dark:text-red-400">{errorCreacionFicha}</span>}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>

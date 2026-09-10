@@ -37,13 +37,20 @@ def _crear_tablas_extra(db_session):
     )
 
 
-def _catalogo_base(db_session, id_ficha=100):
+def _catalogo_base(db_session, id_ficha=100, codigo_ficha=None):
+    # id_ficha (PK interno, SERIAL) y codigo_ficha (el número real de SENA,
+    # texto) son columnas DISTINTAS -- default codigo_ficha=str(id_ficha)
+    # solo por conveniencia en los tests que no les importa la diferencia;
+    # test_previsualizar_excel_reconoce_ficha_existente los desacopla a
+    # propósito para no repetir el bug real que encontramos (buscar por PK
+    # en vez de por codigoFicha).
+    codigo_ficha = codigo_ficha or str(id_ficha)
     db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
     db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="ADSO", nivelFormacion="Tecnólogo", activo=True, idCoordinacion=1))
     db_session.add(Trimestre(idTrimestre=1, nombre="2026-3", fechaInicio=date(2026, 7, 1), fechaFin=date(2026, 9, 30), estado="activo"))
     db_session.add(Sede(id=1, nombre="Sede Demo", direccion="Calle 1", tipo="principal"))
     db_session.add(Ambiente(id=1, numero_ambiente=101, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1))
-    db_session.add(Ficha(idFicha=id_ficha, codigoFicha=str(id_ficha), idPrograma=1, idTrimestre=1, idSede=1))
+    db_session.add(Ficha(idFicha=id_ficha, codigoFicha=codigo_ficha, idPrograma=1, idTrimestre=1, idSede=1))
     db_session.add(CompetenciaFormacion(idCompetencia=1, codigo="C1", descripcion="Competencia demo", idPrograma=1))
     db_session.add(ResultadoAprendizaje(idResultado=1, codigo="RA-1", descripcion="Resultado demo", idCompetencia=1, horasAsignadas=20))
     db_session.commit()
@@ -92,7 +99,8 @@ def test_previsualizar_excel_marca_ficha_inexistente(db_session, monkeypatch):
     resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
 
     assert resultado.totalFilas == 1
-    assert resultado.filas[0].idFicha == 999999
+    assert resultado.filas[0].codigoFicha == "999999"
+    assert resultado.filas[0].idFicha is None
     assert resultado.filas[0].fichaExiste is False
     assert "no existe" in resultado.filas[0].advertencia
 
@@ -112,14 +120,19 @@ def test_previsualizar_excel_sin_columna_de_ficha_da_advertencia_general(db_sess
 
 
 def test_previsualizar_excel_reconoce_ficha_existente(db_session, monkeypatch):
+    # idFicha (PK interno) != codigoFicha (número real de SENA) a propósito
+    # -- si el servicio buscara por PK en vez de por codigoFicha, esta
+    # ficha real "2895566" no se encontraría aunque exista en la BD.
     _crear_tablas_extra(db_session)
-    _catalogo_base(db_session, id_ficha=100)
-    contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], [100, "ADSO"]])
+    _catalogo_base(db_session, id_ficha=7, codigo_ficha="2895566")
+    contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], [2895566, "ADSO"]])
     _mock_clasificacion(monkeypatch, {"FICHA": ("ficha", 1.0), "PROGRAMA": ("programa", 1.0)})
 
     resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
 
+    assert resultado.filas[0].codigoFicha == "2895566"
     assert resultado.filas[0].fichaExiste is True
+    assert resultado.filas[0].idFicha == 7
     assert resultado.filas[0].advertencia is None
 
 
