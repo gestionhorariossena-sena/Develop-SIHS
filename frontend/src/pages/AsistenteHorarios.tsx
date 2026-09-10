@@ -82,6 +82,11 @@ export function AsistenteHorarios() {
   const [archivoComplementario, setArchivoComplementario] = useState<File | null>(null)
   const [previsualizacion, setPrevisualizacion] = useState<ImportarExcelPreviewResponse | null>(null)
   const [errorImportar, setErrorImportar] = useState<string | null>(null)
+  // Fichas que el coordinador desmarcó de la casilla -- reconocidas por
+  // el import pero que no quiere incluir en esta tanda. Por número de
+  // fila (no de ficha): dos filas podrían compartir codigoFicha si el
+  // Excel trae duplicados.
+  const [filasExcluidas, setFilasExcluidas] = useState<Set<number>>(new Set())
 
   const [trimestres, setTrimestres] = useState<Trimestre[]>([])
   const [idTrimestre, setIdTrimestre] = useState<number | null>(null)
@@ -263,9 +268,11 @@ export function AsistenteHorarios() {
 
   const idsFichaListas = useMemo(() => {
     if (!previsualizacion) return []
-    const ids = previsualizacion.filas.filter((f) => f.fichaExiste && f.idFicha !== null).map((f) => f.idFicha as number)
+    const ids = previsualizacion.filas
+      .filter((f) => f.fichaExiste && f.idFicha !== null && !filasExcluidas.has(f.fila))
+      .map((f) => f.idFicha as number)
     return Array.from(new Set(ids))
-  }, [previsualizacion])
+  }, [previsualizacion, filasExcluidas])
 
   async function importarArchivos() {
     if (!archivoPrincipal) return
@@ -277,6 +284,7 @@ export function AsistenteHorarios() {
       if (archivoComplementario) formData.append('archivo_complementario', archivoComplementario)
       const resultado = await apiPostForm<ImportarExcelPreviewResponse>('/horarios/asistente/importar', formData, TIMEOUT_ASISTENTE_MS)
       setPrevisualizacion(resultado)
+      setFilasExcluidas(new Set())
       setPaso(2)
     } catch (error) {
       setErrorImportar(error instanceof ApiError ? error.message : 'No se pudo procesar el archivo.')
@@ -468,7 +476,18 @@ export function AsistenteHorarios() {
                 Archivo procesado: {previsualizacion.nombreArchivo}{' '}
                 <span className="font-normal text-on-surface-variant dark:text-slate-400">
                   · {previsualizacion.totalFilas} filas · {idsFichaListas.length} fichas listas para programar
-                </span>
+                </span>{' '}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFilasExcluidas((previo) =>
+                      previo.size > 0 ? new Set() : new Set(previsualizacion.filas.filter((f) => f.fichaExiste).map((f) => f.fila))
+                    )
+                  }
+                  className="text-xs font-medium text-primary hover:underline dark:text-sena-400"
+                >
+                  {filasExcluidas.size > 0 ? 'marcar todas' : 'desmarcar todas'}
+                </button>
               </p>
               {previsualizacion.archivoComplementario && (
                 <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
@@ -492,6 +511,7 @@ export function AsistenteHorarios() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-surface font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
                   <tr>
+                    <th className="px-3 py-2">Usar</th>
                     <th className="px-3 py-2">Ficha</th>
                     <th className="px-3 py-2">Programa</th>
                     <th className="px-3 py-2">Jornada</th>
@@ -503,6 +523,24 @@ export function AsistenteHorarios() {
                   {previsualizacion.filas.map((f) => (
                     <Fragment key={f.fila}>
                       <tr>
+                        <td className="px-3 py-2">
+                          {f.fichaExiste && (
+                            <input
+                              type="checkbox"
+                              checked={!filasExcluidas.has(f.fila)}
+                              onChange={(e) =>
+                                setFilasExcluidas((previo) => {
+                                  const siguiente = new Set(previo)
+                                  if (e.target.checked) siguiente.delete(f.fila)
+                                  else siguiente.add(f.fila)
+                                  return siguiente
+                                })
+                              }
+                              aria-label={`Usar ficha ${f.codigoFicha ?? f.fila}`}
+                              className="h-4 w-4 rounded border-outline-variant text-primary focus:ring-primary dark:border-slate-600"
+                            />
+                          )}
+                        </td>
                         <td className="px-3 py-2 text-on-surface dark:text-slate-200">{f.codigoFicha ?? '—'}</td>
                         <td className="px-3 py-2 text-on-surface-variant dark:text-slate-300">{f.programa ?? '—'}</td>
                         <td className="px-3 py-2 text-on-surface-variant dark:text-slate-300">{f.jornada ?? '—'}</td>
@@ -527,7 +565,7 @@ export function AsistenteHorarios() {
                       </tr>
                       {filaCreandoFicha === f.fila && (
                         <tr>
-                          <td colSpan={5} className="bg-surface px-3 py-3 dark:bg-slate-900">
+                          <td colSpan={6} className="bg-surface px-3 py-3 dark:bg-slate-900">
                             <div className="flex flex-wrap items-center gap-3">
                               {formCreacion.programaCoincidido && !editandoPrograma && (
                                 <span className="text-xs text-on-surface-variant dark:text-slate-300">
