@@ -317,6 +317,7 @@ export interface ImportarExcelPreviewResponse {
   filas: FilaImportada[]
   totalFilas: number
   filasConAdvertencia: number
+  advertenciaGeneral: string | null
 }
 
 export type JornadaAsistente = 'MAÑANA' | 'TARDE' | 'NOCHE'
