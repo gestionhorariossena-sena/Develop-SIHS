@@ -196,6 +196,44 @@ nuevas: alguna forma de cargar competencias/resultados de aprendizaje
 por programa -- hoy solo existe para los 2 programas de prueba
 originales, cargados a mano en la BD antes de esta sesión.
 
+### Importador de currículo (competencias + resultados) por programa (hecho)
+
+El pendiente de arriba tenía solución real: `Planeación Cadena de
+Formación.xlsx` y `Planeación Oferta Abierta 2025.xlsx` -- que ya
+estaban en la raíz del repo, sin revisar a fondo hasta ahora -- resultaron
+ser el **Formato de Planeación Pedagógica** real de SENA: una hoja
+"Planeacion ..." con columnas fijas `COMPETENCIA` / `RESULTADOS DE
+APRENDIZAJE` (competencia en celdas combinadas, un resultado por fila).
+Probado contra los dos archivos reales: **27 resultados en 7
+competencias**, en ambos -- confirmado con el usuario que ambos son
+Análisis y Desarrollo de Software (el campo "Denominación del Programa"
+del formato queda vacío en la plantilla, no hay forma de leerlo del
+archivo).
+
+- **Sin IA a propósito**: el formato tiene encabezados fijos y
+  consistentes en los dos archivos reales -- clasificación semántica
+  hubiera sido gasto innecesario para algo que un `if` ya resuelve bien.
+- `POST /competencias-formacion/importar-vista-previa`: nuevo endpoint,
+  solo lee y arma la vista previa, no persiste nada. Confirmar reusa
+  `POST /competencias-formacion/` y `POST /resultados-aprendizaje/` (ya
+  existentes) -- no hizo falta un endpoint de "crear todo junto".
+  **Requiere rol Administrador** (igual que esos dos endpoints ya
+  exigían -- distinto de `require_puede_programar` que usa el resto del
+  asistente).
+- Frontend: nueva sección "Competencias y resultados de aprendizaje" en
+  el drawer de detalle de `Programas.tsx` -- subir archivo, vista previa,
+  confirmar. Con esto cargado, `generar_propuesta` (Fase 4) ya tiene qué
+  programar para las fichas de ese programa.
+- 5 tests nuevos (parseo con Excel sintético, error si el archivo no
+  tiene el formato esperado, permisos del endpoint).
+
+Con este importador + el de fichas (`asistente_horario_service.py`) +
+el optimizador (Fase 4), el flujo completo que pidió el usuario queda
+cerrado: **cargar currículo real de un programa → crear/reconocer sus
+fichas → generar propuesta de horario → coordinador revisa y confirma →
+queda publicado para instructores/aprendices** (esto último ya lo hacía
+`HorarioService.crear`, con `publicado=true` por defecto).
+
 ## Fase 4 — Motor optimizador con OR-Tools (MVP hecho)
 
 El hueco más grande del sistema: `HorarioService` **valida** horarios
