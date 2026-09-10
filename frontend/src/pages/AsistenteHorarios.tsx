@@ -31,6 +31,12 @@ import type {
 
 type Paso = 1 | 2 | 3 | 4
 
+// El default de api.ts (15s) alcanza para CRUD normal, pero se queda corto
+// para estos 3 pasos: parsean un Excel + llaman a Gemini, o corren el
+// optimizador -- de verdad pueden tardar más, sobre todo en la primera
+// llamada "fría" de la sesión.
+const TIMEOUT_ASISTENTE_MS = 45000
+
 const NOMBRES_DIA: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes' }
 const JORNADAS: { valor: JornadaAsistente; etiqueta: string }[] = [
   { valor: 'MAÑANA', etiqueta: 'Mañana' },
@@ -99,7 +105,7 @@ export function AsistenteHorarios() {
     try {
       const formData = new FormData()
       formData.append('archivo', archivo)
-      const resultado = await apiPostForm<ImportarExcelPreviewResponse>('/horarios/asistente/importar', formData)
+      const resultado = await apiPostForm<ImportarExcelPreviewResponse>('/horarios/asistente/importar', formData, TIMEOUT_ASISTENTE_MS)
       setPrevisualizacion(resultado)
       setPaso(2)
     } catch (error) {
@@ -116,11 +122,11 @@ export function AsistenteHorarios() {
     setPropuesta(null)
     setBloques([])
     try {
-      const resultado = await apiPost<GenerarPropuestaResponse>('/horarios/asistente/generar-propuesta', {
-        idTrimestre,
-        idsFicha: idsFichaListas,
-        jornada,
-      })
+      const resultado = await apiPost<GenerarPropuestaResponse>(
+        '/horarios/asistente/generar-propuesta',
+        { idTrimestre, idsFicha: idsFichaListas, jornada },
+        TIMEOUT_ASISTENTE_MS
+      )
       setPropuesta(resultado)
       if (!resultado.factible || resultado.bloques.length === 0) return
 
@@ -168,7 +174,11 @@ export function AsistenteHorarios() {
       const contexto = propuesta
         ? `Propuesta con ${propuesta.bloques.length} bloques para el trimestre ${idTrimestre}, jornada ${jornada}.`
         : `Archivo ${previsualizacion?.nombreArchivo ?? ''} con ${previsualizacion?.totalFilas ?? 0} filas, ${previsualizacion?.filasConAdvertencia ?? 0} con advertencia.`
-      const resultado = await apiPost<RespuestaPreguntaHorario>('/horarios/asistente/preguntar', { pregunta, contexto })
+      const resultado = await apiPost<RespuestaPreguntaHorario>(
+        '/horarios/asistente/preguntar',
+        { pregunta, contexto },
+        TIMEOUT_ASISTENTE_MS
+      )
       setRespuestaPregunta(resultado.respuesta)
     } catch (error) {
       setRespuestaPregunta(error instanceof ApiError ? error.message : 'No se pudo responder la pregunta.')
