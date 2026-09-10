@@ -286,6 +286,12 @@ export function AsistenteHorarios() {
               )}
             </div>
 
+            {previsualizacion.advertenciaGeneral && (
+              <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                {previsualizacion.advertenciaGeneral}
+              </div>
+            )}
+
             <div className="overflow-auto rounded-xl border border-outline-variant dark:border-slate-700">
               <table className="w-full text-left text-xs">
                 <thead className="bg-surface font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">

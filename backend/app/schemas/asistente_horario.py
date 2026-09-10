@@ -33,6 +33,10 @@ class ImportarExcelPreviewResponse(BaseModel):
     filas: list[FilaImportada]
     totalFilas: int
     filasConAdvertencia: int
+    # Se llena solo cuando NINGUNA fila trajo una ficha reconocible -- en
+    # vez de que el coordinador tenga que inferirlo de 40 advertencias
+    # idénticas fila por fila, se le dice la causa probable una sola vez.
+    advertenciaGeneral: str | None = None
 
 
 class GenerarPropuestaRequest(BaseModel):
