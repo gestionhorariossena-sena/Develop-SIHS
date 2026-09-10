@@ -161,6 +161,18 @@ con los dos archivos reales, no solo hipotético.
 - 4 tests nuevos que cubren el cruce y ambas vueltas del bug de la
   columna "ficha".
 
+**Ajuste posterior**: el select de Programa (cuando no hay cruce, o el
+cruce no encontró coincidencia) no tenía salida hacia "crear nuevo" — se
+quedaba mostrando solo los programas que YA existen en el catálogo (que
+al probar en vivo eran apenas 2, sin relación con los ~8 programas
+reales del Excel). Se agregó la opción "+ No está en la lista --
+agregarlo" al select, que abre el mismo panel de creación manual
+(prellenado con lo que se sepa, vacío si no hay nada) con un botón para
+volver a la lista si fue por error. La causa real no era un bug de
+búsqueda -- el catálogo de Programas de la BD compartida está casi vacío
+todavía, hay que ir creándolo a mano o con más archivos complementarios
+como PE-04.
+
 ## Fase 4 — Motor optimizador con OR-Tools (MVP hecho)
 
 El hueco más grande del sistema: `HorarioService` **valida** horarios
