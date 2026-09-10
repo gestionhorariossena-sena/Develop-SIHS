@@ -77,6 +77,7 @@ export interface Ficha {
   fechaFinLectiva?: string | null
   fechaInicioProductiva?: string | null
   fechaFinProductiva?: string | null
+  faseActual?: number | null
   programa: Programa
   trimestre: Trimestre
   sede: Sede | null
@@ -351,6 +352,7 @@ export interface FichaCreate {
 export interface ResultadoExtraido {
   descripcion: string
   horasAsignadas: number | null
+  numeroFase: number | null
 }
 
 export interface CompetenciaExtraida {
@@ -382,6 +384,7 @@ export interface ResultadoAprendizajeCreate {
   idCompetencia: number
   idGuia?: number | null
   horasAsignadas?: number | null
+  numeroFase?: number | null
 }
 
 export interface ImportarExcelPreviewResponse {

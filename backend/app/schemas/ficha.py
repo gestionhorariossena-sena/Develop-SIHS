@@ -16,6 +16,7 @@ class FichaBase(BaseModel):
     fechaFinLectiva: date | None = None
     fechaInicioProductiva: date | None = None
     fechaFinProductiva: date | None = None
+    faseActual: int | None = None
 
 
 class FichaCreate(FichaBase):
