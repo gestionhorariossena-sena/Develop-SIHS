@@ -121,6 +121,22 @@ def previsualizar_excel(db: Session, contenido: bytes, nombre_archivo: str) -> I
         if len(filas) >= MAX_FILAS_PREVIA:
             break
 
+    advertencia_general = None
+    if filas and all(f.idFicha is None for f in filas):
+        if "ficha" not in campo_a_columna:
+            advertencia_general = (
+                "No se encontró ninguna columna de ficha reconocible en este archivo. Si es un "
+                "formato de matriz o pivote (varias filas por ficha, ej. una fila de temas, otra de "
+                "instructor y otra de ambiente por cada ficha), el asistente todavía no lo soporta -- "
+                "usa un archivo con una fila por ficha."
+            )
+        else:
+            advertencia_general = (
+                "Se encontró una columna de ficha, pero ningún valor de esa columna se pudo leer "
+                "como un número de ficha -- revisa si el archivo trae el número de ficha mezclado con "
+                "otro texto en la misma celda."
+            )
+
     return ImportarExcelPreviewResponse(
         nombreArchivo=nombre_archivo,
         hoja=ws.title,
@@ -129,6 +145,7 @@ def previsualizar_excel(db: Session, contenido: bytes, nombre_archivo: str) -> I
         filas=filas,
         totalFilas=len(filas),
         filasConAdvertencia=sum(1 for f in filas if f.advertencia),
+        advertenciaGeneral=advertencia_general,
     )
 
 
