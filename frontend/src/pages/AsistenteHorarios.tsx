@@ -13,7 +13,6 @@ import type {
   JornadaAsistente,
   Programa,
   RespuestaPreguntaHorario,
-  Sede,
   Trimestre,
 } from '../types/api'
 
@@ -74,15 +73,21 @@ export function AsistenteHorarios() {
 
   // Paso 2 -- botón "Crear ficha" por fila, para las que no existen
   // todavía en el catálogo. `filaCreandoFicha` es el número de fila cuyo
-  // formulario está abierto (uno a la vez).
+  // formulario está abierto (uno a la vez). Trimestre NO se le pregunta
+  // al coordinador: es el que ya está elegido para todo el lote (arriba
+  // en el paso 2). Sede tampoco -- se decide después, por resultado/
+  // horario (una ficha puede tener clases en sedes distintas según la
+  // jornada), no al crear la ficha. Solo el Programa puede necesitar que
+  // el coordinador confirme/corrija, porque es lo único que de verdad
+  // puede ser ambiguo (el nombre del Excel no siempre calza exacto con
+  // el catálogo).
   const [programas, setProgramas] = useState<Programa[]>([])
-  const [sedes, setSedes] = useState<Sede[]>([])
   const [filaCreandoFicha, setFilaCreandoFicha] = useState<number | null>(null)
-  const [formCreacion, setFormCreacion] = useState<{ idPrograma: string; idTrimestre: string; idSede: string }>({
+  const [formCreacion, setFormCreacion] = useState<{ idPrograma: string; programaCoincidido: boolean }>({
     idPrograma: '',
-    idTrimestre: '',
-    idSede: '',
+    programaCoincidido: false,
   })
+  const [editandoPrograma, setEditandoPrograma] = useState(false)
   const [creandoFicha, setCreandoFicha] = useState(false)
   const [errorCreacionFicha, setErrorCreacionFicha] = useState<string | null>(null)
 
@@ -107,35 +112,38 @@ export function AsistenteHorarios() {
       })
       .catch(() => {})
     apiGet<Programa[]>('/programas/').then(setProgramas).catch(() => {})
-    apiGet<Sede[]>('/sedes').then(setSedes).catch(() => {})
   }, [])
 
   function abrirCreacionFicha(fila: FilaImportada) {
     setFilaCreandoFicha(fila.fila)
     setErrorCreacionFicha(null)
-    // Intento simple de pre-selección: si el nombre del programa leído del
-    // Excel coincide (sin importar mayúsculas) con uno ya existente, se
-    // preselecciona -- el coordinador igual puede cambiarlo antes de crear.
+    setEditandoPrograma(false)
+    // Pre-selección: si el nombre del programa leído del Excel coincide
+    // (sin importar mayúsculas/espacios) con uno ya existente, se
+    // reconoce solo -- el coordinador solo confirma. Si no hay
+    // coincidencia, no hay forma de adivinarlo (el programa puede
+    // simplemente no existir todavía en el catálogo), así que se le pide
+    // que elija.
     const coincidencia = fila.programa
       ? programas.find((p) => p.nombrePrograma.trim().toLowerCase() === fila.programa!.trim().toLowerCase())
       : undefined
     setFormCreacion({
       idPrograma: coincidencia ? String(coincidencia.idPrograma) : '',
-      idTrimestre: idTrimestre ? String(idTrimestre) : '',
-      idSede: '',
+      programaCoincidido: Boolean(coincidencia),
     })
   }
 
   async function crearFicha(fila: FilaImportada) {
-    if (!fila.codigoFicha || !formCreacion.idPrograma || !formCreacion.idTrimestre) return
+    if (!fila.codigoFicha || !formCreacion.idPrograma || !idTrimestre) return
     setCreandoFicha(true)
     setErrorCreacionFicha(null)
     try {
       const data: FichaCreate = {
         codigoFicha: fila.codigoFicha,
         idPrograma: Number(formCreacion.idPrograma),
-        idTrimestre: Number(formCreacion.idTrimestre),
-        idSede: formCreacion.idSede ? Number(formCreacion.idSede) : null,
+        idTrimestre,
+        // La sede se define después, por resultado/horario -- no acá.
+        idSede: null,
       }
       const creada = await apiPost<Ficha>('/fichas/', data)
       // Se actualiza la fila en el estado local -- no hace falta re-importar
@@ -401,65 +409,51 @@ export function AsistenteHorarios() {
                       {filaCreandoFicha === f.fila && (
                         <tr>
                           <td colSpan={5} className="bg-surface px-3 py-3 dark:bg-slate-900">
-                            <div className="flex flex-wrap items-end gap-3">
-                              <label className="text-xs text-on-surface-variant dark:text-slate-300">
-                                Programa
-                                <select
-                                  value={formCreacion.idPrograma}
-                                  onChange={(e) => setFormCreacion((s) => ({ ...s, idPrograma: e.target.value }))}
-                                  className="mt-1 block rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
-                                >
-                                  <option value="">Selecciona…</option>
-                                  {programas.map((p) => (
-                                    <option key={p.idPrograma} value={p.idPrograma}>
-                                      {p.nombrePrograma}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                              <label className="text-xs text-on-surface-variant dark:text-slate-300">
-                                Trimestre
-                                <select
-                                  value={formCreacion.idTrimestre}
-                                  onChange={(e) => setFormCreacion((s) => ({ ...s, idTrimestre: e.target.value }))}
-                                  className="mt-1 block rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
-                                >
-                                  <option value="">Selecciona…</option>
-                                  {trimestres.map((t) => (
-                                    <option key={t.idTrimestre} value={t.idTrimestre}>
-                                      {t.nombre}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
-                              <label className="text-xs text-on-surface-variant dark:text-slate-300">
-                                Sede (opcional)
-                                <select
-                                  value={formCreacion.idSede}
-                                  onChange={(e) => setFormCreacion((s) => ({ ...s, idSede: e.target.value }))}
-                                  className="mt-1 block rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
-                                >
-                                  <option value="">Sin definir</option>
-                                  {sedes.map((s) => (
-                                    <option key={s.idSede} value={s.idSede}>
-                                      {s.nombreSede}
-                                    </option>
-                                  ))}
-                                </select>
-                              </label>
+                            <div className="flex flex-wrap items-center gap-3">
+                              {formCreacion.programaCoincidido && !editandoPrograma ? (
+                                <span className="text-xs text-on-surface-variant dark:text-slate-300">
+                                  Programa reconocido:{' '}
+                                  <strong className="text-on-surface dark:text-slate-100">
+                                    {programas.find((p) => String(p.idPrograma) === formCreacion.idPrograma)?.nombrePrograma}
+                                  </strong>{' '}
+                                  <button type="button" onClick={() => setEditandoPrograma(true)} className="text-primary hover:underline dark:text-sena-400">
+                                    cambiar
+                                  </button>
+                                </span>
+                              ) : (
+                                <label className="text-xs text-on-surface-variant dark:text-slate-300">
+                                  {f.programa ? `No encontramos "${f.programa}" -- selecciona el programa:` : 'Programa'}
+                                  <select
+                                    value={formCreacion.idPrograma}
+                                    onChange={(e) => setFormCreacion((s) => ({ ...s, idPrograma: e.target.value }))}
+                                    className="mt-1 block rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
+                                  >
+                                    <option value="">Selecciona…</option>
+                                    {programas.map((p) => (
+                                      <option key={p.idPrograma} value={p.idPrograma}>
+                                        {p.nombrePrograma}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              )}
+
+                              {/* Trimestre: el mismo ya elegido para todo el lote, no se
+                                  vuelve a preguntar. Sede: se decide después, por
+                                  resultado/horario (una ficha puede tener clases en
+                                  sedes distintas), no acá. */}
+                              <span className="text-xs text-on-surface-variant dark:text-slate-400">
+                                Trimestre: <strong className="text-on-surface dark:text-slate-200">{trimestres.find((t) => t.idTrimestre === idTrimestre)?.nombre ?? '—'}</strong>
+                              </span>
+
                               <button
                                 type="button"
-                                disabled={creandoFicha || !formCreacion.idPrograma || !formCreacion.idTrimestre}
+                                disabled={creandoFicha || !formCreacion.idPrograma}
                                 onClick={() => void crearFicha(f)}
                                 className="rounded-lg bg-sena-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                {creandoFicha ? 'Creando…' : `Crear ficha ${f.codigoFicha}`}
+                                {creandoFicha ? 'Creando…' : `Confirmar y crear ficha ${f.codigoFicha}`}
                               </button>
-                              {!programas.some((p) => String(p.idPrograma) === formCreacion.idPrograma) && f.programa && (
-                                <span className="text-xs text-amber-700 dark:text-amber-400">
-                                  No encontramos "{f.programa}" en Programas -- créalo ahí primero si no existe.
-                                </span>
-                              )}
                               {errorCreacionFicha && <span className="text-xs text-red-700 dark:text-red-400">{errorCreacionFicha}</span>}
                             </div>
                           </td>
