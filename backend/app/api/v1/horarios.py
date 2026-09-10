@@ -3,6 +3,9 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.ai.client import AIServiceError
+from app.ai.schemas import ResumenAuditoriaIA
+from app.ai.tasks.explain_conflict import resumir_auditoria
 from app.core.database import get_db
 from app.core.supabase_auth import require_roles
 from app.schemas.horario import (
@@ -85,6 +88,34 @@ def auditar_cruces(
             "tipos": sorted({c["tipo"] for c in conflictos}),
         },
     }
+
+
+@router.post("/auditoria-cruces/resumen-ia", response_model=ResumenAuditoriaIA)
+def resumir_auditoria_con_ia(
+    idTrimestre: int | None = None,
+    idSede: int | None = None,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_puede_programar),
+):
+    """Fase 2 de _Docs/Documentación general/PLAN_INTEGRACION_IA.md.
+    POST (no GET) a propósito: dispara una llamada real a un LLM, no es
+    gratis ni instantáneo como el resto de /horarios -- el coordinador lo
+    pide explícitamente (botón "Resumir con IA"), no se dispara solo al
+    cargar la pantalla de auditoría.
+
+    No reemplaza el `mensaje` determinista de cada conflicto individual
+    (eso lo sigue calculando Python en HorarioService). Esto agrega una
+    lectura de conjunto: con decenas de conflictos, ver el patrón y por
+    dónde empezar es algo que el código determinista no hace."""
+    conflictos = HorarioService.auditar_conflictos(db, id_trimestre=idTrimestre, id_sede=idSede)
+
+    if not conflictos:
+        return ResumenAuditoriaIA(resumen="No se detectaron cruces en esta auditoría.", prioridades=[])
+
+    try:
+        return resumir_auditoria(conflictos)
+    except AIServiceError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @router.post("/", response_model=HorarioResponse, status_code=201)
