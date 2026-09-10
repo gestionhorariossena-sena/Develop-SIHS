@@ -48,7 +48,8 @@ def test_importar_devuelve_vista_previa(client, db_session, autenticar_como, mon
     assert respuesta.status_code == 200
     cuerpo = respuesta.json()
     assert cuerpo["totalFilas"] == 1
-    assert cuerpo["filas"][0]["idFicha"] == 100
+    assert cuerpo["filas"][0]["codigoFicha"] == "100"
+    assert cuerpo["filas"][0]["fichaExiste"] is False
 
 
 def test_generar_propuesta_sin_fichas_no_revienta(client, db_session, autenticar_como):

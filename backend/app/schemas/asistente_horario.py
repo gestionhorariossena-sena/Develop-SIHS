@@ -17,8 +17,14 @@ class ColumnaClasificada(BaseModel):
 
 class FilaImportada(BaseModel):
     fila: int
-    idFicha: int | None
+    # El número de ficha tal como viene en el Excel -- es codigoFicha
+    # (texto, el número real de SENA), NO el idFicha interno de la BD
+    # (SERIAL, autoincremental, sin relación con el número real).
+    codigoFicha: str | None
     fichaExiste: bool
+    # Solo se llena cuando fichaExiste=True -- el idFicha interno real,
+    # necesario para /asistente/generar-propuesta.
+    idFicha: int | None = None
     programa: str | None
     jornada: str | None
     instructorNombre: str | None
