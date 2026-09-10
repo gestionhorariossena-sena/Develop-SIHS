@@ -173,6 +173,29 @@ búsqueda -- el catálogo de Programas de la BD compartida está casi vacío
 todavía, hay que ir creándolo a mano o con más archivos complementarios
 como PE-04.
 
+**Segundo ajuste, encontrado probando en vivo**: crear una ficha con un
+Programa nuevo (por el flujo de arriba) crea el Programa, pero NO crea
+ningún `CompetenciaFormacion`/`ResultadoAprendizaje` -- ese contenido
+curricular no viene en ninguno de los Excel que se han probado
+(`LIDERES DE FICHA`, `PE-04`) y no se inventa. El resultado real: al
+generar la propuesta para esas fichas, `generar_propuesta` no encontraba
+nada pendiente y devolvía bloques vacíos con el mensaje "ya tienen todos
+sus resultados programados" -- **engañoso**, la causa real era "este
+programa no tiene resultados de aprendizaje definidos todavía", no que
+ya estuviera todo hecho. El paso 3 del frontend, además, solo mostraba
+ese mensaje cuando la propuesta era infactible, no cuando venía vacía
+por esta razón -- el coordinador se quedaba con una tabla vacía y un
+botón "Confirmar" deshabilitado sin ninguna explicación, y sin ningún
+botón para reintentar. Corregido: `generar_propuesta` distingue las dos
+causas, el frontend muestra el mensaje en ambos casos, y se agregó un
+botón "Generar propuesta de nuevo" en el paso 3 (antes solo se generaba
+una vez, al entrar desde el paso 2, sin forma de reintentar).
+
+Pendiente real para que esto funcione de punta a punta con fichas
+nuevas: alguna forma de cargar competencias/resultados de aprendizaje
+por programa -- hoy solo existe para los 2 programas de prueba
+originales, cargados a mano en la BD antes de esta sesión.
+
 ## Fase 4 — Motor optimizador con OR-Tools (MVP hecho)
 
 El hueco más grande del sistema: `HorarioService` **valida** horarios
