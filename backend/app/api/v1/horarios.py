@@ -130,6 +130,7 @@ def resumir_auditoria_con_ia(
 @router.post("/asistente/importar", response_model=ImportarExcelPreviewResponse)
 async def importar_excel_vista_previa(
     archivo: UploadFile,
+    archivo_complementario: UploadFile | None = None,
     db: Session = Depends(get_db),
     usuario=Depends(require_puede_programar),
 ):
@@ -137,10 +138,22 @@ async def importar_excel_vista_previa(
     clasifica sus columnas (Fase 1) y se arma una vista previa -- nada se
     escribe en la base de datos acá. Las fichas que el Excel trae pero
     que no existen todavía en el catálogo de SIHS se marcan como
-    pendientes, no se crean automáticamente."""
+    pendientes, no se crean automáticamente.
+
+    `archivo_complementario` opcional: un segundo archivo con datos que
+    el principal no trae (ej. nivel de formación, coordinación, fechas),
+    cruzado por número de ficha -- ver PLAN_INTEGRACION_IA.md, Fase 3.
+    """
     contenido = await archivo.read()
+    contenido_complementario = await archivo_complementario.read() if archivo_complementario else None
     try:
-        return previsualizar_excel(db, contenido, archivo.filename or "archivo.xlsx")
+        return previsualizar_excel(
+            db,
+            contenido,
+            archivo.filename or "archivo.xlsx",
+            contenido_complementario,
+            archivo_complementario.filename if archivo_complementario else None,
+        )
     except AIServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:  # noqa: BLE001 -- archivo corrupto, hoja vacía, etc.
