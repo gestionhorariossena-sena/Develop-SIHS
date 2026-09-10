@@ -91,27 +91,34 @@ def previsualizar_excel(db: Session, contenido: bytes, nombre_archivo: str) -> I
             continue
 
         ficha_texto = _valor(fila_valores, "ficha")
+        codigo_ficha: str | None = None
         id_ficha: int | None = None
         advertencia: str | None = None
         ficha_existe = False
 
         if ficha_texto is None:
             advertencia = "No se reconoció la columna de ficha en esta fila."
+        elif not ficha_texto.isdigit():
+            # Dato real sucio (ej. "3171645-65-668", celda combinada con
+            # varias fichas) -- no es un codigoFicha válido de un vistazo.
+            advertencia = f"Ficha en formato no reconocido ({ficha_texto!r}) -- requiere revisión manual."
         else:
-            try:
-                id_ficha = int(ficha_texto)
-            except ValueError:
-                advertencia = f"Ficha en formato no reconocido ({ficha_texto!r}) -- requiere revisión manual."
+            codigo_ficha = ficha_texto
+            # codigoFicha es texto (el número real de SENA), NO el idFicha
+            # interno -- son columnas distintas, nunca hay que buscar por PK acá.
+            ficha_db = db.query(Ficha).filter(Ficha.codigoFicha == codigo_ficha).first()
+            if ficha_db:
+                ficha_existe = True
+                id_ficha = ficha_db.idFicha
             else:
-                ficha_existe = db.get(Ficha, id_ficha) is not None
-                if not ficha_existe:
-                    advertencia = f"La ficha {id_ficha} no existe todavía en el catálogo de SIHS."
+                advertencia = f"La ficha {codigo_ficha} no existe todavía en el catálogo de SIHS."
 
         filas.append(
             FilaImportada(
                 fila=numero_fila,
-                idFicha=id_ficha,
+                codigoFicha=codigo_ficha,
                 fichaExiste=ficha_existe,
+                idFicha=id_ficha,
                 programa=_valor(fila_valores, "programa"),
                 jornada=_valor(fila_valores, "jornada"),
                 instructorNombre=_valor(fila_valores, "instructor"),

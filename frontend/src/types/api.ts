@@ -301,12 +301,26 @@ export interface ColumnaClasificada {
 
 export interface FilaImportada {
   fila: number
-  idFicha: number | null
+  // El número de ficha del Excel (codigoFicha, texto) -- NO el idFicha
+  // interno de la BD (autoincremental, sin relación con el número real).
+  codigoFicha: string | null
   fichaExiste: boolean
+  // Solo viene lleno cuando fichaExiste=true.
+  idFicha: number | null
   programa: string | null
   jornada: string | null
   instructorNombre: string | null
   advertencia: string | null
+}
+
+// Espejo de FichaCreate (backend/app/schemas/ficha.py) -- usado por el
+// botón "Crear ficha" del asistente (paso 2), que reusa POST /fichas/ ya
+// existente en vez de un endpoint nuevo.
+export interface FichaCreate {
+  codigoFicha: string
+  idPrograma: number
+  idTrimestre: number
+  idSede?: number | null
 }
 
 export interface ImportarExcelPreviewResponse {
