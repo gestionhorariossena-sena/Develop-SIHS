@@ -98,13 +98,41 @@ módulo reusable). Cuando se aborde: usar `ai.tasks.classify_document`
 patrón de confianza documentado en la arquitectura para decidir qué se
 importa solo y qué va a revisión humana.
 
-## Fase 4 — Motor optimizador (OR-Tools)
+## Fase 4 — Motor optimizador con OR-Tools (MVP hecho)
 
-El hueco más grande del sistema hoy: `HorarioService` **valida** horarios
-armados a mano, no los **genera**. No es tarea de IA — es CP-SAT/OR-Tools
-puro. No depende de nada de este plan de IA, pero es la pieza de mayor
-impacto real del "motor de creación de horarios" y probablemente merece
-su propio documento de plan (no está en el alcance de esta sesión).
+El hueco más grande del sistema: `HorarioService` **valida** horarios
+armados a mano, no los **generaba**. No es tarea de IA — es CP-SAT puro
+(`ortools`, agregado a `requirements.txt`), requisito 7 de la
+arquitectura: las restricciones duras nunca se delegan a un LLM.
+
+- `app/scheduling/generator.py`: `generar_horario(necesidades)` resuelve
+  con CP-SAT la asignación de franja horaria + patrón de días +
+  instructor + ambiente para una lista de `NecesidadHorario` (ficha +
+  resultado + jornada + candidatos), sin choques de instructor, ficha ni
+  ambiente. Devuelve `None` si el modelo es infactible.
+- **Simplificación deliberada del MVP**: un bloque semanal por
+  necesidad, de un catálogo fijo de franjas (3 por jornada) y patrones de
+  día (9: sueltos + pares no consecutivos típicos de SENA). No reparte
+  horas en varios bloques todavía ni deja que el solver elija cuántos
+  bloques necesita una ficha — cubre el caso real más común, generalizar
+  es la siguiente iteración, no un cambio de arquitectura.
+- 6 tests (`test_scheduling_generator.py`): asignación sin choques
+  compartiendo instructor/ambiente, misma ficha con recursos distintos,
+  infactibilidad real, validación de entradas.
+- `backend/scripts/demo_flujo_completo_ia_optimizador.py`: demo manual
+  (no pytest) que corre el flujo pedido de punta a punta con datos
+  reales — **corrido en vivo esta sesión**: leyó
+  `LIDERES DE FICHA 2026_pruebas.xlsx` (8 fichas reales, 2 filas con
+  ficha en formato sucio saltadas con aviso), clasificó sus columnas con
+  Gemini (Fase 1), generó 8 bloques con OR-Tools, los persistió con
+  `HorarioService.crear` sobre SQLite en memoria (nunca toca Supabase), y
+  `HorarioService.auditar_conflictos` confirmó **0 conflictos**.
+
+Pendiente para la siguiente iteración: exponerlo como endpoint real
+(`POST /horarios/generar-propuesta`, sujeto a revisión humana antes de
+guardar — nunca autopublicar), permitir varios bloques por necesidad, y
+usar el catálogo real de instructores/especialidades/ambientes en vez de
+las listas de "candidatos" que hoy arma quien llama al generador.
 
 ## Fase 5 — Aprendizaje sin gastar IA
 
