@@ -128,11 +128,37 @@ arquitectura: las restricciones duras nunca se delegan a un LLM.
   `HorarioService.crear` sobre SQLite en memoria (nunca toca Supabase), y
   `HorarioService.auditar_conflictos` confirmó **0 conflictos**.
 
-Pendiente para la siguiente iteración: exponerlo como endpoint real
-(`POST /horarios/generar-propuesta`, sujeto a revisión humana antes de
-guardar — nunca autopublicar), permitir varios bloques por necesidad, y
-usar el catálogo real de instructores/especialidades/ambientes en vez de
-las listas de "candidatos" que hoy arma quien llama al generador.
+Pendiente para más adelante: permitir varios bloques por necesidad, y
+filtrar candidatos por especialidad real (hoy usa todos los instructores
+activos, no cruza por especialidad/competencia).
+
+## Asistente de programación — el wizard conectado de punta a punta (hecho)
+
+`POST /horarios/generar-propuesta` ya existe y está conectado a un
+frontend real, no solo al script de demo. Mismo día, misma sesión:
+
+- `POST /horarios/asistente/importar`: sube un Excel real, la IA
+  clasifica columnas (Fase 1), arma vista previa. Fichas que el Excel
+  trae pero no existen en el catálogo se marcan pendientes — no se crean
+  solas (requiere pasar primero por Fichas).
+- `POST /horarios/asistente/generar-propuesta`: para fichas existentes,
+  arma las necesidades desde sus resultados de aprendizaje sin horario en
+  el trimestre (relaciones reales Ficha → Programa → Competencia →
+  Resultado) y llama al optimizador. No persiste nada.
+- `POST /horarios/asistente/preguntar`: la barra "¿En qué te ayudo?" del
+  mockup — una pregunta puntual, `responder_pregunta`, sin tocar la BD.
+- `frontend/src/pages/AsistenteHorarios.tsx` (`/horarios/asistente-ia`,
+  nav "Asistente IA" — separado de `/horarios/nuevo`, que sigue siendo el
+  Constructor manual de un horario a la vez): los 4 pasos reales del
+  mockup. Antes de dejar confirmar, cada bloque propuesto pasa por
+  `POST /horarios/validar` (el dry-run real que ya existía) como prueba
+  completa. Confirmar llama a `POST /horarios/` (ya existente) bloque por
+  bloque, mostrando qué se guardó y qué falló.
+
+Verificado: `pytest` completo (159 passed), `npm test` completo (205
+passed), `tsc -b` limpio, `eslint` sin errores, `npm run build` exitoso.
+**No probado en navegador real** — necesita el backend corriendo con
+Supabase configurado localmente.
 
 ## Fase 5 — Aprendizaje sin gastar IA
 
