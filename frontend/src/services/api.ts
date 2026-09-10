@@ -56,7 +56,7 @@ export class ApiError extends Error {
  * archivo — solo llamar a apiGet/apiPost/etc. con la ruta, igual que en
  * Dashboard.tsx. Ver frontend/ESTRUCTURA.md para más detalle.
  */
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, options: RequestInit = {}, timeoutMs: number = TIMEOUT_MS): Promise<T> {
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -70,7 +70,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   }
 
   const controller = new AbortController()
-  const timeoutId = window.setTimeout(() => controller.abort(), TIMEOUT_MS)
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
 
   try {
     const response = await fetch(`${API_URL}${path}`, {
@@ -114,14 +114,19 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 export const apiGet = <T>(path: string) => request<T>(path)
 
-export const apiPost = <T>(path: string, body?: unknown) =>
-  request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined })
+// `timeoutMs` opcional: el default (15s) alcanza para el CRUD normal, pero
+// se queda corto para endpoints que dependen de una llamada real a IA o de
+// resolver un modelo de optimización (el asistente de programación) --
+// esas pasan su propio timeout más generoso en vez de tocar el default acá.
+export const apiPost = <T>(path: string, body?: unknown, timeoutMs?: number) =>
+  request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }, timeoutMs)
 
 /** Para endpoints con UploadFile (multipart) -- `request()` ya detecta
  * FormData y no le pone Content-Type: JSON (el navegador arma el
  * boundary del multipart solo). No usar apiPost acá: haría
  * JSON.stringify(FormData) y se perdería el archivo. */
-export const apiPostForm = <T>(path: string, formData: FormData) => request<T>(path, { method: 'POST', body: formData })
+export const apiPostForm = <T>(path: string, formData: FormData, timeoutMs?: number) =>
+  request<T>(path, { method: 'POST', body: formData }, timeoutMs)
 
 export const apiPut = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined })
