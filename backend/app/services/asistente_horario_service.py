@@ -36,7 +36,7 @@ from app.schemas.asistente_horario import (
     GenerarPropuestaResponse,
     ImportarExcelPreviewResponse,
 )
-from app.scheduling.generator import NecesidadHorario, generar_horario
+from app.scheduling.generator import FRANJAS_POR_JORNADA, NecesidadHorario, generar_horario
 
 CONFIANZA_MINIMA = 0.7
 MAX_FILAS_PREVIA = 50
@@ -293,7 +293,14 @@ def _resultados_pendientes(db: Session, ficha: Ficha, id_trimestre: int) -> list
     tienen un horario activo en este trimestre -- son los que hay que
     programar. No depende del Excel: usa las relaciones reales ya
     existentes en la BD (Ficha -> Programa -> CompetenciaFormacion ->
-    ResultadoAprendizaje)."""
+    ResultadoAprendizaje).
+
+    Si la ficha tiene `faseActual` (en qué fase de SU pénsum va, 1=TRIM
+    I..4=TRIM IV -- ver PLAN_INTEGRACION_IA.md), solo se traen los
+    resultados de esa fase. Programas cuyo currículo no trae fase
+    (`numeroFase` nulo en todos los resultados, import viejo desde la
+    hoja combinada) siguen sin filtrarse -- si se filtrara iban a
+    desaparecer todos por no calzar con ningún número."""
     competencias = db.query(CompetenciaFormacion).filter(CompetenciaFormacion.idPrograma == ficha.idPrograma).all()
     ids_competencia = [c.idCompetencia for c in competencias]
     if not ids_competencia:
@@ -303,6 +310,9 @@ def _resultados_pendientes(db: Session, ficha: Ficha, id_trimestre: int) -> list
         db.query(ResultadoAprendizaje).filter(ResultadoAprendizaje.idCompetencia.in_(ids_competencia)).all()
     )
 
+    if ficha.faseActual is not None and any(r.numeroFase is not None for r in resultados):
+        resultados = [r for r in resultados if r.numeroFase == ficha.faseActual]
+
     ids_con_horario = {
         h.idResultado
         for h in db.query(Horario)
@@ -310,6 +320,43 @@ def _resultados_pendientes(db: Session, ficha: Ficha, id_trimestre: int) -> list
         .all()
     }
     return [r for r in resultados if r.idResultado not in ids_con_horario]
+
+
+def _diagnostico_infactibilidad(necesidades: list[NecesidadHorario], jornada: str) -> str:
+    """Mensaje determinista (sin IA -- las restricciones duras no las
+    decide un LLM) cuando el solver no encuentra combinación sin choques.
+    No repite exactamente por qué CP-SAT falló (eso es una prueba de
+    infactibilidad, no algo que valga la pena mostrarle al coordinador);
+    en cambio da una cota simple de capacidad vs demanda para que sepa
+    qué palanca mover: menos fichas/resultados por lote, más
+    instructores/ambientes, o definir la fase actual de cada ficha para
+    no intentar programar currículo de trimestres que todavía no tocan."""
+    dias_por_semana = 5
+    franjas = len(FRANJAS_POR_JORNADA.get(jornada, []))
+
+    ids_instructor: set[str] = set()
+    ids_ambiente: set[int] = set()
+    for n in necesidades:
+        ids_instructor.update(n.instructores_candidatos)
+        ids_ambiente.update(n.ambientes_candidatos)
+
+    capacidad_instructor = len(ids_instructor) * franjas * dias_por_semana
+    capacidad_ambiente = len(ids_ambiente) * franjas * dias_por_semana
+    demanda = len(necesidades)
+
+    partes = [
+        f"No se encontró una combinación sin choques: hay {demanda} resultado(s) por programar en la "
+        f"jornada {jornada}, pero la capacidad esa semana es de {capacidad_instructor} bloque(s) con los "
+        f"{len(ids_instructor)} instructor(es) disponibles y {capacidad_ambiente} con los {len(ids_ambiente)} "
+        "ambiente(s) disponibles (franjas × 5 días)."
+    ]
+    if demanda > min(capacidad_instructor, capacidad_ambiente):
+        partes.append(
+            "Reduce cuántas fichas o resultados generas juntos en un mismo lote, o define la fase "
+            "actual del pénsum de cada ficha (en Fichas) si el programa ya tiene su currículo dividido "
+            "por trimestre -- así solo se programan los resultados que tocan ahora, no todo el programa."
+        )
+    return " ".join(partes)
 
 
 def generar_propuesta(
@@ -382,7 +429,7 @@ def generar_propuesta(
     if asignacion is None:
         return GenerarPropuestaResponse(
             bloques=[], factible=False,
-            mensaje="No se encontró una combinación sin choques con los instructores y ambientes disponibles.",
+            mensaje=_diagnostico_infactibilidad(necesidades, jornada),
         )
 
     ambientes_por_id = {a.id: a for a in db.query(Ambiente).all()}

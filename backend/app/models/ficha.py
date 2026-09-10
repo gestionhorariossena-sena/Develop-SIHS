@@ -18,6 +18,11 @@ class Ficha(Base):
     fechaFinLectiva = Column(Date, nullable=True)
     fechaInicioProductiva = Column(Date, nullable=True)
     fechaFinProductiva = Column(Date, nullable=True)
+    # En qué fase de SU pénsum va la ficha ahora mismo (1=TRIM I .. 4=TRIM
+    # IV). v1 manual -- ningún Excel real trae este dato por ficha
+    # todavía. Nullable: vacío = generar_propuesta no filtra por fase (ver
+    # migración 2fcba25519cd).
+    faseActual = Column(Integer, nullable=True)
 
     programa = relationship("Programa")
     trimestre = relationship("Trimestre")

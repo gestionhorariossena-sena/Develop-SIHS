@@ -11,8 +11,22 @@ llamando a POST /competencias-formacion/ y POST /resultados-aprendizaje/
 (ya existentes) por cada fila, igual que ImportarArchivo.tsx hace para
 otros catálogos -- no hace falta un endpoint de "crear todo junto"
 nuevo.
+
+Fases del pénsum (2026-09-10): el archivo real "Planeación Cadena de
+Formación.xlsx" trae, además de la hoja combinada con todo el pénsum
+("Planeacion Cadena", que es la que se leía antes de este cambio, sin
+ninguna fase), hojas separadas por trimestre ("TRIM I".."TRIM IV") con
+el mismo formato de columnas. Cuando existen esas hojas se usan en vez
+de la combinada: cada resultado queda etiquetado con su
+`numeroFase` (1=TRIM I..4=TRIM IV) -- necesario para que
+`generar_propuesta` no intente programar los ~30 resultados de todo un
+programa de 2 años en una sola semana (ver el bug real documentado en
+PLAN_INTEGRACION_IA.md). Un mismo resultado puede aparecer en dos hojas
+de trimestre consecutivas en el Excel real (se dicta progresivamente) --
+eso se respeta tal cual: dos filas, una por fase.
 """
 
+import re
 from io import BytesIO
 
 import openpyxl
@@ -20,6 +34,16 @@ import openpyxl
 from app.schemas.curriculo import CompetenciaExtraida, PreviewCurriculoResponse, ResultadoExtraido
 
 _FILAS_A_BUSCAR_ENCABEZADO = 30
+
+_ROMANOS_A_NUMERO = {"I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6, "VII": 7}
+_PATRON_HOJA_TRIMESTRE = re.compile(r"^TRIM\.?\s*([IVX]+)$", re.IGNORECASE)
+
+
+def _numero_fase_de_hoja(nombre_hoja: str) -> int | None:
+    coincidencia = _PATRON_HOJA_TRIMESTRE.match(nombre_hoja.strip())
+    if not coincidencia:
+        return None
+    return _ROMANOS_A_NUMERO.get(coincidencia.group(1).upper())
 
 
 def _fila_encabezado_curriculo(ws) -> tuple[int, int, int, int | None] | None:
@@ -40,23 +64,20 @@ def _fila_encabezado_curriculo(ws) -> tuple[int, int, int, int | None] | None:
     return None
 
 
-def previsualizar_curriculo(contenido: bytes, nombre_archivo: str) -> PreviewCurriculoResponse:
-    wb = openpyxl.load_workbook(BytesIO(contenido), data_only=True)
-    ws = wb.worksheets[0]
-
+def _extraer_de_hoja(
+    ws,
+    numero_fase: int | None,
+    resultados_por_competencia: dict[str, list[ResultadoExtraido]],
+    orden_competencias: list[str],
+) -> None:
     encabezado = _fila_encabezado_curriculo(ws)
     if encabezado is None:
-        raise ValueError(
-            'No se encontraron las columnas "COMPETENCIA" y "RESULTADOS DE APRENDIZAJE" en este '
-            "archivo -- no parece ser un Formato de Planeación Pedagógica."
-        )
+        return
     fila_encabezado, idx_competencia, idx_resultados, idx_horas = encabezado
 
     # COMPETENCIA suele venir en celdas combinadas -- el valor solo
     # aparece en la primera fila del grupo, las siguientes están vacías
     # (mismo patrón que Excel real de SENA en ambos archivos probados).
-    resultados_por_competencia: dict[str, list[ResultadoExtraido]] = {}
-    orden_competencias: list[str] = []
     competencia_actual: str | None = None
 
     for fila_valores in ws.iter_rows(min_row=fila_encabezado + 1, values_only=True):
@@ -79,7 +100,36 @@ def previsualizar_curriculo(contenido: bytes, nombre_archivo: str) -> PreviewCur
                 horas = int(valor_horas)
 
         resultados_por_competencia[competencia_actual].append(
-            ResultadoExtraido(descripcion=str(valor_resultado).strip(), horasAsignadas=horas)
+            ResultadoExtraido(descripcion=str(valor_resultado).strip(), horasAsignadas=horas, numeroFase=numero_fase)
+        )
+
+
+def previsualizar_curriculo(contenido: bytes, nombre_archivo: str) -> PreviewCurriculoResponse:
+    wb = openpyxl.load_workbook(BytesIO(contenido), data_only=True)
+
+    hojas_trimestre = [
+        (ws, _numero_fase_de_hoja(ws.title)) for ws in wb.worksheets if _numero_fase_de_hoja(ws.title) is not None
+    ]
+
+    resultados_por_competencia: dict[str, list[ResultadoExtraido]] = {}
+    orden_competencias: list[str] = []
+
+    if hojas_trimestre:
+        # Preferir las hojas por trimestre (TRIM I..IV) sobre la hoja
+        # combinada -- traen la fase de cada resultado, la combinada no.
+        hojas_trimestre.sort(key=lambda par: par[1])
+        for ws, numero_fase in hojas_trimestre:
+            _extraer_de_hoja(ws, numero_fase, resultados_por_competencia, orden_competencias)
+        nombre_hoja_reportado = ", ".join(ws.title for ws, _ in hojas_trimestre)
+    else:
+        ws = wb.worksheets[0]
+        _extraer_de_hoja(ws, None, resultados_por_competencia, orden_competencias)
+        nombre_hoja_reportado = ws.title
+
+    if not orden_competencias:
+        raise ValueError(
+            'No se encontraron las columnas "COMPETENCIA" y "RESULTADOS DE APRENDIZAJE" en este '
+            "archivo -- no parece ser un Formato de Planeación Pedagógica."
         )
 
     competencias = [
@@ -90,7 +140,7 @@ def previsualizar_curriculo(contenido: bytes, nombre_archivo: str) -> PreviewCur
 
     return PreviewCurriculoResponse(
         nombreArchivo=nombre_archivo,
-        hoja=ws.title,
+        hoja=nombre_hoja_reportado,
         competencias=competencias,
         totalCompetencias=len(competencias),
         totalResultados=sum(len(c.resultados) for c in competencias),
