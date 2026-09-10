@@ -59,6 +59,7 @@ const NAV: GrupoNav[] = [
     grupo: 'Programación',
     items: [
       { etiqueta: 'Horarios', ruta: '/horarios/nuevo', soloGestion: true },
+      { etiqueta: 'Asistente IA', ruta: '/horarios/asistente-ia', soloGestion: true },
       { etiqueta: 'Horarios completos', ruta: '/horarios/completos', soloGestion: true },
       { etiqueta: 'Historial de horarios', ruta: '/horarios/historial', soloGestion: true },
       { etiqueta: 'Vista por fichas', ruta: '/vista-fichas', soloGestion: true },
