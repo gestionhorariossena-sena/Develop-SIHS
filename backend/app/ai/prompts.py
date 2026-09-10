@@ -59,3 +59,22 @@ Responde ÚNICAMENTE JSON válido con esta forma exacta, sin markdown ni
 texto adicional:
 {{"resumen": "...", "prioridades": ["...", "..."]}}
 """
+
+
+def prompt_responder_pregunta(pregunta: str, contexto: str) -> str:
+    return f"""Eres un asistente para el coordinador académico de SIHS
+(SENA, Colombia), que está revisando un horario puntual.
+
+Contexto del bloque/conflicto que el coordinador está viendo (ya
+calculado por el sistema, no lo reinterpretes ni inventes datos nuevos):
+{contexto}
+
+Pregunta del coordinador: "{pregunta}"
+
+Responde en español, en una o dos frases, tono claro y directo, sin
+tecnicismos ni nombres de herramientas o librerías.
+
+Responde ÚNICAMENTE JSON válido con esta forma exacta, sin markdown ni
+texto adicional:
+{{"respuesta": "..."}}
+"""
