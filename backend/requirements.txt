@@ -42,3 +42,6 @@ reportlab==5.0.1
 # _Docs/Documentación general/PLAN_INTEGRACION_IA.md) -- CP-SAT resuelve
 # la asignación día/franja/instructor/ambiente, sin IA de por medio.
 ortools==9.15.6755
+# Requerido por FastAPI para recibir archivos (UploadFile) -- asistente
+# de programación, POST /horarios/asistente/importar.
+python-multipart==0.0.20
