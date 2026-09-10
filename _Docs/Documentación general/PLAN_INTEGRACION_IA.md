@@ -62,17 +62,31 @@ Explícitamente fuera de la Fase 1: no hay endpoint HTTP, no hay
 importador que la use, no hay UI. Es una pieza de librería interna,
 probada y lista para conectarse.
 
-## Fase 2 — Primer punto de contacto real: explicar conflictos
+## Fase 2 — Primer punto de contacto real: explicar conflictos (hecha)
 
-**Candidato natural para la próxima sesión** porque no depende de nada
-que falte: `HorarioService.auditar_conflictos`
-(`backend/app/services/horario_service.py`) ya detecta y tipa conflictos
-reales (`cruce_ficha`, `cruce_instructor`, `cruce_ambiente`,
-`resultado_repetido`, `regla_instructor`). Falta solo envolver ese
-resultado con `ai.tasks.explain_conflict` para devolver una frase en
-español entendible en vez del código tipado — sin que la IA decida nada,
-solo traduce lo que Python ya calculó. Bajo riesgo, alto valor de
-demo.
+`HorarioService.auditar_conflictos` ya arma un `mensaje` determinista por
+cada conflicto individual — eso no cambió. Lo que faltaba y ahora existe
+es un **resumen agregado** de toda la auditoría (que puede traer decenas
+de conflictos): ver el patrón conjunto y priorizar, algo que el código
+determinista no hacía.
+
+- `app/ai/schemas.py`: `ResumenAuditoriaIA` (resumen + prioridades).
+- `app/ai/prompts.py`: `prompt_resumir_auditoria`.
+- `app/ai/tasks/explain_conflict.py`: `resumir_auditoria(conflictos)` —
+  una sola llamada de IA por auditoría completa, no por conflicto.
+- `POST /api/v1/horarios/auditoria-cruces/resumen-ia`: opt-in (POST, no
+  GET — no se dispara solo al cargar la pantalla). Sin conflictos no
+  llama a la IA. Sin `GEMINI_API_KEY` o si Gemini falla, responde 503 sin
+  exponer la key.
+- Tests: `test_ai_explain_conflict.py` (unitarios, mock de `httpx.post`)
+  y `test_horarios_resumen_ia.py` (endpoint, mock de
+  `HorarioService.auditar_conflictos` + `httpx.post`). Suite completa:
+  140 passed.
+
+No necesitó migración de base de datos — es una lectura sobre datos que
+`auditar_conflictos` ya calcula, sin persistir nada nuevo. Pendiente para
+el frontend (fuera de esta sesión): el botón "Resumir con IA" en
+`AuditoriaCruces.tsx` que llame a este endpoint.
 
 ## Fase 3 — Importador tolerante a estructura
 
