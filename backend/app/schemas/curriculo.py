@@ -9,6 +9,7 @@ from pydantic import BaseModel
 class ResultadoExtraido(BaseModel):
     descripcion: str
     horasAsignadas: int | None = None
+    numeroFase: int | None = None
 
 
 class CompetenciaExtraida(BaseModel):
