@@ -21,7 +21,7 @@ from app.models.resultado_aprendizaje import ResultadoAprendizaje
 from app.models.sede import Sede
 from app.models.trimestre import Trimestre
 from app.models.usuario import Usuario
-from app.services.asistente_horario_service import generar_propuesta, previsualizar_excel
+from app.services.asistente_horario_service import _elegir_hoja, generar_propuesta, previsualizar_excel
 
 
 def _crear_tablas_extra(db_session):
@@ -86,6 +86,24 @@ def _mock_clasificacion(monkeypatch, mapa: dict[str, tuple]):
 
     def fake_post(url, headers=None, json=None, timeout=None):
         return _RespuestaFalsa({"candidates": [{"content": {"parts": [{"text": texto_llm}]}}]})
+
+    monkeypatch.setattr("app.ai.client.settings.gemini_api_key", "key-de-prueba")
+    monkeypatch.setattr("app.ai.client.httpx.post", fake_post)
+
+
+def _mock_clasificacion_secuencial(monkeypatch, mapas: list[dict[str, tuple]]):
+    """Como _mock_clasificacion, pero una respuesta distinta por cada
+    llamada en orden -- para cuando se clasifican dos hojas (archivo
+    principal + complementario), cada una con sus propias columnas."""
+    textos = [
+        json.dumps({col: {"campo": campo, "confianza": conf} for col, (campo, conf) in mapa.items()})
+        for mapa in mapas
+    ]
+    llamadas = iter(textos)
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        texto = next(llamadas)
+        return _RespuestaFalsa({"candidates": [{"content": {"parts": [{"text": texto}]}}]})
 
     monkeypatch.setattr("app.ai.client.settings.gemini_api_key", "key-de-prueba")
     monkeypatch.setattr("app.ai.client.httpx.post", fake_post)
@@ -181,3 +199,92 @@ def test_generar_propuesta_jornada_invalida_lanza_value_error(db_session):
 
     with pytest.raises(ValueError, match="no reconocida"):
         generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MADRUGADA")
+
+
+def test_elegir_hoja_prefiere_la_hoja_con_mas_fichas_numericas():
+    # Caso real: PLANEACION tiene una columna que se LLAMA "ficha" pero
+    # con valores compuestos (texto), FICHAS tiene el número limpio.
+    wb = openpyxl.Workbook()
+    hoja_mala = wb.active
+    hoja_mala.title = "PLANEACION"
+    hoja_mala.append(["ficha", "otro"])
+    hoja_mala.append(["TEMAS_7_TRM_2996161_(DM)_ALGO", "x"])
+
+    hoja_buena = wb.create_sheet("FICHAS")
+    hoja_buena.append(["FICHA", "NIVEL"])
+    hoja_buena.append([2996161, "TECNÓLOGO"])
+    hoja_buena.append([2996202, "TECNÓLOGO"])
+
+    ws, _, columna = _elegir_hoja(wb)
+
+    assert ws.title == "FICHAS"
+    assert columna == "FICHA"
+
+
+def test_elegir_hoja_compara_dos_columnas_ficha_en_la_misma_hoja():
+    # El bug real: PE-04 trae IDENTIFICADOR_FICHA e
+    # IDENTIFICADOR_UNICO_FICHA en la MISMA hoja -- hay que comparar entre
+    # ellas, no quedarse con la primera que aparezca.
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["FICHA_COMPUESTA", "FICHA_REAL"])
+    ws.append(["ABC-100-XYZ", 100])
+    ws.append(["ABC-200-XYZ", 200])
+
+    _, _, columna = _elegir_hoja(wb)
+
+    assert columna == "FICHA_REAL"
+
+
+def test_previsualizar_excel_corrige_columna_ficha_mal_clasificada_por_ia(db_session, monkeypatch):
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=7, codigo_ficha="100")
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.append(["FICHA_COMPUESTA", "FICHA_REAL", "PROGRAMA"])
+    ws.append(["ABC-100-XYZ", 100, "ADSO"])
+    buffer = BytesIO()
+    wb.save(buffer)
+    contenido = buffer.getvalue()
+
+    # La IA (mockeada) "se equivoca" y mapea "ficha" a la columna
+    # compuesta -- el override mecánico de _elegir_hoja debe corregirlo.
+    _mock_clasificacion(
+        monkeypatch,
+        {"FICHA_COMPUESTA": ("ficha", 0.9), "FICHA_REAL": (None, 0.0), "PROGRAMA": ("programa", 1.0)},
+    )
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    assert resultado.filas[0].codigoFicha == "100"
+    assert resultado.filas[0].fichaExiste is True
+
+
+def test_previsualizar_excel_cruza_con_archivo_complementario(db_session, monkeypatch):
+    _crear_tablas_extra(db_session)
+    principal = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], [100, "ADSO"]])
+    complementario = _xlsx_con_encabezado(
+        [["FICHA", "NIVEL", "COORDINACION", "CODIGO"], [100, "Tecnólogo", "Teleinformática", "228106"]]
+    )
+
+    _mock_clasificacion_secuencial(
+        monkeypatch,
+        [
+            {"FICHA": ("ficha", 1.0), "PROGRAMA": ("programa", 1.0)},
+            {
+                "FICHA": ("ficha", 1.0),
+                "NIVEL": ("nivel_formacion", 0.95),
+                "COORDINACION": ("coordinacion", 0.9),
+                "CODIGO": ("codigo_programa", 0.9),
+            },
+        ],
+    )
+
+    resultado = previsualizar_excel(db_session, principal, "principal.xlsx", complementario, "complementario.xlsx")
+
+    assert resultado.archivoComplementario == "complementario.xlsx"
+    fila = resultado.filas[0]
+    assert fila.nivelFormacion == "Tecnólogo"
+    assert fila.coordinacion == "Teleinformática"
+    assert fila.codigoPrograma == "228106"
