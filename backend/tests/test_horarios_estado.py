@@ -159,3 +159,29 @@ def test_mis_horarios_requiere_autenticacion(client, db_session):
     respuesta = client.get("/api/v1/usuarios/me/horarios")
 
     assert respuesta.status_code == 401
+
+
+def test_mis_horarios_filtra_por_rango_de_fechas_del_trimestre(client, db_session, autenticar_como):
+    _crear_tablas_extra(db_session)
+    yo, headers = autenticar_como("Instructor")
+    _, ficha = _catalogos_base(db_session)
+    _crear_horario(db_session, 100, yo, ficha)
+
+    dentro = client.get(
+        "/api/v1/usuarios/me/horarios?fechaInicio=2026-02-02&fechaFin=2026-02-06",
+        headers=headers,
+    )
+    fuera = client.get(
+        "/api/v1/usuarios/me/horarios?fechaInicio=2026-05-04&fechaFin=2026-05-08",
+        headers=headers,
+    )
+    rango_incompleto = client.get(
+        "/api/v1/usuarios/me/horarios?fechaInicio=2026-02-02",
+        headers=headers,
+    )
+
+    assert dentro.status_code == 200
+    assert [horario["idHorario"] for horario in dentro.json()] == [100]
+    assert fuera.status_code == 200
+    assert fuera.json() == []
+    assert rango_incompleto.status_code == 422

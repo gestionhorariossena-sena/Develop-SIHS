@@ -31,19 +31,38 @@ vi.mock('../services/api', () => ({
 describe('MiHorario', () => {
   it('pide /usuarios/me/horarios y dibuja el grid con lo publicado', async () => {
     apiGetMock.mockImplementation((path: string) =>
-      path === '/usuarios/me/horarios' ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
+      path.startsWith('/usuarios/me/horarios') ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
     )
     renderConProviders(<MiHorario />)
 
-    expect(apiGetMock).toHaveBeenCalledWith('/usuarios/me/horarios')
+    expect(apiGetMock).toHaveBeenCalledWith(expect.stringMatching(/^\/usuarios\/me\/horarios\?fechaInicio=\d{4}-\d{2}-\d{2}&fechaFin=\d{4}-\d{2}-\d{2}$/))
     expect(await screen.findByText('Gestión de inventarios')).toBeInTheDocument()
     expect(screen.getAllByText('3228973 B').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Ambiente 101').length).toBeGreaterThan(0)
   })
 
+  it('cambia de semana y vuelve a consultar el rango; Hoy regresa a la semana actual', async () => {
+    apiGetMock.mockImplementation((path: string) =>
+      path.startsWith('/usuarios/me/horarios') ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
+    )
+    const usuario = userEvent.setup()
+    const llamadasIniciales = apiGetMock.mock.calls.filter(([path]) => String(path).startsWith('/usuarios/me/horarios')).length
+    renderConProviders(<MiHorario />)
+
+    await screen.findByText('Gestión de inventarios')
+    const llamadasDeHorario = () => apiGetMock.mock.calls.filter(([path]) => String(path).startsWith('/usuarios/me/horarios'))
+    expect(llamadasDeHorario()).toHaveLength(llamadasIniciales + 1)
+
+    await usuario.click(screen.getByRole('button', { name: 'Semana siguiente' }))
+    await waitFor(() => expect(llamadasDeHorario()).toHaveLength(llamadasIniciales + 2))
+
+    await usuario.click(screen.getByRole('button', { name: 'Hoy' }))
+    await waitFor(() => expect(llamadasDeHorario()).toHaveLength(llamadasIniciales + 3))
+  })
+
   it('celdas sin clase muestran "Franja Libre" y el filtro de jornada oculta las otras filas', async () => {
     apiGetMock.mockImplementation((path: string) =>
-      path === '/usuarios/me/horarios' ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
+      path.startsWith('/usuarios/me/horarios') ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
     )
     const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
@@ -61,7 +80,7 @@ describe('MiHorario', () => {
 
   it('el botón "Abrir Detalle de Franja y Ambiente" está deshabilitado (pantalla de otro ticket, mismo epic)', async () => {
     apiGetMock.mockImplementation((path: string) =>
-      path === '/usuarios/me/horarios' ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
+      path.startsWith('/usuarios/me/horarios') ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
     )
     renderConProviders(<MiHorario />)
 
@@ -73,7 +92,7 @@ describe('MiHorario', () => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', tipoContrato: 'planta', roles: [{ idRol: 1, nombre: 'Instructor' }] })
       }
-      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([HORARIO])
       if (path === '/usuarios/u1/carga-semanal') return Promise.resolve({ idUsuario: 'u1', tipoContrato: 'planta', horasAsignadas: 12, horasMaximas: 32 })
       return Promise.reject(new Error('no mockeado'))
     })
@@ -86,7 +105,7 @@ describe('MiHorario', () => {
 
   it('Alertas Operativas: no inventa alertas de ejemplo y deja "Solicitar Novedad o Permuta" deshabilitado', async () => {
     apiGetMock.mockImplementation((path: string) =>
-      path === '/usuarios/me/horarios' ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
+      path.startsWith('/usuarios/me/horarios') ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
     )
     renderConProviders(<MiHorario />)
 
@@ -100,7 +119,7 @@ describe('MiHorario', () => {
 
   it('Mis Fichas Activas: programa y aprendices son reales; vocero/avance curricular quedan como pendientes, no inventados', async () => {
     apiGetMock.mockImplementation((path: string) => {
-      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([HORARIO])
       if (path === '/fichas/') return Promise.resolve([FICHA])
       return Promise.reject(new Error('no mockeado'))
     })
@@ -118,7 +137,7 @@ describe('MiHorario', () => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', tipoContrato: 'planta', roles: [{ idRol: 1, nombre: 'Instructor' }] })
       }
-      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([HORARIO])
       if (path === '/usuarios/u1/carga-semanal') return Promise.resolve({ idUsuario: 'u1', tipoContrato: 'planta', horasAsignadas: 12, horasMaximas: 32 })
       return Promise.reject(new Error('no mockeado'))
     })
@@ -134,7 +153,7 @@ describe('MiHorario', () => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', tipoContrato: 'planta', roles: [{ idRol: 1, nombre: 'Instructor' }] })
       }
-      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([HORARIO])
       if (path === '/usuarios/u1/carga-semanal') return Promise.resolve({ idUsuario: 'u1', tipoContrato: 'planta', horasAsignadas: 36, horasMaximas: 32 })
       return Promise.reject(new Error('no mockeado'))
     })
@@ -150,7 +169,7 @@ describe('MiHorario', () => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', roles: [{ idRol: 1, nombre: 'Instructor' }] })
       }
-      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([HORARIO])
       if (path === '/usuarios/u1/carga-semanal') return Promise.resolve({ idUsuario: 'u1', tipoContrato: null, horasAsignadas: 6, horasMaximas: null })
       return Promise.reject(new Error('no mockeado'))
     })
@@ -162,7 +181,7 @@ describe('MiHorario', () => {
 
   it('sin clases publicadas, muestra el mensaje correspondiente', async () => {
     apiGetMock.mockImplementation((path: string) =>
-      path === '/usuarios/me/horarios' ? Promise.resolve([]) : Promise.reject(new Error('no mockeado')),
+      path.startsWith('/usuarios/me/horarios') ? Promise.resolve([]) : Promise.reject(new Error('no mockeado')),
     )
     renderConProviders(<MiHorario />)
 
@@ -171,7 +190,7 @@ describe('MiHorario', () => {
 
   it('muestra el error del backend si la carga falla', async () => {
     apiGetMock.mockImplementation((path: string) =>
-      path === '/usuarios/me/horarios' ? Promise.reject(new Error('falló')) : Promise.reject(new Error('no mockeado')),
+      path.startsWith('/usuarios/me/horarios') ? Promise.reject(new Error('falló')) : Promise.reject(new Error('no mockeado')),
     )
     renderConProviders(<MiHorario />)
 
@@ -185,7 +204,7 @@ describe('MiHorario', () => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', roles: [{ idRol: 1, nombre: 'Instructor' }] })
       }
-      if (path === '/usuarios/me/horarios') return Promise.resolve([])
+      if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([])
       return Promise.reject(new Error('no mockeado'))
     })
     renderConProviders(<MiHorario />)
@@ -203,7 +222,7 @@ describe('MiHorario', () => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Ana', email: 'a@example.com', roles: [{ idRol: 2, nombre: 'Coordinador' }] })
       }
-      if (path === '/usuarios/me/horarios') return Promise.resolve([])
+      if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([])
       return Promise.reject(new Error('no mockeado'))
     })
     const usuario = userEvent.setup()
@@ -230,7 +249,7 @@ describe('MiHorario', () => {
           roles: [{ idRol: 1, nombre: 'Instructor' }, { idRol: 2, nombre: 'Coordinador' }],
         })
       }
-      if (path === '/usuarios/me/horarios') return Promise.resolve([])
+      if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([])
       return Promise.reject(new Error('no mockeado'))
     })
     const usuario = userEvent.setup()
