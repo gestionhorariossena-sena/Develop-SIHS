@@ -3,6 +3,8 @@ import { AppShell } from '../components/AppShell'
 import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
 import type {
   BloquePropuesto,
+  Coordinacion,
+  CoordinacionCreate,
   Ficha,
   FichaCreate,
   FilaImportada,
@@ -12,6 +14,7 @@ import type {
   ImportarExcelPreviewResponse,
   JornadaAsistente,
   Programa,
+  ProgramaCreate,
   RespuestaPreguntaHorario,
   Trimestre,
 } from '../types/api'
@@ -64,6 +67,11 @@ export function AsistenteHorarios() {
   const [paso, setPaso] = useState<Paso>(1)
 
   const [subiendo, setSubiendo] = useState(false)
+  const [archivoPrincipal, setArchivoPrincipal] = useState<File | null>(null)
+  // Opcional -- para cruzar por número de ficha lo que el archivo
+  // principal no traiga (ej. nivel de formación, coordinación, código de
+  // programa real de SENA). Ver PLAN_INTEGRACION_IA.md, Fase 3.
+  const [archivoComplementario, setArchivoComplementario] = useState<File | null>(null)
   const [previsualizacion, setPrevisualizacion] = useState<ImportarExcelPreviewResponse | null>(null)
   const [errorImportar, setErrorImportar] = useState<string | null>(null)
 
@@ -77,15 +85,26 @@ export function AsistenteHorarios() {
   // al coordinador: es el que ya está elegido para todo el lote (arriba
   // en el paso 2). Sede tampoco -- se decide después, por resultado/
   // horario (una ficha puede tener clases en sedes distintas según la
-  // jornada), no al crear la ficha. Solo el Programa puede necesitar que
-  // el coordinador confirme/corrija, porque es lo único que de verdad
-  // puede ser ambiguo (el nombre del Excel no siempre calza exacto con
-  // el catálogo).
+  // jornada), no al crear la ficha.
+  //
+  // Programa: si no coincide con el catálogo, y el archivo complementario
+  // trajo código + nivel de formación para esta ficha (cruce por
+  // codigoFicha -- ver PLAN_INTEGRACION_IA.md, Fase 3), se ofrece crear el
+  // programa completo ahí mismo, prellenado, solo para confirmar. Si no
+  // hay esos datos, no se adivina: se pide elegir uno existente.
   const [programas, setProgramas] = useState<Programa[]>([])
+  const [coordinaciones, setCoordinaciones] = useState<Coordinacion[]>([])
   const [filaCreandoFicha, setFilaCreandoFicha] = useState<number | null>(null)
-  const [formCreacion, setFormCreacion] = useState<{ idPrograma: string; programaCoincidido: boolean }>({
+  const [formCreacion, setFormCreacion] = useState({
     idPrograma: '',
     programaCoincidido: false,
+    crearProgramaNuevo: false,
+    nombreProgramaNuevo: '',
+    nivelFormacionNuevo: '',
+    codigoProgramaNuevo: '',
+    idCoordinacion: '',
+    crearCoordinacionNueva: false,
+    nombreCoordinacionNueva: '',
   })
   const [editandoPrograma, setEditandoPrograma] = useState(false)
   const [creandoFicha, setCreandoFicha] = useState(false)
@@ -112,35 +131,103 @@ export function AsistenteHorarios() {
       })
       .catch(() => {})
     apiGet<Programa[]>('/programas/').then(setProgramas).catch(() => {})
+    apiGet<Coordinacion[]>('/coordinaciones/').then(setCoordinaciones).catch(() => {})
   }, [])
 
   function abrirCreacionFicha(fila: FilaImportada) {
     setFilaCreandoFicha(fila.fila)
     setErrorCreacionFicha(null)
     setEditandoPrograma(false)
-    // Pre-selección: si el nombre del programa leído del Excel coincide
-    // (sin importar mayúsculas/espacios) con uno ya existente, se
-    // reconoce solo -- el coordinador solo confirma. Si no hay
-    // coincidencia, no hay forma de adivinarlo (el programa puede
-    // simplemente no existir todavía en el catálogo), así que se le pide
-    // que elija.
-    const coincidencia = fila.programa
+
+    // 1) Coincidencia por código real de programa (viene del archivo
+    //    complementario) -- más confiable que el nombre.
+    // 2) Si no, por nombre (sin mayúsculas/espacios).
+    const porCodigo = fila.codigoPrograma
+      ? programas.find((p) => p.codigoPrograma === fila.codigoPrograma)
+      : undefined
+    const porNombre = fila.programa
       ? programas.find((p) => p.nombrePrograma.trim().toLowerCase() === fila.programa!.trim().toLowerCase())
       : undefined
+    const coincidencia = porCodigo ?? porNombre
+
+    if (coincidencia) {
+      setFormCreacion({
+        idPrograma: String(coincidencia.idPrograma),
+        programaCoincidido: true,
+        crearProgramaNuevo: false,
+        nombreProgramaNuevo: '',
+        nivelFormacionNuevo: '',
+        codigoProgramaNuevo: '',
+        idCoordinacion: '',
+        crearCoordinacionNueva: false,
+        nombreCoordinacionNueva: '',
+      })
+      return
+    }
+
+    // Sin coincidencia: si el archivo complementario trajo código + nivel
+    // para esta ficha, se puede ofrecer crear el programa completo,
+    // prellenado -- si no, no hay suficiente para no tener que preguntar.
+    const puedeAutocompletar = Boolean(fila.codigoPrograma && fila.nivelFormacion)
+    const coordinacionCoincidida = fila.coordinacion
+      ? coordinaciones.find((c) => c.nombreCoordinacion.trim().toLowerCase() === fila.coordinacion!.trim().toLowerCase())
+      : undefined
+
     setFormCreacion({
-      idPrograma: coincidencia ? String(coincidencia.idPrograma) : '',
-      programaCoincidido: Boolean(coincidencia),
+      idPrograma: '',
+      programaCoincidido: false,
+      crearProgramaNuevo: puedeAutocompletar,
+      nombreProgramaNuevo: fila.programa ?? '',
+      nivelFormacionNuevo: fila.nivelFormacion ?? '',
+      codigoProgramaNuevo: fila.codigoPrograma ?? '',
+      idCoordinacion: coordinacionCoincidida ? String(coordinacionCoincidida.idCoordinacion) : '',
+      crearCoordinacionNueva: Boolean(fila.coordinacion) && !coordinacionCoincidida,
+      nombreCoordinacionNueva: !coordinacionCoincidida ? (fila.coordinacion ?? '') : '',
     })
   }
 
   async function crearFicha(fila: FilaImportada) {
-    if (!fila.codigoFicha || !formCreacion.idPrograma || !idTrimestre) return
+    if (!fila.codigoFicha || !idTrimestre) return
     setCreandoFicha(true)
     setErrorCreacionFicha(null)
     try {
+      let idPrograma = formCreacion.idPrograma ? Number(formCreacion.idPrograma) : null
+
+      if (formCreacion.crearProgramaNuevo) {
+        if (!formCreacion.nombreProgramaNuevo || !formCreacion.codigoProgramaNuevo) {
+          throw new ApiError(422, 'Faltan datos del programa nuevo (nombre o código).')
+        }
+        let idCoordinacion = formCreacion.idCoordinacion ? Number(formCreacion.idCoordinacion) : null
+        if (formCreacion.crearCoordinacionNueva) {
+          if (!formCreacion.nombreCoordinacionNueva.trim()) {
+            throw new ApiError(422, 'Falta el nombre de la coordinación nueva.')
+          }
+          const coordinacionCreada = await apiPost<Coordinacion>('/coordinaciones/', {
+            nombreCoordinacion: formCreacion.nombreCoordinacionNueva.trim(),
+          } satisfies CoordinacionCreate)
+          idCoordinacion = coordinacionCreada.idCoordinacion
+          setCoordinaciones((previo) => [...previo, coordinacionCreada])
+        }
+        if (!idCoordinacion) {
+          throw new ApiError(422, 'Falta elegir o crear la coordinación del programa.')
+        }
+        const programaCreado = await apiPost<Programa>('/programas/', {
+          codigoPrograma: formCreacion.codigoProgramaNuevo.trim(),
+          nombrePrograma: formCreacion.nombreProgramaNuevo.trim(),
+          nivelFormacion: formCreacion.nivelFormacionNuevo || null,
+          idCoordinacion,
+        } satisfies ProgramaCreate)
+        idPrograma = programaCreado.idPrograma
+        setProgramas((previo) => [...previo, programaCreado])
+      }
+
+      if (!idPrograma) {
+        throw new ApiError(422, 'Falta elegir o crear el programa de la ficha.')
+      }
+
       const data: FichaCreate = {
         codigoFicha: fila.codigoFicha,
-        idPrograma: Number(formCreacion.idPrograma),
+        idPrograma,
         idTrimestre,
         // La sede se define después, por resultado/horario -- no acá.
         idSede: null,
@@ -172,16 +259,14 @@ export function AsistenteHorarios() {
     return Array.from(new Set(ids))
   }, [previsualizacion])
 
-  async function manejarArchivo(evento: React.ChangeEvent<HTMLInputElement>) {
-    const archivo = evento.target.files?.[0]
-    evento.target.value = ''
-    if (!archivo) return
-
+  async function importarArchivos() {
+    if (!archivoPrincipal) return
     setSubiendo(true)
     setErrorImportar(null)
     try {
       const formData = new FormData()
-      formData.append('archivo', archivo)
+      formData.append('archivo', archivoPrincipal)
+      if (archivoComplementario) formData.append('archivo_complementario', archivoComplementario)
       const resultado = await apiPostForm<ImportarExcelPreviewResponse>('/horarios/asistente/importar', formData, TIMEOUT_ASISTENTE_MS)
       setPrevisualizacion(resultado)
       setPaso(2)
@@ -329,18 +414,39 @@ export function AsistenteHorarios() {
 
         {paso === 1 && (
           <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-6 dark:border-slate-700 dark:bg-slate-800">
-            <p className="mb-3 text-sm text-on-surface-variant dark:text-slate-300">
+            <p className="mb-1 text-sm text-on-surface-variant dark:text-slate-300">
               Sube el Excel de planeación del trimestre. Revisamos lo que trae antes de tocar nada.
             </p>
             <input
               type="file"
               accept=".xlsx,.xls"
-              onChange={(e) => void manejarArchivo(e)}
+              onChange={(e) => setArchivoPrincipal(e.target.files?.[0] ?? null)}
               disabled={subiendo}
               aria-label="Seleccionar archivo Excel"
-              className="block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-sena-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sena-700 dark:text-slate-300 dark:file:bg-sena-950/50 dark:file:text-sena-400"
+              className="mt-2 block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-sena-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sena-700 dark:text-slate-300 dark:file:bg-sena-950/50 dark:file:text-sena-400"
             />
-            {subiendo && <p className="mt-3 text-sm text-on-surface-variant dark:text-slate-400">Leyendo el archivo…</p>}
+
+            <p className="mb-1 mt-5 text-sm text-on-surface-variant dark:text-slate-300">
+              Archivo complementario (opcional) -- si tienes otro con datos que el primero no trae (ej. nivel de
+              formación, código de programa), lo cruzamos por número de ficha.
+            </p>
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(e) => setArchivoComplementario(e.target.files?.[0] ?? null)}
+              disabled={subiendo}
+              aria-label="Seleccionar archivo complementario"
+              className="mt-2 block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-surface-container file:px-3 file:py-2 file:text-sm file:font-semibold file:text-on-surface-variant dark:text-slate-300 dark:file:bg-slate-700 dark:file:text-slate-200"
+            />
+
+            <button
+              type="button"
+              disabled={!archivoPrincipal || subiendo}
+              onClick={() => void importarArchivos()}
+              className="mt-5 rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {subiendo ? 'Leyendo…' : 'Continuar'}
+            </button>
             {errorImportar && (
               <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorImportar}</p>
             )}
@@ -356,6 +462,11 @@ export function AsistenteHorarios() {
                   · {previsualizacion.totalFilas} filas · {idsFichaListas.length} fichas listas para programar
                 </span>
               </p>
+              {previsualizacion.archivoComplementario && (
+                <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
+                  Cruzado con: {previsualizacion.archivoComplementario} (hoja {previsualizacion.hojaComplementaria})
+                </p>
+              )}
               {previsualizacion.filasConAdvertencia > 0 && (
                 <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
                   {previsualizacion.filasConAdvertencia} fila(s) necesitan revisión — no se van a programar todavía.
@@ -410,7 +521,7 @@ export function AsistenteHorarios() {
                         <tr>
                           <td colSpan={5} className="bg-surface px-3 py-3 dark:bg-slate-900">
                             <div className="flex flex-wrap items-center gap-3">
-                              {formCreacion.programaCoincidido && !editandoPrograma ? (
+                              {formCreacion.programaCoincidido && !editandoPrograma && (
                                 <span className="text-xs text-on-surface-variant dark:text-slate-300">
                                   Programa reconocido:{' '}
                                   <strong className="text-on-surface dark:text-slate-100">
@@ -420,7 +531,78 @@ export function AsistenteHorarios() {
                                     cambiar
                                   </button>
                                 </span>
-                              ) : (
+                              )}
+
+                              {!formCreacion.programaCoincidido && formCreacion.crearProgramaNuevo && (
+                                <div className="w-full rounded-lg border border-sena-200 bg-sena-50 p-3 text-xs dark:border-sena-900 dark:bg-sena-950/20">
+                                  <p className="mb-2 font-semibold text-on-surface dark:text-slate-100">
+                                    "{f.programa}" no está en el catálogo -- lo reconocimos cruzando con {previsualizacion?.archivoComplementario}. Confirma para crearlo:
+                                  </p>
+                                  <div className="flex flex-wrap items-end gap-3">
+                                    <label className="text-on-surface-variant dark:text-slate-300">
+                                      Nombre
+                                      <input
+                                        type="text"
+                                        value={formCreacion.nombreProgramaNuevo}
+                                        onChange={(e) => setFormCreacion((s) => ({ ...s, nombreProgramaNuevo: e.target.value }))}
+                                        className="mt-1 block w-56 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 dark:border-slate-700 dark:bg-slate-800"
+                                      />
+                                    </label>
+                                    <label className="text-on-surface-variant dark:text-slate-300">
+                                      Nivel de formación
+                                      <input
+                                        type="text"
+                                        value={formCreacion.nivelFormacionNuevo}
+                                        onChange={(e) => setFormCreacion((s) => ({ ...s, nivelFormacionNuevo: e.target.value }))}
+                                        className="mt-1 block w-36 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 dark:border-slate-700 dark:bg-slate-800"
+                                      />
+                                    </label>
+                                    <label className="text-on-surface-variant dark:text-slate-300">
+                                      Código SENA
+                                      <input
+                                        type="text"
+                                        value={formCreacion.codigoProgramaNuevo}
+                                        onChange={(e) => setFormCreacion((s) => ({ ...s, codigoProgramaNuevo: e.target.value }))}
+                                        className="mt-1 block w-28 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 dark:border-slate-700 dark:bg-slate-800"
+                                      />
+                                    </label>
+                                    {formCreacion.crearCoordinacionNueva ? (
+                                      <label className="text-on-surface-variant dark:text-slate-300">
+                                        Coordinación (nueva)
+                                        <input
+                                          type="text"
+                                          value={formCreacion.nombreCoordinacionNueva}
+                                          onChange={(e) => setFormCreacion((s) => ({ ...s, nombreCoordinacionNueva: e.target.value }))}
+                                          className="mt-1 block w-40 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 dark:border-slate-700 dark:bg-slate-800"
+                                        />
+                                      </label>
+                                    ) : (
+                                      <label className="text-on-surface-variant dark:text-slate-300">
+                                        Coordinación
+                                        <select
+                                          value={formCreacion.idCoordinacion}
+                                          onChange={(e) =>
+                                            e.target.value === '__nueva__'
+                                              ? setFormCreacion((s) => ({ ...s, crearCoordinacionNueva: true, idCoordinacion: '' }))
+                                              : setFormCreacion((s) => ({ ...s, idCoordinacion: e.target.value }))
+                                          }
+                                          className="mt-1 block w-40 rounded-lg border border-outline-variant bg-surface-container-lowest px-2 py-1 dark:border-slate-700 dark:bg-slate-800"
+                                        >
+                                          <option value="">Selecciona…</option>
+                                          {coordinaciones.map((c) => (
+                                            <option key={c.idCoordinacion} value={c.idCoordinacion}>
+                                              {c.nombreCoordinacion}
+                                            </option>
+                                          ))}
+                                          <option value="__nueva__">+ Nueva coordinación…</option>
+                                        </select>
+                                      </label>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {!formCreacion.programaCoincidido && !formCreacion.crearProgramaNuevo && (
                                 <label className="text-xs text-on-surface-variant dark:text-slate-300">
                                   {f.programa ? `No encontramos "${f.programa}" -- selecciona el programa:` : 'Programa'}
                                   <select
@@ -448,11 +630,22 @@ export function AsistenteHorarios() {
 
                               <button
                                 type="button"
-                                disabled={creandoFicha || !formCreacion.idPrograma}
+                                disabled={
+                                  creandoFicha ||
+                                  (formCreacion.crearProgramaNuevo
+                                    ? !formCreacion.nombreProgramaNuevo ||
+                                      !formCreacion.codigoProgramaNuevo ||
+                                      (!formCreacion.idCoordinacion && !formCreacion.nombreCoordinacionNueva.trim())
+                                    : !formCreacion.idPrograma)
+                                }
                                 onClick={() => void crearFicha(f)}
                                 className="rounded-lg bg-sena-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
                               >
-                                {creandoFicha ? 'Creando…' : `Confirmar y crear ficha ${f.codigoFicha}`}
+                                {creandoFicha
+                                  ? 'Creando…'
+                                  : formCreacion.crearProgramaNuevo
+                                    ? `Confirmar programa + ficha ${f.codigoFicha}`
+                                    : `Confirmar y crear ficha ${f.codigoFicha}`}
                               </button>
                               {errorCreacionFicha && <span className="text-xs text-red-700 dark:text-red-400">{errorCreacionFicha}</span>}
                             </div>

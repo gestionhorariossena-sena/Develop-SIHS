@@ -13,6 +13,14 @@ CAMPOS_CONOCIDOS_SIHS = [
     "nivel_formacion",
     "area_tematica",
     "cantidad_aprendices",
+    # Agregados para cruzar un archivo complementario (ej. la hoja PE-04
+    # de PROGRAMACIÓN CGMLTI, un export oficial de SOFIA Plus) que trae lo
+    # que LIDERES DE FICHA no trae -- ver PLAN_INTEGRACION_IA.md, Fase 3.
+    "coordinacion",
+    "codigo_programa",
+    "fecha_inicio_lectiva",
+    "fecha_fin_lectiva",
+    "fecha_fin_productiva",
 ]
 
 

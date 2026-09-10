@@ -16,6 +16,7 @@ Ninguna de las dos persiste horarios -- eso lo hace
 frontend, reusando la validación de cruces que ya existe.
 """
 
+from datetime import date, datetime
 from io import BytesIO
 
 import openpyxl
@@ -58,11 +59,60 @@ def _fila_con_mas_datos(ws, filas_a_revisar: int = 10) -> int:
     return mejor_fila
 
 
-def previsualizar_excel(db: Session, contenido: bytes, nombre_archivo: str) -> ImportarExcelPreviewResponse:
-    wb = openpyxl.load_workbook(BytesIO(contenido), data_only=True)
-    ws = wb.worksheets[0]
-    fila_encabezado = _fila_con_mas_datos(ws)
+def _elegir_hoja(wb) -> tuple:
+    """Si el archivo tiene varias hojas, no asume que la útil es la
+    primera -- ver PROGRAMACIÓN CGMLTI I TRM 2026 (4).xlsx, donde la hoja
+    limpia de fichas (FICHAS) es la #14 de 15, y hojas anteriores como
+    PLANEACION también tienen una columna que se LLAMA "ficha" pero con
+    valores compuestos, no el número solo.
 
+    Heurística barata (sin IA, solo para elegir la hoja): busca en cada
+    hoja TODOS los encabezados que contengan "ficha" (puede haber más de
+    uno en la misma hoja -- ver PE-04 de SOFIA Plus, que trae a la vez
+    "IDENTIFICADOR_FICHA" y "IDENTIFICADOR_UNICO_FICHA" con un prefijo
+    extra, y semánticamente ambos "suenan" a ficha) y cuenta, para cada
+    uno, cuántas de sus primeras filas de datos son un valor puramente
+    numérico. La columna ganadora es la que tenga más -- entre TODAS las
+    columnas de TODAS las hojas, no solo la primera candidata de cada
+    hoja. También se devuelve cuál era esa columna ganadora: es una señal
+    más confiable que la IA para el campo "ficha" específicamente (ver
+    _clasificar_hoja) -- ahí es donde de verdad importa, porque solo una
+    de las columnas candidatas tiene el número real que coincide con el
+    resto de archivos, y eso se puede medir, no hay que adivinarlo por
+    el nombre de la columna."""
+    mejor_ws, mejor_fila_encabezado, mejor_puntaje, mejor_columna_ficha = (
+        wb.worksheets[0], _fila_con_mas_datos(wb.worksheets[0]), -1, None,
+    )
+    for ws in wb.worksheets:
+        fila_encabezado = _fila_con_mas_datos(ws)
+        encabezados = [str(c.value).strip() if c.value not in (None, "") else "" for c in ws[fila_encabezado]]
+        indices_candidatos = [i for i, h in enumerate(encabezados) if "ficha" in h.lower()]
+        if not indices_candidatos:
+            continue
+
+        puntajes = dict.fromkeys(indices_candidatos, 0)
+        for fila_valores in ws.iter_rows(
+            min_row=fila_encabezado + 1, max_row=fila_encabezado + 30, values_only=True
+        ):
+            for idx_ficha in indices_candidatos:
+                if idx_ficha < len(fila_valores):
+                    valor = fila_valores[idx_ficha]
+                    if valor is not None and str(valor).strip().isdigit():
+                        puntajes[idx_ficha] += 1
+
+        idx_mejor_de_la_hoja = max(puntajes, key=lambda i: puntajes[i])
+        puntaje = puntajes[idx_mejor_de_la_hoja]
+        if puntaje > mejor_puntaje:
+            mejor_ws, mejor_fila_encabezado, mejor_puntaje = ws, fila_encabezado, puntaje
+            mejor_columna_ficha = encabezados[idx_mejor_de_la_hoja]
+    return mejor_ws, mejor_fila_encabezado, mejor_columna_ficha
+
+
+def _clasificar_hoja(wb) -> tuple:
+    """Elige la mejor hoja (_elegir_hoja) y clasifica sus encabezados con
+    IA una sola vez -- devuelve todo lo necesario para leer filas de ella
+    sin volver a llamar a la IA por cada uso."""
+    ws, fila_encabezado, columna_ficha_detectada = _elegir_hoja(wb)
     encabezados_crudos = [c.value for c in ws[fila_encabezado]]
     idx = {str(nombre).strip(): i for i, nombre in enumerate(encabezados_crudos) if nombre not in (None, "", "\xa0")}
     encabezados = list(idx.keys())
@@ -76,12 +126,84 @@ def previsualizar_excel(db: Session, contenido: bytes, nombre_archivo: str) -> I
             if c.campo and c.confianza >= CONFIANZA_MINIMA:
                 campo_a_columna[c.campo] = original
 
-    def _valor(fila_valores: tuple, campo: str) -> str | None:
-        columna = campo_a_columna.get(campo)
-        if not columna or columna not in idx:
-            return None
-        valor = fila_valores[idx[columna]]
-        return str(valor).strip() if valor not in (None, "", "\xa0") else None
+    # Para "ficha" específicamente, la columna que _elegir_hoja ya midió
+    # por densidad de valores numéricos reales gana sobre lo que haya
+    # dicho la IA por semántica del nombre -- ver docstring de _elegir_hoja.
+    if columna_ficha_detectada and columna_ficha_detectada in idx:
+        campo_a_columna["ficha"] = columna_ficha_detectada
+
+    return ws, fila_encabezado, idx, campo_a_columna, columnas
+
+
+def _valor_texto(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: str) -> str | None:
+    columna = campo_a_columna.get(campo)
+    if not columna or columna not in idx or idx[columna] >= len(fila_valores):
+        return None
+    valor = fila_valores[idx[columna]]
+    return str(valor).strip() if valor not in (None, "", "\xa0") else None
+
+
+_FORMATOS_FECHA_TEXTO = ("%d/%m/%Y", "%Y-%m-%d")
+
+
+def _valor_fecha(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: str) -> date | None:
+    columna = campo_a_columna.get(campo)
+    if not columna or columna not in idx or idx[columna] >= len(fila_valores):
+        return None
+    valor = fila_valores[idx[columna]]
+    if isinstance(valor, datetime):
+        return valor.date()
+    if isinstance(valor, date):
+        return valor
+    if isinstance(valor, str):
+        # Algunos exports oficiales (ej. PE-04 de SOFIA Plus) guardan la
+        # fecha como texto "DD/MM/YYYY", no como celda de fecha real.
+        for formato in _FORMATOS_FECHA_TEXTO:
+            try:
+                return datetime.strptime(valor.strip(), formato).date()
+            except ValueError:
+                continue
+    return None
+
+
+def _datos_complementarios_por_ficha(contenido: bytes) -> tuple[dict[str, dict], str]:
+    """Lee un archivo complementario y devuelve {codigoFicha: {...}} con
+    lo que traiga de nivel/coordinación/fechas -- para cruzar con el
+    archivo principal por número de ficha. LIDERES DE FICHA no trae estos
+    campos, pero por ejemplo la hoja FICHAS de PROGRAMACIÓN CGMLTI sí."""
+    wb = openpyxl.load_workbook(BytesIO(contenido), data_only=True)
+    ws, fila_encabezado, idx, campo_a_columna, _ = _clasificar_hoja(wb)
+
+    datos: dict[str, dict] = {}
+    for fila_valores in ws.iter_rows(min_row=fila_encabezado + 1, values_only=True):
+        ficha_texto = _valor_texto(fila_valores, idx, campo_a_columna, "ficha")
+        if not ficha_texto or not ficha_texto.isdigit():
+            continue
+        datos[ficha_texto] = {
+            "nivelFormacion": _valor_texto(fila_valores, idx, campo_a_columna, "nivel_formacion"),
+            "coordinacion": _valor_texto(fila_valores, idx, campo_a_columna, "coordinacion"),
+            "codigoPrograma": _valor_texto(fila_valores, idx, campo_a_columna, "codigo_programa"),
+            "fechaInicioLectiva": _valor_fecha(fila_valores, idx, campo_a_columna, "fecha_inicio_lectiva"),
+            "fechaFinLectiva": _valor_fecha(fila_valores, idx, campo_a_columna, "fecha_fin_lectiva"),
+            "fechaFinProductiva": _valor_fecha(fila_valores, idx, campo_a_columna, "fecha_fin_productiva"),
+        }
+    return datos, ws.title
+
+
+def previsualizar_excel(
+    db: Session,
+    contenido: bytes,
+    nombre_archivo: str,
+    contenido_complementario: bytes | None = None,
+    nombre_complementario: str | None = None,
+) -> ImportarExcelPreviewResponse:
+    wb = openpyxl.load_workbook(BytesIO(contenido), data_only=True)
+    ws, fila_encabezado, idx, campo_a_columna, columnas = _clasificar_hoja(wb)
+
+    datos_complementarios: dict[str, dict] = {}
+    hoja_complementaria: str | None = None
+    if contenido_complementario:
+        datos_complementarios, hoja_complementaria = _datos_complementarios_por_ficha(contenido_complementario)
 
     filas: list[FilaImportada] = []
     for numero_fila, fila_valores in enumerate(
@@ -90,7 +212,7 @@ def previsualizar_excel(db: Session, contenido: bytes, nombre_archivo: str) -> I
         if all(v in (None, "", "\xa0") for v in fila_valores):
             continue
 
-        ficha_texto = _valor(fila_valores, "ficha")
+        ficha_texto = _valor_texto(fila_valores, idx, campo_a_columna, "ficha")
         codigo_ficha: str | None = None
         id_ficha: int | None = None
         advertencia: str | None = None
@@ -113,16 +235,24 @@ def previsualizar_excel(db: Session, contenido: bytes, nombre_archivo: str) -> I
             else:
                 advertencia = f"La ficha {codigo_ficha} no existe todavía en el catálogo de SIHS."
 
+        extra = datos_complementarios.get(codigo_ficha, {}) if codigo_ficha else {}
+
         filas.append(
             FilaImportada(
                 fila=numero_fila,
                 codigoFicha=codigo_ficha,
                 fichaExiste=ficha_existe,
                 idFicha=id_ficha,
-                programa=_valor(fila_valores, "programa"),
-                jornada=_valor(fila_valores, "jornada"),
-                instructorNombre=_valor(fila_valores, "instructor"),
+                programa=_valor_texto(fila_valores, idx, campo_a_columna, "programa"),
+                jornada=_valor_texto(fila_valores, idx, campo_a_columna, "jornada"),
+                instructorNombre=_valor_texto(fila_valores, idx, campo_a_columna, "instructor"),
                 advertencia=advertencia,
+                nivelFormacion=extra.get("nivelFormacion"),
+                coordinacion=extra.get("coordinacion"),
+                codigoPrograma=extra.get("codigoPrograma"),
+                fechaInicioLectiva=extra.get("fechaInicioLectiva"),
+                fechaFinLectiva=extra.get("fechaFinLectiva"),
+                fechaFinProductiva=extra.get("fechaFinProductiva"),
             )
         )
         if len(filas) >= MAX_FILAS_PREVIA:
@@ -153,6 +283,8 @@ def previsualizar_excel(db: Session, contenido: bytes, nombre_archivo: str) -> I
         totalFilas=len(filas),
         filasConAdvertencia=sum(1 for f in filas if f.advertencia),
         advertenciaGeneral=advertencia_general,
+        archivoComplementario=nombre_complementario if contenido_complementario else None,
+        hojaComplementaria=hoja_complementaria,
     )
 
 
