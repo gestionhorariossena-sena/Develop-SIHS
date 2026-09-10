@@ -234,6 +234,24 @@ fichas → generar propuesta de horario → coordinador revisa y confirma →
 queda publicado para instructores/aprendices** (esto último ya lo hacía
 `HorarioService.crear`, con `publicado=true` por defecto).
 
+### Control manual: casilla "Usar" por ficha (paso 2 del asistente)
+
+El paso 2 reconocía automáticamente todas las fichas que existían en el
+catálogo y las mandaba todas a `generar-propuesta` sin que el
+coordinador pudiera excluir alguna puntual (por ejemplo una ficha que
+ya tiene horario en otro trimestre, o que el coordinador simplemente no
+quiere programar todavía). Se agregó una casilla "Usar" en la primera
+columna de la tabla de filas reconocidas (`AsistenteHorarios.tsx`),
+visible solo para filas con `fichaExiste`, más un enlace
+"marcar todas / desmarcar todas" junto al resumen del paso. El estado
+vive en `filasExcluidas: Set<number>` (número de fila del Excel), se
+reinicia en cada nueva importación, y `idsFichaListas` (el arreglo que
+se envía a `generar-propuesta`) ahora filtra por
+`!filasExcluidas.has(f.fila)` además de `fichaExiste` e `idFicha`.
+Sigue el mismo principio de todo el asistente: nada se ejecuta ni se
+guarda automáticamente sobre una ficha que el coordinador no confirmó
+explícitamente.
+
 ## Fase 4 — Motor optimizador con OR-Tools (MVP hecho)
 
 El hueco más grande del sistema: `HorarioService` **valida** horarios
