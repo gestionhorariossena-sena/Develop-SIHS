@@ -4,7 +4,7 @@ Ver _Docs/Documentación general/PLAN_INTEGRACION_IA.md, Fase 4 y
 siguientes. Separado de app/schemas/horario.py porque son formas de datos
 específicas de este flujo, no del CRUD de `horarios`."""
 
-from datetime import time
+from datetime import date, time
 
 from pydantic import BaseModel
 
@@ -29,6 +29,15 @@ class FilaImportada(BaseModel):
     jornada: str | None
     instructorNombre: str | None
     advertencia: str | None = None
+    # Se llenan solo si se sube un archivo complementario y trae estos
+    # datos para la misma ficha (cruce por codigoFicha) -- LIDERES DE
+    # FICHA no los trae, pero la hoja FICHAS de PROGRAMACIÓN CGMLTI sí.
+    nivelFormacion: str | None = None
+    coordinacion: str | None = None
+    codigoPrograma: str | None = None
+    fechaInicioLectiva: date | None = None
+    fechaFinLectiva: date | None = None
+    fechaFinProductiva: date | None = None
 
 
 class ImportarExcelPreviewResponse(BaseModel):
@@ -43,6 +52,10 @@ class ImportarExcelPreviewResponse(BaseModel):
     # vez de que el coordinador tenga que inferirlo de 40 advertencias
     # idénticas fila por fila, se le dice la causa probable una sola vez.
     advertenciaGeneral: str | None = None
+    # Nombre + hoja del archivo complementario, si se subió y se pudo
+    # cruzar -- para que el frontend pueda mostrar "cruzado con: archivo.xlsx (hoja FICHAS)".
+    archivoComplementario: str | None = None
+    hojaComplementaria: str | None = None
 
 
 class GenerarPropuestaRequest(BaseModel):

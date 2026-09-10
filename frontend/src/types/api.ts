@@ -311,6 +311,28 @@ export interface FilaImportada {
   jornada: string | null
   instructorNombre: string | null
   advertencia: string | null
+  // Solo vienen si se subió un archivo complementario y traía estos datos
+  // para la misma ficha (cruce por codigoFicha).
+  nivelFormacion: string | null
+  coordinacion: string | null
+  codigoPrograma: string | null
+  fechaInicioLectiva: string | null
+  fechaFinLectiva: string | null
+  fechaFinProductiva: string | null
+}
+
+// Espejo de ProgramaCreate/CoordinacionCreate -- usados por "Crear
+// programa nuevo" dentro del formulario "Crear ficha" del asistente.
+export interface ProgramaCreate {
+  codigoPrograma: string
+  nombrePrograma: string
+  nivelFormacion?: string | null
+  activo?: boolean
+  idCoordinacion: number
+}
+
+export interface CoordinacionCreate {
+  nombreCoordinacion: string
 }
 
 // Espejo de FichaCreate (backend/app/schemas/ficha.py) -- usado por el
@@ -332,6 +354,8 @@ export interface ImportarExcelPreviewResponse {
   totalFilas: number
   filasConAdvertencia: number
   advertenciaGeneral: string | null
+  archivoComplementario: string | null
+  hojaComplementaria: string | null
 }
 
 export type JornadaAsistente = 'MAÑANA' | 'TARDE' | 'NOCHE'

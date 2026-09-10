@@ -124,6 +124,43 @@ explicando la causa probable (formato de matriz vs. columna rota) en vez
 de repetir la misma advertencia sin contexto en cada fila — evita que el
 coordinador tenga que adivinar por qué falló.
 
+### Cruce de dos archivos + auto-creación de Programa/Coordinación (hecho)
+
+`LIDERES DE FICHA` no trae nivel de formación, coordinación ni el código
+real de programa de SENA. Investigando el archivo
+`PROGRAMACIÓN CGMLTI I TRM 2026 (4).xlsx` más a fondo apareció la hoja
+**`PE-04`** — un export oficial de SOFIA Plus, con 53 columnas, que sí
+trae `CODIGO_PROGRAMA` (el código real, ej. `228118`), `NIVEL_FORMACION`,
+`NOMBRE_PROGRAMA_FORMACION` y fechas de ficha. 20 de las fichas de
+`LIDERES DE FICHA` coinciden con `PE-04` por número de ficha — probado
+con los dos archivos reales, no solo hipotético.
+
+- `POST /horarios/asistente/importar` ahora acepta un segundo archivo
+  opcional (`archivo_complementario`). Se cruza con el principal por
+  `codigoFicha`.
+- `_elegir_hoja`: si el archivo tiene varias hojas, ya no asume que la
+  útil es la primera — mide, sin IA, cuántos valores puramente numéricos
+  tiene cada columna candidata (cualquier encabezado que contenga
+  "ficha") y elige la de mayor densidad. Necesario: `PROGRAMACIÓN CGMLTI`
+  tiene 15 hojas, la útil (`PE-04`) es la #6.
+- **Bug real encontrado y corregido en el camino**: `PE-04` trae a la vez
+  `IDENTIFICADOR_FICHA` e `IDENTIFICADOR_UNICO_FICHA` (con un prefijo
+  extra) — la IA, guiándose por el nombre, mapeaba "ficha" a la columna
+  equivocada. La densidad numérica medida por `_elegir_hoja` ahora se usa
+  como ancla para el campo "ficha" específicamente, en vez de confiar en
+  la semántica de la IA para ese campo — y compara TODAS las columnas
+  candidatas de una misma hoja entre sí, no solo la primera que aparece
+  (esa fue la segunda vuelta del mismo bug).
+- Frontend: cuando el Programa no coincide con el catálogo y el archivo
+  complementario trajo código + nivel para esa ficha, el botón "Crear
+  ficha" del paso 2 se convierte en un formulario prellenado (nombre,
+  nivel, código, coordinación) — el coordinador solo confirma o ajusta.
+  Si la Coordinación tampoco existe, se puede crear ahí mismo (solo pide
+  un nombre). Sin ese cruce, se sigue pidiendo elegir un Programa
+  existente — no se inventa nada sin datos de respaldo.
+- 4 tests nuevos que cubren el cruce y ambas vueltas del bug de la
+  columna "ficha".
+
 ## Fase 4 — Motor optimizador con OR-Tools (MVP hecho)
 
 El hueco más grande del sistema: `HorarioService` **valida** horarios
