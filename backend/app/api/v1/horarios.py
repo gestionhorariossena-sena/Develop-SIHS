@@ -1,13 +1,20 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.ai.client import AIServiceError
-from app.ai.schemas import ResumenAuditoriaIA
+from app.ai.schemas import ResumenAuditoriaIA, RespuestaPreguntaHorario
 from app.ai.tasks.explain_conflict import resumir_auditoria
+from app.ai.tasks.responder_pregunta import responder_pregunta
 from app.core.database import get_db
 from app.core.supabase_auth import require_roles
+from app.schemas.asistente_horario import (
+    GenerarPropuestaRequest,
+    GenerarPropuestaResponse,
+    ImportarExcelPreviewResponse,
+    PreguntaHorarioRequest,
+)
 from app.schemas.horario import (
     AuditoriaCrucesResponse,
     HorarioCreate,
@@ -17,6 +24,8 @@ from app.schemas.horario import (
     HorarioResponse,
     HorarioUpdate,
 )
+from app.services.asistente_horario_service import generar_propuesta as generar_propuesta_service
+from app.services.asistente_horario_service import previsualizar_excel
 from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import CruceHorarioError, HorarioService
 
@@ -114,6 +123,56 @@ def resumir_auditoria_con_ia(
 
     try:
         return resumir_auditoria(conflictos)
+    except AIServiceError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@router.post("/asistente/importar", response_model=ImportarExcelPreviewResponse)
+async def importar_excel_vista_previa(
+    archivo: UploadFile,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_puede_programar),
+):
+    """Paso 1-2 del asistente de programación: sube un Excel real, la IA
+    clasifica sus columnas (Fase 1) y se arma una vista previa -- nada se
+    escribe en la base de datos acá. Las fichas que el Excel trae pero
+    que no existen todavía en el catálogo de SIHS se marcan como
+    pendientes, no se crean automáticamente."""
+    contenido = await archivo.read()
+    try:
+        return previsualizar_excel(db, contenido, archivo.filename or "archivo.xlsx")
+    except AIServiceError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001 -- archivo corrupto, hoja vacía, etc.
+        raise HTTPException(status_code=422, detail=f"No se pudo leer el archivo: {exc}") from exc
+
+
+@router.post("/asistente/generar-propuesta", response_model=GenerarPropuestaResponse)
+def generar_propuesta_horario(
+    data: GenerarPropuestaRequest,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_puede_programar),
+):
+    """Paso 3: genera una propuesta de horario con OR-Tools (Fase 4) para
+    fichas que YA existen en el catálogo. No persiste nada -- el
+    coordinador confirma en el paso 4, bloque por bloque, contra
+    POST /horarios/ (que sí valida cruces antes de guardar)."""
+    try:
+        return generar_propuesta_service(db, data.idTrimestre, data.idsFicha, data.jornada)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/asistente/preguntar", response_model=RespuestaPreguntaHorario)
+def preguntar_sobre_horario(
+    data: PreguntaHorarioRequest,
+    usuario=Depends(require_puede_programar),
+):
+    """La barra "¿En qué te ayudo?" del asistente -- una pregunta puntual
+    sobre un bloque/conflicto que el coordinador está viendo. No toca la
+    base de datos, no genera ni guarda nada."""
+    try:
+        return responder_pregunta(data.pregunta, data.contexto)
     except AIServiceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 

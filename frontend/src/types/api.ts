@@ -288,3 +288,71 @@ export interface SolicitudAcceso {
   fechaResolucion: string | null
   idAdminResolvio: string | null
 }
+
+// Espejo de app/schemas/asistente_horario.py -- el wizard de 4 pasos
+// (AsistenteHorarios.tsx): subir archivo -> revisar -> generar
+// propuesta -> confirmar. Ninguno de estos 3 endpoints persiste nada;
+// confirmar sigue siendo POST /horarios/ (HorarioCreate, más arriba).
+export interface ColumnaClasificada {
+  columnaOriginal: string
+  campo: string | null
+  confianza: number
+}
+
+export interface FilaImportada {
+  fila: number
+  idFicha: number | null
+  fichaExiste: boolean
+  programa: string | null
+  jornada: string | null
+  instructorNombre: string | null
+  advertencia: string | null
+}
+
+export interface ImportarExcelPreviewResponse {
+  nombreArchivo: string
+  hoja: string
+  filaEncabezado: number
+  columnas: ColumnaClasificada[]
+  filas: FilaImportada[]
+  totalFilas: number
+  filasConAdvertencia: number
+}
+
+export type JornadaAsistente = 'MAÑANA' | 'TARDE' | 'NOCHE'
+
+export interface GenerarPropuestaRequest {
+  idTrimestre: number
+  idsFicha: number[]
+  jornada: JornadaAsistente
+}
+
+export interface BloquePropuesto {
+  idFicha: number
+  fichaCodigo: string
+  idResultado: number
+  resultadoDescripcion: string
+  idInstructor: string
+  instructorNombre: string
+  idAmbiente: number
+  ambienteNombre: string
+  idJornada: number
+  dias: number[]
+  horaInicio: string
+  horaFin: string
+}
+
+export interface GenerarPropuestaResponse {
+  bloques: BloquePropuesto[]
+  factible: boolean
+  mensaje: string
+}
+
+export interface PreguntaHorarioRequest {
+  pregunta: string
+  contexto: string
+}
+
+export interface RespuestaPreguntaHorario {
+  respuesta: string
+}

@@ -117,6 +117,12 @@ export const apiGet = <T>(path: string) => request<T>(path)
 export const apiPost = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined })
 
+/** Para endpoints con UploadFile (multipart) -- `request()` ya detecta
+ * FormData y no le pone Content-Type: JSON (el navegador arma el
+ * boundary del multipart solo). No usar apiPost acá: haría
+ * JSON.stringify(FormData) y se perdería el archivo. */
+export const apiPostForm = <T>(path: string, formData: FormData) => request<T>(path, { method: 'POST', body: formData })
+
 export const apiPut = <T>(path: string, body?: unknown) =>
   request<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined })
 
