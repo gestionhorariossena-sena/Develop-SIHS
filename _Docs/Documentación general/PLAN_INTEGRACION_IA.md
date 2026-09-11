@@ -390,6 +390,30 @@ el usuario, alto riesgo de adivinar mal la semántica de esas columnas.
 Si en el futuro se usa este archivo como fuente real, hay que
 confirmar primero qué representan esos rangos antes de construir nada.
 
+### Bug real #3: numeroFase/faseActual se perdían en silencio al guardar
+
+Al reimportar el currículo real de ADSO con las hojas TRIM (fix
+anterior), `curriculo_service` etiquetaba bien los 30 resultados con su
+fase -- pero en la BD quedaron los 30 con `numeroFase` nulo. Causa:
+`ResultadoAprendizajeService.crear`/`.actualizar()` arman el objeto ORM
+con una lista fija de campos copiados uno por uno desde el schema
+Pydantic, y esa lista no se actualizó al agregar `numeroFase` al
+schema -- se validaba correctamente en el request, pero se descartaba
+en silencio al construir el modelo. Mismo patrón exacto en
+`FichaService.crear`/`.actualizar()` con `faseActual` (no se había
+notado porque nadie había guardado una ficha con fase todavía).
+Arreglado en ambos servicios. Tests nuevos a nivel de API completa
+(`test_fichas_faseactual.py`, `test_resultados_aprendizaje_faseactual.py`)
+porque el bug estaba justo en la frontera schema → servicio → modelo,
+donde un test solo de schema o solo de modelo no lo hubiera detectado.
+
+**Nota para la próxima vez que se agregue un campo a un schema**: si el
+servicio arma el objeto ORM copiando campos uno por uno (patrón usado
+en varios servicios de este proyecto, no solo estos dos), agregar el
+campo al schema NO alcanza -- hay que agregarlo también en el
+`crear`/`actualizar` del servicio. Vale la pena revisar si hay más
+servicios con este patrón antes de agregar el próximo campo nuevo.
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un
