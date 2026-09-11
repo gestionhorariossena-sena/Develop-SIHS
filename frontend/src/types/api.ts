@@ -203,6 +203,26 @@ export interface HorarioDryRunResponse {
 // texto libre — no la tabla relacional `horarios` real (con FKs y
 // detección de cruces), que todavía no existe en el backend. Ver
 // `_Docs/Documentación general/SECCION_ESTUDIANTES.md`.
+// Espejo de AvisoResponse (backend/app/schemas/aviso.py) — GET /avisos/.
+// "extraordinario" es la categoría del destacado tipo "COMUNICADO
+// EXTRAORDINARIO" del mockup; reprog/eventos/sede son las 3 categorías
+// del filtro de píldoras.
+export type CategoriaAviso = 'reprog' | 'eventos' | 'sede' | 'extraordinario'
+
+export interface Aviso {
+  idAviso: number
+  idUsuarioPublicador: string | null
+  publicadorNombre: string | null
+  titulo: string
+  cuerpo: string
+  categoria: CategoriaAviso
+  idFicha: number | null
+  idSede: number | null
+  adjuntoUrl: string | null
+  fechaPublicacion: string
+  vigenteHasta: string | null
+}
+
 export interface HorarioGuardado {
   idHorarioGuardado: number
   idUsuario: string
