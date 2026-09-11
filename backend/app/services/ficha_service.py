@@ -22,6 +22,7 @@ class FichaService:
             fechaFinLectiva=data.fechaFinLectiva,
             fechaInicioProductiva=data.fechaInicioProductiva,
             fechaFinProductiva=data.fechaFinProductiva,
+            faseActual=data.faseActual,
         )
         return FichaRepository.crear(db, nueva_ficha)
 
@@ -40,6 +41,7 @@ class FichaService:
         ficha.fechaFinLectiva = data.fechaFinLectiva
         ficha.fechaInicioProductiva = data.fechaInicioProductiva
         ficha.fechaFinProductiva = data.fechaFinProductiva
+        ficha.faseActual = data.faseActual
 
         return FichaRepository.actualizar(db, ficha)
 
