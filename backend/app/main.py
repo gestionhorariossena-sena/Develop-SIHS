@@ -25,6 +25,7 @@ from app.api.v1.actividades_aprendizaje import router as actividades_aprendizaje
 from app.api.v1.auditoria import router as auditoria_router
 from app.api.v1.anotaciones_horario import router as anotaciones_horario_router
 from app.api.v1.avisos import router as avisos_router
+from app.api.v1.solicitudes_cambio_horario import router as solicitudes_cambio_horario_router
 
 
 app = FastAPI(title=settings.app_name)
@@ -65,3 +66,4 @@ app.include_router(actividades_aprendizaje_router, prefix="/api/v1")
 app.include_router(auditoria_router, prefix="/api/v1")
 app.include_router(anotaciones_horario_router, prefix="/api/v1")
 app.include_router(avisos_router, prefix="/api/v1")
+app.include_router(solicitudes_cambio_horario_router, prefix="/api/v1")
