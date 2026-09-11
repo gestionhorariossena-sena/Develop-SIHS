@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Enum, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Enum, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -31,6 +31,12 @@ class Usuario(Base):
     tipoContrato = Column(String(20))
     horasContratadasSemana = Column(Integer)
     codigoInstructor = Column(String(20), unique=True, nullable=True)
+
+    # Nombre EXACTO del mockup panel_de_administracion_sihs_sena/code.html
+    # (línea ~442): bloquea navegar hasta que la persona establezca su
+    # propia clave — usado por el flujo de aprobación de solicitudes de
+    # acceso y por cualquier futuro flujo de credencial temporal.
+    debe_cambiar_clave = Column(Boolean, nullable=False, default=False, server_default="false")
 
     roles = relationship(
         "Rol",

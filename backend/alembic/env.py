@@ -33,6 +33,7 @@ from app.models import (  # noqa: E402,F401
     resultado_aprendizaje,
     rol,
     sede,
+    solicitud_acceso,
     trimestre,
     usuario,
     usuario_especialidad,
