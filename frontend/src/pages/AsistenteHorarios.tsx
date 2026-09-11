@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
 import type {
@@ -75,6 +76,14 @@ export function AsistenteHorarios() {
   const [paso, setPaso] = useState<Paso>(1)
 
   const [subiendo, setSubiendo] = useState(false)
+  // El asistente arma horarios asignando un instructor a cada bloque
+  // (Horario.idInstructor es obligatorio) -- un Excel "de aprendiz" solo,
+  // sin instructor, no puede crear nada válido. El horario del aprendiz
+  // no es una entidad aparte: es el mismo Horario visto desde su ficha
+  // (ya existe en Fichas/VistaFichas). Este selector es la puerta de
+  // entrada para cuando lleguen archivos reales de ese tipo -- hoy solo
+  // "Instructor" importa de verdad.
+  const [tipoArchivo, setTipoArchivo] = useState<'instructor' | 'aprendiz'>('instructor')
   const [archivoPrincipal, setArchivoPrincipal] = useState<File | null>(null)
   // Opcional -- para cruzar por número de ficha lo que el archivo
   // principal no traiga (ej. nivel de formación, coordinación, código de
@@ -430,41 +439,82 @@ export function AsistenteHorarios() {
 
         {paso === 1 && (
           <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-6 dark:border-slate-700 dark:bg-slate-800">
-            <p className="mb-1 text-sm text-on-surface-variant dark:text-slate-300">
-              Sube el Excel de planeación del trimestre. Revisamos lo que trae antes de tocar nada.
-            </p>
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={(e) => setArchivoPrincipal(e.target.files?.[0] ?? null)}
-              disabled={subiendo}
-              aria-label="Seleccionar archivo Excel"
-              className="mt-2 block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-sena-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sena-700 dark:text-slate-300 dark:file:bg-sena-950/50 dark:file:text-sena-400"
-            />
+            <p className="mb-2 text-sm font-medium text-on-surface dark:text-slate-300">¿Qué tipo de archivo vas a subir?</p>
+            <div className="mb-5 inline-flex rounded-xl border border-outline-variant p-1 dark:border-slate-700" role="radiogroup" aria-label="Tipo de archivo">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={tipoArchivo === 'instructor'}
+                onClick={() => setTipoArchivo('instructor')}
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${tipoArchivo === 'instructor' ? 'bg-sena-600 text-white' : 'text-on-surface-variant dark:text-slate-300'}`}
+              >
+                Horario de instructor
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={tipoArchivo === 'aprendiz'}
+                onClick={() => setTipoArchivo('aprendiz')}
+                className={`rounded-lg px-3 py-1.5 text-sm font-semibold ${tipoArchivo === 'aprendiz' ? 'bg-sena-600 text-white' : 'text-on-surface-variant dark:text-slate-300'}`}
+              >
+                Horario de aprendiz
+              </button>
+            </div>
 
-            <p className="mb-1 mt-5 text-sm text-on-surface-variant dark:text-slate-300">
-              Archivo complementario (opcional) -- si tienes otro con datos que el primero no trae (ej. nivel de
-              formación, código de programa), lo cruzamos por número de ficha.
-            </p>
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={(e) => setArchivoComplementario(e.target.files?.[0] ?? null)}
-              disabled={subiendo}
-              aria-label="Seleccionar archivo complementario"
-              className="mt-2 block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-surface-container file:px-3 file:py-2 file:text-sm file:font-semibold file:text-on-surface-variant dark:text-slate-300 dark:file:bg-slate-700 dark:file:text-slate-200"
-            />
+            {tipoArchivo === 'aprendiz' ? (
+              <div className="rounded-xl border border-outline-variant bg-surface p-4 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                <p>
+                  El horario del aprendiz no se arma por separado: es el mismo horario de la ficha que ya generó este
+                  asistente a partir del horario del instructor -- cada bloque asignado a una ficha aplica
+                  automáticamente a todos sus aprendices.
+                </p>
+                <p className="mt-2">
+                  Para verlo, ve a{' '}
+                  <Link to="/fichas" className="font-semibold text-primary hover:underline dark:text-sena-400">
+                    Fichas
+                  </Link>{' '}
+                  y abre la ficha que te interesa. Para crear o ajustar un horario, usa "Horario de instructor" arriba.
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="mb-1 text-sm text-on-surface-variant dark:text-slate-300">
+                  Sube el Excel de planeación del trimestre. Revisamos lo que trae antes de tocar nada.
+                </p>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => setArchivoPrincipal(e.target.files?.[0] ?? null)}
+                  disabled={subiendo}
+                  aria-label="Seleccionar archivo Excel"
+                  className="mt-2 block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-sena-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sena-700 dark:text-slate-300 dark:file:bg-sena-950/50 dark:file:text-sena-400"
+                />
 
-            <button
-              type="button"
-              disabled={!archivoPrincipal || subiendo}
-              onClick={() => void importarArchivos()}
-              className="mt-5 rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {subiendo ? 'Leyendo…' : 'Continuar'}
-            </button>
-            {errorImportar && (
-              <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorImportar}</p>
+                <p className="mb-1 mt-5 text-sm text-on-surface-variant dark:text-slate-300">
+                  Archivo complementario (opcional) -- si tienes otro con datos que el primero no trae (ej. nivel de
+                  formación, código de programa), lo cruzamos por número de ficha.
+                </p>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => setArchivoComplementario(e.target.files?.[0] ?? null)}
+                  disabled={subiendo}
+                  aria-label="Seleccionar archivo complementario"
+                  className="mt-2 block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-surface-container file:px-3 file:py-2 file:text-sm file:font-semibold file:text-on-surface-variant dark:text-slate-300 dark:file:bg-slate-700 dark:file:text-slate-200"
+                />
+
+                <button
+                  type="button"
+                  disabled={!archivoPrincipal || subiendo}
+                  onClick={() => void importarArchivos()}
+                  className="mt-5 rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {subiendo ? 'Leyendo…' : 'Continuar'}
+                </button>
+                {errorImportar && (
+                  <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorImportar}</p>
+                )}
+              </>
             )}
           </section>
         )}

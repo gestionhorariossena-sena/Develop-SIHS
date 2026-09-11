@@ -364,6 +364,32 @@ bloquear por falta de un dato que ningún Excel real trae todavía):
   tiene cada fase) -- cuando lleguen los archivos con más información
   que mencionó el usuario, retomar ahí.
 
+### Selector "Horario de instructor / Horario de aprendiz" (paso 1)
+
+El usuario planteó que hay dos tipos de horario con información
+distinta (instructor y aprendiz) y que un solo importador para ambos no
+tiene sentido. Análisis: `Horario` exige `idInstructor` (not null) --
+un archivo solo de aprendiz, sin instructor, no puede crear un bloque
+válido. Además el horario del aprendiz no es una entidad aparte: es el
+mismo `Horario` de su ficha, visto desde otro ángulo (ya existe
+`VistaFichas.tsx` para eso). Decisión: un solo modelo/generador (evita
+que las dos vistas se desincronicen con el tiempo), pero se agrega el
+selector en el paso 1 para cuando lleguen archivos reales de aprendiz
+que sirvan para VALIDAR contra el horario ya generado (no para crear
+uno nuevo). v1: "Instructor" sin cambios (comportamiento probado de
+siempre); "Aprendiz" explica la relación y enlaza a Fichas -- no
+intenta parsear nada todavía.
+
+Se encontró en el repo un archivo real mucho más rico de lo esperado
+("PROGRAMACIÓN CGMLTI I TRM 2026 (4).xlsx"): trae hojas
+`HORARIO_FICHAS`, `HORARIO_INSTRUCTORES`, `HORARIO_AMBIENTES` -- pero
+son matrices de DISPONIBILIDAD (ficha/instructor × rangos de semana
+tipo "D-K", "L-S"), no listas planas como `LIDERES DE FICHA
+2026_pruebas.xlsx`. No se intentó parsear -- formato no confirmado con
+el usuario, alto riesgo de adivinar mal la semántica de esas columnas.
+Si en el futuro se usa este archivo como fuente real, hay que
+confirmar primero qué representan esos rangos antes de construir nada.
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un
