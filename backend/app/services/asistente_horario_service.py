@@ -193,6 +193,12 @@ def _codigo_ficha_desde_texto(texto: str) -> str | None:
     return _codigo_simple_con_o_sin_letra(texto.split("-")[0])
 
 
+# Solo para "fase_actual": el Excel real la trae de dos formas -- número
+# entero plano (columna "TRI" de PROGRAMACIÓN CGMLTI) o número romano
+# (columna "TRM" de LIDERES DE FICHA, valores reales vistos: I..VII).
+_ROMANOS_A_NUMERO = {"I": 1, "II": 2, "III": 3, "IV": 4, "V": 5, "VI": 6, "VII": 7}
+
+
 def _valor_entero(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: str) -> int | None:
     columna = campo_a_columna.get(campo)
     if not columna or columna not in idx or idx[columna] >= len(fila_valores):
@@ -202,8 +208,12 @@ def _valor_entero(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: 
         return None
     if isinstance(valor, (int, float)):
         return int(valor)
-    if isinstance(valor, str) and valor.strip().isdigit():
-        return int(valor.strip())
+    if isinstance(valor, str):
+        texto = valor.strip()
+        if texto.isdigit():
+            return int(texto)
+        if campo == "fase_actual" and texto.upper() in _ROMANOS_A_NUMERO:
+            return _ROMANOS_A_NUMERO[texto.upper()]
     return None
 
 
