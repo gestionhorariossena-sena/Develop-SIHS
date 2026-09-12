@@ -382,6 +382,41 @@ def test_generar_propuesta_no_explota_con_catalogo_real_de_instructores_y_ambien
     assert len(resultado.bloques) == 10
 
 
+def test_generar_propuesta_lote_gigante_falla_rapido_en_vez_de_colgarse(db_session):
+    # Caso real 2026-09-12: el coordinador seleccionó ~50 fichas SIN
+    # faseActual (cada una trae TODOS sus resultados pendientes, no solo
+    # los de una fase) -- eso son miles de necesidades, y aunque
+    # _muestra_rotada acota las opciones POR necesidad, construir el
+    # modelo sigue siendo O(necesidades × opciones): el request se quedó
+    # colgado varios minutos hasta que el frontend hizo timeout (45s) sin
+    # que nadie supiera por qué. Ahora debe fallar de inmediato con un
+    # mensaje claro, sin siquiera intentar construir el modelo.
+    _crear_tablas_extra(db_session)
+    db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
+    db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="ADSO", activo=True, idCoordinacion=1))
+    db_session.add(Trimestre(idTrimestre=1, nombre="2026-3", fechaInicio=date(2026, 7, 1), fechaFin=date(2026, 9, 30), estado="activo"))
+    db_session.add(Sede(id=1, nombre="Sede Demo", direccion="Calle 1", tipo="principal"))
+    db_session.add(Ambiente(id=1, numero_ambiente=101, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1))
+    db_session.add(CompetenciaFormacion(idCompetencia=1, codigo="C1", descripcion="Competencia demo", idPrograma=1))
+    for i in range(13):
+        db_session.add(ResultadoAprendizaje(idResultado=i + 1, codigo=f"RA-{i}", descripcion=f"Resultado {i}", idCompetencia=1))
+    for i in range(50):
+        db_session.add(Ficha(idFicha=i + 1, codigoFicha=str(1000000 + i), idPrograma=1, idTrimestre=1, idSede=1))
+    instructor_id = uuid.uuid4()
+    db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana@demo.sihs", tipoContrato="contratista", estado="activo"))
+    db_session.commit()
+
+    inicio = time_module.perf_counter()
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=list(range(1, 51)), jornada="MAÑANA")
+    duracion = time_module.perf_counter() - inicio
+
+    assert duracion < 2.0, f"tardó {duracion:.1f}s -- debería fallar antes de construir el modelo"
+    assert resultado.factible is False
+    assert resultado.bloques == []
+    assert "Reduce cuántas fichas" in resultado.mensaje
+    assert "fase actual" in resultado.mensaje
+
+
 def test_generar_propuesta_filtra_por_fase_actual_de_la_ficha(db_session):
     # Caso real que colgaba el asistente: un programa con currículo de
     # varias fases (TRIM I..IV) y una ficha que solo debería programar la
