@@ -171,6 +171,25 @@ def test_previsualizar_excel_fichas_con_letra_distintiva_son_fichas_distintas(db
     assert resultado.filas[2].codigoFicha == "3171242A"  # espacio normalizado
 
 
+def test_previsualizar_excel_ficha_con_letra_unificada_con_guion(db_session, monkeypatch):
+    # Caso real combinado: "3228970 A - B" es la ficha "3228970 A"
+    # (con letra distintiva) unificada con su par "B". El segmento de
+    # la izquierda del guion todavía tiene la letra -- hay que
+    # reconocerla ahí también, no solo comprobar que sea numérico puro.
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=202, codigo_ficha="3228970A")
+    contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], ["3228970 A - B", "ADSO"]])
+    _mock_clasificacion(monkeypatch, {"FICHA": ("ficha", 1.0), "PROGRAMA": ("programa", 1.0)})
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    fila = resultado.filas[0]
+    assert fila.codigoFicha == "3228970A"
+    assert fila.fichaExiste is True
+    assert fila.idFicha == 202
+    assert fila.advertencia is None
+
+
 def test_previsualizar_excel_nivel_formacion_se_lee_directo_del_archivo_principal(db_session, monkeypatch):
     # Bug real: nivelFormacion solo se leía del archivo COMPLEMENTARIO,
     # nunca de una columna "NIVEL" que ya viniera en el archivo principal

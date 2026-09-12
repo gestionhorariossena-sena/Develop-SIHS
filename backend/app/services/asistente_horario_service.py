@@ -147,10 +147,20 @@ def _valor_texto(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: s
 _PATRON_FICHA_CON_LETRA = re.compile(r"^(\d+)\s*([A-Za-z])$")
 
 
+def _codigo_simple_con_o_sin_letra(segmento: str) -> str | None:
+    """Un segmento (ya sin guiones) que es o un número puro, o un número
+    con letra distintiva -- ver _codigo_ficha_desde_texto."""
+    segmento = segmento.strip()
+    con_letra = _PATRON_FICHA_CON_LETRA.match(segmento)
+    if con_letra:
+        return f"{con_letra.group(1)}{con_letra.group(2).upper()}"
+    return segmento if segmento.isdigit() else None
+
+
 def _codigo_ficha_desde_texto(texto: str) -> str | None:
     """El código real de SENA, como texto.
 
-    Dos formatos reales distintos, que no hay que confundir:
+    Dos formatos reales que se pueden combinar, y no hay que confundir:
     - Letra distintiva (ej. "3228973A" / "3228973B", o con espacio
       "3171242 A"/"3171242 B"): son DOS FICHAS DIFERENTES que comparten
       número base -- se conserva la letra (normalizada, sin el espacio)
@@ -160,15 +170,18 @@ def _codigo_ficha_desde_texto(texto: str) -> str | None:
       administrativamente unida con otra -- se usa el segmento de la
       IZQUIERDA (antes del primer guion) como el código real.
 
-    Devuelve None si no calza ninguno de los dos formatos y ni el
-    primer segmento antes de un guion es un número válido (dato
-    realmente irreconocible, ej. texto libre)."""
+    Ambos combinados: "3228970 A - B" es la ficha "3228970 A" unificada
+    con su par "B" -- el segmento de la izquierda ("3228970 A") todavía
+    tiene la letra distintiva, así que hay que re-aplicar el patrón de
+    letra sobre ÉL, no solo comprobar que sea puramente numérico.
+
+    Devuelve None si nada de esto calza (dato realmente irreconocible,
+    ej. texto libre)."""
     texto = texto.strip()
-    con_letra = _PATRON_FICHA_CON_LETRA.match(texto)
-    if con_letra:
-        return f"{con_letra.group(1)}{con_letra.group(2).upper()}"
-    primero = texto.split("-")[0].strip()
-    return primero if primero.isdigit() else None
+    directo = _codigo_simple_con_o_sin_letra(texto)
+    if directo:
+        return directo
+    return _codigo_simple_con_o_sin_letra(texto.split("-")[0])
 
 
 def _valor_entero(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: str) -> int | None:
