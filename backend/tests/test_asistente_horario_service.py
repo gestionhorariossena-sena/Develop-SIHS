@@ -143,6 +143,51 @@ def test_previsualizar_excel_ficha_unificada_con_guion_usa_el_codigo_de_la_izqui
     assert fila.advertencia is None
 
 
+def test_previsualizar_excel_fichas_con_letra_distintiva_son_fichas_distintas(db_session, monkeypatch):
+    # Caso real distinto del de unificación con guion: "3228973A" y
+    # "3228973B" (o "3171242 A"/"3171242 B", con espacio) son DOS fichas
+    # diferentes que comparten número base, no la misma ficha repetida.
+    # Confirmado con el usuario: se conserva la letra como parte del
+    # codigoFicha real (normalizada, sin espacio).
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=201, codigo_ficha="3228973A")
+    contenido = _xlsx_con_encabezado([
+        ["FICHA", "PROGRAMA"],
+        ["3228973A", "ADSO"],
+        ["3228973B", "ADSO"],
+        ["3171242 A", "ADSO"],
+    ])
+    _mock_clasificacion(monkeypatch, {"FICHA": ("ficha", 1.0), "PROGRAMA": ("programa", 1.0)})
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    assert resultado.filas[0].codigoFicha == "3228973A"
+    assert resultado.filas[0].fichaExiste is True
+    assert resultado.filas[0].idFicha == 201
+
+    assert resultado.filas[1].codigoFicha == "3228973B"
+    assert resultado.filas[1].fichaExiste is False  # no existe en el catálogo, es otra ficha
+
+    assert resultado.filas[2].codigoFicha == "3171242A"  # espacio normalizado
+
+
+def test_previsualizar_excel_nivel_formacion_se_lee_directo_del_archivo_principal(db_session, monkeypatch):
+    # Bug real: nivelFormacion solo se leía del archivo COMPLEMENTARIO,
+    # nunca de una columna "NIVEL" que ya viniera en el archivo principal
+    # (ej. LIDERES DE FICHA sí trae NIVEL) -- así que crear una ficha
+    # nueva pedía elegir/crear el programa a mano aunque el nivel ya
+    # estuviera ahí mismo, sin necesidad de un segundo archivo.
+    _crear_tablas_extra(db_session)
+    contenido = _xlsx_con_encabezado([["FICHA", "NIVEL", "PROGRAMA"], [999999, "TECNÓLOGO", "ADSO"]])
+    _mock_clasificacion(monkeypatch, {
+        "FICHA": ("ficha", 1.0), "NIVEL": ("nivel_formacion", 0.95), "PROGRAMA": ("programa", 1.0),
+    })
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    assert resultado.filas[0].nivelFormacion == "TECNÓLOGO"
+
+
 def test_previsualizar_excel_texto_libre_en_ficha_sigue_pidiendo_revision(db_session, monkeypatch):
     _crear_tablas_extra(db_session)
     contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], ["VER OBSERVACIONES", "ADSO"]])
