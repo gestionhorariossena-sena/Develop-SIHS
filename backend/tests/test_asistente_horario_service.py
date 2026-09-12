@@ -4,6 +4,7 @@ SQLite en memoria para la parte de catálogo (mismo patrón que
 test_horarios_auditoria_cruces.py)."""
 
 import json
+import time as time_module
 import uuid
 from datetime import date, time
 from io import BytesIO
@@ -214,6 +215,41 @@ def test_generar_propuesta_genera_un_bloque_real(db_session):
     assert bloque.idResultado == 1
     assert bloque.instructorNombre == "Ana"
     assert bloque.idAmbiente == 1
+
+
+def test_generar_propuesta_no_explota_con_catalogo_real_de_instructores_y_ambientes(db_session):
+    # Reproduce el caso real que colgaba (o reventaba por memoria) el
+    # asistente al importar el catálogo real de instructores/ambientes:
+    # con cientos de candidatos, ofrecerle al solver el producto cruzado
+    # completo (franjas × patrones × TODOS los instructores × TODOS los
+    # ambientes) por cada necesidad son cientos de millones de variables
+    # antes de construir el modelo siquiera. _muestra_rotada acota los
+    # candidatos por necesidad -- este test solo confirma que con
+    # volumen realista (200 instructores, 100 ambientes, una ficha con
+    # varios resultados pendientes) termina rápido, sin exigir que
+    # encuentre una asignación factible.
+    _crear_tablas_extra(db_session)
+    db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
+    db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="ADSO", activo=True, idCoordinacion=1))
+    db_session.add(Trimestre(idTrimestre=1, nombre="2026-3", fechaInicio=date(2026, 7, 1), fechaFin=date(2026, 9, 30), estado="activo"))
+    db_session.add(Sede(id=1, nombre="Sede Demo", direccion="Calle 1", tipo="principal"))
+    for i in range(100):
+        db_session.add(Ambiente(id=i + 1, numero_ambiente=100 + i, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1))
+    db_session.add(Ficha(idFicha=100, codigoFicha="100", idPrograma=1, idTrimestre=1, idSede=1))
+    db_session.add(CompetenciaFormacion(idCompetencia=1, codigo="C1", descripcion="Competencia demo", idPrograma=1))
+    for i in range(10):
+        db_session.add(ResultadoAprendizaje(idResultado=i + 1, codigo=f"RA-{i}", descripcion=f"Resultado {i}", idCompetencia=1))
+    for i in range(200):
+        db_session.add(Usuario(idUsuario=uuid.uuid4(), nombre=f"Instructor {i}", email=f"instructor{i}@demo.sihs", tipoContrato="contratista", estado="activo"))
+    db_session.commit()
+
+    inicio = time_module.perf_counter()
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
+    duracion = time_module.perf_counter() - inicio
+
+    assert duracion < 20.0, f"tardó {duracion:.1f}s -- _muestra_rotada dejó de acotar los candidatos"
+    assert resultado.factible is True
+    assert len(resultado.bloques) == 10
 
 
 def test_generar_propuesta_filtra_por_fase_actual_de_la_ficha(db_session):

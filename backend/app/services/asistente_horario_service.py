@@ -359,6 +359,26 @@ def _diagnostico_infactibilidad(necesidades: list[NecesidadHorario], jornada: st
     return " ".join(partes)
 
 
+# Tope de instructores/ambientes candidatos que se le ofrecen al solver
+# POR NECESIDAD. `generar_horario` arma una opción por cada combinación
+# de franja × patrón de día × instructor × ambiente -- con catálogos
+# reales (cientos de instructores/ambientes, no los 4-6 de prueba) ese
+# producto cruzado explota a cientos de millones de variables antes de
+# construir el modelo siquiera. No hace falta ofrecerle al solver los
+# 215 instructores del centro para dictar una sola clase: un subconjunto
+# rotado (distinto por necesidad, para no pelear todas por los mismos
+# candidatos) alcanza de sobra. Ver PLAN_INTEGRACION_IA.md.
+_LIMITE_CANDIDATOS = 8
+
+
+def _muestra_rotada(candidatos: list, tamano: int, offset: int) -> list:
+    if len(candidatos) <= tamano:
+        return candidatos
+    inicio = offset % len(candidatos)
+    rotado = candidatos[inicio:] + candidatos[:inicio]
+    return rotado[:tamano]
+
+
 def generar_propuesta(
     db: Session, id_trimestre: int, ids_ficha: list[int], jornada: str
 ) -> GenerarPropuestaResponse:
@@ -404,13 +424,14 @@ def generar_propuesta(
 
         for resultado in _resultados_pendientes(db, ficha, id_trimestre):
             resultados_por_id[resultado.idResultado] = resultado
+            offset = len(necesidades)
             necesidades.append(
                 NecesidadHorario(
                     id_ficha=id_ficha,
                     id_resultado=resultado.idResultado,
                     jornada=jornada,
-                    instructores_candidatos=ids_instructor,
-                    ambientes_candidatos=ids_ambiente,
+                    instructores_candidatos=_muestra_rotada(ids_instructor, _LIMITE_CANDIDATOS, offset),
+                    ambientes_candidatos=_muestra_rotada(ids_ambiente, _LIMITE_CANDIDATOS, offset),
                 )
             )
 
