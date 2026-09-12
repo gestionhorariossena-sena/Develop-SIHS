@@ -517,6 +517,37 @@ repartiéndose el mismo resultado en días distintos (reparto válido,
 pasó varias veces en los 132 bloques generados) se marcaba como
 duplicado. Corregido: solo bloquea si es el MISMO instructor.
 
+### Dos ajustes reales al reintentar con otro archivo (fichas unificadas + nombre de programa)
+
+Al probar con "LIDERES DE FICHA 2026_pruebas.xlsx" completo (hoja
+`2026_TRIM 03`, la real del trimestre actual, no la de etapa
+productiva) aparecieron dos problemas más de datos reales:
+
+1. **Fichas unificadas**: el Excel anota con guiones cuando dos fichas
+   se unen físicamente en un solo grupo -- `"3171645-65-668"`
+   (unificada con 3171665), `"3171667-668"`. Antes esto se marcaba
+   como "formato no reconocido, requiere revisión manual". Confirmado
+   con el usuario: siempre se usa el código de la **izquierda** (antes
+   del primer guion) como el real. `_codigo_ficha_desde_texto` lo
+   extrae tanto en el archivo principal como en el complementario --
+   ya no hace falta revisión manual para este caso.
+2. **Nombre de programa con sufijos**: el Excel trae
+   `"ANALISIS Y DESARROLLO DE SOFTWARE (CADENA FONTIBON)"` mientras la
+   BD tiene `"Análisis y Desarrollo de Software"` -- la comparación
+   exacta (solo mayúsculas/espacios) nunca hacía match por ese sufijo
+   `(CADENA...)`, así que el coordinador tenía que crear el programa a
+   mano cada vez aunque ya existiera. `normalizarNombrePrograma()`
+   (`AsistenteHorarios.tsx`) quita acentos, paréntesis y puntuación
+   antes de comparar -- programas que genuinamente no existen (ej.
+   "ANALITICA DE DATOS", que no está en el catálogo) siguen pidiendo
+   crearlos, correctamente.
+
+También se detectaron y limpiaron 19 fichas creadas durante estas
+pruebas con el programa mal asignado (por el problema #2 de arriba,
+antes del fix) -- borradas con un script de un solo uso en scratchpad,
+verificando primero que ninguna tuviera horarios reales antes de
+tocarla (las 10 de ADSO con 127 horarios reales quedaron intactas).
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un
