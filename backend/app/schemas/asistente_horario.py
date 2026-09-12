@@ -38,6 +38,11 @@ class FilaImportada(BaseModel):
     fechaInicioLectiva: date | None = None
     fechaFinLectiva: date | None = None
     fechaFinProductiva: date | None = None
+    # Fase actual del pénsum (1=TRIM I..4=TRIM IV) -- cruzada desde un
+    # archivo complementario que la traiga (confirmado con el usuario:
+    # la columna "TRI" de la hoja FICHAS de PROGRAMACIÓN CGMLTI es esto,
+    # no la duración del programa). Ver PLAN_INTEGRACION_IA.md.
+    faseActual: int | None = None
 
 
 class ImportarExcelPreviewResponse(BaseModel):
