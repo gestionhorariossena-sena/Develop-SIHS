@@ -53,9 +53,10 @@ def _poblar(db_session):
     dia_martes = DiaSemana(idDia=2, nombreDia="Martes")
     resultado = ResultadoAprendizaje(idResultado=9, descripcion="Resultado A", codigo="RA-9", idCompetencia=1, horasAsignadas=10)
     instructor = Usuario(idUsuario=uuid.uuid4(), nombre="Carlos López", email="carlos.rr@example.com", tipoContrato="planta")
+    otro_instructor = Usuario(idUsuario=uuid.uuid4(), nombre="Ana Ruiz", email="ana.rr@example.com", tipoContrato="contratista")
     ficha = Ficha(idFicha=1, codigoFicha="FICHA-001", idPrograma=1, idTrimestre=1)
 
-    db_session.add_all([coordinacion, programa, trimestre, sede, ambiente_a, ambiente_b, jornada, dia_lunes, dia_martes, resultado, instructor, ficha])
+    db_session.add_all([coordinacion, programa, trimestre, sede, ambiente_a, ambiente_b, jornada, dia_lunes, dia_martes, resultado, instructor, otro_instructor, ficha])
     db_session.commit()
 
     # Bloque de la mañana, antes del descanso: Lunes 07:00-09:00.
@@ -68,7 +69,11 @@ def _poblar(db_session):
     db_session.execute(horario_dia.insert().values(idHorario=100, idDia=1))
     db_session.commit()
 
-    return {"idAmbienteA": ambiente_a.id, "idAmbienteB": ambiente_b.id, "idInstructor": instructor.idUsuario, "idFicha": ficha.idFicha, "idResultado": resultado.idResultado}
+    return {
+        "idAmbienteA": ambiente_a.id, "idAmbienteB": ambiente_b.id,
+        "idInstructor": instructor.idUsuario, "idOtroInstructor": otro_instructor.idUsuario,
+        "idFicha": ficha.idFicha, "idResultado": resultado.idResultado,
+    }
 
 
 def test_continuar_mismo_resultado_el_mismo_dia_despues_del_descanso_no_es_cruce(client, db_session, autenticar_como):
@@ -112,3 +117,26 @@ def test_mismo_resultado_en_un_dia_distinto_sigue_siendo_cruce(client, db_sessio
     assert respuesta.status_code == 409
     assert "ya tiene este resultado de aprendizaje programado" in respuesta.json()["detail"]["mensajes"][0]
     assert db_session.query(Horario).count() == 1
+
+
+def test_mismo_resultado_en_dia_distinto_con_otro_instructor_no_es_cruce(client, db_session, autenticar_como):
+    # Corrección 2026-09-12: la regla original bloqueaba (ficha, resultado)
+    # repetido en un día distinto sin mirar el instructor -- pero que DOS
+    # instructores distintos se repartan el mismo resultado en días
+    # distintos es un reparto válido (ej. rotan el mismo tema), no un
+    # error de programación. Solo debe bloquear si es el MISMO instructor.
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar(db_session)
+    _, headers = autenticar_como("Coordinador")
+
+    payload = {
+        "idJornada": 1, "idTrimestre": 1, "idAmbiente": catalogos["idAmbienteB"],
+        "idInstructor": str(catalogos["idOtroInstructor"]), "idFicha": catalogos["idFicha"],
+        "idResultado": catalogos["idResultado"], "horaInicio": "07:00:00", "horaFin": "09:00:00",
+        "dias": [2],
+    }
+
+    respuesta = client.post("/api/v1/horarios/", json=payload, headers=headers)
+
+    assert respuesta.status_code == 201
+    assert db_session.query(Horario).count() == 2
