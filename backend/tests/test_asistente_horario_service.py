@@ -225,6 +225,22 @@ def test_previsualizar_excel_nivel_formacion_se_lee_directo_del_archivo_principa
     assert resultado.filas[0].nivelFormacion == "TECNÓLOGO"
 
 
+def test_previsualizar_excel_fase_actual_en_numero_romano(db_session, monkeypatch):
+    # La hoja "2026_TRIM 03" real trae la fase como número romano en la
+    # columna "TRM" (valores reales vistos: I..VII), no como entero
+    # plano como la columna "TRI" de PROGRAMACIÓN CGMLTI -- ambas son el
+    # mismo campo, solo el formato del valor cambia según el archivo.
+    _crear_tablas_extra(db_session)
+    contenido = _xlsx_con_encabezado([["FICHA", "TRM", "PROGRAMA"], [999999, "VII", "ADSO"]])
+    _mock_clasificacion(monkeypatch, {
+        "FICHA": ("ficha", 1.0), "TRM": ("fase_actual", 0.9), "PROGRAMA": ("programa", 1.0),
+    })
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    assert resultado.filas[0].faseActual == 7
+
+
 def test_previsualizar_excel_texto_libre_en_ficha_sigue_pidiendo_revision(db_session, monkeypatch):
     _crear_tablas_extra(db_session)
     contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], ["VER OBSERVACIONES", "ADSO"]])
