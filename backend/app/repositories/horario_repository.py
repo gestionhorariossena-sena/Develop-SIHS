@@ -132,6 +132,7 @@ class HorarioRepository:
         db: Session,
         id_ficha: int,
         id_resultado: int,
+        id_instructor,
         dias: list[int],
         excluir_id: int | None = None,
     ) -> Horario | None:
@@ -143,9 +144,22 @@ class HorarioRepository:
         comparte al menos un día con el nuevo se trata como continuación de
         la misma clase (no se marca); solo se marca si NO comparte ningún
         día, que es el caso real de "este resultado ya se programó en otro
-        momento no relacionado". Devuelve el horario existente que choca, o
-        None."""
-        query = db.query(Horario).filter(Horario.idFicha == id_ficha, Horario.idResultado == id_resultado, Horario.activo.is_(True))
+        momento no relacionado".
+
+        Corrección 2026-09-12: además, solo cuenta como duplicado si es el
+        MISMO instructor repitiendo el resultado en un día no relacionado.
+        Dos instructores distintos programados para el mismo (ficha,
+        resultado) en días distintos es un reparto válido del contenido
+        (ej. dos instructores rotando el mismo tema), no un error de
+        programación -- la regla original no miraba el instructor y lo
+        bloqueaba igual, un falso positivo real reportado por el usuario.
+        Devuelve el horario existente que choca, o None."""
+        query = db.query(Horario).filter(
+            Horario.idFicha == id_ficha,
+            Horario.idResultado == id_resultado,
+            Horario.idInstructor == id_instructor,
+            Horario.activo.is_(True),
+        )
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)
 

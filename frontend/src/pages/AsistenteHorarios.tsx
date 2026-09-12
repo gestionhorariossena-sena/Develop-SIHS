@@ -37,6 +37,24 @@ import type {
  * datos hasta que el coordinador lo confirma explícitamente en el paso 4.
  */
 
+// Los Excel reales traen el nombre del programa con sufijos que la BD no
+// tiene (ej. "ANALISIS Y DESARROLLO DE SOFTWARE (CADENA FONTIBON)" vs
+// "Análisis y Desarrollo de Software") -- una comparación exacta nunca
+// hacía match y el coordinador tenía que crear el programa a mano cada
+// vez, aunque ya existiera. Se normaliza quitando acentos, mayúsculas,
+// puntuación final y cualquier "(...)" (esos paréntesis son siempre un
+// calificativo de sede/cadena, nunca parte real del nombre del programa
+// en los archivos vistos hasta ahora).
+function normalizarNombrePrograma(nombre: string): string {
+  return nombre
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\([^)]*\)/g, '')
+    .toLowerCase()
+    .replace(/[.\s]+/g, ' ')
+    .trim()
+}
+
 type Paso = 1 | 2 | 3 | 4
 
 // El default de api.ts (15s) alcanza para CRUD normal, pero se queda corto
@@ -168,7 +186,7 @@ export function AsistenteHorarios() {
       ? programas.find((p) => p.codigoPrograma === fila.codigoPrograma)
       : undefined
     const porNombre = fila.programa
-      ? programas.find((p) => p.nombrePrograma.trim().toLowerCase() === fila.programa!.trim().toLowerCase())
+      ? programas.find((p) => normalizarNombrePrograma(p.nombrePrograma) === normalizarNombrePrograma(fila.programa!))
       : undefined
     const coincidencia = porCodigo ?? porNombre
 
