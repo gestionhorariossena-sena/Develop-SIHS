@@ -17,9 +17,19 @@ from app.core.config import settings
 # timed out" tras el backend corriendo varias horas sin reiniciar).
 # pool_recycle: además, descarta conexiones de más de 5 minutos aunque
 # parezcan sanas, para no depender solo del pre-ping.
+# prepare_threshold=None: Supabase entrega la connection string del
+# *pooler* (PgBouncer en modo transacción), que no soporta prepared
+# statements con nombre entre transacciones distintas -- psycopg3 los
+# prepara solo automáticamente después de unas cuantas ejecuciones. Sin
+# esto, cualquier query que se repita lo suficiente revienta al azar con
+# "DuplicatePreparedStatement" o "InvalidSqlStatementName" (encontrado en
+# vivo el 2026-09-11 corriendo scripts de import masivo -- el mismo error
+# aparecía en puntos distintos y no correspondía a ningún dato corrupto,
+# solo a la conexión reutilizando un nombre de prepared statement que ya
+# no era válido para esa conexión pooleada).
 engine = create_engine(
     settings.database_url,
-    connect_args={"client_encoding": "utf8"},
+    connect_args={"client_encoding": "utf8", "prepare_threshold": None},
     pool_pre_ping=True,
     pool_recycle=300,
 )

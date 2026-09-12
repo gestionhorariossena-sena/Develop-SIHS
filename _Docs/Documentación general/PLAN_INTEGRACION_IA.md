@@ -414,6 +414,59 @@ campo al schema NO alcanza -- hay que agregarlo también en el
 `crear`/`actualizar` del servicio. Vale la pena revisar si hay más
 servicios con este patrón antes de agregar el próximo campo nuevo.
 
+### Catálogo real de instructores/ambientes + dos bugs que aparecieron al usarlo
+
+El usuario pidió limpiar el catálogo de prueba (instructores/ambientes
+`@mail.com`, "Ambiente" genérico) y cargar el real desde
+`PROGRAMACIÓN CGMLTI I TRM 2026 (4).xlsx` (hoja
+`LISTA_INSTRUCTORES_AMBIENTES`, ~310 instructores, ~95 ambientes reales
+en 3 sedes: Av. Caracas, Fontibón, Unigermana). Al hacerlo aparecieron
+dos problemas nuevos, distintos de los anteriores:
+
+1. **`usuarios.idUsuario` tiene FK real a `auth.users`** (Supabase
+   Auth), no declarado en el modelo de SQLAlchemy. No se puede crear un
+   instructor "solo catálogo" -- se usa la Admin API de Supabase (mismo
+   patrón de `scripts/crear_admin.py`) para darle una cuenta real con
+   contraseña aleatoria a cada uno (nadie la usa todavía, no hay SMTP
+   configurado). Script: `limpiar_e_importar_catalogo_real.py`
+   (scratchpad, no versionado -- es de un solo uso para este catálogo).
+2. **Explosión combinatoria real**: `generar_horario` arma una opción
+   por cada combinación de franja × patrón × instructor × ambiente.
+   Con 4 instructores/6 ambientes de prueba eso era manejable; con 215
+   instructores/91 ambientes reales son cientos de millones de
+   variables antes de construir el modelo -- se cuelga o se queda sin
+   memoria. Arreglado en `generar_propuesta` (no en `generar_horario`,
+   que sigue siendo correcto y no necesitaba cambiar): `_muestra_rotada`
+   acota a `_LIMITE_CANDIDATOS=8` instructores y 8 ambientes candidatos
+   POR NECESIDAD, rotando el subconjunto por necesidad (no siempre los
+   mismos 8) para no forzar a todas a competir por el mismo puñado.
+   Test: `test_generar_propuesta_no_explota_con_catalogo_real_de_instructores_y_ambientes`
+   (200 instructores, 100 ambientes, falla si tarda más de 20s).
+
+Además, al correr los scripts de import masivo apareció
+`DuplicatePreparedStatement`/`InvalidSqlStatementName` de psycopg3 en
+puntos random -- no era corrupción de datos, era que la connection
+string de Supabase es la del *pooler* (PgBouncer en modo transacción),
+que no soporta prepared statements con nombre reutilizados entre
+transacciones distintas. Arreglado agregando
+`connect_args={"prepare_threshold": None}` en `app/core/database.py`
+(afecta al backend real, no solo a los scripts -- probablemente ya
+causaba fallos aleatorios intermitentes en producción antes de esto).
+
+**Probado de punta a punta con datos 100% reales**: ficha 3171599
+(ADSO, `faseActual=4` puesto a mano) generó 14 bloques reales con
+instructores y ambientes reales (Hoover Saavedra en 201A Sede
+Fontibón, etc.), sin choques.
+
+**Importante para seguir programando fichas reales**: el límite real ya
+no es la capacidad de instructores/ambientes (215/91 sobra) sino que
+**una ficha no puede tener más de ~15 resultados pendientes en un
+mismo lote** (3 franjas × 5 días = 15 slots semanales que la ficha
+misma puede ocupar, así hayan instructores de sobra) -- por eso
+`faseActual` sigue siendo obligatorio poner en cada ficha antes de
+generar su propuesta; sin él, `_resultados_pendientes` trae los ~50
+resultados del programa completo y siempre da infactible.
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un
