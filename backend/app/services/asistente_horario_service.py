@@ -143,6 +143,18 @@ def _valor_texto(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: s
     return str(valor).strip() if valor not in (None, "", "\xa0") else None
 
 
+def _codigo_ficha_desde_texto(texto: str) -> str | None:
+    """El código real de SENA, como texto. Cuando una ficha se unifica
+    físicamente con otra (mismo grupo, dos números oficiales) el Excel
+    real lo anota con guiones -- ej. "3171645-65-668" (unificada con
+    3171665) o "3171667-668" -- confirmado con el usuario: siempre se
+    usa el segmento de la IZQUIERDA (antes del primer guion) como
+    codigoFicha real. Devuelve None si ni ese primer segmento es un
+    número válido (dato realmente irreconocible, ej. texto libre)."""
+    primero = texto.split("-")[0].strip()
+    return primero if primero.isdigit() else None
+
+
 def _valor_entero(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: str) -> int | None:
     columna = campo_a_columna.get(campo)
     if not columna or columna not in idx or idx[columna] >= len(fila_valores):
@@ -191,9 +203,10 @@ def _datos_complementarios_por_ficha(contenido: bytes) -> tuple[dict[str, dict],
     datos: dict[str, dict] = {}
     for fila_valores in ws.iter_rows(min_row=fila_encabezado + 1, values_only=True):
         ficha_texto = _valor_texto(fila_valores, idx, campo_a_columna, "ficha")
-        if not ficha_texto or not ficha_texto.isdigit():
+        codigo_ficha_extra = _codigo_ficha_desde_texto(ficha_texto) if ficha_texto else None
+        if not codigo_ficha_extra:
             continue
-        datos[ficha_texto] = {
+        datos[codigo_ficha_extra] = {
             "nivelFormacion": _valor_texto(fila_valores, idx, campo_a_columna, "nivel_formacion"),
             "coordinacion": _valor_texto(fila_valores, idx, campo_a_columna, "coordinacion"),
             "codigoPrograma": _valor_texto(fila_valores, idx, campo_a_columna, "codigo_programa"),
@@ -235,20 +248,22 @@ def previsualizar_excel(
 
         if ficha_texto is None:
             advertencia = "No se reconoció la columna de ficha en esta fila."
-        elif not ficha_texto.isdigit():
-            # Dato real sucio (ej. "3171645-65-668", celda combinada con
-            # varias fichas) -- no es un codigoFicha válido de un vistazo.
-            advertencia = f"Ficha en formato no reconocido ({ficha_texto!r}) -- requiere revisión manual."
         else:
-            codigo_ficha = ficha_texto
-            # codigoFicha es texto (el número real de SENA), NO el idFicha
-            # interno -- son columnas distintas, nunca hay que buscar por PK acá.
-            ficha_db = db.query(Ficha).filter(Ficha.codigoFicha == codigo_ficha).first()
-            if ficha_db:
-                ficha_existe = True
-                id_ficha = ficha_db.idFicha
+            codigo_ficha = _codigo_ficha_desde_texto(ficha_texto)
+            if codigo_ficha is None:
+                # Dato real irreconocible (texto libre, no un número ni
+                # siquiera en el primer segmento antes de un guion).
+                advertencia = f"Ficha en formato no reconocido ({ficha_texto!r}) -- requiere revisión manual."
             else:
-                advertencia = f"La ficha {codigo_ficha} no existe todavía en el catálogo de SIHS."
+                # codigoFicha es texto (el número real de SENA), NO el
+                # idFicha interno -- son columnas distintas, nunca hay que
+                # buscar por PK acá.
+                ficha_db = db.query(Ficha).filter(Ficha.codigoFicha == codigo_ficha).first()
+                if ficha_db:
+                    ficha_existe = True
+                    id_ficha = ficha_db.idFicha
+                else:
+                    advertencia = f"La ficha {codigo_ficha} no existe todavía en el catálogo de SIHS."
 
         extra = datos_complementarios.get(codigo_ficha, {}) if codigo_ficha else {}
 

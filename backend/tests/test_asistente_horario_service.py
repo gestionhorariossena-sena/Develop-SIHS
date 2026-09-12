@@ -124,6 +124,38 @@ def test_previsualizar_excel_marca_ficha_inexistente(db_session, monkeypatch):
     assert "no existe" in resultado.filas[0].advertencia
 
 
+def test_previsualizar_excel_ficha_unificada_con_guion_usa_el_codigo_de_la_izquierda(db_session, monkeypatch):
+    # Caso real: dos fichas se unifican físicamente en un solo grupo y el
+    # Excel lo anota con guiones -- "3171645-65-668" (unificada con
+    # 3171665) o "3171667-668". Confirmado con el usuario: siempre se usa
+    # el código de la IZQUIERDA (antes del primer guion) como el real.
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=200, codigo_ficha="3171645")
+    contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], ["3171645-65-668", "ADSO"]])
+    _mock_clasificacion(monkeypatch, {"FICHA": ("ficha", 1.0), "PROGRAMA": ("programa", 1.0)})
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    fila = resultado.filas[0]
+    assert fila.codigoFicha == "3171645"
+    assert fila.fichaExiste is True
+    assert fila.idFicha == 200
+    assert fila.advertencia is None
+
+
+def test_previsualizar_excel_texto_libre_en_ficha_sigue_pidiendo_revision(db_session, monkeypatch):
+    _crear_tablas_extra(db_session)
+    contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], ["VER OBSERVACIONES", "ADSO"]])
+    _mock_clasificacion(monkeypatch, {"FICHA": ("ficha", 1.0), "PROGRAMA": ("programa", 1.0)})
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    fila = resultado.filas[0]
+    assert fila.codigoFicha is None
+    assert fila.fichaExiste is False
+    assert "formato no reconocido" in fila.advertencia
+
+
 def test_previsualizar_excel_sin_columna_de_ficha_da_advertencia_general(db_session, monkeypatch):
     # Caso real encontrado en pruebas: un formato de matriz/pivote donde
     # ninguna columna se clasifica como "ficha" -- en vez de 40 filas con
