@@ -21,6 +21,9 @@ CAMPOS_CONOCIDOS_SIHS = [
     "fecha_inicio_lectiva",
     "fecha_fin_lectiva",
     "fecha_fin_productiva",
+    # Fase/trimestre actual del pénsum de la ficha (1=TRIM I..4=TRIM IV) --
+    # ej. columna "TRI" de la hoja FICHAS de PROGRAMACIÓN CGMLTI.
+    "fase_actual",
 ]
 
 

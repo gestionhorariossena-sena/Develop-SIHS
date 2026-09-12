@@ -320,6 +320,7 @@ export interface FilaImportada {
   fechaInicioLectiva: string | null
   fechaFinLectiva: string | null
   fechaFinProductiva: string | null
+  faseActual: number | null
 }
 
 // Espejo de ProgramaCreate/CoordinacionCreate -- usados por "Crear
@@ -344,6 +345,7 @@ export interface FichaCreate {
   idPrograma: number
   idTrimestre: number
   idSede?: number | null
+  faseActual?: number | null
 }
 
 // Espejo de app/schemas/curriculo.py -- importar competencias/resultados

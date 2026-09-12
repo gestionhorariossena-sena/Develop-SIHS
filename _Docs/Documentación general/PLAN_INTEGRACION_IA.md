@@ -467,6 +467,34 @@ misma puede ocupar, así hayan instructores de sobra) -- por eso
 generar su propuesta; sin él, `_resultados_pendientes` trae los ~50
 resultados del programa completo y siempre da infactible.
 
+### La fase de la ficha SÍ estaba en un Excel real -- se automatizó
+
+Después de dejar `faseActual` como manual (v1), el usuario preguntó si
+algún Excel ya traía ese dato. Sí: la hoja `FICHAS` de "PROGRAMACIÓN
+CGMLTI I TRM 2026 (4).xlsx" tiene una columna `TRI` (y el mismo número
+aparece al inicio del nombre de la ficha, ej. `4_TRM_3171599_...` →
+TRI=4) -- **confirmado con el usuario** que es la fase/trimestre actual
+del pénsum de la ficha, no la duración total del programa (que hubiera
+sido una lectura igual de plausible del dato crudo, por eso se
+confirmó antes de automatizar en vez de asumir).
+
+Se reusa el mecanismo de "archivo complementario" que ya existía
+(cruce por `codigoFicha`, el mismo que trae `coordinacion`/
+`codigoPrograma`/fechas desde PE-04 u hojas similares) en vez de
+construir uno nuevo:
+
+- `fase_actual` agregado a `CAMPOS_CONOCIDOS_SIHS` (prompts.py) para
+  que la IA lo reconozca al clasificar columnas.
+- `_valor_entero` (asistente_horario_service.py) extrae el número,
+  tanto de celdas numéricas como de texto.
+- `FilaImportada.faseActual` (schema) y `crearFicha()` en
+  `AsistenteHorarios.tsx` lo mandan directo al crear la ficha nueva --
+  ya no hay que ir a Fichas a ponerlo a mano si el archivo
+  complementario lo trae.
+- Backfill de una sola vez para las fichas que ya existían sin fase
+  (`backfill_fase_actual_fichas.py`, scratchpad): cruzó 11 fichas
+  reales de 5 programas distintos contra ese mismo archivo.
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un

@@ -253,6 +253,10 @@ export function AsistenteHorarios() {
         idTrimestre,
         // La sede se define después, por resultado/horario -- no acá.
         idSede: null,
+        // Si el archivo complementario trae la fase (ej. columna "TRI"
+        // de la hoja FICHAS de PROGRAMACIÓN CGMLTI), se usa directo --
+        // ahorra tener que ir a Fichas a ponerla a mano después.
+        faseActual: fila.faseActual,
       }
       const creada = await apiPost<Ficha>('/fichas/', data)
       // Se actualiza la fila en el estado local -- no hace falta re-importar
