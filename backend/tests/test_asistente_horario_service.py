@@ -190,6 +190,24 @@ def test_previsualizar_excel_ficha_con_letra_unificada_con_guion(db_session, mon
     assert fila.advertencia is None
 
 
+def test_previsualizar_excel_ficha_con_parentesis_usa_el_de_adentro(db_session, monkeypatch):
+    # Caso real: "3311985 (3288277)" -- confirmado con el usuario que se
+    # usa el número DENTRO del paréntesis como el código real (al revés
+    # que la regla del guion, donde se usa el de la izquierda).
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=203, codigo_ficha="3288277")
+    contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], ["3311985 (3288277)", "ADSO"]])
+    _mock_clasificacion(monkeypatch, {"FICHA": ("ficha", 1.0), "PROGRAMA": ("programa", 1.0)})
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    fila = resultado.filas[0]
+    assert fila.codigoFicha == "3288277"
+    assert fila.fichaExiste is True
+    assert fila.idFicha == 203
+    assert fila.advertencia is None
+
+
 def test_previsualizar_excel_nivel_formacion_se_lee_directo_del_archivo_principal(db_session, monkeypatch):
     # Bug real: nivelFormacion solo se leía del archivo COMPLEMENTARIO,
     # nunca de una columna "NIVEL" que ya viniera en el archivo principal
