@@ -145,6 +145,7 @@ def _valor_texto(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: s
 
 
 _PATRON_FICHA_CON_LETRA = re.compile(r"^(\d+)\s*([A-Za-z])$")
+_PATRON_FICHA_ENTRE_PARENTESIS = re.compile(r"\((\d+)\)")
 
 
 def _codigo_simple_con_o_sin_letra(segmento: str) -> str | None:
@@ -175,9 +176,17 @@ def _codigo_ficha_desde_texto(texto: str) -> str | None:
     tiene la letra distintiva, así que hay que re-aplicar el patrón de
     letra sobre ÉL, no solo comprobar que sea puramente numérico.
 
+    Un tercer formato, distinto de los dos anteriores: número entre
+    paréntesis (ej. "3311985 (3288277)") -- confirmado con el usuario:
+    se usa el que está DENTRO del paréntesis como el código real (al
+    revés que el guion, donde se usa el de la izquierda).
+
     Devuelve None si nada de esto calza (dato realmente irreconocible,
     ej. texto libre)."""
     texto = texto.strip()
+    entre_parentesis = _PATRON_FICHA_ENTRE_PARENTESIS.search(texto)
+    if entre_parentesis:
+        return entre_parentesis.group(1)
     directo = _codigo_simple_con_o_sin_letra(texto)
     if directo:
         return directo
