@@ -373,7 +373,7 @@ def test_previsualizar_excel_cruza_con_archivo_complementario(db_session, monkey
     _crear_tablas_extra(db_session)
     principal = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], [100, "ADSO"]])
     complementario = _xlsx_con_encabezado(
-        [["FICHA", "NIVEL", "COORDINACION", "CODIGO"], [100, "Tecnólogo", "Teleinformática", "228106"]]
+        [["FICHA", "NIVEL", "COORDINACION", "CODIGO", "TRI"], [100, "Tecnólogo", "Teleinformática", "228106", 4]]
     )
 
     _mock_clasificacion_secuencial(
@@ -385,6 +385,7 @@ def test_previsualizar_excel_cruza_con_archivo_complementario(db_session, monkey
                 "NIVEL": ("nivel_formacion", 0.95),
                 "COORDINACION": ("coordinacion", 0.9),
                 "CODIGO": ("codigo_programa", 0.9),
+                "TRI": ("fase_actual", 0.9),
             },
         ],
     )
@@ -396,3 +397,8 @@ def test_previsualizar_excel_cruza_con_archivo_complementario(db_session, monkey
     assert fila.nivelFormacion == "Tecnólogo"
     assert fila.coordinacion == "Teleinformática"
     assert fila.codigoPrograma == "228106"
+    # Confirmado con el usuario: la columna "TRI" del Excel real es la
+    # fase/trimestre actual del pénsum de la ficha (no la duración total
+    # del programa), coincide con el número al inicio del nombre de la
+    # ficha (ej. "4_TRM_...").
+    assert fila.faseActual == 4
