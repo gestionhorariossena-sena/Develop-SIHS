@@ -143,6 +143,20 @@ def _valor_texto(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: s
     return str(valor).strip() if valor not in (None, "", "\xa0") else None
 
 
+def _valor_entero(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: str) -> int | None:
+    columna = campo_a_columna.get(campo)
+    if not columna or columna not in idx or idx[columna] >= len(fila_valores):
+        return None
+    valor = fila_valores[idx[columna]]
+    if isinstance(valor, bool):
+        return None
+    if isinstance(valor, (int, float)):
+        return int(valor)
+    if isinstance(valor, str) and valor.strip().isdigit():
+        return int(valor.strip())
+    return None
+
+
 _FORMATOS_FECHA_TEXTO = ("%d/%m/%Y", "%Y-%m-%d")
 
 
@@ -186,6 +200,7 @@ def _datos_complementarios_por_ficha(contenido: bytes) -> tuple[dict[str, dict],
             "fechaInicioLectiva": _valor_fecha(fila_valores, idx, campo_a_columna, "fecha_inicio_lectiva"),
             "fechaFinLectiva": _valor_fecha(fila_valores, idx, campo_a_columna, "fecha_fin_lectiva"),
             "fechaFinProductiva": _valor_fecha(fila_valores, idx, campo_a_columna, "fecha_fin_productiva"),
+            "faseActual": _valor_entero(fila_valores, idx, campo_a_columna, "fase_actual"),
         }
     return datos, ws.title
 
@@ -253,6 +268,7 @@ def previsualizar_excel(
                 fechaInicioLectiva=extra.get("fechaInicioLectiva"),
                 fechaFinLectiva=extra.get("fechaFinLectiva"),
                 fechaFinProductiva=extra.get("fechaFinProductiva"),
+                faseActual=extra.get("faseActual"),
             )
         )
         if len(filas) >= MAX_FILAS_PREVIA:
