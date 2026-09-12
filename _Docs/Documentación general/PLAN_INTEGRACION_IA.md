@@ -548,6 +548,35 @@ antes del fix) -- borradas con un script de un solo uso en scratchpad,
 verificando primero que ninguna tuviera horarios reales antes de
 tocarla (las 10 de ADSO con 127 horarios reales quedaron intactas).
 
+### Fichas con letra distintiva + nivelFormacion nunca se leía del archivo principal
+
+Dos ajustes más, mismo archivo real:
+
+1. **Fichas con letra distintiva** (ej. "3228973A"/"3228973B", o con
+   espacio "3171242 A"/"3171242 B"): son DOS fichas reales distintas
+   que comparten número base -- no confundir con el guion de
+   unificación (mismo caso, ficha física única). `_codigo_ficha_desde_texto`
+   ahora reconoce ambos formatos con un patrón (`^(\d+)\s*([A-Za-z])$`)
+   antes de intentar el split por guion, y conserva la letra
+   (normalizada, sin espacio) como parte del codigoFicha real.
+2. **nivelFormacion nunca se leía del archivo principal**, solo del
+   complementario -- así que un archivo único que sí trae su propia
+   columna "NIVEL" (como LIDERES DE FICHA) igual pedía crear el
+   programa a mano por falta de ese dato. Se lee directo del principal
+   primero, con el complementario como respaldo -- mismo patrón
+   aplicado a coordinacion/codigoPrograma/fechas/faseActual por
+   consistencia, aunque hoy solo nivelFormacion aparece en archivos
+   sin complementario.
+
+**Límite real que sigue pendiente (no es un bug)**: `codigoPrograma`
+(el código oficial SENA) es NOT NULL + único en la BD y no aparece en
+ningún archivo salvo el complementario (hoja FICHAS de PROGRAMACIÓN
+CGMLTI) -- para un programa que todavía no existe en el catálogo,
+seguir pidiendo ese código a mano es correcto, no hay ninguna fuente
+real de la que inventarlo. Los programas que YA existen en el
+catálogo ya no piden nada (los resuelve el fix de nombres normalizado
+de la sección anterior).
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un

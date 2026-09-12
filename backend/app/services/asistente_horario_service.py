@@ -16,6 +16,7 @@ Ninguna de las dos persiste horarios -- eso lo hace
 frontend, reusando la validación de cruces que ya existe.
 """
 
+import re
 from datetime import date, datetime
 from io import BytesIO
 
@@ -143,14 +144,29 @@ def _valor_texto(fila_valores: tuple, idx: dict, campo_a_columna: dict, campo: s
     return str(valor).strip() if valor not in (None, "", "\xa0") else None
 
 
+_PATRON_FICHA_CON_LETRA = re.compile(r"^(\d+)\s*([A-Za-z])$")
+
+
 def _codigo_ficha_desde_texto(texto: str) -> str | None:
-    """El código real de SENA, como texto. Cuando una ficha se unifica
-    físicamente con otra (mismo grupo, dos números oficiales) el Excel
-    real lo anota con guiones -- ej. "3171645-65-668" (unificada con
-    3171665) o "3171667-668" -- confirmado con el usuario: siempre se
-    usa el segmento de la IZQUIERDA (antes del primer guion) como
-    codigoFicha real. Devuelve None si ni ese primer segmento es un
-    número válido (dato realmente irreconocible, ej. texto libre)."""
+    """El código real de SENA, como texto.
+
+    Dos formatos reales distintos, que no hay que confundir:
+    - Letra distintiva (ej. "3228973A" / "3228973B", o con espacio
+      "3171242 A"/"3171242 B"): son DOS FICHAS DIFERENTES que comparten
+      número base -- se conserva la letra (normalizada, sin el espacio)
+      como parte del codigoFicha real. Confirmado con el usuario.
+    - Guion de unificación (ej. "3171645-65-668", unificada con
+      3171665, o "3171667-668"): es la MISMA ficha, física y
+      administrativamente unida con otra -- se usa el segmento de la
+      IZQUIERDA (antes del primer guion) como el código real.
+
+    Devuelve None si no calza ninguno de los dos formatos y ni el
+    primer segmento antes de un guion es un número válido (dato
+    realmente irreconocible, ej. texto libre)."""
+    texto = texto.strip()
+    con_letra = _PATRON_FICHA_CON_LETRA.match(texto)
+    if con_letra:
+        return f"{con_letra.group(1)}{con_letra.group(2).upper()}"
     primero = texto.split("-")[0].strip()
     return primero if primero.isdigit() else None
 
@@ -267,6 +283,11 @@ def previsualizar_excel(
 
         extra = datos_complementarios.get(codigo_ficha, {}) if codigo_ficha else {}
 
+        # Estos campos pueden venir directo en el archivo principal (ej.
+        # "NIVEL" en LIDERES DE FICHA) -- antes solo se leían del
+        # complementario, así que un archivo único que sí trae "nivel"
+        # igual pedía crear el programa a mano por falta de ese dato. El
+        # complementario queda como respaldo cuando el principal no lo trae.
         filas.append(
             FilaImportada(
                 fila=numero_fila,
@@ -277,13 +298,13 @@ def previsualizar_excel(
                 jornada=_valor_texto(fila_valores, idx, campo_a_columna, "jornada"),
                 instructorNombre=_valor_texto(fila_valores, idx, campo_a_columna, "instructor"),
                 advertencia=advertencia,
-                nivelFormacion=extra.get("nivelFormacion"),
-                coordinacion=extra.get("coordinacion"),
-                codigoPrograma=extra.get("codigoPrograma"),
-                fechaInicioLectiva=extra.get("fechaInicioLectiva"),
-                fechaFinLectiva=extra.get("fechaFinLectiva"),
-                fechaFinProductiva=extra.get("fechaFinProductiva"),
-                faseActual=extra.get("faseActual"),
+                nivelFormacion=_valor_texto(fila_valores, idx, campo_a_columna, "nivel_formacion") or extra.get("nivelFormacion"),
+                coordinacion=_valor_texto(fila_valores, idx, campo_a_columna, "coordinacion") or extra.get("coordinacion"),
+                codigoPrograma=_valor_texto(fila_valores, idx, campo_a_columna, "codigo_programa") or extra.get("codigoPrograma"),
+                fechaInicioLectiva=_valor_fecha(fila_valores, idx, campo_a_columna, "fecha_inicio_lectiva") or extra.get("fechaInicioLectiva"),
+                fechaFinLectiva=_valor_fecha(fila_valores, idx, campo_a_columna, "fecha_fin_lectiva") or extra.get("fechaFinLectiva"),
+                fechaFinProductiva=_valor_fecha(fila_valores, idx, campo_a_columna, "fecha_fin_productiva") or extra.get("fechaFinProductiva"),
+                faseActual=_valor_entero(fila_valores, idx, campo_a_columna, "fase_actual") or extra.get("faseActual"),
             )
         )
         if len(filas) >= MAX_FILAS_PREVIA:
