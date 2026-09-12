@@ -454,6 +454,17 @@ def _diagnostico_infactibilidad(necesidades: list[NecesidadHorario], jornada: st
 # candidatos) alcanza de sobra. Ver PLAN_INTEGRACION_IA.md.
 _LIMITE_CANDIDATOS = 8
 
+# Tope de necesidades por lote. Aunque _LIMITE_CANDIDATOS ya acota las
+# opciones POR necesidad, construir el modelo sigue siendo O(necesidades
+# × opciones) -- con muchas fichas sin faseActual (cada una trae TODOS
+# sus resultados pendientes, no solo los de esta fase) las necesidades
+# pueden llegar a los miles, y eso tarda varios minutos en construirse
+# en Python puro *antes* de llegar al solver. Encontrado en vivo el
+# 2026-09-12: un lote así dejaba el request colgado hasta que el
+# frontend hacía timeout (45s) sin que el coordinador supiera por qué --
+# ahora falla rápido con un mensaje que dice qué palanca mover.
+_MAX_NECESIDADES_POR_LOTE = 300
+
 
 def _muestra_rotada(candidatos: list, tamano: int, offset: int) -> list:
     if len(candidatos) <= tamano:
@@ -529,6 +540,17 @@ def generar_propuesta(
         else:
             mensaje = "Las fichas seleccionadas ya tienen todos sus resultados programados."
         return GenerarPropuestaResponse(bloques=[], factible=True, mensaje=mensaje)
+
+    if len(necesidades) > _MAX_NECESIDADES_POR_LOTE:
+        return GenerarPropuestaResponse(
+            bloques=[], factible=False,
+            mensaje=(
+                f"El lote trae {len(necesidades)} resultado(s) por programar -- eso es demasiado para "
+                "construir el modelo en un tiempo razonable (por eso se veía colgado en vez de dar un "
+                "error). Reduce cuántas fichas generas juntas, o define la fase actual del pénsum de "
+                "cada ficha en Fichas para que solo traiga los resultados que tocan ahora."
+            ),
+        )
 
     asignacion = generar_horario(necesidades)
     if asignacion is None:

@@ -577,6 +577,30 @@ real de la que inventarlo. Los programas que YA existen en el
 catálogo ya no piden nada (los resuelve el fix de nombres normalizado
 de la sección anterior).
 
+### Fase en número romano + tope de necesidades por lote (evita cuelgues de minutos)
+
+Dos cosas más al probar con ~50 fichas reales de una:
+
+1. **Fase en número romano**: la hoja "2026_TRIM 03" trae la fase en
+   la columna "TRM" como número romano (`I`..`VII`, valores reales
+   confirmados), no como entero plano como la columna "TRI" de
+   PROGRAMACIÓN CGMLTI -- mismo campo (`fase_actual`), formato de
+   valor distinto según el archivo. `_valor_entero` ahora reconoce
+   ambos cuando el campo es `fase_actual`.
+2. **Tope de necesidades por lote** (`_MAX_NECESIDADES_POR_LOTE = 300`):
+   con ~50 fichas SIN faseActual seleccionadas juntas (cada una trae
+   TODOS sus resultados pendientes), el request se quedó colgado
+   **8+ minutos** -- `_muestra_rotada` ya acotaba las opciones POR
+   necesidad, pero construir el modelo sigue siendo
+   `O(necesidades × opciones)`, y con miles de necesidades eso tarda
+   minutos en Python puro antes de llegar siquiera al solver. El
+   frontend hacía timeout a los 45s sin que el coordinador supiera por
+   qué, y el proceso seguía consumiendo CPU/memoria en el servidor
+   mucho después de que el navegador ya había desistido. Ahora
+   `generar_propuesta` cuenta las necesidades ANTES de construir nada
+   y, si pasan de 300, devuelve de inmediato el mismo tipo de mensaje
+   accionable ("reduce el lote o define la fase") en vez de colgarse.
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un
