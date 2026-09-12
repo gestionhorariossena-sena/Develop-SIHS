@@ -91,6 +91,17 @@ distintos nunca chocan por esta regla.
 - ❓ **¿Cuál es el criterio real detrás de esa restricción?** Probablemente
   algo como "tiempo mínimo de traslado entre sede A y sede B", configurable
   por par de sedes, no una regla de jornada. Falta confirmarlo.
+- ✅ **Resuelto 2026-09-12:** a pesar de esta corrección, RF-011 (el
+  requisito formal) sí tenía codificada la regla dura "mismo instructor,
+  jornadas continuas, sede distinta, mismo día" en
+  `HorarioService._validar_reglas_instructor` — quedó así desde el
+  principio porque el requisito formal mandaba sobre el hallazgo de
+  entrevista hasta que el equipo lo confirmara (ver el propio código, que
+  ya dejaba esto anotado). Encontrado al probar el generador de horarios
+  con datos reales (bloqueó asignaciones válidas de instructores reales
+  en fichas de ADSO) — el equipo confirmó que la entrevista manda: la
+  regla se quitó del código. El margen de traslado sigue siendo
+  coordinación humana, no una restricción dura del sistema.
 
 **Lógica ya definida para automatizar la detección** (ver
 `database/02_datos_prueba.sql` líneas 215-225, y el `EXCLUDE` constraint

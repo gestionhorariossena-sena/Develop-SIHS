@@ -1,4 +1,3 @@
-from app.models.ambiente import Ambiente
 from app.models.dia_semana import DiaSemana
 from app.models.horario import Horario
 from app.models.jornada import Jornada
@@ -12,10 +11,6 @@ from app.services.notificacion_service import NotificacionService
 # para los de contrato serán un máximo de 40."
 HORAS_MAX_PLANTA = 32
 HORAS_MAX_CONTRATO = 40
-
-# Orden de las jornadas en un mismo día, para decidir si dos son
-# "continuas" (adyacentes) — ver _validar_reglas_instructor.
-ORDEN_JORNADA = {"Mañana": 1, "Tarde": 2, "Noche": 3}
 
 
 class CruceHorarioError(Exception):
@@ -430,15 +425,18 @@ class HorarioService:
 
     @staticmethod
     def _validar_reglas_instructor(db, data, excluir_id: int | None) -> list[str]:
-        """RF-011: tope de horas/semana según tipo de contrato, jornada
-        Noche vedada para instructores de planta, y no repetir centro de
-        formación (acá, `Sede`, que es lo único que el esquema tiene para
-        eso) en jornadas continuas del mismo día. La tercera regla choca
-        con un hallazgo de entrevista en REGLAS_DE_NEGOCIO_CONOCIDAS.md
-        (un instructor real programado mañana en una sede y tarde en
-        otra) — se implementa igual porque así quedó escrito en el
-        requisito formal (RF-011), no en la entrevista; si el equipo
-        confirma que la entrevista manda, hay que revisar/quitar esto."""
+        """RF-011: tope de horas/semana según tipo de contrato, y jornada
+        Noche vedada para instructores de planta.
+
+        Corrección 2026-09-12: se quitó la regla que bloqueaba al mismo
+        instructor en jornadas continuas de sedes distintas el mismo día
+        (RF-011 la exigía, pero un hallazgo real de entrevista en
+        REGLAS_DE_NEGOCIO_CONOCIDAS.md la contradice directamente: un
+        instructor real programado mañana en una sede y tarde en otra).
+        El margen de traslado entre sedes ya está documentado como
+        coordinación humana, no una restricción dura del sistema -- no
+        había ningún caso real donde la regla evitara un error genuino,
+        solo bloqueaba reasignaciones válidas."""
         errores: list[str] = []
 
         instructor = db.get(Usuario, data.idInstructor)
@@ -446,7 +444,6 @@ class HorarioService:
             return errores
 
         jornada_nueva = db.get(Jornada, data.idJornada)
-        ambiente_nuevo = db.get(Ambiente, data.idAmbiente)
         horarios_instructor = HorarioRepository.obtener_por_instructor(
             db, data.idInstructor, excluir_id
         )
@@ -472,35 +469,6 @@ class HorarioService:
             errores.append(
                 f"El instructor {instructor.nombre} es de planta y no puede programarse en jornada Noche."
             )
-
-        if ambiente_nuevo and jornada_nueva:
-            orden_nueva = ORDEN_JORNADA.get(jornada_nueva.nombreJornada)
-            dias_nuevos = set(data.dias)
-
-            for h in horarios_instructor:
-                if h.idAmbiente == data.idAmbiente:
-                    continue
-
-                if not (set(HorarioRepository.obtener_dias(db, h.idHorario)) & dias_nuevos):
-                    continue
-
-                jornada_h = db.get(Jornada, h.idJornada)
-                orden_h = ORDEN_JORNADA.get(jornada_h.nombreJornada) if jornada_h else None
-                # <= 1 (no == 1): dos bloques de la MISMA jornada (ej. dos
-                # sub-bloques de "Tarde") en sedes distintas el mismo día
-                # también son físicamente imposibles, no solo jornadas
-                # adyacentes — == 1 dejaba pasar ese caso sin detectarlo.
-                if orden_nueva is None or orden_h is None or abs(orden_nueva - orden_h) > 1:
-                    continue
-
-                if not h.ambiente or h.ambiente.sede_id == ambiente_nuevo.sede_id:
-                    continue
-
-                errores.append(
-                    f"El instructor {instructor.nombre} ya está asignado a otro centro de "
-                    f"formación en una jornada continua ese día: {HorarioService._describir(db, h)}."
-                )
-                break
 
         return errores
 
