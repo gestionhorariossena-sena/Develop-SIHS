@@ -214,11 +214,14 @@ class HorarioService:
     def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
         """Cruces por solape de horario: misma ficha, mismo instructor o
         mismo ambiente ya ocupados en ese día/hora — ver
-        REGLAS_DE_NEGOCIO_CONOCIDAS.md. También valida que una misma ficha
-        no repita un resultado de aprendizaje. Cada mensaje describe CONTRA
-        QUÉ horario existente choca (día, hora, y quién/qué ya lo tiene) —
-        no solo la regla que se violó, para que se entienda de un vistazo
-        sin tener que ir a buscarlo a mano."""
+        REGLAS_DE_NEGOCIO_CONOCIDAS.md. También valida que el MISMO
+        instructor no repita un resultado de aprendizaje para la misma
+        ficha en un día no relacionado (dos instructores distintos sí
+        pueden repartirse el mismo resultado en días distintos -- eso es
+        reparto válido, no duplicado; corrección 2026-09-12). Cada
+        mensaje describe CONTRA QUÉ horario existente choca (día, hora, y
+        quién/qué ya lo tiene) — no solo la regla que se violó, para que
+        se entienda de un vistazo sin tener que ir a buscarlo a mano."""
         errores: list[str] = []
 
         ficha_existente = HorarioRepository.buscar_solape(
@@ -249,7 +252,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, data.dias, excluir_id
+            db, data.idFicha, data.idResultado, data.idInstructor, data.dias, excluir_id
         )
         if resultado_existente:
             errores.append(
@@ -307,7 +310,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, data.dias, excluir_id
+            db, data.idFicha, data.idResultado, data.idInstructor, data.dias, excluir_id
         )
         if resultado_existente:
             conflictos.append(

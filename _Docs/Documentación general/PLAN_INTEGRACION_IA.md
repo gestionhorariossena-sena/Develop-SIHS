@@ -495,6 +495,26 @@ construir uno nuevo:
   (`backfill_fase_actual_fichas.py`, scratchpad): cruzó 11 fichas
   reales de 5 programas distintos contra ese mismo archivo.
 
+### Confirmación real: 127/132 bloques creados con datos 100% reales
+
+Con las 10 fichas de ADSO (todas con `faseActual` puesta), catálogo
+real de instructores/ambientes y los fixes de esta sesión,
+`generar_propuesta` propuso 132 bloques factibles en ~20s y
+`HorarioService.crear` (la misma validación real que usa el
+Constructor manual) confirmó **127**. Los 5 restantes fallaron por
+RF-011 (instructor ya asignado a otro centro de formación en jornada
+continua ese día) -- validación correcta, no un bug: el generador no
+modela esa regla, la detecta la validación final, igual que en el
+flujo normal del wizard.
+
+Esto destapó un bug real en la regla de "resultado repetido" (ver
+`REGLAS_DE_NEGOCIO_CONOCIDAS.md`, corrección 2026-09-12):
+`buscar_resultado_en_ficha` bloqueaba `(idFicha, idResultado)` en un
+día distinto sin mirar el instructor, así que dos instructores
+repartiéndose el mismo resultado en días distintos (reparto válido,
+pasó varias veces en los 132 bloques generados) se marcaba como
+duplicado. Corregido: solo bloquea si es el MISMO instructor.
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un
