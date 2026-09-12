@@ -501,11 +501,13 @@ Con las 10 fichas de ADSO (todas con `faseActual` puesta), catálogo
 real de instructores/ambientes y los fixes de esta sesión,
 `generar_propuesta` propuso 132 bloques factibles en ~20s y
 `HorarioService.crear` (la misma validación real que usa el
-Constructor manual) confirmó **127**. Los 5 restantes fallaron por
-RF-011 (instructor ya asignado a otro centro de formación en jornada
-continua ese día) -- validación correcta, no un bug: el generador no
-modela esa regla, la detecta la validación final, igual que en el
-flujo normal del wizard.
+Constructor manual) confirmó **127**. Los 5 restantes fallaron por la
+tercera parte de RF-011 (instructor ya asignado a otro centro de
+formación en jornada continua ese día) -- al revisarla con el usuario
+se confirmó que esa regla en particular contradecía un hallazgo real
+de entrevista y se quitó del código (ver
+`REGLAS_DE_NEGOCIO_CONOCIDAS.md`, resuelto 2026-09-12) -- esos 5
+bloques ya se podrían confirmar sin problema con el fix.
 
 Esto destapó un bug real en la regla de "resultado repetido" (ver
 `REGLAS_DE_NEGOCIO_CONOCIDAS.md`, corrección 2026-09-12):

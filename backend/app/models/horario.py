@@ -17,9 +17,11 @@ horario_dia = Table(
 
 class Horario(Base):
     """El módulo objetivo del proyecto: crear esto detectando cruces de
-    ficha/instructor/ambiente solapados, más las reglas de RF-011 (tope de
-    horas/semana por tipo de contrato, jornada Noche vedada para planta,
-    y centro de formación en jornadas continuas). Ver
+    ficha/instructor/ambiente solapados, más las reglas de RF-011 (tope
+    de horas/semana por tipo de contrato, jornada Noche vedada para
+    planta -- la tercera parte de RF-011, centro de formación en
+    jornadas continuas, se quitó el 2026-09-12 por contradecir un
+    hallazgo real de entrevista, ver REGLAS_DE_NEGOCIO_CONOCIDAS.md). Ver
     _Docs/Documentación general/REGLAS_DE_NEGOCIO_CONOCIDAS.md y
     _Docs/Informes de requisitos/Requisitos Funcionales V4.pdf (RF-011) —
     las validaciones viven en HorarioService, no acá."""
