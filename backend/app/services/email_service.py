@@ -40,6 +40,21 @@ class EmailService:
         EmailService._enviar(destinatario_email, asunto, cuerpo)
 
     @staticmethod
+    def enviar_rechazo_solicitud(*, destinatario_email: str, destinatario_nombre: str, motivo_rechazo: str) -> None:
+        asunto = "Tu solicitud de acceso a SIHS SENA no fue aprobada"
+        cuerpo = (
+            f"Hola {destinatario_nombre},\n\n"
+            "Tu solicitud de acceso al Sistema Integrado de Horarios (SIHS) fue "
+            "revisada y no fue aprobada.\n\n"
+            f"Motivo: {motivo_rechazo}\n\n"
+            "Si consideras que esto es un error o quieres corregir tu solicitud, "
+            "puedes volver a solicitarla desde el portal público de registro.\n\n"
+            "— SIHS SENA, Gestión de Horarios"
+        )
+
+        EmailService._enviar(destinatario_email, asunto, cuerpo)
+
+    @staticmethod
     def _enviar(destinatario_email: str, asunto: str, cuerpo_texto_plano: str) -> None:
         if not settings.smtp_user or not settings.smtp_password:
             raise SmtpNoConfiguradoError(
