@@ -16,6 +16,7 @@ from app.models.coordinacion import Coordinacion
 from app.models.especialidad import Especialidad, usuario_especialidad
 from app.models.ficha import Ficha
 from app.models.ficha_usuario import FichaUsuario
+from app.models.notificacion import Notificacion
 from app.models.programa import Programa
 from app.models.rol import Rol
 from app.models.solicitud_acceso import SolicitudAcceso
@@ -75,6 +76,7 @@ def db_session():
             Especialidad.__table__,
             usuario_especialidad,
             SolicitudAcceso.__table__,
+            Notificacion.__table__,
         ],
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

@@ -19,6 +19,7 @@ const NAV: ItemNav[] = [
   { etiqueta: 'Horarios', ruta: '/horarios/nuevo' },
   { etiqueta: 'Historial de horarios', ruta: '/horarios/historial' },
   { etiqueta: 'Avisos y Eventos', ruta: '/avisos' },
+  { etiqueta: 'Notificaciones', ruta: '/notificaciones' },
   { etiqueta: 'Ambientes', ruta: '/ambientes' },
   { etiqueta: 'Instructores', ruta: '/instructores' },
   { etiqueta: 'Fichas', ruta: '/fichas' },

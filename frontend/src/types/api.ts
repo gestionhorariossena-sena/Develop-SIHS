@@ -236,3 +236,18 @@ export interface HorarioGuardado {
   grid: GridAsignaciones
   fechaCreacion: string
 }
+
+// `tipo` es texto libre en el backend (String(30), sin CHECK constraint) --
+// no un enum cerrado. El único productor real hoy (HorarioService, al
+// reprogramar) usa el literal "Cambios de Aula & Horario", que coincide
+// con el nombre de la primera pestaña del Centro de Notificaciones.
+export interface Notificacion {
+  idNotificacion: number
+  idUsuario: string
+  tipo: string
+  mensaje: string
+  leida: boolean
+  fechaCreacion: string
+  entidadRelacionada: string | null
+  idEntidadRelacionada: string | null
+}

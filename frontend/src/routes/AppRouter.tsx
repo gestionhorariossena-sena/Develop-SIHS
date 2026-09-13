@@ -7,6 +7,7 @@ import { Dashboard } from '../pages/Dashboard'
 import { NuevoHorario } from '../pages/NuevoHorario'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { Avisos } from '../pages/Avisos'
+import { Notificaciones } from '../pages/Notificaciones'
 import { Ambientes } from '../pages/Ambientes'
 import { Instructores } from '../pages/Instructores'
 import { Fichas } from '../pages/Fichas'
@@ -57,6 +58,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <Avisos />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notificaciones"
+        element={
+          <ProtectedRoute>
+            <Notificaciones />
           </ProtectedRoute>
         }
       />

@@ -30,6 +30,7 @@ from app.models import (  # noqa: E402,F401
     horario,
     horario_guardado,
     jornada,
+    notificacion,
     programa,
     resultado_aprendizaje,
     rol,
