@@ -32,3 +32,9 @@ pydantic[email]==2.13.4
 sqlalchemy>=2.0
 psycopg[binary]>=3.2
 alembic>=1.13
+
+# Exportación a PDF (horario, ficha de sesión, nómina) -- PdfService.
+# ReportLab en vez de WeasyPrint: es pura Python (pip-instalable), no
+# depende de librerías de sistema (Pango/Cairo/GDK-PixBuf) que ni el CI
+# ni el Procfile instalan hoy. Ver docstring de PdfService.
+reportlab>=4.2

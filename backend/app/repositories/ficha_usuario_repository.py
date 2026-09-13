@@ -23,6 +23,19 @@ class FichaUsuarioRepository:
         return ficha_usuario
 
     @staticmethod
+    def obtener_por_ficha(db: Session, id_ficha: int):
+        """Todos los aprendices matriculados en una ficha (nombre + email)
+        -- para el listado ("nómina") de GET /fichas/{id}/pdf
+        (PdfService)."""
+        return (
+            db.query(FichaUsuario, Usuario)
+            .join(Usuario, Usuario.idUsuario == FichaUsuario.idUsuario)
+            .filter(FichaUsuario.idFicha == id_ficha)
+            .order_by(Usuario.nombre)
+            .all()
+        )
+
+    @staticmethod
     def obtener_voceros_por_ficha(db: Session, id_ficha: int):
         """Filas con rolEnFicha en ('vocero', 'subvocero') para una ficha —
         junto con el Usuario para exponer nombre/email."""
