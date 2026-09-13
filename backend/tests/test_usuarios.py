@@ -97,3 +97,36 @@ def test_obtener_usuario_inexistente_da_404(client, autenticar_como):
     respuesta = client.get(f"/api/v1/usuarios/{uuid.uuid4()}", headers=headers_admin)
 
     assert respuesta.status_code == 404
+
+
+def test_me_expone_debe_cambiar_clave(client, autenticar_como):
+    _, headers = autenticar_como("Aprendiz")
+
+    respuesta = client.get("/api/v1/usuarios/me", headers=headers)
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["debeCambiarClave"] is False
+
+
+def test_confirmar_cambio_clave_requiere_autenticacion(client):
+    respuesta = client.patch("/api/v1/usuarios/me/confirmar-cambio-clave")
+
+    assert respuesta.status_code == 401
+
+
+def test_confirmar_cambio_clave_limpia_el_flag(client, db_session, autenticar_como):
+    from app.models.usuario import Usuario
+
+    usuario, headers = autenticar_como("Aprendiz")
+    usuario_db = db_session.get(Usuario, usuario.idUsuario)
+    usuario_db.debe_cambiar_clave = True
+    db_session.commit()
+
+    respuesta = client.patch("/api/v1/usuarios/me/confirmar-cambio-clave", headers=headers)
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["debeCambiarClave"] is False
+
+    # Persistido de verdad, no solo en la respuesta.
+    verificacion = client.get("/api/v1/usuarios/me", headers=headers)
+    assert verificacion.json()["debeCambiarClave"] is False

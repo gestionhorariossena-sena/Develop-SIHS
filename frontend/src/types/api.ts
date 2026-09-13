@@ -27,6 +27,10 @@ export interface Usuario {
   codigoInstructor?: string | null
   roles: Rol[]
   especialidades: Especialidad[]
+  /** true tras aprobar una solicitud de acceso con credencial temporal —
+   * ProtectedRoute.tsx fuerza CambiarClaveObligatorio.tsx hasta que se
+   * limpie con PATCH /usuarios/me/confirmar-cambio-clave. */
+  debeCambiarClave: boolean
 }
 
 // Espejo de CargaSemanalResponse (backend/app/schemas/usuario.py) —

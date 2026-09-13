@@ -15,6 +15,16 @@ class UsuarioService:
         return UsuarioRepository.obtener_por_id(db, id_usuario)
 
     @staticmethod
+    def confirmar_cambio_clave(db, usuario):
+        """Limpia debe_cambiar_clave tras un cambio de contraseña exitoso
+        (supabase.auth.updateUser en el frontend, ver
+        CambiarClaveObligatorio.tsx) — PATCH /usuarios/me/confirmar-cambio-clave.
+        No valida la contraseña en sí: eso ya lo hizo Supabase Auth: acá
+        solo se baja el flag que bloqueaba la navegación."""
+        usuario.debe_cambiar_clave = False
+        return UsuarioRepository.actualizar(db, usuario)
+
+    @staticmethod
     def generar_codigo_instructor(db, id_usuario: UUID):
         usuario = UsuarioRepository.obtener_por_id(db, id_usuario)
 

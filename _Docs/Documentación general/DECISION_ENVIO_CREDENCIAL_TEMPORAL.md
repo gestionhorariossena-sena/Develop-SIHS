@@ -98,3 +98,32 @@ sistema, solo bloquea el paso de envío.
       contraseña — misma cuenta Gmail)
 - [ ] Conectar `EmailService.enviar_credencial_temporal` desde el
       endpoint de aprobación (`[Backend] Endpoints /solicitudes-acceso`)
+
+## Decisión: sin expiración real de 48h (ticket "Forzar cambio de
+contraseña en el primer ingreso")
+
+Ese ticket señala que la tarjeta "Protocolo de Seguridad" del mockup dice
+que la contraseña temporal es "válida por 48 horas con revocación
+automática", y pide decidir si se implementa esa expiración real o si
+alcanza con el flag booleano simple (`usuarios.debe_cambiar_clave`).
+
+**Decisión: solo el flag booleano, sin expiración automática por
+tiempo.** Motivo: una expiración real de 48h exige o bien un job
+periódico (no hay infraestructura de scheduler en este backend hoy —
+ver `Procfile`, un solo proceso `uvicorn`) o bien comparar
+`fechaResolucion + 48h` contra "ahora" en cada request autenticado
+(factible, pero agrega una regla de negocio nueva — revocar acceso
+automáticamente — que nadie pidió explícitamente fuera de esa única
+línea del mockup, y que no tiene copy definido para el caso "tu
+credencial temporal venció, pide una nueva" en ningún otro lado del
+sistema). El flag `debe_cambiar_clave` ya resuelve el requisito real
+(bloquear navegación hasta que se cambie la contraseña) sin esa
+complejidad.
+
+Como ningún componente de este repo transcribe todavía el copy exacto
+del mockup ("Protocolo de Seguridad... válida por 48 horas..." — no
+está en `AprobarlicitarSolicitudes.tsx` ni en ninguna otra pantalla real
+al día de este commit), no hizo falta ajustar ningún texto en pantalla
+para no prometer la expiración automática; si alguien transcribe esa
+tarjeta más adelante, debe omitir la mención a la expiración automática
+o dejarla como "vitrina" explícita, no como comportamiento real.

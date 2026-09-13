@@ -3,6 +3,7 @@ import { Login } from '../pages/Login'
 import { Registro } from '../pages/Registro'
 import { RecuperarContrasena } from '../pages/RecuperarContrasena'
 import { RestablecerContrasena } from '../pages/RestablecerContrasena'
+import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
 import { Dashboard } from '../pages/Dashboard'
 import { NuevoHorario } from '../pages/NuevoHorario'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
@@ -30,6 +31,14 @@ export function AppRouter() {
       <Route path="/registro" element={<Registro />} />
       <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
       <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
+      <Route
+        path="/cambiar-clave-obligatorio"
+        element={
+          <ProtectedRoute>
+            <CambiarClaveObligatorio />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/dashboard"
         element={
