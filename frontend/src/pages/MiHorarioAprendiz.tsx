@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
 import { GridHorario } from '../components/horario/GridHorario'
-import { InsigniaVitrina } from '../components/InsigniaVitrina'
-import { apiGet, ApiError } from '../services/api'
-import type { Ficha, Horario } from '../types/api'
+import { apiDelete, apiGet, apiPost, apiPut, ApiError } from '../services/api'
+import type { AnotacionHorario, AnotacionHorarioInput, EtiquetaAnotacion, Ficha, Horario } from '../types/api'
 import {
   construirVistaSemanal,
   duracionHoras,
@@ -13,6 +12,39 @@ import {
 
 const ACTUALIZACION_RELOJ_MS = 30_000
 const DIAS_NOMBRE = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+
+// Colores del mockup mi_horario_rol_aprendiz_sihs_sena (Organizador
+// Personal): Examen=rojo, Entrega=ámbar, Importante=violeta. "Normal" no
+// está en el mockup pero es un valor válido del schema (etiqueta por
+// defecto de una nota sin categoría particular).
+const ETIQUETAS: EtiquetaAnotacion[] = ['Normal', 'Examen', 'Entrega', 'Importante']
+
+const COLOR_ETIQUETA: Record<EtiquetaAnotacion, { dot: string; badge: string; badgeActiva: string }> = {
+  Examen: {
+    dot: 'bg-red-500',
+    badge: 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300',
+    badgeActiva: 'bg-red-600 text-white',
+  },
+  Entrega: {
+    dot: 'bg-amber-500',
+    badge: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300',
+    badgeActiva: 'bg-amber-600 text-white',
+  },
+  Importante: {
+    dot: 'bg-violet-500',
+    badge: 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
+    badgeActiva: 'bg-violet-600 text-white',
+  },
+  Normal: {
+    dot: 'bg-slate-400',
+    badge: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+    badgeActiva: 'bg-slate-600 text-white',
+  },
+}
+
+function idHorarioDeBloqueId(bloqueId: string): number {
+  return Number(bloqueId.replace('horario-', ''))
+}
 
 function formatearHora(hhmmss: string) {
   return hhmmss.slice(0, 5)
@@ -38,6 +70,15 @@ export function MiHorarioAprendiz() {
   const [cargando, setCargando] = useState(true)
   const [ahora, setAhora] = useState(() => new Date())
 
+  const [anotaciones, setAnotaciones] = useState<AnotacionHorario[]>([])
+  const [errorAnotaciones, setErrorAnotaciones] = useState<string | null>(null)
+  const [idHorarioSeleccionado, setIdHorarioSeleccionado] = useState<number | null>(null)
+  const [notaBorrador, setNotaBorrador] = useState('')
+  const [etiquetaBorrador, setEtiquetaBorrador] = useState<EtiquetaAnotacion>('Normal')
+  const [recordatorioBorrador, setRecordatorioBorrador] = useState(false)
+  const [guardando, setGuardando] = useState(false)
+  const [errorDrawer, setErrorDrawer] = useState<string | null>(null)
+
   useEffect(() => {
     apiGet<Ficha>('/ficha-usuario/mi-ficha')
       .then((fichaVinculada) => {
@@ -56,9 +97,100 @@ export function MiHorarioAprendiz() {
   }, [])
 
   useEffect(() => {
+    apiGet<AnotacionHorario[]>('/anotaciones-horario/mias')
+      .then(setAnotaciones)
+      .catch((err: unknown) => {
+        setErrorAnotaciones(err instanceof ApiError ? err.message : 'No se pudieron cargar tus anotaciones.')
+      })
+  }, [])
+
+  useEffect(() => {
     const id = window.setInterval(() => setAhora(new Date()), ACTUALIZACION_RELOJ_MS)
     return () => window.clearInterval(id)
   }, [])
+
+  const anotacionesPorHorario = useMemo(() => {
+    const mapa = new Map<number, AnotacionHorario>()
+    for (const anotacion of anotaciones) {
+      if (anotacion.idHorario != null) mapa.set(anotacion.idHorario, anotacion)
+    }
+    return mapa
+  }, [anotaciones])
+
+  const marcadoresPorBloqueId = useMemo(() => {
+    const mapa: Record<string, { etiqueta: string; claseColor: string }> = {}
+    for (const anotacion of anotaciones) {
+      if (anotacion.idHorario == null) continue
+      mapa[`horario-${anotacion.idHorario}`] = {
+        etiqueta: anotacion.etiqueta,
+        claseColor: COLOR_ETIQUETA[anotacion.etiqueta].dot,
+      }
+    }
+    return mapa
+  }, [anotaciones])
+
+  const anotacionSeleccionada = idHorarioSeleccionado != null ? anotacionesPorHorario.get(idHorarioSeleccionado) : undefined
+  const horarioSeleccionado = useMemo(
+    () => (horarios ?? []).find((h) => h.idHorario === idHorarioSeleccionado) ?? null,
+    [horarios, idHorarioSeleccionado],
+  )
+
+  function abrirOrganizador(idHorario: number) {
+    const existente = anotacionesPorHorario.get(idHorario)
+    setIdHorarioSeleccionado(idHorario)
+    setNotaBorrador(existente?.nota ?? '')
+    setEtiquetaBorrador(existente?.etiqueta ?? 'Normal')
+    setRecordatorioBorrador(existente?.recordatorioActivo ?? false)
+    setErrorDrawer(null)
+  }
+
+  function cerrarOrganizador() {
+    setIdHorarioSeleccionado(null)
+  }
+
+  async function guardarAnotacion() {
+    if (idHorarioSeleccionado == null) return
+
+    setGuardando(true)
+    setErrorDrawer(null)
+
+    const payload: AnotacionHorarioInput = {
+      idHorario: idHorarioSeleccionado,
+      nota: notaBorrador.trim(),
+      etiqueta: etiquetaBorrador,
+      recordatorioActivo: recordatorioBorrador,
+    }
+
+    try {
+      const guardada = anotacionSeleccionada
+        ? await apiPut<AnotacionHorario>(`/anotaciones-horario/${anotacionSeleccionada.idAnotacion}`, payload)
+        : await apiPost<AnotacionHorario>('/anotaciones-horario/', payload)
+
+      setAnotaciones((prev) => [...prev.filter((a) => a.idAnotacion !== guardada.idAnotacion), guardada])
+      cerrarOrganizador()
+    } catch (err) {
+      setErrorDrawer(err instanceof ApiError ? err.message : 'No se pudo guardar la anotación.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
+  async function eliminarAnotacion() {
+    if (!anotacionSeleccionada) return
+
+    setGuardando(true)
+    setErrorDrawer(null)
+
+    try {
+      await apiDelete(`/anotaciones-horario/${anotacionSeleccionada.idAnotacion}`)
+      setAnotaciones((prev) => prev.filter((a) => a.idAnotacion !== anotacionSeleccionada.idAnotacion))
+      cerrarOrganizador()
+    } catch (err) {
+      setErrorDrawer(err instanceof ApiError ? err.message : 'No se pudo eliminar la anotación.')
+    } finally {
+      setGuardando(false)
+    }
+  }
 
   const vista = useMemo(() => construirVistaSemanal(horarios ?? []), [horarios])
   const proxima = useMemo(() => proximaClase(horarios ?? [], ahora), [horarios, ahora])
@@ -151,7 +283,14 @@ export function MiHorarioAprendiz() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="flex flex-col gap-4 lg:col-span-8">
             <div className="min-w-0 overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <GridHorario bloques={vista.bloques} grid={vista.grid} hayBloqueActivo={false} soloLectura />
+              <GridHorario
+                bloques={vista.bloques}
+                grid={vista.grid}
+                hayBloqueActivo={false}
+                soloLectura
+                marcadoresPorBloqueId={marcadoresPorBloqueId}
+                onClicBloqueLectura={(bloqueId) => abrirOrganizador(idHorarioDeBloqueId(bloqueId))}
+              />
             </div>
 
             {vista.sinUbicar.length > 0 && (
@@ -180,13 +319,47 @@ export function MiHorarioAprendiz() {
             <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
               <div className="mb-2 flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Organizador personal</p>
-                <InsigniaVitrina />
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  {anotaciones.length} nota{anotaciones.length === 1 ? '' : 's'}
+                </span>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Contenido de mockup (Stitch) — pendiente de conectar a un dato real del backend. Notas privadas,
-                recordatorios y etiquetas (Examen, Entrega, Importante) por clase son el ticket
-                "[DB/Arquitectura][Backend] Anotaciones personales de horario" de este mismo Epic.
-              </p>
+
+              {errorAnotaciones && <p className="mb-2 text-xs text-red-600 dark:text-red-400">{errorAnotaciones}</p>}
+
+              {anotaciones.length === 0 ? (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Haz clic en cualquier clase de tu grilla para agregar una nota, recordatorio o etiqueta (Examen,
+                  Entrega, Importante).
+                </p>
+              ) : (
+                <ul className="space-y-1">
+                  {anotaciones.map((anotacion) => {
+                    const horarioDeLaNota = (horarios ?? []).find((h) => h.idHorario === anotacion.idHorario)
+                    const tematica = horarioDeLaNota
+                      ? horarioDeLaNota.resultadoCodigo ?? horarioDeLaNota.resultadoDescripcion ?? 'Clase'
+                      : 'Clase'
+
+                    return (
+                      <li key={anotacion.idAnotacion}>
+                        <button
+                          type="button"
+                          onClick={() => anotacion.idHorario != null && abrirOrganizador(anotacion.idHorario)}
+                          className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left text-xs hover:bg-slate-50 dark:hover:bg-slate-700"
+                        >
+                          <span
+                            className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${COLOR_ETIQUETA[anotacion.etiqueta].dot}`}
+                            aria-hidden="true"
+                          />
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate font-medium text-slate-700 dark:text-slate-300">{tematica}</span>
+                            <span className="block truncate text-slate-500 dark:text-slate-400">{anotacion.nota}</span>
+                          </span>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              )}
             </div>
           </div>
 
@@ -256,6 +429,122 @@ export function MiHorarioAprendiz() {
               )}
             </div>
           </aside>
+        </div>
+      )}
+
+      {idHorarioSeleccionado != null && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 sm:items-center"
+          onClick={cerrarOrganizador}
+        >
+          <div
+            role="dialog"
+            aria-label="Organizador personal de la clase"
+            className="w-full max-w-lg rounded-t-2xl bg-white p-5 shadow-xl dark:bg-slate-800 sm:rounded-2xl"
+            onClick={(evento) => evento.stopPropagation()}
+          >
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">
+                  Organizador personal
+                </p>
+                <h2 className="truncate text-base font-bold text-slate-900 dark:text-slate-100">
+                  {horarioSeleccionado
+                    ? horarioSeleccionado.resultadoCodigo ?? horarioSeleccionado.resultadoDescripcion ?? 'Clase'
+                    : 'Clase'}
+                </h2>
+                {horarioSeleccionado && (
+                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                    {horarioSeleccionado.instructorNombre ?? '—'} · {horarioSeleccionado.ambienteNombre ?? '—'}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={cerrarOrganizador}
+                aria-label="Cerrar organizador personal"
+                className="shrink-0 rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+              >
+                <span aria-hidden="true">✕</span>
+              </button>
+            </div>
+
+            {errorDrawer && (
+              <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{errorDrawer}</p>
+            )}
+
+            <label className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">Etiqueta</label>
+            <div className="mb-3 flex flex-wrap gap-1.5">
+              {ETIQUETAS.map((etiqueta) => (
+                <button
+                  key={etiqueta}
+                  type="button"
+                  onClick={() => setEtiquetaBorrador(etiqueta)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                    etiquetaBorrador === etiqueta ? COLOR_ETIQUETA[etiqueta].badgeActiva : COLOR_ETIQUETA[etiqueta].badge
+                  }`}
+                >
+                  {etiqueta}
+                </button>
+              ))}
+            </div>
+
+            <label htmlFor="nota-organizador" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Nota
+            </label>
+            <textarea
+              id="nota-organizador"
+              value={notaBorrador}
+              onChange={(evento) => setNotaBorrador(evento.target.value)}
+              rows={3}
+              placeholder="Ej. Traer calculadora, repasar el capítulo 3..."
+              className="mb-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:outline-none focus:ring-1 focus:ring-sena-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            />
+
+            <label className="mb-4 flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+              <input
+                type="checkbox"
+                checked={recordatorioBorrador}
+                onChange={(evento) => setRecordatorioBorrador(evento.target.checked)}
+                className="h-4 w-4"
+              />
+              Recordarme antes de esta clase (guarda la preferencia; el envío del recordatorio en sí todavía no está
+              implementado).
+            </label>
+
+            <div className="flex items-center justify-between gap-2">
+              {anotacionSeleccionada ? (
+                <button
+                  type="button"
+                  onClick={() => void eliminarAnotacion()}
+                  disabled={guardando}
+                  className="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900 dark:hover:bg-red-950/30"
+                >
+                  Eliminar
+                </button>
+              ) : (
+                <span />
+              )}
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={cerrarOrganizador}
+                  className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-300"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void guardarAnotacion()}
+                  disabled={guardando || !notaBorrador.trim()}
+                  className="rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {guardando ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </AppShell>

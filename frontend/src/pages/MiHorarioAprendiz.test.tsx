@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { MiHorarioAprendiz } from './MiHorarioAprendiz'
-import type { Ficha, Horario } from '../types/api'
+import type { AnotacionHorario, Ficha, Horario } from '../types/api'
 
-const { ApiErrorMock, apiGetMock } = vi.hoisted(() => {
+const { ApiErrorMock, apiGetMock, apiPostMock, apiPutMock, apiDeleteMock } = vi.hoisted(() => {
   class ApiErrorMock extends Error {
     status: number
     constructor(status: number, message: string) {
@@ -12,11 +13,14 @@ const { ApiErrorMock, apiGetMock } = vi.hoisted(() => {
       this.status = status
     }
   }
-  return { ApiErrorMock, apiGetMock: vi.fn() }
+  return { ApiErrorMock, apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPutMock: vi.fn(), apiDeleteMock: vi.fn() }
 })
 
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiPost: (...args: unknown[]) => apiPostMock(...args),
+  apiPut: (...args: unknown[]) => apiPutMock(...args),
+  apiDelete: (...args: unknown[]) => apiDeleteMock(...args),
   ApiError: ApiErrorMock,
 }))
 
@@ -61,15 +65,30 @@ function crearHorario(overrides: Partial<Horario> = {}): Horario {
   }
 }
 
+function crearAnotacion(overrides: Partial<AnotacionHorario> = {}): AnotacionHorario {
+  return {
+    idAnotacion: 1,
+    idUsuario: 'aprendiz-1',
+    idHorario: 100,
+    nota: 'Traer calculadora',
+    etiqueta: 'Examen',
+    recordatorioActivo: false,
+    fechaCreacion: '2026-01-01T08:00:00Z',
+    ...overrides,
+  }
+}
+
 /** AppShell también llama a apiGet('/usuarios/me') al montar. */
 function mockearRespuestas({
   ficha = FICHA,
   fichaError,
   horarios = [],
+  anotaciones = [],
 }: {
   ficha?: Ficha
   fichaError?: InstanceType<typeof ApiErrorMock>
   horarios?: Horario[]
+  anotaciones?: AnotacionHorario[]
 }) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/usuarios/me') return Promise.reject(new ApiErrorMock(401, 'no mockeado'))
@@ -77,12 +96,16 @@ function mockearRespuestas({
       return fichaError ? Promise.reject(fichaError) : Promise.resolve(ficha)
     }
     if (path === '/ficha-usuario/mi-horario') return Promise.resolve(horarios)
+    if (path === '/anotaciones-horario/mias') return Promise.resolve(anotaciones)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
 
 describe('MiHorarioAprendiz', () => {
   beforeEach(() => {
+    apiPostMock.mockReset()
+    apiPutMock.mockReset()
+    apiDeleteMock.mockReset()
     // shouldAdvanceTime: true -- el reloj simulado avanza junto con el
     // real, así que el polling interno de findBy/waitFor de Testing
     // Library sigue funcionando; solo se fija el punto de partida.
@@ -183,6 +206,110 @@ describe('MiHorarioAprendiz', () => {
 
     await waitFor(() => {
       expect(screen.getByText('falló')).toBeInTheDocument()
+    })
+  })
+
+  describe('Organizador personal (anotaciones)', () => {
+    it('pinta el punto de color de la anotación real en la celda de la grilla', async () => {
+      mockearRespuestas({ horarios: [crearHorario()], anotaciones: [crearAnotacion({ etiqueta: 'Examen' })] })
+      renderConProviders(<MiHorarioAprendiz />)
+
+      expect(await screen.findByRole('button', { name: /con anotación Examen/ })).toBeInTheDocument()
+      expect(screen.getByText('1 nota')).toBeInTheDocument()
+    })
+
+    it('sin anotaciones, la celda no es un botón (solo lectura) y el organizador lo indica', async () => {
+      mockearRespuestas({ horarios: [crearHorario()] })
+      renderConProviders(<MiHorarioAprendiz />)
+      await screen.findByText('Ficha 2874521')
+
+      expect(screen.queryByRole('button', { name: /con anotación/ })).not.toBeInTheDocument()
+      expect(
+        screen.getByText('Haz clic en cualquier clase de tu grilla para agregar una nota, recordatorio o etiqueta (Examen, Entrega, Importante).'),
+      ).toBeInTheDocument()
+    })
+
+    it('crea una anotación nueva al hacer clic en una clase sin nota', async () => {
+      mockearRespuestas({ horarios: [crearHorario()] })
+      apiPostMock.mockResolvedValue(crearAnotacion({ nota: 'Repasar joins', etiqueta: 'Entrega' }))
+      const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      renderConProviders(<MiHorarioAprendiz />)
+      await screen.findByText('Ficha 2874521')
+
+      await usuario.click(screen.getByTitle('RA-1 — Bases de Datos NoSQL · Carlos Morales · Laboratorio 302'))
+
+      expect(await screen.findByRole('dialog', { name: 'Organizador personal de la clase' })).toBeInTheDocument()
+
+      await usuario.type(screen.getByLabelText('Nota'), 'Repasar joins')
+      await usuario.click(screen.getByRole('button', { name: 'Entrega' }))
+      await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+      expect(apiPostMock).toHaveBeenCalledWith('/anotaciones-horario/', {
+        idHorario: 100,
+        nota: 'Repasar joins',
+        etiqueta: 'Entrega',
+        recordatorioActivo: false,
+      })
+
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+      expect(screen.getByText('Repasar joins')).toBeInTheDocument()
+    })
+
+    it('edita una anotación existente (PUT) y permite eliminarla (DELETE)', async () => {
+      const anotacionExistente = crearAnotacion({ idAnotacion: 7, nota: 'Traer calculadora', etiqueta: 'Examen' })
+      mockearRespuestas({ horarios: [crearHorario()], anotaciones: [anotacionExistente] })
+      apiPutMock.mockResolvedValue({ ...anotacionExistente, nota: 'Traer calculadora científica' })
+      const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      renderConProviders(<MiHorarioAprendiz />)
+      await screen.findByText('Ficha 2874521')
+
+      await usuario.click(screen.getByRole('button', { name: /con anotación Examen/ }))
+
+      const campoNota = await screen.findByLabelText('Nota')
+      expect(campoNota).toHaveValue('Traer calculadora')
+
+      await usuario.clear(campoNota)
+      await usuario.type(campoNota, 'Traer calculadora científica')
+      await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+      expect(apiPutMock).toHaveBeenCalledWith('/anotaciones-horario/7', {
+        idHorario: 100,
+        nota: 'Traer calculadora científica',
+        etiqueta: 'Examen',
+        recordatorioActivo: false,
+      })
+
+      await waitFor(() => {
+        expect(screen.getByText('Traer calculadora científica')).toBeInTheDocument()
+      })
+
+      apiDeleteMock.mockResolvedValue({ mensaje: 'Anotación eliminada' })
+      await usuario.click(screen.getByRole('button', { name: /con anotación Examen/ }))
+      await usuario.click(await screen.findByRole('button', { name: 'Eliminar' }))
+
+      expect(apiDeleteMock).toHaveBeenCalledWith('/anotaciones-horario/7')
+      await waitFor(() => {
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      })
+      expect(
+        screen.getByText('Haz clic en cualquier clase de tu grilla para agregar una nota, recordatorio o etiqueta (Examen, Entrega, Importante).'),
+      ).toBeInTheDocument()
+    })
+
+    it('muestra el error del backend si falla el guardado', async () => {
+      mockearRespuestas({ horarios: [crearHorario()] })
+      apiPostMock.mockRejectedValue(new ApiErrorMock(400, 'La nota no puede estar vacía'))
+      const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      renderConProviders(<MiHorarioAprendiz />)
+      await screen.findByText('Ficha 2874521')
+
+      await usuario.click(screen.getByTitle('RA-1 — Bases de Datos NoSQL · Carlos Morales · Laboratorio 302'))
+      await usuario.type(await screen.findByLabelText('Nota'), 'x')
+      await usuario.click(screen.getByRole('button', { name: 'Guardar' }))
+
+      expect(await screen.findByText('La nota no puede estar vacía')).toBeInTheDocument()
     })
   })
 })

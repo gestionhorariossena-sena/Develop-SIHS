@@ -23,6 +23,11 @@ interface GridHorarioProps {
   soloLectura?: boolean
   onClicCelda?: (posicion: PosicionCelda, shiftKey: boolean) => void
   onQuitarCelda?: (posicion: PosicionCelda) => void
+  /** Anotaciones personales del Aprendiz (Mi Horario), por `BloqueClase.id`. */
+  marcadoresPorBloqueId?: Record<string, { etiqueta: string; claseColor: string }>
+  /** Solo tiene efecto en modo soloLectura -- abre el organizador personal
+   * del bloque con ese id, sin habilitar la edición del horario en sí. */
+  onClicBloqueLectura?: (bloqueId: string) => void
 }
 
 /** Grid semanal (jornada → bloque horario → día), plantilla institucional. Presentacional puro. */
@@ -33,6 +38,8 @@ export function GridHorario({
   soloLectura = false,
   onClicCelda,
   onQuitarCelda,
+  marcadoresPorBloqueId,
+  onClicBloqueLectura,
 }: GridHorarioProps) {
   return (
     <div>
@@ -81,6 +88,10 @@ export function GridHorario({
                         soloLectura={soloLectura}
                         onClic={(shiftKey) => onClicCelda?.({ bloqueIdx, diaIdx }, shiftKey)}
                         onQuitar={() => onQuitarCelda?.({ bloqueIdx, diaIdx })}
+                        marcador={bloqueCelda ? marcadoresPorBloqueId?.[bloqueCelda.id] ?? null : null}
+                        onClicLectura={
+                          bloqueCelda && onClicBloqueLectura ? () => onClicBloqueLectura(bloqueCelda.id) : undefined
+                        }
                       />
                     )
                   })}

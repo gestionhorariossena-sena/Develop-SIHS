@@ -2,6 +2,13 @@ import type { MouseEvent } from 'react'
 import type { BloqueClase } from '../../pages/horario/tipos'
 import { colorParaBloque } from '../../pages/horario/gridLogic'
 
+interface MarcadorCelda {
+  /** Nombre de la etiqueta (ej. "Examen") -- solo para el aria-label. */
+  etiqueta: string
+  /** Clase Tailwind del punto de color (ej. "bg-red-500"). */
+  claseColor: string
+}
+
 interface CeldaHorarioProps {
   bloque: BloqueClase | undefined
   /** "Lunes, 6:15 a.m – 9:00 a.m" — identifica la celda para lectores de pantalla y tests. */
@@ -13,6 +20,12 @@ interface CeldaHorarioProps {
   soloLectura?: boolean
   onClic: (shiftKey: boolean) => void
   onQuitar: () => void
+  /** Anotación personal del Aprendiz sobre este bloque (Mi Horario), si existe. */
+  marcador?: MarcadorCelda | null
+  /** Solo tiene efecto en modo soloLectura y con un bloque asignado -- abre
+   * el organizador personal del Aprendiz sin habilitar la edición del
+   * horario en sí. */
+  onClicLectura?: () => void
 }
 
 /**
@@ -30,6 +43,8 @@ export function CeldaHorario({
   soloLectura = false,
   onClic,
   onQuitar,
+  marcador = null,
+  onClicLectura,
 }: CeldaHorarioProps) {
   function manejarClic(evento: MouseEvent<HTMLButtonElement>) {
     onClic(evento.shiftKey)
@@ -57,15 +72,38 @@ export function CeldaHorario({
   const color = colorParaBloque(bloque.id)
 
   if (soloLectura) {
+    const contenido = (
+      <>
+        <p className="truncate font-semibold">{bloque.tematica}</p>
+        <p className="truncate">{bloque.instructor}</p>
+        <p className="truncate opacity-80">{bloque.ambiente}</p>
+      </>
+    )
+
+    if (onClicLectura) {
+      return (
+        <button
+          type="button"
+          onClick={onClicLectura}
+          aria-label={`${etiqueta}: ${bloque.tematica}${marcador ? `, con anotación ${marcador.etiqueta}` : ''}`}
+          title={`${bloque.tematica} · ${bloque.instructor} · ${bloque.ambiente}`}
+          className={`relative block h-full min-h-16 w-full select-none space-y-0.5 border-l-2 px-2 py-1.5 text-left text-[11px] leading-tight ${color.fondo} ${color.borde} ${color.texto}`}
+        >
+          {contenido}
+          {marcador && (
+            <span className={`absolute right-1 top-1 h-2 w-2 rounded-full ${marcador.claseColor}`} aria-hidden="true" />
+          )}
+        </button>
+      )
+    }
+
     return (
       <div
         aria-label={`${etiqueta}: ${bloque.tematica}`}
         title={`${bloque.tematica} · ${bloque.instructor} · ${bloque.ambiente}`}
         className={`h-full min-h-16 space-y-0.5 border-l-2 px-2 py-1.5 text-left text-[11px] leading-tight ${color.fondo} ${color.borde} ${color.texto}`}
       >
-        <p className="truncate font-semibold">{bloque.tematica}</p>
-        <p className="truncate">{bloque.instructor}</p>
-        <p className="truncate opacity-80">{bloque.ambiente}</p>
+        {contenido}
       </div>
     )
   }

@@ -251,3 +251,25 @@ export interface Notificacion {
   entidadRelacionada: string | null
   idEntidadRelacionada: string | null
 }
+
+// Espejo de `EtiquetaAnotacion` (Pydantic Literal) en
+// backend/app/schemas/anotacion_horario.py -- acotado a nivel de schema,
+// no un Enum de Postgres.
+export type EtiquetaAnotacion = 'Examen' | 'Entrega' | 'Importante' | 'Normal'
+
+export interface AnotacionHorario {
+  idAnotacion: number
+  idUsuario: string
+  idHorario: number | null
+  nota: string
+  etiqueta: EtiquetaAnotacion
+  recordatorioActivo: boolean
+  fechaCreacion: string
+}
+
+export interface AnotacionHorarioInput {
+  idHorario: number | null
+  nota: string
+  etiqueta: EtiquetaAnotacion
+  recordatorioActivo: boolean
+}
