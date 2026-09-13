@@ -16,6 +16,9 @@ interface ItemNav {
   /** Solo para quien tenga el rol Instructor — pantallas de autoservicio
    * ("Mi horario"), no tiene sentido que las vea un Coordinador/Aprendiz. */
   soloInstructor?: boolean
+  /** Solo para quien tenga el rol Aprendiz — mismo criterio que
+   * `soloInstructor`, para autoservicio del Aprendiz ("Mensajes Docentes"). */
+  soloAprendiz?: boolean
   /** Solo Administrador — más estricto que `soloGestion` (que también deja
    * pasar a Coordinador). Panel de Administración de solicitudes de acceso
    * (SCRUM-121): "Ni Coordinador ni ningún otro rol la ve" es regla de
@@ -53,6 +56,7 @@ const NAV: GrupoNav[] = [
     grupo: 'Mi trabajo',
     items: [
       { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
+      { etiqueta: 'Mensajes Docentes', ruta: '/mensajes-docentes', soloAprendiz: true },
     ],
   },
   {
@@ -150,12 +154,15 @@ export function AppShell({ activo, children }: AppShellProps) {
   const esInstructor =
     miPerfil?.roles.some((rol) => rol.nombre === 'Instructor') ?? false
 
+  const esAprendiz =
+    miPerfil?.roles.some((rol) => rol.nombre === 'Aprendiz') ?? false
+
   const esAdministrador =
     miPerfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
 
   // Los ítems marcados soloGestion solo tienen sentido para un
   // Administrador o Coordinador — mismo criterio que antes tenía "Usuarios".
-  // soloInstructor es el espejo para el grupo "Mi trabajo". soloAdmin es más
+  // soloInstructor/soloAprendiz son el espejo para el grupo "Mi trabajo". soloAdmin es más
   // estricto: ni Coordinador la ve (Panel de Administración, SCRUM-121).
   const nav = NAV.map((grupo) => ({
     ...grupo,
@@ -163,6 +170,7 @@ export function AppShell({ activo, children }: AppShellProps) {
       (item) =>
         (!item.soloGestion || puedeGestionarUsuarios) &&
         (!item.soloInstructor || esInstructor) &&
+        (!item.soloAprendiz || esAprendiz) &&
         (!item.soloAdmin || esAdministrador),
     ),
   })).filter((grupo) => grupo.items.length > 0)

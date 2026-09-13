@@ -19,6 +19,7 @@ import { Fichas } from '../pages/Fichas'
 import { VistaFichas } from '../pages/VistaFichas'
 import { VistaAmbientes } from '../pages/VistaAmbientes'
 import { MiHorario } from '../pages/MiHorario'
+import { MensajesDocentes } from '../pages/MensajesDocentes'
 import { DetalleFranjaAmbiente } from '../pages/DetalleFranjaAmbiente'
 import { Usuarios } from '../pages/Usuarios'
 import { CodigoInstructor } from '../pages/CodigoInstructor'
@@ -71,6 +72,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <DetalleFranjaAmbiente />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mensajes-docentes"
+        element={
+          <ProtectedRoute roles={['Aprendiz']}>
+            <MensajesDocentes />
           </ProtectedRoute>
         }
       />
