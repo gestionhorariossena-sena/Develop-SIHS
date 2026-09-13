@@ -268,6 +268,28 @@ export interface Notificacion {
   idEntidadRelacionada: string | null
 }
 
+// Espejo de ConversacionResponse/MensajeResponse (backend/app/schemas/mensajeria.py)
+// — SCRUM-119, mensajería 1 a 1 Aprendiz ↔ Instructor. Sin canal grupal de
+// ficha ni presencia en tiempo real en esta v1 (ver comentario del modelo
+// `Conversacion` en backend/app/models/mensajeria.py).
+export interface Conversacion {
+  idConversacion: number
+  idAprendiz: string
+  idInstructor: string
+  fechaCreacion: string
+}
+
+export interface Mensaje {
+  idMensaje: number
+  idConversacion: number
+  idRemitente: string
+  contenido: string
+  // v1 solo guarda un link de referencia, no sube archivos de verdad.
+  adjuntoUrl: string | null
+  leido: boolean
+  fechaEnvio: string
+}
+
 // Espejo de la tabla `solicitudes_acceso` (ticket "[DB/Arquitectura] Tabla
 // solicitudes_acceso...", Epic SCRUM-96) y de `SolicitudAccesoResponse` del
 // endpoint `GET /solicitudes-acceso/` (ticket "[Backend] Endpoints
