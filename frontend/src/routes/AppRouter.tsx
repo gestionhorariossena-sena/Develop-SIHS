@@ -6,6 +6,7 @@ import { RestablecerContrasena } from '../pages/RestablecerContrasena'
 import { Dashboard } from '../pages/Dashboard'
 import { NuevoHorario } from '../pages/NuevoHorario'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
+import { MiHorarioAprendiz } from '../pages/MiHorarioAprendiz'
 import { Avisos } from '../pages/Avisos'
 import { Notificaciones } from '../pages/Notificaciones'
 import { Ambientes } from '../pages/Ambientes'
@@ -50,6 +51,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <HistorialHorarios />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mi-horario"
+        element={
+          <ProtectedRoute>
+            <MiHorarioAprendiz />
           </ProtectedRoute>
         }
       />

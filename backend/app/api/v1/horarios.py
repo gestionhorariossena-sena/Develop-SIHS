@@ -24,26 +24,6 @@ router = APIRouter(prefix="/horarios", tags=["horarios"])
 require_puede_programar = require_roles("Coordinador", "Administrador")
 
 
-def _a_response(db: Session, horario) -> dict:
-    return {
-        "idHorario": horario.idHorario,
-        "horaInicio": horario.horaInicio,
-        "horaFin": horario.horaFin,
-        "idJornada": horario.idJornada,
-        "idTrimestre": horario.idTrimestre,
-        "idAmbiente": horario.idAmbiente,
-        "idInstructor": horario.idInstructor,
-        "idFicha": horario.idFicha,
-        "idResultado": horario.idResultado,
-        "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
-        "instructorNombre": horario.instructor.nombre if horario.instructor else None,
-        "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
-        "ambienteNombre": horario.ambiente.nombre if horario.ambiente else None,
-        "resultadoCodigo": horario.resultado.codigo if horario.resultado else None,
-        "resultadoDescripcion": horario.resultado.descripcion if horario.resultado else None,
-    }
-
-
 @router.post("/validar", response_model=HorarioDryRunResponse)
 @router.post("/dry-run", response_model=HorarioDryRunResponse, include_in_schema=False)
 def validar_dry_run_horario(
@@ -96,7 +76,7 @@ def crear_horario(
         db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=horario.idHorario, detalle=detalle
     )
 
-    return _a_response(db, horario)
+    return HorarioService.a_response(db, horario)
 
 
 @router.get("/", response_model=list[HorarioResponse])
@@ -104,7 +84,7 @@ def obtener_horarios(
     db: Session = Depends(get_db),
     usuario=Depends(require_puede_programar),
 ):
-    return [_a_response(db, h) for h in HorarioService.obtener_todos(db)]
+    return [HorarioService.a_response(db, h) for h in HorarioService.obtener_todos(db)]
 
 
 @router.get("/{id_horario}", response_model=HorarioResponse)
@@ -118,7 +98,7 @@ def obtener_horario(
     if not horario:
         raise HTTPException(status_code=404, detail="Horario no encontrado")
 
-    return _a_response(db, horario)
+    return HorarioService.a_response(db, horario)
 
 
 @router.get("/{id_horario}/pdf")
@@ -189,7 +169,7 @@ def actualizar_horario(
         db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=id_horario, detalle=detalle
     )
 
-    return _a_response(db, horario)
+    return HorarioService.a_response(db, horario)
 
 
 @router.delete("/{id_horario}")

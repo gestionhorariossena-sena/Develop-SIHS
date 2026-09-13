@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { InsigniaVitrina } from '../components/InsigniaVitrina'
 import { apiGet, ApiError } from '../services/api'
 import type { Aviso, CategoriaAviso } from '../types/api'
 
@@ -28,17 +29,6 @@ const CLASE_BADGE_CATEGORIA: Record<CategoriaAviso, string> = {
 
 function formatearFecha(iso: string) {
   return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
-}
-
-/** Insignia reutilizable para marcar contenido de vitrina (sin backend
- * real todavía) — mismo criterio que el botón deshabilitado de
- * Dashboard.tsx, aplicado a una tarjeta completa en vez de a un botón. */
-function InsigniaVitrina() {
-  return (
-    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-      Vitrina · sin datos reales aún
-    </span>
-  )
 }
 
 export function Avisos() {

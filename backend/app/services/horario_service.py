@@ -29,6 +29,32 @@ class CruceHorarioError(Exception):
 
 class HorarioService:
     @staticmethod
+    def a_response(db, horario) -> dict:
+        """Serializa un Horario con los nombres ya resueltos
+        (instructor/ficha/ambiente/resultado) para no obligar al frontend
+        a pedirlos aparte -- usado por app/api/v1/horarios.py y por GET
+        /ficha-usuario/mi-horario (mismo shape para Coordinador/
+        Administrador viendo todos los horarios y para el Aprendiz viendo
+        los de su propia ficha)."""
+        return {
+            "idHorario": horario.idHorario,
+            "horaInicio": horario.horaInicio,
+            "horaFin": horario.horaFin,
+            "idJornada": horario.idJornada,
+            "idTrimestre": horario.idTrimestre,
+            "idAmbiente": horario.idAmbiente,
+            "idInstructor": horario.idInstructor,
+            "idFicha": horario.idFicha,
+            "idResultado": horario.idResultado,
+            "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
+            "instructorNombre": horario.instructor.nombre if horario.instructor else None,
+            "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
+            "ambienteNombre": horario.ambiente.nombre if horario.ambiente else None,
+            "resultadoCodigo": horario.resultado.codigo if horario.resultado else None,
+            "resultadoDescripcion": horario.resultado.descripcion if horario.resultado else None,
+        }
+
+    @staticmethod
     def obtener_todos(db):
         return HorarioRepository.obtener_todos(db)
 
