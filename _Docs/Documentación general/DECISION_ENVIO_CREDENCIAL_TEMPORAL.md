@@ -96,8 +96,11 @@ sistema, solo bloquea el paso de envío.
 - [ ] Configurar `SMTP_USER`/`SMTP_PASSWORD` reales en el `.env` del
       backend desplegado (depende del ticket de recuperación de
       contraseña — misma cuenta Gmail)
-- [ ] Conectar `EmailService.enviar_credencial_temporal` desde el
-      endpoint de aprobación (`[Backend] Endpoints /solicitudes-acceso`)
+- [x] Conectar `EmailService.enviar_credencial_temporal` desde el
+      endpoint de aprobación (`[Backend] Endpoints /solicitudes-acceso`,
+      `SolicitudAccesoService.aprobar` en
+      `backend/app/services/solicitud_acceso_service.py`) — si SMTP no
+      está configurado, no bloquea la aprobación (ver más arriba)
 
 ## Decisión: sin expiración real de 48h (ticket "Forzar cambio de
 contraseña en el primer ingreso")
