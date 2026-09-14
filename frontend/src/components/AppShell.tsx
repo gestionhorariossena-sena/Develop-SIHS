@@ -19,6 +19,7 @@ const NAV: ItemNav[] = [
   { etiqueta: 'Horarios', ruta: '/horarios/nuevo' },
   { etiqueta: 'Historial de horarios', ruta: '/horarios/historial' },
   { etiqueta: 'Mi Horario', ruta: '/mi-horario' },
+  { etiqueta: 'Mensajes Docentes', ruta: '/mensajes-docentes' },
   { etiqueta: 'Avisos y Eventos', ruta: '/avisos' },
   { etiqueta: 'Notificaciones', ruta: '/notificaciones' },
   { etiqueta: 'Ambientes', ruta: '/ambientes' },
@@ -73,9 +74,17 @@ export function AppShell({ activo, children }: AppShellProps) {
     miPerfil?.roles.some(
       (rol) => rol.nombre === 'Administrador' || rol.nombre === 'Coordinador',
     ) ?? false
+  const esAprendiz = miPerfil?.roles.some((rol) => rol.nombre === 'Aprendiz') ?? false
   // "Usuarios" administra roles y códigos de instructor del sistema — solo
   // tiene sentido mostrárselo a un Administrador o Coordinador.
-  const nav = NAV.filter((item) => item.etiqueta !== 'Usuarios' || puedeGestionarUsuarios)
+  // "Mi Horario" es la grilla semanal de solo lectura + organizador
+  // personal del Aprendiz (MiHorarioAprendiz.tsx) -- no la vista de carga
+  // lectiva de un Instructor, así que solo se muestra a Aprendiz.
+  // "Mensajes Docentes" (MensajesDocentes.tsx) es la mensajería
+  // Aprendiz->Instructor -- mismo criterio, solo Aprendiz.
+  const nav = NAV.filter((item) => item.etiqueta !== 'Usuarios' || puedeGestionarUsuarios).filter(
+    (item) => (item.etiqueta !== 'Mi Horario' && item.etiqueta !== 'Mensajes Docentes') || esAprendiz,
+  )
 
   useEffect(() => {
     apiGet<Usuario>('/usuarios/me')

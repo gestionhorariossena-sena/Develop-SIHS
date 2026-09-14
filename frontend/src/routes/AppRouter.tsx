@@ -8,6 +8,7 @@ import { Dashboard } from '../pages/Dashboard'
 import { NuevoHorario } from '../pages/NuevoHorario'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { MiHorarioAprendiz } from '../pages/MiHorarioAprendiz'
+import { MensajesDocentes } from '../pages/MensajesDocentes'
 import { Avisos } from '../pages/Avisos'
 import { Notificaciones } from '../pages/Notificaciones'
 import { Ambientes } from '../pages/Ambientes'
@@ -68,6 +69,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <MiHorarioAprendiz />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mensajes-docentes"
+        element={
+          <ProtectedRoute>
+            <MensajesDocentes />
           </ProtectedRoute>
         }
       />

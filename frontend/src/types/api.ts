@@ -277,3 +277,24 @@ export interface AnotacionHorarioInput {
   etiqueta: EtiquetaAnotacion
   recordatorioActivo: boolean
 }
+
+// Espejo de ConversacionResponse/MensajeResponse
+// (backend/app/schemas/mensajeria.py) -- GET/POST /mensajeria/conversaciones,
+// GET/POST /mensajeria/conversaciones/{id}/mensajes. Conversación 1 a 1
+// Aprendiz<->Instructor, sin canal grupal de ficha en esta v1.
+export interface Conversacion {
+  idConversacion: number
+  idAprendiz: string
+  idInstructor: string
+  fechaCreacion: string
+}
+
+export interface Mensaje {
+  idMensaje: number
+  idConversacion: number
+  idRemitente: string
+  contenido: string
+  adjuntoUrl: string | null
+  leido: boolean
+  fechaEnvio: string
+}
