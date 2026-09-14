@@ -200,13 +200,17 @@ class HorarioService:
         return HorarioRepository.guardar(db, horario)
 
     @staticmethod
-    def obtener_publicados_por_instructor(db, id_instructor) -> list[dict]:
+    def obtener_publicados_por_instructor(
+        db, id_instructor, fecha_inicio=None, fecha_fin=None
+    ) -> list[dict]:
         """GET /usuarios/me/horarios — autoservicio del instructor ("Mi
         horario"): solo lo activo y publicado, nunca un borrador que el
         coordinador todavía está armando."""
         return [
             HorarioService.a_response(db, h)
-            for h in HorarioRepository.obtener_por_instructor(db, id_instructor)
+            for h in HorarioRepository.obtener_por_instructor(
+                db, id_instructor, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+            )
             if h.publicado
         ]
 
