@@ -82,8 +82,14 @@ export function AppShell({ activo, children }: AppShellProps) {
   // lectiva de un Instructor, así que solo se muestra a Aprendiz.
   // "Mensajes Docentes" (MensajesDocentes.tsx) es la mensajería
   // Aprendiz->Instructor -- mismo criterio, solo Aprendiz.
+  // "Notificaciones" (Notificaciones.tsx, Centro de Notificaciones del
+  // mockup Portal del Aprendiz) -- GET /notificaciones/ en sí es genérico
+  // (cualquier usuario autenticado), pero esta pantalla puntual es la del
+  // Epic "Vistas del Aprendiz", así que el ítem de nav sigue el mismo
+  // criterio que Mi Horario/Mensajes Docentes.
+  const SOLO_APRENDIZ = ['Mi Horario', 'Mensajes Docentes', 'Notificaciones']
   const nav = NAV.filter((item) => item.etiqueta !== 'Usuarios' || puedeGestionarUsuarios).filter(
-    (item) => (item.etiqueta !== 'Mi Horario' && item.etiqueta !== 'Mensajes Docentes') || esAprendiz,
+    (item) => !SOLO_APRENDIZ.includes(item.etiqueta) || esAprendiz,
   )
 
   useEffect(() => {
