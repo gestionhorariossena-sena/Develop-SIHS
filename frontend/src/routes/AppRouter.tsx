@@ -4,7 +4,7 @@ import { Registro } from '../pages/Registro'
 import { RecuperarContrasena } from '../pages/RecuperarContrasena'
 import { RestablecerContrasena } from '../pages/RestablecerContrasena'
 import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
-import { Dashboard } from '../pages/Dashboard'
+import { DashboardRouter } from '../pages/DashboardRouter'
 import { NuevoHorario } from '../pages/NuevoHorario'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { MiHorarioAprendiz } from '../pages/MiHorarioAprendiz'
@@ -44,7 +44,7 @@ export function AppRouter() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardRouter />
           </ProtectedRoute>
         }
       />

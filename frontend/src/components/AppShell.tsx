@@ -88,9 +88,18 @@ export function AppShell({ activo, children }: AppShellProps) {
   // Epic "Vistas del Aprendiz", así que el ítem de nav sigue el mismo
   // criterio que Mi Horario/Mensajes Docentes.
   const SOLO_APRENDIZ = ['Mi Horario', 'Mensajes Docentes', 'Notificaciones']
-  const nav = NAV.filter((item) => item.etiqueta !== 'Usuarios' || puedeGestionarUsuarios).filter(
-    (item) => !SOLO_APRENDIZ.includes(item.etiqueta) || esAprendiz,
-  )
+  // Las 4 pantallas del Epic "Vistas del Aprendiz" (DashboardAprendiz.tsx
+  // enlaza a las mismas 4) se agrupan bajo un encabezado propio "Mi
+  // trabajo" cuando el usuario es Aprendiz, en vez de mezclarse con la
+  // lista general de gestión. "Avisos y Eventos" es la única de las 4
+  // que además sigue visible en la lista general para cualquier otro rol
+  // (su backend es abierto a todo usuario autenticado) — para un
+  // Aprendiz se muestra una sola vez, dentro de "Mi trabajo".
+  const GRUPO_TRABAJO_APRENDIZ = ['Mi Horario', 'Mensajes Docentes', 'Avisos y Eventos', 'Notificaciones']
+  const navTrabajo = esAprendiz ? NAV.filter((item) => GRUPO_TRABAJO_APRENDIZ.includes(item.etiqueta)) : []
+  const nav = NAV.filter((item) => item.etiqueta !== 'Usuarios' || puedeGestionarUsuarios)
+    .filter((item) => !SOLO_APRENDIZ.includes(item.etiqueta) || esAprendiz)
+    .filter((item) => !esAprendiz || !GRUPO_TRABAJO_APRENDIZ.includes(item.etiqueta))
 
   useEffect(() => {
     apiGet<Usuario>('/usuarios/me')
@@ -153,6 +162,46 @@ export function AppShell({ activo, children }: AppShellProps) {
     cancelarTemporizadores()
     abiertaPorHoverRef.current = false
     setNavAbierta(false)
+  }
+
+  /** Un ítem de la barra lateral — enlace real si tiene `ruta`, o
+   * deshabilitado (módulo sin backend todavía) si no. Reusado entre el
+   * grupo "MI TRABAJO" (solo Aprendiz) y "GESTIÓN". */
+  function renderItemNav(item: ItemNav) {
+    const esActivo = item.etiqueta === activo
+
+    if (item.ruta) {
+      return (
+        <Link
+          key={item.etiqueta}
+          to={item.ruta}
+          onClick={cerrarManual}
+          className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
+            esActivo
+              ? 'bg-sena-50 text-sena-700 dark:bg-sena-950/50'
+              : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
+          }`}
+        >
+          <span
+            className={`h-3.5 w-3.5 shrink-0 rounded ${
+              esActivo ? 'bg-sena-600' : 'border border-slate-300 dark:border-slate-600'
+            }`}
+          />
+          {item.etiqueta}
+        </Link>
+      )
+    }
+
+    return (
+      <span
+        key={item.etiqueta}
+        title="Módulo aún no implementado en el backend"
+        className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500"
+      >
+        <span className="h-3.5 w-3.5 shrink-0 rounded border border-slate-300 dark:border-slate-600" />
+        {item.etiqueta}
+      </span>
+    )
   }
 
   /** Borde izquierdo de la pantalla: dejar el cursor ~1.5s la abre solo. */
@@ -237,45 +286,15 @@ export function AppShell({ activo, children }: AppShellProps) {
             </button>
           </div>
 
+          {navTrabajo.length > 0 && (
+            <>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">MI TRABAJO</p>
+              <nav className="mb-6 space-y-1">{navTrabajo.map((item) => renderItemNav(item))}</nav>
+            </>
+          )}
+
           <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">GESTIÓN</p>
-          <nav className="space-y-1">
-            {nav.map((item) => {
-              const esActivo = item.etiqueta === activo
-
-              if (item.ruta) {
-                return (
-                  <Link
-                    key={item.etiqueta}
-                    to={item.ruta}
-                    onClick={cerrarManual}
-                    className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                      esActivo
-                        ? 'bg-sena-50 text-sena-700 dark:bg-sena-950/50'
-                        : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    <span
-                      className={`h-3.5 w-3.5 shrink-0 rounded ${
-                        esActivo ? 'bg-sena-600' : 'border border-slate-300 dark:border-slate-600'
-                      }`}
-                    />
-                    {item.etiqueta}
-                  </Link>
-                )
-              }
-
-              return (
-                <span
-                  key={item.etiqueta}
-                  title="Módulo aún no implementado en el backend"
-                  className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500"
-                >
-                  <span className="h-3.5 w-3.5 shrink-0 rounded border border-slate-300 dark:border-slate-600" />
-                  {item.etiqueta}
-                </span>
-              )
-            })}
-          </nav>
+          <nav className="space-y-1">{nav.map((item) => renderItemNav(item))}</nav>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
