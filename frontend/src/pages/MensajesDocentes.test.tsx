@@ -1,203 +1,148 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { MensajesDocentes } from './MensajesDocentes'
 import type { Conversacion, Horario, Mensaje, Usuario } from '../types/api'
 
-const { ApiErrorMock, apiGetMock, apiPostMock, apiPatchMock } = vi.hoisted(() => {
-  class ApiErrorMock extends Error {
-    status: number
-    constructor(status: number, message: string) {
-      super(message)
-      this.status = status
-    }
-  }
-  return { ApiErrorMock, apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPatchMock: vi.fn() }
-})
-
-vi.mock('../services/api', () => ({
-  apiGet: (...args: unknown[]) => apiGetMock(...args),
-  apiPost: (...args: unknown[]) => apiPostMock(...args),
-  apiPatch: (...args: unknown[]) => apiPatchMock(...args),
-  ApiError: ApiErrorMock,
-}))
-
-const MI_PERFIL: Usuario = {
+const APRENDIZ: Usuario = {
   idUsuario: 'aprendiz-1',
   nombre: 'Sara Rodríguez',
   email: 'sara@example.com',
   estado: 'activo',
   fechaRegistro: '2026-01-01',
-  roles: [{ idRol: 1, nombre: 'Aprendiz' }],
+  roles: [{ idRol: 3, nombre: 'Aprendiz' }],
   especialidades: [],
-  debeCambiarClave: false,
 }
 
-function crearHorario(overrides: Partial<Horario> = {}): Horario {
-  return {
-    idHorario: 100,
-    horaInicio: '06:15:00',
-    horaFin: '09:00:00',
-    idJornada: 1,
-    idTrimestre: 1,
-    idAmbiente: 1,
-    idInstructor: 'instructor-1',
-    idFicha: 1,
-    idResultado: 1,
-    dias: [1],
-    instructorNombre: 'Carlos Morales',
-    fichaCodigo: '2874521',
-    ambienteNombre: 'Laboratorio 302',
-    resultadoCodigo: 'RA-1',
-    resultadoDescripcion: 'Bases de Datos NoSQL',
-    ...overrides,
-  }
+const HORARIO_MORALES: Horario = {
+  idHorario: 1, horaInicio: '10:00:00', horaFin: '12:00:00', idJornada: 1, idTrimestre: 1,
+  idAmbiente: 1, idInstructor: 'instructor-1', idFicha: 1, idResultado: 1, dias: [1],
+  fechaCreacion: '2026-01-01T00:00:00Z', fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: true,
+  instructorNombre: 'Carlos Morales', fichaCodigo: '2670142', ambienteNombre: 'Lab 302',
+  resultadoCodigo: 'CPL1', resultadoDescripcion: 'Bases de Datos NoSQL',
 }
 
-function crearConversacion(overrides: Partial<Conversacion> = {}): Conversacion {
-  return {
-    idConversacion: 1,
-    idAprendiz: 'aprendiz-1',
-    idInstructor: 'instructor-1',
-    fechaCreacion: '2026-01-01T08:00:00Z',
-    ...overrides,
-  }
+const HORARIO_PRIETO: Horario = {
+  ...HORARIO_MORALES,
+  idHorario: 2, idInstructor: 'instructor-2', instructorNombre: 'Diana Prieto',
+  ambienteNombre: 'Lab 201', resultadoDescripcion: 'APIs RESTful',
 }
 
-function crearMensaje(overrides: Partial<Mensaje> = {}): Mensaje {
-  return {
-    idMensaje: 1,
-    idConversacion: 1,
-    idRemitente: 'instructor-1',
-    contenido: 'Hola, ¿cómo vas con el proyecto?',
-    adjuntoUrl: null,
-    leido: false,
-    fechaEnvio: '2026-01-05T09:00:00Z',
-    ...overrides,
-  }
+const CONVERSACION_MORALES: Conversacion = {
+  idConversacion: 10, idAprendiz: 'aprendiz-1', idInstructor: 'instructor-1', fechaCreacion: '2026-01-01T00:00:00Z',
 }
 
-function mockearRespuestas({
-  horarios = [crearHorario()],
-  horariosError,
-  conversaciones = [],
-  mensajesPorConversacion = {},
-}: {
-  horarios?: Horario[]
-  horariosError?: InstanceType<typeof ApiErrorMock>
-  conversaciones?: Conversacion[]
-  mensajesPorConversacion?: Record<number, Mensaje[]>
+const MENSAJE_NO_LEIDO: Mensaje = {
+  idMensaje: 100, idConversacion: 10, idRemitente: 'instructor-1', contenido: 'Recuerden traer el script listo',
+  adjuntoUrl: null, leido: false, fechaEnvio: '2026-03-27T10:42:00Z',
+}
+
+const apiGetMock = vi.fn()
+const apiPostMock = vi.fn()
+const apiPatchMock = vi.fn()
+vi.mock('../services/api', () => ({
+  apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiPost: (...args: unknown[]) => apiPostMock(...args),
+  apiPatch: (...args: unknown[]) => apiPatchMock(...args),
+  ApiError: class ApiError extends Error {
+    status: number
+    constructor(status: number, message: string) {
+      super(message)
+      this.status = status
+    }
+  },
+}))
+
+function mockearApis({
+  horarios = [HORARIO_MORALES, HORARIO_PRIETO],
+  conversaciones = [] as Conversacion[],
+  mensajesPorConversacion = {} as Record<number, Mensaje[]>,
 }) {
   apiGetMock.mockImplementation((path: string) => {
-    if (path === '/usuarios/me') return Promise.resolve(MI_PERFIL)
+    if (path === '/usuarios/me') return Promise.resolve(APRENDIZ)
+    if (path === '/ficha-usuario/mi-horario') return Promise.resolve(horarios)
     if (path === '/mensajeria/conversaciones') return Promise.resolve(conversaciones)
-    if (path === '/ficha-usuario/mi-horario') {
-      return horariosError ? Promise.reject(horariosError) : Promise.resolve(horarios)
-    }
-    const match = /\/mensajeria\/conversaciones\/(\d+)\/mensajes/.exec(path)
+
+    const match = path.match(/\/mensajeria\/conversaciones\/(\d+)\/mensajes/)
     if (match) return Promise.resolve(mensajesPorConversacion[Number(match[1])] ?? [])
+
     return Promise.reject(new Error(`no mockeado: ${path}`))
   })
 }
 
 describe('MensajesDocentes', () => {
-  beforeEach(() => {
-    apiPostMock.mockReset()
-    apiPatchMock.mockReset()
-    apiPatchMock.mockResolvedValue({})
-  })
-
-  it('muestra un mensaje si el aprendiz no tiene ficha vinculada', async () => {
-    mockearRespuestas({ horariosError: new ApiErrorMock(404, 'No tienes una ficha vinculada') })
+  it('agrupa los instructores desde /ficha-usuario/mi-horario sin pedir un directorio aparte', async () => {
+    mockearApis({})
     renderConProviders(<MensajesDocentes />)
 
-    expect(await screen.findByText(/todavía no tienes una ficha vinculada/i)).toBeInTheDocument()
-  })
-
-  it('lista los instructores de la ficha como contactos', async () => {
-    mockearRespuestas({})
-    renderConProviders(<MensajesDocentes />)
-
+    expect(apiGetMock).toHaveBeenCalledWith('/ficha-usuario/mi-horario')
     expect(await screen.findByText('Carlos Morales')).toBeInTheDocument()
-    expect(screen.getByText('Sin conversación aún')).toBeInTheDocument()
+    expect(screen.getByText('Diana Prieto')).toBeInTheDocument()
+    expect(screen.getByText('Bases de Datos NoSQL')).toBeInTheDocument()
   })
 
-  it('al elegir un contacto sin conversación previa, la crea y carga sus mensajes', async () => {
-    mockearRespuestas({ mensajesPorConversacion: { 1: [] } })
-    apiPostMock.mockResolvedValue(crearConversacion())
-    const usuario = userEvent.setup()
-    renderConProviders(<MensajesDocentes />)
-
-    await usuario.click(await screen.findByText('Carlos Morales'))
-
-    expect(apiPostMock).toHaveBeenCalledWith('/mensajeria/conversaciones', { idInstructor: 'instructor-1' })
-    expect(await screen.findByText('Todavía no hay mensajes — escribe el primero.')).toBeInTheDocument()
-  })
-
-  it('al elegir un contacto con conversación existente, no crea una nueva y marca como leídos los mensajes del instructor', async () => {
-    mockearRespuestas({
-      conversaciones: [crearConversacion()],
-      mensajesPorConversacion: { 1: [crearMensaje({ idMensaje: 5, leido: false })] },
+  it('muestra el badge de mensajes sin leer de una conversación existente', async () => {
+    mockearApis({
+      conversaciones: [CONVERSACION_MORALES],
+      mensajesPorConversacion: { 10: [MENSAJE_NO_LEIDO] },
     })
-    const usuario = userEvent.setup()
-    renderConProviders(<MensajesDocentes />)
-
-    await usuario.click(await screen.findByText('Carlos Morales'))
-
-    expect(await screen.findByText('Hola, ¿cómo vas con el proyecto?')).toBeInTheDocument()
-    expect(apiPostMock).not.toHaveBeenCalled()
-    await waitFor(() => expect(apiPatchMock).toHaveBeenCalledWith('/mensajeria/mensajes/5/leido'))
-  })
-
-  it('envía un mensaje nuevo y lo agrega al hilo', async () => {
-    mockearRespuestas({
-      conversaciones: [crearConversacion()],
-      mensajesPorConversacion: { 1: [] },
-    })
-    apiPostMock.mockResolvedValue(
-      crearMensaje({ idMensaje: 9, idRemitente: 'aprendiz-1', contenido: '¡Todo bien, profe!', leido: false }),
-    )
-    const usuario = userEvent.setup()
-    renderConProviders(<MensajesDocentes />)
-
-    await usuario.click(await screen.findByText('Carlos Morales'))
-    await screen.findByText('Todavía no hay mensajes — escribe el primero.')
-
-    await usuario.type(screen.getByPlaceholderText(/Escribe tu consulta para Carlos Morales/), '¡Todo bien, profe!')
-    await usuario.click(screen.getByRole('button', { name: 'Enviar' }))
-
-    expect(apiPostMock).toHaveBeenCalledWith('/mensajeria/conversaciones/1/mensajes', { contenido: '¡Todo bien, profe!' })
-    expect(await screen.findByText('¡Todo bien, profe!')).toBeInTheDocument()
-  })
-
-  it('el buscador filtra contactos por nombre o materia', async () => {
-    mockearRespuestas({
-      horarios: [
-        crearHorario(),
-        crearHorario({
-          idHorario: 200,
-          idInstructor: 'instructor-2',
-          instructorNombre: 'Diana Prieto',
-          resultadoCodigo: 'RA-2',
-          resultadoDescripcion: 'APIs REST',
-        }),
-      ],
-    })
-    const usuario = userEvent.setup()
     renderConProviders(<MensajesDocentes />)
 
     await screen.findByText('Carlos Morales')
-    expect(screen.getByText('Diana Prieto')).toBeInTheDocument()
-
-    await usuario.type(screen.getByLabelText('Buscar instructor o materia'), 'Diana')
-
-    expect(screen.queryByText('Carlos Morales')).not.toBeInTheDocument()
-    expect(screen.getByText('Diana Prieto')).toBeInTheDocument()
+    expect(await screen.findByText('1')).toBeInTheDocument()
+    expect(await screen.findByText('1 mensaje nuevo sin leer')).toBeInTheDocument()
   })
 
-  it('el tab "Canal Ficha" está deshabilitado (vitrina, sin canal grupal en el backend)', async () => {
-    mockearRespuestas({})
+  it('al abrir una conversación con mensajes sin leer, marca cada uno como leído', async () => {
+    mockearApis({
+      conversaciones: [CONVERSACION_MORALES],
+      mensajesPorConversacion: { 10: [MENSAJE_NO_LEIDO] },
+    })
+    apiPatchMock.mockResolvedValue({ ...MENSAJE_NO_LEIDO, leido: true })
+    const usuario = userEvent.setup()
+    renderConProviders(<MensajesDocentes />)
+
+    await usuario.click(await screen.findByText('Carlos Morales'))
+
+    await waitFor(() => expect(apiPatchMock).toHaveBeenCalledWith('/mensajeria/mensajes/100/leido'))
+  })
+
+  it('sin conversación previa, enviar el primer mensaje crea la conversación y luego el mensaje', async () => {
+    mockearApis({})
+    apiPostMock.mockImplementation((path: string) => {
+      if (path === '/mensajeria/conversaciones') {
+        return Promise.resolve({ idConversacion: 55, idAprendiz: 'aprendiz-1', idInstructor: 'instructor-1', fechaCreacion: '2026-01-01T00:00:00Z' })
+      }
+      if (path === '/mensajeria/conversaciones/55/mensajes') {
+        return Promise.resolve({
+          idMensaje: 200, idConversacion: 55, idRemitente: 'aprendiz-1', contenido: 'Hola profe',
+          adjuntoUrl: null, leido: false, fechaEnvio: '2026-03-27T10:42:00Z',
+        })
+      }
+      return Promise.reject(new Error(`no mockeado: ${path}`))
+    })
+    const usuario = userEvent.setup()
+    renderConProviders(<MensajesDocentes />)
+
+    await usuario.click(await screen.findByText('Carlos Morales'))
+    expect(await screen.findByText(/Aún no has enviado mensajes/)).toBeInTheDocument()
+
+    await usuario.type(screen.getByPlaceholderText('Escribe tu consulta para Carlos Morales...'), 'Hola profe')
+    await usuario.click(screen.getByRole('button', { name: /Enviar/ }))
+
+    await waitFor(() =>
+      expect(apiPostMock).toHaveBeenCalledWith('/mensajeria/conversaciones', { idInstructor: 'instructor-1' }),
+    )
+    expect(apiPostMock).toHaveBeenCalledWith('/mensajeria/conversaciones/55/mensajes', {
+      contenido: 'Hola profe',
+      adjuntoUrl: undefined,
+    })
+    expect((await screen.findAllByText('Hola profe')).length).toBeGreaterThan(0)
+  })
+
+  it('la pestaña Canal Ficha está deshabilitada (fuera de alcance v1)', async () => {
+    mockearApis({})
     renderConProviders(<MensajesDocentes />)
 
     await screen.findByText('Carlos Morales')

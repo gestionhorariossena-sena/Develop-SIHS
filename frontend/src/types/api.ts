@@ -318,10 +318,10 @@ export interface AnotacionHorarioInput {
   recordatorioActivo: boolean
 }
 
-// Espejo de ConversacionResponse/MensajeResponse
-// (backend/app/schemas/mensajeria.py) -- GET/POST /mensajeria/conversaciones,
-// GET/POST /mensajeria/conversaciones/{id}/mensajes. Conversación 1 a 1
-// Aprendiz<->Instructor, sin canal grupal de ficha en esta v1.
+// Espejo de ConversacionResponse/MensajeResponse (backend/app/schemas/mensajeria.py)
+// — SCRUM-119, mensajería 1 a 1 Aprendiz ↔ Instructor. Sin canal grupal de
+// ficha ni presencia en tiempo real en esta v1 (ver comentario del modelo
+// `Conversacion` en backend/app/models/mensajeria.py).
 export interface Conversacion {
   idConversacion: number
   idAprendiz: string
@@ -334,6 +334,7 @@ export interface Mensaje {
   idConversacion: number
   idRemitente: string
   contenido: string
+  // v1 solo guarda un link de referencia, no sube archivos de verdad.
   adjuntoUrl: string | null
   leido: boolean
   fechaEnvio: string

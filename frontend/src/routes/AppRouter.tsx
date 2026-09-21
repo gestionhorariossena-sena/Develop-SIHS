@@ -87,6 +87,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/mensajes-docentes"
+        element={
+          <ProtectedRoute roles={['Aprendiz']}>
+            <MensajesDocentes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/horarios/nuevo"
         element={
           <ProtectedRoute>

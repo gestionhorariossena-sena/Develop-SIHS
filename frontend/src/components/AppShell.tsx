@@ -16,14 +16,15 @@ interface ItemNav {
   /** Solo para quien tenga el rol Instructor — pantallas de autoservicio
    * ("Mi horario"), no tiene sentido que las vea un Coordinador/Aprendiz. */
   soloInstructor?: boolean
+  /** Solo para quien tenga el rol Aprendiz — mismo criterio que
+   * `soloInstructor`, para autoservicio del Aprendiz ("Avisos y Eventos",
+   * "Mensajes Docentes"). */
+  soloAprendiz?: boolean
   /** Solo Administrador — más estricto que `soloGestion` (que también deja
    * pasar a Coordinador). Panel de Administración de solicitudes de acceso
    * (SCRUM-121): "Ni Coordinador ni ningún otro rol la ve" es regla de
    * negocio explícita, un Coordinador no debe aprobar otros Coordinadores. */
   soloAdmin?: boolean
-  /** Solo para quien tenga el rol Aprendiz — mismo criterio que
-   * `soloInstructor`, para autoservicio del Aprendiz ("Avisos y Eventos"). */
-  soloAprendiz?: boolean
 }
 
 interface GrupoNav {
@@ -67,6 +68,7 @@ const NAV: GrupoNav[] = [
       { etiqueta: 'Mensajes Docentes', ruta: '/mensajes-docentes', soloAprendiz: true },
       { etiqueta: 'Notificaciones', ruta: '/notificaciones', soloAprendiz: true },
       { etiqueta: 'Avisos y Eventos', ruta: '/avisos', soloAprendiz: true },
+      { etiqueta: 'Mensajes Docentes', ruta: '/mensajes-docentes', soloAprendiz: true },
     ],
   },
   {
