@@ -68,7 +68,6 @@ const NAV: GrupoNav[] = [
       { etiqueta: 'Mensajes Docentes', ruta: '/mensajes-docentes', soloAprendiz: true },
       { etiqueta: 'Notificaciones', ruta: '/notificaciones', soloAprendiz: true },
       { etiqueta: 'Avisos y Eventos', ruta: '/avisos', soloAprendiz: true },
-      { etiqueta: 'Mensajes Docentes', ruta: '/mensajes-docentes', soloAprendiz: true },
     ],
   },
   {
