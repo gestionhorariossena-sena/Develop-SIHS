@@ -17,7 +17,8 @@ interface ItemNav {
    * ("Mi horario"), no tiene sentido que las vea un Coordinador/Aprendiz. */
   soloInstructor?: boolean
   /** Solo para quien tenga el rol Aprendiz — mismo criterio que
-   * `soloInstructor`, para autoservicio del Aprendiz ("Mensajes Docentes"). */
+   * `soloInstructor`, para autoservicio del Aprendiz ("Avisos y Eventos",
+   * "Mensajes Docentes"). */
   soloAprendiz?: boolean
   /** Solo Administrador — más estricto que `soloGestion` (que también deja
    * pasar a Coordinador). Panel de Administración de solicitudes de acceso
@@ -56,6 +57,7 @@ const NAV: GrupoNav[] = [
     grupo: 'Mi trabajo',
     items: [
       { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
+      { etiqueta: 'Avisos y Eventos', ruta: '/avisos', soloAprendiz: true },
       { etiqueta: 'Mensajes Docentes', ruta: '/mensajes-docentes', soloAprendiz: true },
     ],
   },

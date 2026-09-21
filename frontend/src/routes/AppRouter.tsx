@@ -11,6 +11,7 @@ import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { CalendarioGeneral } from '../pages/CalendarioGeneral'
 import { HorariosCompletos } from '../pages/HorariosCompletos'
 import { AuditoriaCruces } from '../pages/AuditoriaCruces'
+import { Avisos } from '../pages/Avisos'
 import { Ambientes } from '../pages/Ambientes'
 import { Sedes } from '../pages/Sedes'
 import { Instructores } from '../pages/Instructores'
@@ -120,6 +121,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <AuditoriaCruces />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/avisos"
+        element={
+          <ProtectedRoute roles={['Aprendiz']}>
+            <Avisos />
           </ProtectedRoute>
         }
       />
