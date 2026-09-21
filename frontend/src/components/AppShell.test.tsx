@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen } from '@testing-library/react'
 import { renderConProviders } from '../test/renderConProviders'
 import { AppShell } from './AppShell'
 import type { Notificacion, Usuario } from '../types/api'

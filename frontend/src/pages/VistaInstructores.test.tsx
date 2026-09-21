@@ -14,6 +14,7 @@ const INSTRUCTOR: Usuario = {
   tipoContrato: 'Planta',
   roles: [{ idRol: 1, nombre: 'Instructor' }],
   especialidades: [{ idEspecialidad: 1, nombre: 'Análisis · Verificación', descripcion: null, activo: true }],
+  debeCambiarClave: false,
 }
 
 const OTRO_INSTRUCTOR: Usuario = {
@@ -31,6 +32,7 @@ const COORDINADOR: Usuario = {
   fechaRegistro: '2026-01-01',
   roles: [{ idRol: 2, nombre: 'Coordinador' }],
   especialidades: [],
+  debeCambiarClave: false,
 }
 
 const HORARIOS: Horario[] = [

@@ -27,6 +27,7 @@ const INSTRUCTOR: Usuario = {
   tipoContrato: 'Planta',
   roles: [{ idRol: 1, nombre: 'Instructor' }],
   especialidades: [],
+  debeCambiarClave: false,
 }
 
 const AMBIENTE: Ambiente = { idAmbiente: 1, numeroAmbiente: 101, nombreAmbiente: 'Ambiente 101', tipoAmbiente: 'regular', estadoAmbiente: 'disponible', idSede: 1 }

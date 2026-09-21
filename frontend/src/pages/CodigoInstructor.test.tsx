@@ -15,6 +15,7 @@ const INSTRUCTOR_CON_CODIGO: Usuario = {
   idTrimestre: 3,
   roles: [{ idRol: 1, nombre: 'Instructor' }],
   especialidades: [],
+  debeCambiarClave: false,
 }
 
 const INSTRUCTOR_SIN_CODIGO: Usuario = {
@@ -26,6 +27,7 @@ const INSTRUCTOR_SIN_CODIGO: Usuario = {
   codigoInstructor: null,
   roles: [{ idRol: 1, nombre: 'Instructor' }],
   especialidades: [],
+  debeCambiarClave: false,
 }
 
 const COORDINADOR: Usuario = {
@@ -36,6 +38,7 @@ const COORDINADOR: Usuario = {
   fechaRegistro: '2026-01-01',
   roles: [{ idRol: 2, nombre: 'Coordinador' }],
   especialidades: [],
+  debeCambiarClave: false,
 }
 
 const apiGetMock = vi.fn()
