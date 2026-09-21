@@ -1,6 +1,7 @@
 from app.models.ficha_usuario import FichaUsuario
 from app.repositories.ficha_repository import FichaRepository
 from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
+from app.repositories.horario_repository import HorarioRepository
 
 
 class FichaUsuarioService:
@@ -27,6 +28,18 @@ class FichaUsuarioService:
             return None
 
         return FichaRepository.obtener_por_id(db, relacion.idFicha)
+
+    @staticmethod
+    def obtener_mi_horario(db, id_usuario):
+        """Todos los horarios de la ficha vinculada del Aprendiz -- para
+        la grilla semanal de MiHorarioAprendiz.tsx. None si no tiene
+        ficha vinculada (mismo criterio que obtener_mi_ficha)."""
+        ficha = FichaUsuarioService.obtener_mi_ficha(db, id_usuario)
+
+        if not ficha:
+            return None
+
+        return HorarioRepository.obtener_por_ficha(db, ficha.idFicha)
 
     @staticmethod
     def obtener_voceros(db, id_ficha):

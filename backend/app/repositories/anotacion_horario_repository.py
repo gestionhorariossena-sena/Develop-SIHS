@@ -5,14 +5,7 @@ from app.models.anotacion_horario import AnotacionHorario
 
 class AnotacionHorarioRepository:
     @staticmethod
-    def crear(db: Session, anotacion: AnotacionHorario) -> AnotacionHorario:
-        db.add(anotacion)
-        db.commit()
-        db.refresh(anotacion)
-        return anotacion
-
-    @staticmethod
-    def obtener_por_usuario(db: Session, id_usuario) -> list[AnotacionHorario]:
+    def obtener_mias(db: Session, id_usuario):
         return (
             db.query(AnotacionHorario)
             .filter(AnotacionHorario.idUsuario == id_usuario)
@@ -21,30 +14,30 @@ class AnotacionHorarioRepository:
         )
 
     @staticmethod
-    def obtener_por_id(db: Session, id_anotacion: int) -> AnotacionHorario | None:
+    def obtener_por_id_y_usuario(db: Session, id_anotacion: int, id_usuario):
         return (
             db.query(AnotacionHorario)
-            .filter(AnotacionHorario.idAnotacion == id_anotacion)
+            .filter(
+                AnotacionHorario.idAnotacion == id_anotacion,
+                AnotacionHorario.idUsuario == id_usuario,
+            )
             .first()
         )
 
     @staticmethod
-    def actualizar(
-        db: Session,
-        anotacion: AnotacionHorario,
-        *,
-        nota: str,
-        etiqueta: str,
-        recordatorio_activo: bool,
-    ) -> AnotacionHorario:
-        anotacion.nota = nota
-        anotacion.etiqueta = etiqueta
-        anotacion.recordatorioActivo = recordatorio_activo
+    def crear(db: Session, anotacion: AnotacionHorario):
+        db.add(anotacion)
         db.commit()
         db.refresh(anotacion)
         return anotacion
 
     @staticmethod
-    def eliminar(db: Session, anotacion: AnotacionHorario) -> None:
+    def actualizar(db: Session, anotacion: AnotacionHorario):
+        db.commit()
+        db.refresh(anotacion)
+        return anotacion
+
+    @staticmethod
+    def eliminar(db: Session, anotacion: AnotacionHorario):
         db.delete(anotacion)
         db.commit()

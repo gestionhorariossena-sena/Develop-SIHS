@@ -29,6 +29,10 @@ export interface Usuario {
   sigla?: string | null
   roles: Rol[]
   especialidades: Especialidad[]
+  /** true tras aprobar una solicitud de acceso con credencial temporal —
+   * ProtectedRoute.tsx fuerza CambiarClaveObligatorio.tsx hasta que se
+   * limpie con PATCH /usuarios/me/confirmar-cambio-clave. */
+  debeCambiarClave: boolean
 }
 
 // Espejo de CargaSemanalResponse (backend/app/schemas/usuario.py) —
@@ -277,15 +281,41 @@ export interface HorarioGuardado {
   fechaCreacion: string
 }
 
+// `tipo` es texto libre en el backend (String(30), sin CHECK constraint) --
+// no un enum cerrado. El único productor real hoy (HorarioService, al
+// reprogramar) usa el literal "Cambios de Aula & Horario", que coincide
+// con el nombre de la primera pestaña del Centro de Notificaciones.
 export interface Notificacion {
   idNotificacion: number
   idUsuario: string
-  tipo: 'cruce' | 'horario' | 'ambiente' | 'sistema'
+  tipo: string
   mensaje: string
   leida: boolean
   fechaCreacion: string
   entidadRelacionada: string | null
   idEntidadRelacionada: string | null
+}
+
+// Espejo de `EtiquetaAnotacion` (Pydantic Literal) en
+// backend/app/schemas/anotacion_horario.py -- acotado a nivel de schema,
+// no un Enum de Postgres.
+export type EtiquetaAnotacion = 'Examen' | 'Entrega' | 'Importante' | 'Normal'
+
+export interface AnotacionHorario {
+  idAnotacion: number
+  idUsuario: string
+  idHorario: number | null
+  nota: string
+  etiqueta: EtiquetaAnotacion
+  recordatorioActivo: boolean
+  fechaCreacion: string
+}
+
+export interface AnotacionHorarioInput {
+  idHorario: number | null
+  nota: string
+  etiqueta: EtiquetaAnotacion
+  recordatorioActivo: boolean
 }
 
 // Espejo de ConversacionResponse/MensajeResponse (backend/app/schemas/mensajeria.py)
@@ -313,10 +343,12 @@ export interface Mensaje {
 // Espejo de la tabla `solicitudes_acceso` (ticket "[DB/Arquitectura] Tabla
 // solicitudes_acceso...", Epic SCRUM-96) y de `SolicitudAccesoResponse` del
 // endpoint `GET /solicitudes-acceso/` (ticket "[Backend] Endpoints
-// /solicitudes-acceso", mismo Epic) — ninguno de los dos existe en el
-// backend todavía. Los nombres de campo acá son el contrato documentado en
-// esos tickets de Jira (SCRUM-103/SCRUM-109), no una adivinanza: cuando el
-// backend exista debería devolver exactamente esta forma.
+// /solicitudes-acceso", mismo Epic). El backend real (SolicitudAccesoResponse
+// en app/schemas/solicitud_acceso.py) ya existe y devuelve
+// `rolSolicitado` como el NOMBRE del rol resuelto (string | null), no un
+// objeto Rol completo -- PanelAdministracion.tsx todavía no está conectado
+// a él (sigue en modo "vitrina" con datos de ejemplo), así que si se
+// conecta hay que ajustar este campo.
 export interface SolicitudAcceso {
   idSolicitud: number
   nombre: string

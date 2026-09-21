@@ -19,6 +19,17 @@ class Settings(BaseSettings):
     # llamar al backend por CORS además de localhost. Vacía en desarrollo local.
     frontend_url: str = ""
 
+    # SMTP de la cuenta de Gmail de gestión — mismas credenciales que el
+    # ticket de recuperación de contraseña (Epic SCRUM-96). Vacío hasta que
+    # ese ticket configure la cuenta; EmailService falla explícito mientras
+    # tanto en vez de fallar en silencio. smtp_password es la "contraseña de
+    # aplicación" de Gmail, no la contraseña normal de la cuenta.
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_nombre: str = "SIHS SENA — Gestión de Horarios"
+
     # Gemini API (Google AI Studio) — capa de IA opcional, ver
     # _Docs/Arquitectura/Arquitectura_IA_Motor_Horarios.md. Vacía por
     # defecto: el sistema funciona completo sin esto configurado.

@@ -10,8 +10,9 @@ rol" (SCRUM-10, `AprobarlicitarSolicitudes.tsx`, opera sobre cuentas que
 YA se registraron en Supabase Auth) — modela la solicitud PREVIA a que
 exista cuenta, con motivo declarado y trazabilidad de quién la resolvió.
 
-Solo la tabla — los endpoints (crear/listar/aprobar/rechazar) son el
-ticket SCRUM-109, aparte.
+Los endpoints (crear/listar/aprobar/rechazar) son el ticket SCRUM-109,
+implementado junto con esta migración -- ver app/models/solicitud_acceso.py
+para el detalle de cada columna/constraint.
 """
 from typing import Sequence, Union
 
@@ -27,23 +28,53 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    estado_solicitud_acceso = sa.Enum(
+        'pendiente', 'aprobada', 'rechazada', name='estado_solicitud_acceso'
+    )
+    estado_solicitud_acceso.create(op.get_bind(), checkfirst=True)
+
     op.create_table(
         'solicitudes_acceso',
         sa.Column('idSolicitud', sa.Integer(), primary_key=True),
         sa.Column('nombre', sa.String(length=150), nullable=False),
         sa.Column('email', sa.String(length=150), nullable=False),
-        sa.Column('numeroDocumento', sa.String(length=30), nullable=True),
-        sa.Column('idRolSolicitado', sa.Integer(), sa.ForeignKey('roles.idRol'), nullable=False),
+        sa.Column('numeroDocumento', sa.String(length=30), nullable=False),
+        sa.Column('idRolSolicitado', sa.Integer(), nullable=False),
         sa.Column('motivo', sa.Text(), nullable=False),
-        sa.Column('estado', sa.String(length=20), nullable=False, server_default='pendiente'),
+        sa.Column(
+            'estado',
+            estado_solicitud_acceso,
+            nullable=False,
+            server_default='pendiente',
+        ),
         sa.Column('motivoRechazo', sa.Text(), nullable=True),
         sa.Column('fechaSolicitud', sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
         sa.Column('fechaResolucion', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('idAdminResolvio', postgresql.UUID(as_uuid=True), sa.ForeignKey('usuarios.idUsuario'), nullable=True),
+        sa.Column('idAdminResolvio', postgresql.UUID(as_uuid=True), nullable=True),
+        sa.ForeignKeyConstraint(
+            ['idRolSolicitado'], ['roles.idRol'], name='solicitudes_acceso_idRolSolicitado_fkey'
+        ),
+        sa.ForeignKeyConstraint(
+            ['idAdminResolvio'], ['usuarios.idUsuario'], name='solicitudes_acceso_idAdminResolvio_fkey',
+            ondelete='SET NULL',
+        ),
+        sa.CheckConstraint(
+            "estado != 'rechazada' OR \"motivoRechazo\" IS NOT NULL",
+            name='ckMotivoRechazoObligatorio',
+        ),
     )
     op.create_index('ix_solicitudes_acceso_idSolicitud', 'solicitudes_acceso', ['idSolicitud'])
+    op.create_index(
+        'idxSolicitudesAccesoEstado', 'solicitudes_acceso', ['estado'], unique=False
+    )
 
 
 def downgrade() -> None:
+    op.drop_index('idxSolicitudesAccesoEstado', table_name='solicitudes_acceso')
     op.drop_index('ix_solicitudes_acceso_idSolicitud', table_name='solicitudes_acceso')
     op.drop_table('solicitudes_acceso')
+
+    estado_solicitud_acceso = sa.Enum(
+        'pendiente', 'aprobada', 'rechazada', name='estado_solicitud_acceso'
+    )
+    estado_solicitud_acceso.drop(op.get_bind(), checkfirst=True)

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
 
 from app.models.ambiente import Ambiente
+from app.models.dia_semana import DiaSemana
 from app.models.horario import Horario, horario_dia
 
 
@@ -17,6 +18,14 @@ class HorarioRepository:
     def obtener_dias(db: Session, id_horario: int) -> list[int]:
         filas = db.execute(horario_dia.select().where(horario_dia.c.idHorario == id_horario)).all()
         return [fila.idDia for fila in filas]
+
+    @staticmethod
+    def obtener_nombres_dias(db: Session, id_horario: int) -> str:
+        """'Lunes y Miércoles' — para el PDF de PdfService, que necesita
+        texto legible en vez de ids de "diasDeLaSemana"."""
+        ids_dias = HorarioRepository.obtener_dias(db, id_horario)
+        dias = db.query(DiaSemana).filter(DiaSemana.idDia.in_(ids_dias)).order_by(DiaSemana.idDia).all()
+        return " y ".join(d.nombreDia for d in dias) if dias else "días sin especificar"
 
     @staticmethod
     def crear(db: Session, horario: Horario, dias: list[int]):
@@ -100,7 +109,9 @@ class HorarioRepository:
 
     @staticmethod
     def obtener_por_ficha(db: Session, id_ficha: int) -> list[Horario]:
-        """GET /fichas/{id}/horarios (SCRUM-47) — grid/relacionados de una ficha."""
+        """Todos los horarios de una ficha — para GET /fichas/{id}/horarios
+        (SCRUM-47, grid/relacionados de una ficha) y para armar la grilla
+        semanal de GET /fichas/{id}/pdf (PdfService)."""
         return db.query(Horario).filter(Horario.idFicha == id_ficha).all()
 
     @staticmethod

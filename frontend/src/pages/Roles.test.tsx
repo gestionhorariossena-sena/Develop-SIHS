@@ -18,6 +18,7 @@ const PERFIL: Usuario = {
   fechaRegistro: '2026-01-01T00:00:00Z',
   roles: [{ idRol: 1, nombre: 'Administrador' }],
   especialidades: [],
+  debeCambiarClave: false,
 }
 
 const apiGetMock = vi.fn()

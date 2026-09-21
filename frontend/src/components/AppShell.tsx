@@ -56,9 +56,18 @@ const NAV: GrupoNav[] = [
   {
     grupo: 'Mi trabajo',
     items: [
+      // Dos ítems "Mi horario" con la misma ruta a propósito:
+      // MiHorarioRouter.tsx elige, según el rol, entre MiHorario.tsx
+      // (carga lectiva del Instructor) y MiHorarioAprendiz.tsx (grilla +
+      // organizador personal del Aprendiz) -- son pantallas distintas que
+      // comparten ruta y etiqueta, no una sola pantalla con permisos
+      // distintos. El filtro de roles de más abajo deja pasar como
+      // máximo uno de los dos para un usuario dado.
       { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
-      { etiqueta: 'Avisos y Eventos', ruta: '/avisos', soloAprendiz: true },
+      { etiqueta: 'Mi horario', ruta: '/mi-horario', soloAprendiz: true },
       { etiqueta: 'Mensajes Docentes', ruta: '/mensajes-docentes', soloAprendiz: true },
+      { etiqueta: 'Notificaciones', ruta: '/notificaciones', soloAprendiz: true },
+      { etiqueta: 'Avisos y Eventos', ruta: '/avisos', soloAprendiz: true },
     ],
   },
   {

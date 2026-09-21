@@ -13,6 +13,7 @@ const APRENDIZ: Usuario = {
   fechaRegistro: '2026-01-01',
   roles: [{ idRol: 3, nombre: 'Aprendiz' }],
   especialidades: [],
+  debeCambiarClave: false,
 }
 
 const HORARIO_MORALES: Horario = {

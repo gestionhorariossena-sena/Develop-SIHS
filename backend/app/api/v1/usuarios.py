@@ -38,6 +38,19 @@ def obtener_mi_perfil(usuario: Usuario = Depends(get_current_user)):
     return usuario
 
 
+@router.patch("/me/confirmar-cambio-clave", response_model=UsuarioResponse)
+def confirmar_cambio_clave(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """El frontend llama esto justo después de un
+    supabase.auth.updateUser({ password }) exitoso en la pantalla de
+    cambio de contraseña obligatorio (primer login con credencial
+    temporal) — limpia debeCambiarClave para que ProtectedRoute deje
+    de redirigir ahí."""
+    return UsuarioService.confirmar_cambio_clave(db, usuario)
+
+
 @router.post("/login-documento", response_model=UsuarioLoginDocumentoResponse)
 def iniciar_sesion_por_documento(data: UsuarioLoginDocumentoRequest, db: Session = Depends(get_db)):
     """Autentica documento y contraseña sin exponer el email asociado."""

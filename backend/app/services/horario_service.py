@@ -39,7 +39,10 @@ class HorarioService:
         con los nombres/códigos de instructor/ficha/ambiente/resultado —
         movido acá desde api/v1/horarios.py (`_a_response`) para
         reutilizarlo también en los GET por instructor/ficha/ambiente que
-        alimentan el drawer de relacionados (SCRUM-46/47/48)."""
+        alimentan el drawer de relacionados (SCRUM-46/47/48), y por GET
+        /ficha-usuario/mi-horario (mismo shape para Coordinador/
+        Administrador viendo todos los horarios y para el Aprendiz viendo
+        los de su propia ficha)."""
         return {
             "idHorario": horario.idHorario,
             "horaInicio": horario.horaInicio,

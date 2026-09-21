@@ -32,11 +32,13 @@ pydantic[email]==2.13.4
 sqlalchemy>=2.0
 psycopg[binary]>=3.2
 alembic>=1.13
+
 # Import de datos reales (épica E, backend/scripts/importar_datos_reales.py)
 openpyxl==3.1.5
-# Exportación a PDF (SCRUM-120) -- pura Python, sin dependencias nativas
-# (Cairo/Pango) a diferencia de WeasyPrint, instala sin fricción en Windows
-# y en el despliegue de Railway.
+# Exportación a PDF (horario, ficha de sesión, nómina; SCRUM-120) -- PdfService.
+# ReportLab en vez de WeasyPrint: es pura Python (pip-instalable), no depende
+# de librerías de sistema (Pango/Cairo/GDK-PixBuf) que ni el CI ni el
+# Procfile/Railway instalan hoy. Ver docstring de PdfService.
 reportlab==5.0.1
 # Motor optimizador de horarios (Fase 4 de
 # _Docs/Documentación general/PLAN_INTEGRACION_IA.md) -- CP-SAT resuelve
