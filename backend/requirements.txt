@@ -33,8 +33,17 @@ sqlalchemy>=2.0
 psycopg[binary]>=3.2
 alembic>=1.13
 
-# Exportación a PDF (horario, ficha de sesión, nómina) -- PdfService.
-# ReportLab en vez de WeasyPrint: es pura Python (pip-instalable), no
-# depende de librerías de sistema (Pango/Cairo/GDK-PixBuf) que ni el CI
-# ni el Procfile instalan hoy. Ver docstring de PdfService.
-reportlab>=4.2
+# Import de datos reales (épica E, backend/scripts/importar_datos_reales.py)
+openpyxl==3.1.5
+# Exportación a PDF (horario, ficha de sesión, nómina; SCRUM-120) -- PdfService.
+# ReportLab en vez de WeasyPrint: es pura Python (pip-instalable), no depende
+# de librerías de sistema (Pango/Cairo/GDK-PixBuf) que ni el CI ni el
+# Procfile/Railway instalan hoy. Ver docstring de PdfService.
+reportlab==5.0.1
+# Motor optimizador de horarios (Fase 4 de
+# _Docs/Documentación general/PLAN_INTEGRACION_IA.md) -- CP-SAT resuelve
+# la asignación día/franja/instructor/ambiente, sin IA de por medio.
+ortools==9.15.6755
+# Requerido por FastAPI para recibir archivos (UploadFile) -- asistente
+# de programación, POST /horarios/asistente/importar.
+python-multipart==0.0.20

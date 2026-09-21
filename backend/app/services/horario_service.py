@@ -1,19 +1,16 @@
-from app.models.ambiente import Ambiente
 from app.models.dia_semana import DiaSemana
 from app.models.horario import Horario
 from app.models.jornada import Jornada
 from app.models.usuario import Usuario
+from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
 from app.repositories.horario_repository import HorarioRepository
+from app.services.notificacion_service import NotificacionService
 
 # RF-011 (Requisitos Funcionales V4.pdf, pág. 15-16): "Los instructores de
 # planta podrán estar asignados máximo 32 horas a la semana, mientras que
 # para los de contrato serán un máximo de 40."
 HORAS_MAX_PLANTA = 32
 HORAS_MAX_CONTRATO = 40
-
-# Orden de las jornadas en un mismo día, para decidir si dos son
-# "continuas" (adyacentes) — ver _validar_reglas_instructor.
-ORDEN_JORNADA = {"Mañana": 1, "Tarde": 2, "Noche": 3}
 
 
 class CruceHorarioError(Exception):
@@ -29,10 +26,20 @@ class CruceHorarioError(Exception):
 
 class HorarioService:
     @staticmethod
+    def obtener_todos(db):
+        return HorarioRepository.obtener_todos(db)
+
+    @staticmethod
+    def obtener_por_id(db, id_horario):
+        return HorarioRepository.obtener_por_id(db, id_horario)
+
+    @staticmethod
     def a_response(db, horario) -> dict:
-        """Serializa un Horario con los nombres ya resueltos
-        (instructor/ficha/ambiente/resultado) para no obligar al frontend
-        a pedirlos aparte -- usado por app/api/v1/horarios.py y por GET
+        """Serializa un Horario a la forma de HorarioResponse, enriquecido
+        con los nombres/códigos de instructor/ficha/ambiente/resultado —
+        movido acá desde api/v1/horarios.py (`_a_response`) para
+        reutilizarlo también en los GET por instructor/ficha/ambiente que
+        alimentan el drawer de relacionados (SCRUM-46/47/48), y por GET
         /ficha-usuario/mi-horario (mismo shape para Coordinador/
         Administrador viendo todos los horarios y para el Aprendiz viendo
         los de su propia ficha)."""
@@ -46,6 +53,10 @@ class HorarioService:
             "idInstructor": horario.idInstructor,
             "idFicha": horario.idFicha,
             "idResultado": horario.idResultado,
+            "fechaCreacion": horario.fechaCreacion,
+            "fechaModificacion": horario.fechaModificacion,
+            "activo": horario.activo,
+            "publicado": horario.publicado,
             "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
             "instructorNombre": horario.instructor.nombre if horario.instructor else None,
             "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
@@ -55,12 +66,26 @@ class HorarioService:
         }
 
     @staticmethod
-    def obtener_todos(db):
-        return HorarioRepository.obtener_todos(db)
+    def obtener_por_instructor(db, id_instructor) -> list[dict]:
+        """GET /usuarios/{id}/horarios (SCRUM-46) — horarios asignados a un
+        instructor, para la mini-grid/grid del drawer de relacionados."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_instructor(db, id_instructor)
+        ]
 
     @staticmethod
-    def obtener_por_id(db, id_horario):
-        return HorarioRepository.obtener_por_id(db, id_horario)
+    def obtener_por_ficha(db, id_ficha) -> list[dict]:
+        """GET /fichas/{id}/horarios (SCRUM-47) — horarios de una ficha."""
+        return [HorarioService.a_response(db, h) for h in HorarioRepository.obtener_por_ficha(db, id_ficha)]
+
+    @staticmethod
+    def obtener_por_ambiente(db, id_ambiente) -> list[dict]:
+        """GET /ambientes/{id}/horarios (SCRUM-48) — horarios de un ambiente."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_ambiente(db, id_ambiente)
+        ]
 
     @staticmethod
     def crear(db, data, forzar: bool = False) -> tuple:
@@ -92,6 +117,9 @@ class HorarioService:
         if not horario:
             return None, []
 
+        cambio_ambiente = horario.idAmbiente != data.idAmbiente
+        cambio_instructor = horario.idInstructor != data.idInstructor
+
         errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
         if errores and not forzar:
             raise CruceHorarioError(errores)
@@ -106,7 +134,35 @@ class HorarioService:
         horario.idResultado = data.idResultado
 
         actualizado = HorarioRepository.actualizar(db, horario, data.dias)
+        HorarioService._notificar_cambio_asignacion(
+            db, actualizado, cambio_ambiente, cambio_instructor
+        )
         return actualizado, errores if forzar else []
+
+    @staticmethod
+    def _notificar_cambio_asignacion(
+        db, horario, cambio_ambiente: bool, cambio_instructor: bool
+    ) -> None:
+        if not (cambio_ambiente or cambio_instructor):
+            return
+
+        ficha_codigo = horario.ficha.codigoFicha if horario.ficha else horario.idFicha
+        ambiente_nombre = horario.ambiente.nombre if horario.ambiente else "Sin ambiente"
+        instructor_nombre = horario.instructor.nombre if horario.instructor else "Sin instructor"
+        mensaje = (
+            f"Se actualizó el horario de tu ficha {ficha_codigo}: "
+            f"ambiente {ambiente_nombre} e instructor {instructor_nombre}."
+        )
+
+        for vinculo in FichaUsuarioRepository.obtener_aprendices_por_ficha(db, horario.idFicha):
+            NotificacionService.crear(
+                db,
+                id_usuario=vinculo.idUsuario,
+                tipo="Cambios de Aula & Horario",
+                mensaje=mensaje,
+                entidad_relacionada="horarios",
+                id_entidad_relacionada=horario.idHorario,
+            )
 
     @staticmethod
     def eliminar(db, id_horario):
@@ -119,14 +175,51 @@ class HorarioService:
         return True
 
     @staticmethod
+    def cambiar_estado(db, id_horario, activo: bool | None = None, publicado: bool | None = None):
+        """Activar/desactivar y/o publicar/despublicar sin borrar (backlog
+        de Historial, pedido 2026-09-03). Un horario desactivado deja de
+        contar para cruces y para las horas semanales de RF-011 — ver los
+        filtros `activo` en HorarioRepository — así que reactivarlo puede
+        volver a chocar con algo que se creó mientras tanto; por ahora no
+        se re-valida al reactivar (igual que un ambiente puede pasar a
+        "mantenimiento" y volver a "disponible" sin revisar cruces), queda
+        para cuando se arme el backlog completo si hace falta más rigor
+        acá. `publicado` es independiente de `activo`: controla si el
+        instructor lo ve en "Mi horario", no si cuenta para cruces."""
+        horario = HorarioRepository.obtener_por_id(db, id_horario)
+
+        if not horario:
+            return None
+
+        if activo is not None:
+            horario.activo = activo
+        if publicado is not None:
+            horario.publicado = publicado
+        return HorarioRepository.guardar(db, horario)
+
+    @staticmethod
+    def obtener_publicados_por_instructor(db, id_instructor) -> list[dict]:
+        """GET /usuarios/me/horarios — autoservicio del instructor ("Mi
+        horario"): solo lo activo y publicado, nunca un borrador que el
+        coordinador todavía está armando."""
+        return [
+            HorarioService.a_response(db, h)
+            for h in HorarioRepository.obtener_por_instructor(db, id_instructor)
+            if h.publicado
+        ]
+
+    @staticmethod
     def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
         """Cruces por solape de horario: misma ficha, mismo instructor o
         mismo ambiente ya ocupados en ese día/hora — ver
-        REGLAS_DE_NEGOCIO_CONOCIDAS.md. También valida que una misma ficha
-        no repita un resultado de aprendizaje. Cada mensaje describe CONTRA
-        QUÉ horario existente choca (día, hora, y quién/qué ya lo tiene) —
-        no solo la regla que se violó, para que se entienda de un vistazo
-        sin tener que ir a buscarlo a mano."""
+        REGLAS_DE_NEGOCIO_CONOCIDAS.md. También valida que el MISMO
+        instructor no repita un resultado de aprendizaje para la misma
+        ficha en un día no relacionado (dos instructores distintos sí
+        pueden repartirse el mismo resultado en días distintos -- eso es
+        reparto válido, no duplicado; corrección 2026-09-12). Cada
+        mensaje describe CONTRA QUÉ horario existente choca (día, hora, y
+        quién/qué ya lo tiene) — no solo la regla que se violó, para que
+        se entienda de un vistazo sin tener que ir a buscarlo a mano."""
         errores: list[str] = []
 
         ficha_existente = HorarioRepository.buscar_solape(
@@ -157,7 +250,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, excluir_id
+            db, data.idFicha, data.idResultado, data.idInstructor, data.dias, excluir_id
         )
         if resultado_existente:
             errores.append(
@@ -166,7 +259,6 @@ class HorarioService:
             )
 
         errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
-
         return errores
 
     @staticmethod
@@ -216,7 +308,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, excluir_id
+            db, data.idFicha, data.idResultado, data.idInstructor, data.dias, excluir_id
         )
         if resultado_existente:
             conflictos.append(
@@ -237,6 +329,64 @@ class HorarioService:
             })
 
         return conflictos
+
+    @staticmethod
+    def auditar_conflictos(db, id_trimestre: int | None = None, id_sede: int | None = None) -> list[dict]:
+        """Barrido de cruces entre horarios YA guardados (activos) — para
+        la pantalla "Auditoría de Cruces". A diferencia de validar_dry_run
+        (que valida UN candidato nuevo contra lo existente), acá se
+        re-valida cada horario ya guardado contra todos los demás,
+        reutilizando validar_dry_run tal cual para no duplicar ni desviarse
+        de las reglas de negocio (RF-011, solapes, resultado repetido).
+
+        Deduplicación: un cruce por solape (ficha/instructor/ambiente/
+        resultado repetido) es simétrico — h1 choca con h2 y viceversa —
+        así que se reporta una sola vez por par (idHorario menor primero).
+        `regla_instructor` (tope de horas semanales) no es un cruce entre
+        dos horarios sino un estado del instructor, así que se reporta una
+        sola vez por instructor aunque tenga varios horarios que la violen.
+        """
+        from app.schemas.horario import HorarioDryRunRequest  # evita import circular a nivel de módulo
+
+        horarios = HorarioRepository.obtener_activos(db, id_trimestre=id_trimestre, id_sede=id_sede)
+
+        pares_vistos: set[tuple[int, int, str]] = set()
+        instructores_vistos: set = set()
+        resultado: list[dict] = []
+
+        for horario in horarios:
+            candidato = HorarioDryRunRequest(
+                horaInicio=horario.horaInicio,
+                horaFin=horario.horaFin,
+                idJornada=horario.idJornada,
+                idTrimestre=horario.idTrimestre,
+                idAmbiente=horario.idAmbiente,
+                idInstructor=horario.idInstructor,
+                idFicha=horario.idFicha,
+                idResultado=horario.idResultado,
+                dias=HorarioRepository.obtener_dias(db, horario.idHorario),
+            )
+
+            for conflicto in HorarioService.validar_dry_run(db, candidato, excluir_id=horario.idHorario):
+                if conflicto["tipo"] == "regla_instructor":
+                    if horario.idInstructor in instructores_vistos:
+                        continue
+                    instructores_vistos.add(horario.idInstructor)
+                    resultado.append({**conflicto, "idHorario": horario.idHorario})
+                    continue
+
+                existente = conflicto.get("idHorarioExistente")
+                if existente is None:
+                    resultado.append({**conflicto, "idHorario": horario.idHorario})
+                    continue
+
+                par = (min(horario.idHorario, existente), max(horario.idHorario, existente), conflicto["tipo"])
+                if par in pares_vistos:
+                    continue
+                pares_vistos.add(par)
+                resultado.append({**conflicto, "idHorario": horario.idHorario})
+
+        return resultado
 
     @staticmethod
     def _duracion_horas(hora_inicio, hora_fin) -> float:
@@ -278,15 +428,18 @@ class HorarioService:
 
     @staticmethod
     def _validar_reglas_instructor(db, data, excluir_id: int | None) -> list[str]:
-        """RF-011: tope de horas/semana según tipo de contrato, jornada
-        Noche vedada para instructores de planta, y no repetir centro de
-        formación (acá, `Sede`, que es lo único que el esquema tiene para
-        eso) en jornadas continuas del mismo día. La tercera regla choca
-        con un hallazgo de entrevista en REGLAS_DE_NEGOCIO_CONOCIDAS.md
-        (un instructor real programado mañana en una sede y tarde en
-        otra) — se implementa igual porque así quedó escrito en el
-        requisito formal (RF-011), no en la entrevista; si el equipo
-        confirma que la entrevista manda, hay que revisar/quitar esto."""
+        """RF-011: tope de horas/semana según tipo de contrato, y jornada
+        Noche vedada para instructores de planta.
+
+        Corrección 2026-09-12: se quitó la regla que bloqueaba al mismo
+        instructor en jornadas continuas de sedes distintas el mismo día
+        (RF-011 la exigía, pero un hallazgo real de entrevista en
+        REGLAS_DE_NEGOCIO_CONOCIDAS.md la contradice directamente: un
+        instructor real programado mañana en una sede y tarde en otra).
+        El margen de traslado entre sedes ya está documentado como
+        coordinación humana, no una restricción dura del sistema -- no
+        había ningún caso real donde la regla evitara un error genuino,
+        solo bloqueaba reasignaciones válidas."""
         errores: list[str] = []
 
         instructor = db.get(Usuario, data.idInstructor)
@@ -294,7 +447,6 @@ class HorarioService:
             return errores
 
         jornada_nueva = db.get(Jornada, data.idJornada)
-        ambiente_nuevo = db.get(Ambiente, data.idAmbiente)
         horarios_instructor = HorarioRepository.obtener_por_instructor(
             db, data.idInstructor, excluir_id
         )
@@ -320,35 +472,6 @@ class HorarioService:
             errores.append(
                 f"El instructor {instructor.nombre} es de planta y no puede programarse en jornada Noche."
             )
-
-        if ambiente_nuevo and jornada_nueva:
-            orden_nueva = ORDEN_JORNADA.get(jornada_nueva.nombreJornada)
-            dias_nuevos = set(data.dias)
-
-            for h in horarios_instructor:
-                if h.idAmbiente == data.idAmbiente:
-                    continue
-
-                if not (set(HorarioRepository.obtener_dias(db, h.idHorario)) & dias_nuevos):
-                    continue
-
-                jornada_h = db.get(Jornada, h.idJornada)
-                orden_h = ORDEN_JORNADA.get(jornada_h.nombreJornada) if jornada_h else None
-                # <= 1 (no == 1): dos bloques de la MISMA jornada (ej. dos
-                # sub-bloques de "Tarde") en sedes distintas el mismo día
-                # también son físicamente imposibles, no solo jornadas
-                # adyacentes — == 1 dejaba pasar ese caso sin detectarlo.
-                if orden_nueva is None or orden_h is None or abs(orden_nueva - orden_h) > 1:
-                    continue
-
-                if not h.ambiente or h.ambiente.sede_id == ambiente_nuevo.sede_id:
-                    continue
-
-                errores.append(
-                    f"El instructor {instructor.nombre} ya está asignado a otro centro de "
-                    f"formación en una jornada continua ese día: {HorarioService._describir(db, h)}."
-                )
-                break
 
         return errores
 

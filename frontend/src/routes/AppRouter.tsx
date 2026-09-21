@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { Presentacion } from '../pages/Presentacion'
 import { Login } from '../pages/Login'
 import { Registro } from '../pages/Registro'
 import { RecuperarContrasena } from '../pages/RecuperarContrasena'
@@ -6,17 +7,30 @@ import { RestablecerContrasena } from '../pages/RestablecerContrasena'
 import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
 import { DashboardRouter } from '../pages/DashboardRouter'
 import { NuevoHorario } from '../pages/NuevoHorario'
+import { AsistenteHorarios } from '../pages/AsistenteHorarios'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
-import { MiHorarioAprendiz } from '../pages/MiHorarioAprendiz'
+import { MiHorarioRouter } from '../pages/MiHorarioRouter'
 import { MensajesDocentes } from '../pages/MensajesDocentes'
-import { Avisos } from '../pages/Avisos'
 import { Notificaciones } from '../pages/Notificaciones'
+import { CalendarioGeneral } from '../pages/CalendarioGeneral'
+import { HorariosCompletos } from '../pages/HorariosCompletos'
+import { AuditoriaCruces } from '../pages/AuditoriaCruces'
+import { Avisos } from '../pages/Avisos'
 import { Ambientes } from '../pages/Ambientes'
+import { Sedes } from '../pages/Sedes'
 import { Instructores } from '../pages/Instructores'
+import { VistaInstructores } from '../pages/VistaInstructores'
 import { Fichas } from '../pages/Fichas'
+import { VistaFichas } from '../pages/VistaFichas'
+import { VistaAmbientes } from '../pages/VistaAmbientes'
+import { DetalleFranjaAmbiente } from '../pages/DetalleFranjaAmbiente'
 import { Usuarios } from '../pages/Usuarios'
+import { CodigoInstructor } from '../pages/CodigoInstructor'
+import { Roles } from '../pages/Roles'
 import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
+import { PanelAdministracion } from '../pages/PanelAdministracion'
 import { ProtectedRoute } from './ProtectedRoute'
+import { Programas } from '../pages/Programas'
 
 /**
  * Todas las rutas de la app viven acá. Para agregar una página nueva:
@@ -49,10 +63,50 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/calendario"
+        element={
+          <ProtectedRoute>
+            <CalendarioGeneral />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mi-horario"
+        element={
+          <ProtectedRoute>
+            <MiHorarioRouter />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mi-horario/detalle-franja"
+        element={
+          <ProtectedRoute>
+            <DetalleFranjaAmbiente />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/horarios/nuevo"
         element={
           <ProtectedRoute>
             <NuevoHorario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/horarios/asistente-ia"
+        element={
+          <ProtectedRoute>
+            <AsistenteHorarios />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/horarios/completos"
+        element={
+          <ProtectedRoute>
+            <HorariosCompletos />
           </ProtectedRoute>
         }
       />
@@ -65,14 +119,6 @@ export function AppRouter() {
         }
       />
       <Route
-        path="/mi-horario"
-        element={
-          <ProtectedRoute>
-            <MiHorarioAprendiz />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/mensajes-docentes"
         element={
           <ProtectedRoute>
@@ -81,9 +127,17 @@ export function AppRouter() {
         }
       />
       <Route
-        path="/avisos"
+        path="/horarios/auditoria"
         element={
           <ProtectedRoute>
+            <AuditoriaCruces />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/avisos"
+        element={
+          <ProtectedRoute roles={['Aprendiz']}>
             <Avisos />
           </ProtectedRoute>
         }
@@ -105,10 +159,26 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/sedes"
+        element={
+          <ProtectedRoute>
+            <Sedes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/instructores"
         element={
           <ProtectedRoute>
             <Instructores />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vista-instructores"
+        element={
+          <ProtectedRoute>
+            <VistaInstructores />
           </ProtectedRoute>
         }
       />
@@ -121,10 +191,50 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/vista-fichas"
+        element={
+          <ProtectedRoute>
+            <VistaFichas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/programas"
+        element={
+          <ProtectedRoute>
+            <Programas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/vista-ambientes"
+        element={
+          <ProtectedRoute>
+            <VistaAmbientes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/usuarios"
         element={
           <ProtectedRoute>
             <Usuarios />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/codigo-instructor"
+        element={
+          <ProtectedRoute>
+            <CodigoInstructor />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/roles"
+        element={
+          <ProtectedRoute>
+            <Roles />
           </ProtectedRoute>
         }
       />
@@ -136,7 +246,15 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route
+        path="/panel-administracion"
+        element={
+          <ProtectedRoute>
+            <PanelAdministracion />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/" element={<Presentacion />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
   )

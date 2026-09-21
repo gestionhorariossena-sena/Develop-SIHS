@@ -11,7 +11,7 @@ class SolicitudAcceso(Base):
     son texto libre declarado por el solicitante en el portal público de
     registro, no una FK a "usuarios". Al aprobar (ticket de backend aparte),
     el flujo crea el usuario en Supabase Auth + "usuarios" y despacha una
-    credencial temporal con "usuarios.debe_cambiar_clave" en true."""
+    credencial temporal con "usuarios.debeCambiarClave" en true."""
 
     __tablename__ = "solicitudes_acceso"
     __table_args__ = (

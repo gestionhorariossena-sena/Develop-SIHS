@@ -18,10 +18,13 @@ const sesionFalsa: AuthContextValue = {
  * usa useTheme()) — lo mínimo que necesita cualquier página real para
  * renderizar en un test sin reventar, sin levantar el AuthProvider de
  * verdad (que llama a Supabase). ThemeProvider sí se usa real: solo toca
- * localStorage/matchMedia, ambos disponibles en jsdom. */
-export function renderConProviders(ui: ReactElement) {
+ * localStorage/matchMedia, ambos disponibles en jsdom.
+ *
+ * `initialEntries` opcional — para páginas que leen query params con
+ * useSearchParams (ej. Instructores.tsx?id=... desde VistaInstructores.tsx). */
+export function renderConProviders(ui: ReactElement, initialEntries: string[] = ['/']) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <ThemeProvider>
         <AuthContext.Provider value={sesionFalsa}>{ui}</AuthContext.Provider>
       </ThemeProvider>

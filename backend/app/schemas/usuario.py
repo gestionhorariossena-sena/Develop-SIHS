@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 from app.schemas.especialidad import EspecialidadResponse
 from app.schemas.rol import RolResponse
@@ -13,6 +13,18 @@ class UsuarioCodigoInstructorRequest(BaseModel):
 
 class UsuarioCodigoInstructorValidacionRequest(BaseModel):
     codigo: str
+
+
+class UsuarioLoginDocumentoRequest(BaseModel):
+    numeroDocumento: str
+    password: str
+
+
+class UsuarioLoginDocumentoResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str
+    expires_in: int | None = None
 
 
 class UsuarioResponse(BaseModel):
@@ -28,15 +40,14 @@ class UsuarioResponse(BaseModel):
     tipoContrato: str | None = None
     horasContratadasSemana: int | None = None
     codigoInstructor: str | None = None
+    idTrimestre: int | None = None
+    sigla: str | None = None
+    # Fuerza la pantalla de cambio de contraseña obligatorio en el primer
+    # login con credencial temporal — ver app/models/usuario.py y
+    # ProtectedRoute.tsx (frontend), que es quien la consume.
+    debeCambiarClave: bool = False
     roles: list[RolResponse] = []
     especialidades: list[EspecialidadResponse] = []
-    # El atributo del modelo es snake_case a propósito (nombre exacto del
-    # mockup panel_de_administracion_sihs_sena/code.html, ver
-    # app/models/usuario.py) — el alias solo lo traduce a camelCase para
-    # la API, que es la convención del resto de este schema. Lo consume
-    # ProtectedRoute.tsx para forzar la pantalla de cambio de contraseña
-    # obligatorio en el primer login con credencial temporal.
-    debeCambiarClave: bool = Field(validation_alias="debe_cambiar_clave")
 
 
 class CargaSemanalResponse(BaseModel):

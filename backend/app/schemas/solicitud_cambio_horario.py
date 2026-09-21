@@ -1,27 +1,17 @@
 from datetime import datetime
-from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from app.schemas.horario import HorarioUpdate
-
-TipoSolicitudCambioHorario = Literal["novedad", "permuta", "cambio-ambiente"]
-EstadoSolicitudCambioHorario = Literal["pendiente", "aprobada", "rechazada"]
-
 
 class SolicitudCambioHorarioCreate(BaseModel):
     idHorarioOrigen: int
-    tipo: TipoSolicitudCambioHorario
+    tipo: str
     motivo: str
 
 
-class SolicitudCambioHorarioAprobar(BaseModel):
-    # Si viene, se aplica a idHorarioOrigen vía HorarioService.actualizar
-    # (con su misma validación de cruces) antes de marcar la solicitud
-    # como aprobada. Se deja vacío para un tipo "novedad" que no requiere
-    # cambiar nada en "horarios", solo quedar registrada como atendida.
-    cambios: HorarioUpdate | None = None
+class SolicitudCambioHorarioResolver(BaseModel):
+    estado: str  # aprobada | rechazada
 
 
 class SolicitudCambioHorarioResponse(BaseModel):
@@ -29,10 +19,10 @@ class SolicitudCambioHorarioResponse(BaseModel):
 
     idSolicitud: int
     idInstructor: UUID
-    idHorarioOrigen: int | None
-    tipo: TipoSolicitudCambioHorario
+    idHorarioOrigen: int
+    tipo: str
     motivo: str
-    estado: EstadoSolicitudCambioHorario
+    estado: str
     fechaSolicitud: datetime
-    fechaResolucion: datetime | None
-    instructorNombre: str | None = None
+    fechaResolucion: datetime | None = None
+    idAdminResolvio: UUID | None = None

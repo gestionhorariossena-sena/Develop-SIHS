@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import datetime, time
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, field_validator
@@ -57,11 +57,28 @@ class HorarioDryRunResponse(BaseModel):
     resumen: dict[str, object]
 
 
+class AuditoriaConflicto(HorarioDryRunConflict):
+    """Igual que HorarioDryRunConflict, pero para GET /horarios/auditoria-cruces:
+    ahí el conflicto no viene de un candidato nuevo sin guardar, sino de un
+    horario YA guardado (`idHorario`) que choca con otro (`idHorarioExistente`)."""
+
+    idHorario: int
+
+
+class AuditoriaCrucesResponse(BaseModel):
+    conflictos: list[AuditoriaConflicto] = []
+    resumen: dict[str, object]
+
+
 class HorarioResponse(HorarioBase):
     model_config = ConfigDict(from_attributes=True)
 
     idHorario: int
     dias: list[int]
+    fechaCreacion: datetime
+    fechaModificacion: datetime
+    activo: bool
+    publicado: bool
 
     # Enriquecido por HorarioService/_a_response para no obligar al
     # frontend a resolver estos nombres con llamadas aparte.
@@ -70,3 +87,14 @@ class HorarioResponse(HorarioBase):
     ambienteNombre: str | None = None
     resultadoCodigo: str | None = None
     resultadoDescripcion: str | None = None
+
+
+class HorarioEstadoUpdate(BaseModel):
+    """Body de PATCH /horarios/{id}/estado — activar/desactivar y/o
+    publicar/despublicar sin pasar por la validación completa de
+    HorarioUpdate (no cambia ficha/instructor/ambiente/horario). Ambos
+    campos son opcionales e independientes: mandar solo `publicado` no
+    toca `activo`, y viceversa."""
+
+    activo: bool | None = None
+    publicado: bool | None = None

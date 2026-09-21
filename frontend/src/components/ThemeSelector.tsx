@@ -43,7 +43,7 @@ export function ThemeSelector() {
   const { tema, setTema } = useTheme()
 
   return (
-    <div className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-50 p-1 dark:border-slate-700 dark:bg-slate-800" role="group" aria-label="Tema de la interfaz">
+    <div className="inline-flex items-center rounded-xl border border-outline-variant bg-surface p-1 dark:border-slate-700 dark:bg-slate-800" role="group" aria-label="Tema de la interfaz">
       {OPCIONES.map((opcion) => {
         const activo = tema === opcion.valor
         return (
@@ -56,8 +56,8 @@ export function ThemeSelector() {
             aria-pressed={activo}
             className={`flex h-7 w-7 items-center justify-center rounded-md transition focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sena-600 ${
               activo
-                ? 'bg-white text-sena-700 shadow-sm dark:bg-slate-700'
-                : 'text-slate-400 hover:bg-white hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300'
+                ? 'bg-surface-container-lowest text-sena-700 shadow-sm dark:bg-slate-700'
+                : 'text-on-surface-variant hover:bg-surface-container-lowest hover:text-on-surface-variant dark:text-slate-500 dark:hover:bg-slate-700 dark:hover:text-slate-300'
             }`}
           >
             {opcion.icono}

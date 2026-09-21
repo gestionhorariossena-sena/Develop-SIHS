@@ -78,6 +78,33 @@ resultado repetido en la misma ficha con `409` y el mensaje correspondiente
   validación en `HorarioService` ya cubre los 4 tipos de cruce sin necesitar
   esto, así que no es urgente.
 
+## Contenido de vitrina del frontend (rediseño 2026-09-06)
+
+El rediseño visual completo (navbar + tokens Material Design 3 + 8 pantallas
+reconstruidas contra mockups reales de Stitch, ver `_Docs/Diseño/
+GUIA_DE_MARCA.md` v2 y `_Docs/Diseño/mockups-stitch/`) priorizó fidelidad
+visual total, por pedido explícito del usuario, incluso donde el dato de
+fondo no existe todavía. Esos 16 casos quedaron como contenido estático
+hardcodeado en el frontend, cada uno marcado con el comentario `// Contenido
+de mockup (Stitch) — pendiente de conectar a un dato real del backend` (o
+similar) justo antes del bloque JSX correspondiente — búsquenlo literal para
+ubicarlos todos. Esta tabla es el resumen de qué necesitaría cada uno para
+dejar de ser vitrina:
+
+| Pantalla | Elemento estático | Qué faltaría en el backend |
+|---|---|---|
+| `Ambientes.tsx` / `VistaAmbientes.tsx` | Pestañas de piso (P1-P4), capacidad y equipamiento técnico por ambiente | ~~`Ambiente` no tiene columna `piso`, `capacidad` ni `equipamiento`~~ — `piso`/`capacidad`/`especialidadSala`/`responsableLlaves` ya existen (SCRUM-117, migración `e4d98e84c4cd`). Falta conectar el frontend y `equipamiento` (inventario técnico detallado) sigue fuera de alcance a propósito. |
+| `AprobarlicitarSolicitudes.tsx` | Chips "tiempo de resolución promedio" / "eficiencia de matriz" | No hay ninguna métrica agregada de este tipo — requeriría calcularla sobre `usuario_rol`/`auditoria` o una tabla de métricas nueva |
+| `Dashboard.tsx` | "Ambiente alterno sugerido" en el panel de conflicto | No existe un motor de sugerencia de ambientes libres equivalentes — requeriría lógica nueva en `HorarioService` (buscar ambiente libre en la misma franja con características similares) |
+| `Fichas.tsx` | Capacidad de ambiente, "vocero aprendiz", historial de cambios de la ficha | ~~`ficha_usuario` no tiene campo de vocero~~ — `rolEnFicha` ya existe (SCRUM-108, migración `4933158644c8`) y `GET /fichas/{id}/vocero` ya lo expone. Falta conectar el frontend. El historial de `auditoria` filtrado por ficha sigue sin endpoint de consulta. |
+| `Instructores.tsx` | Segmentación de carga Lectiva/Proyectos/Preparación, "ambiente fijo asignado", alerta de "solicitud de cambio" | `CargaSemanal` solo trae total/máximo, no desglose por tipo; no existe "ambiente fijo" (un instructor puede dictar en varios); ~~no existe tabla de solicitudes de cambio de horario~~ — `solicitud_cambio_horario` ya existe con sus endpoints (SCRUM-116, migración `d5fb5bdff6fd`). Falta conectar el frontend. |
+| `MiHorario.tsx` | "Ambiente actual/en sesión ahora", navegación entre semanas, sincronización SOFIA Plus/SINERGIA, leyenda "en sesión"/"programado", desglose de horas aula vs. asesoría | Sin endpoint de "qué está pasando ahora mismo"; `GET /usuarios/me/horarios` no pagina por semana; no hay integración externa con SOFIA Plus/SINERGIA; `GridHorario` no modela ese estado; no hay categoría de actividad por bloque |
+| `NuevoHorario.tsx` (Constructor) | Panel "Sugerencias del Sistema", indicador de ocupación de sede | No hay motor de sugerencias algorítmicas ni endpoint de ocupación agregada por sede (sí existe el barrido de conflictos real, `GET /horarios/auditoria-cruces`, que es distinto) |
+
+Al resolver cualquiera de estos, buscar el comentario correspondiente en el
+`.tsx` y reemplazar el bloque estático por el fetch real — quitar también el
+comentario para que no quede documentación desactualizada.
+
 ## Sección de estudiantes (planeada, no programada todavía)
 
 Se decidió agregar una sección para que los estudiantes ingresen su ficha y

@@ -8,9 +8,10 @@ class FichaUsuarioVincular(BaseModel):
 
 
 class VoceroResponse(BaseModel):
-    """GET /fichas/{id_ficha}/vocero — quién es el vocero/subvocero de una
-    ficha. No cubre mensajería (Epic "Vistas del Aprendiz", pantalla
-    "Mensajería de Instructores"), solo expone quién es."""
+    """SCRUM-108 — GET /fichas/{id_ficha}/vocero: quién es el
+    vocero/subvocero de una ficha. No cubre mensajería (Epic "Vistas del
+    Aprendiz", pantalla "Mensajería de Instructores"), solo expone quién
+    es."""
 
     idUsuario: UUID
     nombre: str

@@ -7,6 +7,7 @@ class ResultadoAprendizajeBase(BaseModel):
     idCompetencia: int
     idGuia: int | None = None
     horasAsignadas: int | None = None
+    numeroFase: int | None = None
 
 
 class ResultadoAprendizajeCreate(ResultadoAprendizajeBase):

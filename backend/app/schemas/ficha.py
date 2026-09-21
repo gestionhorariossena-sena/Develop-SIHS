@@ -1,3 +1,5 @@
+from datetime import date
+
 from pydantic import BaseModel, ConfigDict
 
 from app.schemas.programa import ProgramaResponse
@@ -10,6 +12,11 @@ class FichaBase(BaseModel):
     idPrograma: int
     idTrimestre: int
     idSede: int | None = None
+    fechaInicioLectiva: date | None = None
+    fechaFinLectiva: date | None = None
+    fechaInicioProductiva: date | None = None
+    fechaFinProductiva: date | None = None
+    faseActual: int | None = None
 
 
 class FichaCreate(FichaBase):

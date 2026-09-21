@@ -1,34 +1,43 @@
-from datetime import datetime
-from typing import Literal
+from datetime import date, datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-CategoriaAviso = Literal["reprog", "eventos", "sede", "extraordinario"]
 
-
-class AvisoBase(BaseModel):
+class AvisoCreate(BaseModel):
     titulo: str
     cuerpo: str
-    categoria: CategoriaAviso
+    categoria: str
     idFicha: int | None = None
     idSede: int | None = None
     adjuntoUrl: str | None = None
-    vigenteHasta: datetime | None = None
+    vigenteHasta: date | None = None
 
 
-class AvisoCreate(AvisoBase):
-    pass
+class AvisoUpdate(BaseModel):
+    titulo: str
+    cuerpo: str
+    categoria: str
+    idFicha: int | None = None
+    idSede: int | None = None
+    adjuntoUrl: str | None = None
+    vigenteHasta: date | None = None
 
 
-class AvisoUpdate(AvisoBase):
-    pass
-
-
-class AvisoResponse(AvisoBase):
+class AvisoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     idAviso: int
-    idUsuarioPublicador: UUID | None = None
-    fechaPublicacion: datetime
+    idUsuarioPublicador: UUID
+    # Enriquecido por AvisoService/_a_response (mismo criterio que
+    # HorarioService.a_response) para no obligar al frontend a resolver
+    # el nombre del publicador con una llamada aparte.
     publicadorNombre: str | None = None
+    titulo: str
+    cuerpo: str
+    categoria: str
+    idFicha: int | None = None
+    idSede: int | None = None
+    adjuntoUrl: str | None = None
+    fechaPublicacion: datetime
+    vigenteHasta: date | None = None

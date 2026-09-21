@@ -77,7 +77,7 @@ def aprobar_solicitud_acceso(
 ):
     """Solo Administrador. Crea/reutiliza la cuenta de Supabase Auth,
     asigna el rol (posiblemente distinto al solicitado, ver
-    SolicitudAccesoAprobar), fuerza debe_cambiar_clave y despacha la
+    SolicitudAccesoAprobar), fuerza debeCambiarClave y despacha la
     credencial temporal -- ver SolicitudAccesoService.aprobar para el
     detalle de cada paso."""
     resultado = SolicitudAccesoService.aprobar(db, id_solicitud, data.idRol, usuario)

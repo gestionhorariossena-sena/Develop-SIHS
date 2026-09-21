@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, DateTime, Enum, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, false
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -18,6 +18,12 @@ class Usuario(Base):
 
     nombre = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
+    numeroDocumento = Column(String(30), unique=True, nullable=True)
+    # SCRUM-103: cuando el panel de aprobación crea la cuenta con una
+    # contraseña temporal generada por el sistema (en vez de la que eligió
+    # la propia persona), esto queda en True y el frontend debe bloquear la
+    # navegación hasta que establezca su propia contraseña.
+    debeCambiarClave = Column(Boolean, server_default=false(), nullable=False)
 
     estado = Column(
         Enum("activo", "inactivo", name="estado_usuario"),
@@ -31,12 +37,14 @@ class Usuario(Base):
     tipoContrato = Column(String(20))
     horasContratadasSemana = Column(Integer)
     codigoInstructor = Column(String(20), unique=True, nullable=True)
-
-    # Nombre EXACTO del mockup panel_de_administracion_sihs_sena/code.html
-    # (línea ~442): bloquea navegar hasta que la persona establezca su
-    # propia clave — usado por el flujo de aprobación de solicitudes de
-    # acceso y por cualquier futuro flujo de credencial temporal.
-    debe_cambiar_clave = Column(Boolean, nullable=False, default=False, server_default="false")
+    # Trimestre en el que se generó codigoInstructor. El código queda fijo
+    # una vez creado (no se regenera) — no es un historial de códigos por
+    # trimestre, solo registra en cuál se emitió el único código vigente.
+    idTrimestre = Column(Integer, ForeignKey("trimestres.idTrimestre"), nullable=True)
+    # Sigla/iniciales cortas (ej. "DC", "LM") — así referencian instructores
+    # ambas coordinaciones en sus horarios reales, distinto de
+    # codigoInstructor (el código de registro que ya existía).
+    sigla = Column(String(10), nullable=True)
 
     roles = relationship(
         "Rol",

@@ -222,7 +222,7 @@ class TestAprobarSolicitud:
         usuario_creado = db_session.get(Usuario, id_usuario_nuevo)
         assert usuario_creado is not None
         assert usuario_creado.email == "mbenitez@sena.edu.co"
-        assert usuario_creado.debe_cambiar_clave is True
+        assert usuario_creado.debeCambiarClave is True
 
         vinculo = (
             db_session.query(UsuarioRol)
@@ -267,7 +267,7 @@ class TestAprobarSolicitud:
         assert total_usuarios == 1
         db_session.refresh(usuario_existente)
         assert usuario_existente.nombre == "Ya Existía"
-        assert usuario_existente.debe_cambiar_clave is True
+        assert usuario_existente.debeCambiarClave is True
 
     def test_no_bloquea_la_aprobacion_si_smtp_no_esta_configurado(
         self, client, crear_rol, autenticar_como, monkeypatch

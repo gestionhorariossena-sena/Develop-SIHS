@@ -110,7 +110,7 @@ class SolicitudAccesoService:
         2. Crear la fila en "usuarios" si no existe.
         3. Asignar el rol (UsuarioRolService.asignar, sin reimplementar
            esa validación).
-        4. usuarios.debe_cambiar_clave = true.
+        4. usuarios.debeCambiarClave = true.
         5. Marcar la solicitud aprobada.
         6. Enviar la credencial temporal (EmailService -- si SMTP no está
            configurado todavía, no se bloquea la aprobación, ver
@@ -143,7 +143,7 @@ class SolicitudAccesoService:
 
         UsuarioRolService.asignar(db, id_usuario, id_rol_otorgado)
 
-        usuario.debe_cambiar_clave = True
+        usuario.debeCambiarClave = True
         db.commit()
 
         solicitud.estado = "aprobada"

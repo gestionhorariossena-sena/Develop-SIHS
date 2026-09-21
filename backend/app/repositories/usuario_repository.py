@@ -19,6 +19,10 @@ class UsuarioRepository:
         return db.query(Usuario).filter(Usuario.email == email).first()
 
     @staticmethod
+    def obtener_por_numero_documento(db: Session, numero: str):
+        return db.query(Usuario).filter(Usuario.numeroDocumento == numero).first()
+
+    @staticmethod
     def obtener_por_codigo_instructor(db: Session, codigo: str):
         return db.query(Usuario).filter(Usuario.codigoInstructor == codigo).first()
 

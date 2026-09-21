@@ -34,6 +34,111 @@ def _crear_tablas_extra(db_session):
     Base.metadata.create_all(bind=db_session.bind, tables=tablas)
 
 
+def test_rf011_permite_forzar_y_registra_el_cruce(client, db_session, autenticar_como):
+    _crear_tablas_extra(db_session)
+
+    _, headers = autenticar_como("Coordinador")
+
+    coordinacion = Coordinacion(idCoordinacion=1, nombreCoordinacion="Tecnología")
+    programa = Programa(
+        idPrograma=1,
+        codigoPrograma="TEC-01",
+        nombrePrograma="Tecnología",
+        nivelFormacion="Técnico",
+        activo=True,
+        idCoordinacion=1,
+    )
+    trimestre = Trimestre(
+        idTrimestre=1,
+        nombre="2026-1",
+        fechaInicio=date(2026, 1, 5),
+        fechaFin=date(2026, 4, 30),
+        estado="activo",
+    )
+    sede = Sede(id=1, nombre="Sede Norte", direccion="Calle 1", tipo="principal")
+    ambiente = Ambiente(
+        id=1,
+        numero_ambiente=101,
+        nombre="Ambiente",
+        tipo_ambiente="regular",
+        estado_ambiente="disponible",
+        sede_id=1,
+    )
+    ambiente2 = Ambiente(
+        id=2,
+        numero_ambiente=102,
+        nombre="Ambiente",
+        tipo_ambiente="regular",
+        estado_ambiente="disponible",
+        sede_id=1,
+    )
+    jornada = Jornada(idJornada=1, nombreJornada="Mañana")
+    dia_lunes = DiaSemana(idDia=1, nombreDia="Lunes")
+    dia_martes = DiaSemana(idDia=2, nombreDia="Martes")
+    dia_miercoles = DiaSemana(idDia=3, nombreDia="Miércoles")
+    dia_viernes = DiaSemana(idDia=5, nombreDia="Viernes")
+    resultado = ResultadoAprendizaje(
+        idResultado=9,
+        descripcion="Resultado A",
+        codigo="RA-9",
+        idCompetencia=1,
+        horasAsignadas=10,
+    )
+    instructor = Usuario(
+        idUsuario=uuid.uuid4(),
+        nombre="Carlos López",
+        email="carlos@example.com",
+        tipoContrato="planta",
+    )
+    ficha = Ficha(idFicha=1, codigoFicha="FICHA-001", idPrograma=1, idTrimestre=1)
+
+    db_session.add_all([
+        coordinacion,
+        programa,
+        trimestre,
+        sede,
+        ambiente,
+        ambiente2,
+        jornada,
+        dia_lunes,
+        dia_martes,
+        dia_miercoles,
+        dia_viernes,
+        resultado,
+        instructor,
+        ficha,
+    ])
+    db_session.commit()
+
+    # Tres horarios existentes para que ya supere el máximo de 32h/semana.
+    horarios_existentes = [
+        Horario(idHorario=100, horaInicio=time(8, 0), horaFin=time(18, 0), idJornada=1, idTrimestre=1, idAmbiente=1, idInstructor=instructor.idUsuario, idFicha=1, idResultado=9),
+        Horario(idHorario=101, horaInicio=time(8, 0), horaFin=time(18, 0), idJornada=1, idTrimestre=1, idAmbiente=2, idInstructor=instructor.idUsuario, idFicha=1, idResultado=9),
+        Horario(idHorario=102, horaInicio=time(8, 0), horaFin=time(18, 0), idJornada=1, idTrimestre=1, idAmbiente=1, idInstructor=instructor.idUsuario, idFicha=1, idResultado=9),
+    ]
+    db_session.add_all(horarios_existentes)
+    db_session.commit()
+
+    for horario_id, dia in [(100, 1), (101, 2), (102, 5)]:
+        db_session.execute(horario_dia.insert().values(idHorario=horario_id, idDia=dia))
+    db_session.commit()
+
+    payload = {
+        "idJornada": 1,
+        "idTrimestre": 1,
+        "idAmbiente": 1,
+        "idInstructor": str(instructor.idUsuario),
+        "idFicha": 1,
+        "idResultado": 9,
+        "horaInicio": "08:00:00",
+        "horaFin": "18:00:00",
+        "dias": [3],
+        "forzar": True,
+    }
+
+    response = client.post("/api/v1/horarios/", json=payload, headers=headers)
+
+    assert response.status_code == 201
 def test_actualizar_horario_con_forzar_permite_conflicto(client, db_session, autenticar_como):
     _crear_tablas_extra(db_session)
 

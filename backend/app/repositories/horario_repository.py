@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.models.ambiente import Ambiente
 from app.models.dia_semana import DiaSemana
 from app.models.horario import Horario, horario_dia
 
@@ -12,12 +13,6 @@ class HorarioRepository:
     @staticmethod
     def obtener_por_id(db: Session, id_horario: int):
         return db.query(Horario).filter(Horario.idHorario == id_horario).first()
-
-    @staticmethod
-    def obtener_por_ficha(db: Session, id_ficha: int) -> list[Horario]:
-        """Todos los horarios de una ficha, para armar la grilla semanal
-        de GET /fichas/{id}/pdf (PdfService)."""
-        return db.query(Horario).filter(Horario.idFicha == id_ficha).all()
 
     @staticmethod
     def obtener_dias(db: Session, id_horario: int) -> list[int]:
@@ -60,6 +55,15 @@ class HorarioRepository:
         db.commit()
 
     @staticmethod
+    def guardar(db: Session, horario: Horario) -> Horario:
+        """Commit simple de cambios ya aplicados al objeto — para
+        HorarioService.cambiar_estado, que solo toca `activo` y no
+        necesita reescribir horario_dia como sí hace `actualizar`."""
+        db.commit()
+        db.refresh(horario)
+        return horario
+
+    @staticmethod
     def buscar_solape(
         db: Session,
         campo: str,
@@ -82,6 +86,7 @@ class HorarioRepository:
                 horario_dia.c.idDia.in_(dias),
                 Horario.horaInicio < hora_fin,
                 Horario.horaFin > hora_inicio,
+                Horario.activo.is_(True),
             )
         )
         if excluir_id is not None:
@@ -94,10 +99,43 @@ class HorarioRepository:
     ) -> list[Horario]:
         """Todos los horarios ya asignados a un instructor, sin filtrar por
         día/hora — HorarioService los usa para sumar horas semanales y
-        detectar centro/jornada (RF-011), esa decisión no es de acá."""
-        query = db.query(Horario).filter(Horario.idInstructor == id_instructor)
+        detectar centro/jornada (RF-011), esa decisión no es de acá. Solo
+        los activos: uno desactivado no debería sumar a la carga semanal
+        ni aparecer como vigente en el drawer de relacionados."""
+        query = db.query(Horario).filter(Horario.idInstructor == id_instructor, Horario.activo.is_(True))
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)
+        return query.all()
+
+    @staticmethod
+    def obtener_por_ficha(db: Session, id_ficha: int) -> list[Horario]:
+        """Todos los horarios de una ficha — para GET /fichas/{id}/horarios
+        (SCRUM-47, grid/relacionados de una ficha) y para armar la grilla
+        semanal de GET /fichas/{id}/pdf (PdfService)."""
+        return db.query(Horario).filter(Horario.idFicha == id_ficha).all()
+
+    @staticmethod
+    def obtener_por_ambiente(db: Session, id_ambiente: int) -> list[Horario]:
+        """GET /ambientes/{id}/horarios (SCRUM-48) — relacionados de un ambiente."""
+        return db.query(Horario).filter(Horario.idAmbiente == id_ambiente).all()
+
+    @staticmethod
+    def obtener_activos(
+        db: Session, id_trimestre: int | None = None, id_sede: int | None = None
+    ) -> list[Horario]:
+        """Horarios activos vigentes, opcionalmente acotados a un trimestre
+        y/o sede — usado por HorarioService.auditar_conflictos para el
+        barrido de "Auditoría de Cruces" (a diferencia de buscar_solape,
+        que compara UN candidato contra lo existente, acá se listan los
+        horarios ya guardados sobre los que después se re-valida cada
+        uno)."""
+        query = db.query(Horario).filter(Horario.activo.is_(True))
+        if id_trimestre is not None:
+            query = query.filter(Horario.idTrimestre == id_trimestre)
+        if id_sede is not None:
+            query = query.join(Ambiente, Horario.idAmbiente == Ambiente.id).filter(
+                Ambiente.sede_id == id_sede
+            )
         return query.all()
 
     @staticmethod
@@ -105,11 +143,40 @@ class HorarioRepository:
         db: Session,
         id_ficha: int,
         id_resultado: int,
+        id_instructor,
+        dias: list[int],
         excluir_id: int | None = None,
     ) -> Horario | None:
         """Cruce de contenido, no de horas — ver REGLAS_DE_NEGOCIO_CONOCIDAS.md.
-        Devuelve el horario existente que ya cubre ese resultado, o None."""
-        query = db.query(Horario).filter(Horario.idFicha == id_ficha, Horario.idResultado == id_resultado)
+        La regla original comparaba solo (idFicha, idResultado) sin mirar el
+        día, así que un mismo tema partido en dos bloques el mismo día (antes
+        y después del descanso) se rechazaba como si fuera un duplicado real
+        en otro día — bug reportado 2026-09-02. Un horario existente que
+        comparte al menos un día con el nuevo se trata como continuación de
+        la misma clase (no se marca); solo se marca si NO comparte ningún
+        día, que es el caso real de "este resultado ya se programó en otro
+        momento no relacionado".
+
+        Corrección 2026-09-12: además, solo cuenta como duplicado si es el
+        MISMO instructor repitiendo el resultado en un día no relacionado.
+        Dos instructores distintos programados para el mismo (ficha,
+        resultado) en días distintos es un reparto válido del contenido
+        (ej. dos instructores rotando el mismo tema), no un error de
+        programación -- la regla original no miraba el instructor y lo
+        bloqueaba igual, un falso positivo real reportado por el usuario.
+        Devuelve el horario existente que choca, o None."""
+        query = db.query(Horario).filter(
+            Horario.idFicha == id_ficha,
+            Horario.idResultado == id_resultado,
+            Horario.idInstructor == id_instructor,
+            Horario.activo.is_(True),
+        )
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)
-        return query.first()
+
+        dias_nuevos = set(dias)
+        for horario in query.all():
+            dias_existentes = set(HorarioRepository.obtener_dias(db, horario.idHorario))
+            if not (dias_existentes & dias_nuevos):
+                return horario
+        return None

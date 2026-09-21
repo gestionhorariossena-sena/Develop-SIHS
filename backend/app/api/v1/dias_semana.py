@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import require_admin, require_lectura_catalogo
+from app.core.supabase_auth import require_admin, require_lectura_catalogo_o_instructor
 from app.schemas.dia_semana import DiaSemanaCreate, DiaSemanaResponse, DiaSemanaUpdate
 from app.services.dia_semana_service import DiaSemanaService
 
@@ -21,7 +21,7 @@ def crear_dia(
 @router.get("/", response_model=list[DiaSemanaResponse])
 def obtener_dias(
     db: Session = Depends(get_db),
-    usuario=Depends(require_lectura_catalogo),
+    usuario=Depends(require_lectura_catalogo_o_instructor),
 ):
     return DiaSemanaService.obtener_todos(db)
 
@@ -30,7 +30,7 @@ def obtener_dias(
 def obtener_dia(
     id_dia: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_lectura_catalogo),
+    usuario=Depends(require_lectura_catalogo_o_instructor),
 ):
     dia = DiaSemanaService.obtener_por_id(db, id_dia)
 

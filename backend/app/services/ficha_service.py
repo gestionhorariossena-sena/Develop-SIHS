@@ -18,6 +18,11 @@ class FichaService:
             idPrograma=data.idPrograma,
             idTrimestre=data.idTrimestre,
             idSede=data.idSede,
+            fechaInicioLectiva=data.fechaInicioLectiva,
+            fechaFinLectiva=data.fechaFinLectiva,
+            fechaInicioProductiva=data.fechaInicioProductiva,
+            fechaFinProductiva=data.fechaFinProductiva,
+            faseActual=data.faseActual,
         )
         return FichaRepository.crear(db, nueva_ficha)
 
@@ -32,6 +37,11 @@ class FichaService:
         ficha.idPrograma = data.idPrograma
         ficha.idTrimestre = data.idTrimestre
         ficha.idSede = data.idSede
+        ficha.fechaInicioLectiva = data.fechaInicioLectiva
+        ficha.fechaFinLectiva = data.fechaFinLectiva
+        ficha.fechaInicioProductiva = data.fechaInicioProductiva
+        ficha.fechaFinProductiva = data.fechaFinProductiva
+        ficha.faseActual = data.faseActual
 
         return FichaRepository.actualizar(db, ficha)
 

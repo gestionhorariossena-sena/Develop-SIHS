@@ -119,7 +119,7 @@ def test_confirmar_cambio_clave_limpia_el_flag(client, db_session, autenticar_co
 
     usuario, headers = autenticar_como("Aprendiz")
     usuario_db = db_session.get(Usuario, usuario.idUsuario)
-    usuario_db.debe_cambiar_clave = True
+    usuario_db.debeCambiarClave = True
     db_session.commit()
 
     respuesta = client.patch("/api/v1/usuarios/me/confirmar-cambio-clave", headers=headers)

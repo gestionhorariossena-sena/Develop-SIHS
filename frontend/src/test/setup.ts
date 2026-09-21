@@ -2,9 +2,8 @@ import '@testing-library/jest-dom/vitest'
 import { afterEach } from 'vitest'
 import { cleanup } from '@testing-library/react'
 
-// `globals: false` en vite.config.ts (ver ESTRUCTURA.md) evita que
-// @testing-library/react enganche su auto-cleanup vía el `afterEach` global —
-// se registra a mano acá para que cada test empiece con el DOM limpio.
+// `globals: false` en vite.config.ts evita que Testing Library registre el
+// cleanup fuera del contexto de la suite.
 afterEach(cleanup)
 
 // ThemeProvider (modo oscuro, SCRUM-23) usa localStorage y matchMedia —

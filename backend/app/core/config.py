@@ -30,6 +30,11 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from_nombre: str = "SIHS SENA — Gestión de Horarios"
 
+    # Gemini API (Google AI Studio) — capa de IA opcional, ver
+    # _Docs/Arquitectura/Arquitectura_IA_Motor_Horarios.md. Vacía por
+    # defecto: el sistema funciona completo sin esto configurado.
+    gemini_api_key: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 

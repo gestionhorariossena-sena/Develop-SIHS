@@ -6,20 +6,29 @@ import type { Usuario } from '../types/api'
 
 const RUTA_CAMBIO_CLAVE_OBLIGATORIO = '/cambiar-clave-obligatorio'
 
+interface ProtectedRouteProps {
+  children: ReactNode
+  /** Si se especifica, además de exigir sesión, el usuario debe tener al
+   * menos uno de estos roles -- si no, se manda a /dashboard. */
+  roles?: string[]
+}
+
 /**
  * Envuelve una página que exige sesión iniciada. Si no hay sesión, manda a
  * /login. Si el perfil trae debeCambiarClave=true (credencial temporal sin
- * cambiar, ver usuarios.debe_cambiar_clave), redirige a
+ * cambiar, ver usuarios.debeCambiarClave), redirige a
  * CambiarClaveObligatorio.tsx en vez de dejar entrar a cualquier otra ruta
  * protegida -- es el único choque de gate para esto, así que no hace falta
- * repetir el chequeo en cada página nueva.
+ * repetir el chequeo en cada página nueva. Si se especifican `roles`,
+ * también verifica que el usuario tenga al menos uno de los roles
+ * requeridos, mandando a /dashboard si no.
  *
  * El fetch de perfil falla "abierto" (no bloquea navegación) si
  * GET /usuarios/me falla por algo que no sea el propio flag -- esto es una
  * guía de UX, no el límite de seguridad real (ese lo sigue poniendo la
  * sesión de Supabase).
  */
-export function ProtectedRoute({ children }: { children: ReactNode }) {
+export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   const { session, loading } = useAuth()
   const location = useLocation()
   const [perfil, setPerfil] = useState<Usuario | null>(null)
@@ -61,6 +70,13 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const debeCambiarClave = perfil?.debeCambiarClave ?? false
   if (debeCambiarClave && location.pathname !== RUTA_CAMBIO_CLAVE_OBLIGATORIO) {
     return <Navigate to={RUTA_CAMBIO_CLAVE_OBLIGATORIO} replace />
+  }
+
+  if (roles?.length) {
+    const tieneRolRequerido = perfil?.roles.some((rol) => roles.includes(rol.nombre)) ?? false
+    if (!tieneRolRequerido) {
+      return <Navigate to="/dashboard" replace />
+    }
   }
 
   return <>{children}</>

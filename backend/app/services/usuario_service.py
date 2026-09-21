@@ -2,6 +2,7 @@ import random
 import string
 from uuid import UUID
 
+from app.repositories.trimestre_repository import TrimestreRepository
 from app.repositories.usuario_repository import UsuarioRepository
 
 
@@ -16,13 +17,17 @@ class UsuarioService:
 
     @staticmethod
     def confirmar_cambio_clave(db, usuario):
-        """Limpia debe_cambiar_clave tras un cambio de contraseña exitoso
+        """Limpia debeCambiarClave tras un cambio de contraseña exitoso
         (supabase.auth.updateUser en el frontend, ver
         CambiarClaveObligatorio.tsx) — PATCH /usuarios/me/confirmar-cambio-clave.
         No valida la contraseña en sí: eso ya lo hizo Supabase Auth: acá
         solo se baja el flag que bloqueaba la navegación."""
-        usuario.debe_cambiar_clave = False
+        usuario.debeCambiarClave = False
         return UsuarioRepository.actualizar(db, usuario)
+
+    @staticmethod
+    def obtener_por_numero_documento(db, numero: str):
+        return UsuarioRepository.obtener_por_numero_documento(db, numero)
 
     @staticmethod
     def generar_codigo_instructor(db, id_usuario: UUID):
@@ -35,6 +40,7 @@ class UsuarioService:
             return {
                 "idUsuario": usuario.idUsuario,
                 "codigo": usuario.codigoInstructor,
+                "idTrimestre": usuario.idTrimestre,
             }
 
         caracteres = string.ascii_uppercase + string.digits
@@ -45,12 +51,16 @@ class UsuarioService:
             codigo = "INS-" + "".join(random.choice(caracteres) for _ in range(6))
             intento += 1
 
+        trimestre_activo = TrimestreRepository.obtener_activo(db)
+
         usuario.codigoInstructor = codigo
+        usuario.idTrimestre = trimestre_activo.idTrimestre if trimestre_activo else None
         UsuarioRepository.actualizar(db, usuario)
 
         return {
             "idUsuario": usuario.idUsuario,
             "codigo": codigo,
+            "idTrimestre": usuario.idTrimestre,
         }
 
     @staticmethod

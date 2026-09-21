@@ -7,11 +7,6 @@ from app.core.database import Base
 
 
 class Notificacion(Base):
-    """SCRUM-93. `tipo` es texto libre (sin CHECK constraint): cada
-    productor (HorarioService al reprogramar, futuros productores) decide
-    su propio valor; el frontend agrupa por esos valores tal cual, no por
-    un enum cerrado acá."""
-
     __tablename__ = "notificaciones"
 
     idNotificacion = Column(Integer, primary_key=True, index=True)

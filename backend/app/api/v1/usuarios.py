@@ -1,8 +1,11 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.supabase_auth import (
     get_current_user,
@@ -11,13 +14,18 @@ from app.core.supabase_auth import (
     require_lectura_catalogo,
 )
 from app.models.usuario import Usuario
+from app.schemas.horario import HorarioResponse
 from app.schemas.usuario import (
     CargaSemanalResponse,
     UsuarioCodigoInstructorRequest,
     UsuarioCodigoInstructorValidacionRequest,
+    UsuarioLoginDocumentoRequest,
+    UsuarioLoginDocumentoResponse,
     UsuarioResponse,
 )
+from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import HorarioService
+from app.services.pdf_service import PdfService
 from app.services.usuario_service import UsuarioService
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
@@ -38,9 +46,89 @@ def confirmar_cambio_clave(
     """El frontend llama esto justo después de un
     supabase.auth.updateUser({ password }) exitoso en la pantalla de
     cambio de contraseña obligatorio (primer login con credencial
-    temporal) — limpia debe_cambiar_clave para que ProtectedRoute deje
+    temporal) — limpia debeCambiarClave para que ProtectedRoute deje
     de redirigir ahí."""
     return UsuarioService.confirmar_cambio_clave(db, usuario)
+
+
+@router.post("/login-documento", response_model=UsuarioLoginDocumentoResponse)
+def iniciar_sesion_por_documento(data: UsuarioLoginDocumentoRequest, db: Session = Depends(get_db)):
+    """Autentica documento y contraseña sin exponer el email asociado."""
+    identificador = data.numeroDocumento.strip()
+    estado = AuditoriaService.verificar_bloqueo(db, identificador)
+    if estado["bloqueado"]:
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Demasiados intentos. Inténtalo más tarde.")
+
+    usuario = UsuarioService.obtener_por_numero_documento(db, identificador)
+    respuesta = None
+    if usuario:
+        try:
+            respuesta = httpx.post(
+                f"{settings.supabase_url}/auth/v1/token?grant_type=password",
+                headers={"apikey": settings.supabase_anon_key},
+                json={"email": usuario.email, "password": data.password},
+                timeout=10,
+            )
+        except httpx.HTTPError:
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Servicio de autenticación no disponible.") from None
+
+    if respuesta is None or respuesta.status_code != 200:
+        AuditoriaService.registrar_login_fallido(db, identificador)
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Credenciales incorrectas.")
+
+    datos = respuesta.json()
+    return {
+        "access_token": datos["access_token"],
+        "refresh_token": datos["refresh_token"],
+        "token_type": datos.get("token_type", "bearer"),
+        "expires_in": datos.get("expires_in"),
+    }
+
+
+@router.get("/me/horarios", response_model=list[HorarioResponse])
+def obtener_mis_horarios(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """Autoservicio para "Mi horario" (pedido 2026-09-03) — a diferencia de
+    GET /{id}/horarios (Coordinador/Administrador viendo A OTRO), acá
+    cualquier usuario autenticado puede pedir SUS PROPIOS horarios, sin
+    importar el rol — no hace falta `require_lectura_catalogo`, el alcance
+    ya está limitado a `usuario.idUsuario` (nunca a un id que venga del
+    request). Solo devuelve lo publicado — un instructor no debe ver un
+    borrador que el coordinador todavía está armando."""
+    return HorarioService.obtener_publicados_por_instructor(db, usuario.idUsuario)
+
+
+@router.get("/me/horarios/pdf")
+def descargar_mis_horarios_pdf(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """SCRUM-120: primer consumidor concreto de `PdfService.generar_tabla`
+    (transversal, no atado a horarios) — mismo criterio de autoservicio que
+    `/me/horarios`, sin exigir rol de gestión."""
+    horarios = HorarioService.obtener_publicados_por_instructor(db, usuario.idUsuario)
+
+    columnas = ["Ficha", "Ambiente", "Resultado", "Días", "Horario"]
+    filas = [
+        [
+            h["fichaCodigo"] or "—",
+            h["ambienteNombre"] or "—",
+            h["resultadoDescripcion"] or "—",
+            ", ".join(str(d) for d in h["dias"]) or "—",
+            f"{str(h['horaInicio'])[:5]}–{str(h['horaFin'])[:5]}",
+        ]
+        for h in horarios
+    ]
+
+    pdf_bytes = PdfService.generar_tabla(f"Horario de {usuario.nombre}", columnas, filas)
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'attachment; filename="mi_horario.pdf"'},
+    )
 
 
 @router.get("/", response_model=list[UsuarioResponse])
@@ -69,19 +157,42 @@ def obtener_usuario(
 def obtener_carga_semanal(
     id_usuario: UUID,
     db: Session = Depends(get_db),
-    usuario=Depends(require_lectura_catalogo),
+    usuario: Usuario = Depends(get_current_user),
 ):
     """Horas ya asignadas por semana vs. el tope de RF-011 — alimenta la
-    sección "Carga semanal" del drawer de instructor en Instructores.tsx.
+    sección "Carga semanal" del drawer de instructor en Instructores.tsx
+    y el ribbon de KPIs de "Mi Horario" (MiHorario.tsx). Autoservicio
+    igual que /me/horarios: un usuario siempre puede pedir SU PROPIA carga
+    semanal sin tener rol Coordinador/Administrador; para consultar la de
+    OTRO instructor sí se exige `require_lectura_catalogo`.
     No es un módulo "instructores" aparte (no existe en este backend, ver
     ESTRUCTURA.md) — un instructor es un Usuario con rol Instructor, así
     que vive bajo /usuarios como el resto de sus datos."""
+    es_propio = usuario.idUsuario == id_usuario
+    es_lectura_catalogo = any(rol.nombre in ("Coordinador", "Administrador") for rol in usuario.roles)
+    if not es_propio and not es_lectura_catalogo:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado")
+
     carga = HorarioService.calcular_carga_semanal(db, id_usuario)
 
     if carga is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     return carga
+
+
+@router.get("/{id_usuario}/horarios", response_model=list[HorarioResponse])
+def obtener_horarios_instructor(
+    id_usuario: UUID,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_lectura_catalogo),
+):
+    """Horarios asignados a un instructor — alimenta la mini-grid semanal
+    del drawer de relacionados en Instructores.tsx (SCRUM-46)."""
+    if not UsuarioService.obtener_por_id(db, id_usuario):
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    return HorarioService.obtener_por_instructor(db, id_usuario)
 
 
 @router.post("/instructor/codigo/generar")

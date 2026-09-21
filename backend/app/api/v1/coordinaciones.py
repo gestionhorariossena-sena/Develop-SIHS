@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import require_admin
+from app.core.supabase_auth import require_admin, require_lectura_catalogo
 from app.schemas.coordinacion import CoordinacionCreate, CoordinacionResponse, CoordinacionUpdate
 from app.services.coordinacion_service import CoordinacionService
 
@@ -21,7 +21,7 @@ def crear_coordinacion(
 @router.get("/", response_model=list[CoordinacionResponse])
 def obtener_coordinaciones(
     db: Session = Depends(get_db),
-    usuario=Depends(require_admin),
+    usuario=Depends(require_lectura_catalogo),
 ):
     return CoordinacionService.obtener_todos(db)
 
@@ -30,7 +30,7 @@ def obtener_coordinaciones(
 def obtener_coordinacion(
     id_coordinacion: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_admin),
+    usuario=Depends(require_lectura_catalogo),
 ):
     coordinacion = CoordinacionService.obtener_por_id(db, id_coordinacion)
 

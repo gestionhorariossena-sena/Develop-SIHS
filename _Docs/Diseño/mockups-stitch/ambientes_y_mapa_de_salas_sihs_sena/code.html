@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Hanken+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-container-high": "#e2e7ff", "primary": "#006b2c", "tertiary-fixed": "#ffdcc3", "surface-dim": "#d2d9f4", "surface-container-highest": "#dae2fd", "surface": "#f8fafc", "on-secondary-fixed": "#052100", "secondary-container": "#eaf7ec", "primary-fixed-dim": "#62df7d", "secondary-fixed-dim": "#6fdf43", "on-error-container": "#93000a", "on-tertiary": "#ffffff", "on-error": "#ffffff", "tertiary": "#8d4b00", "tertiary-container": "#b15f00", "on-tertiary-fixed": "#2f1500", "on-primary-fixed-variant": "#005320", "primary-fixed": "#7ffc97", "outline": "#cbd5e1", "surface-variant": "#dae2fd", "on-tertiary-container": "#92400e", "surface-container-low": "#f2f3ff", "background": "#faf8ff", "surface-tint": "#006e2d", "inverse-on-surface": "#eef0ff", "on-primary-fixed": "#002109", "surface-bright": "#faf8ff", "secondary-fixed": "#8afd5d", "primary-container": "#dcfce7", "on-secondary-container": "#257400", "surface-container-lowest": "#ffffff", "inverse-primary": "#62df7d", "error-container": "#fee2e2", "on-tertiary-fixed-variant": "#6e3900", "on-surface-variant": "#3e4a3d", "inverse-surface": "#1e293b", "on-secondary-fixed-variant": "#185200", "tertiary-fixed-dim": "#ffb77d", "outline-variant": "#bdcaba", "on-primary-container": "#14532d", "surface-container": "#e2e8f0", "on-primary": "#ffffff", "on-secondary": "#ffffff", "secondary": "#226d00", "on-surface": "#131b2e", "on-background": "#131b2e", "error": "#dc2626" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-base": "1rem", "space-3xl": "3rem", "space-2xl": "2rem", "space-2xs": "0.125rem", "gutter": "1rem", "space-xs": "0.25rem", "space-md": "0.75rem", "space-lg": "1.25rem", "space-xl": "1.5rem", "space-sm": "0.5rem", "margin-mobile": "1rem", "margin-desktop": "1.5rem" }, "fontFamily": { "headline-sm": [ "Hanken Grotesk" ], "body-sm": [ "Geist" ], "body-md": [ "Geist" ], "body-lg": [ "Geist" ], "display-lg": [ "Hanken Grotesk" ], "label-md": [ "Geist" ], "label-sm": [ "Geist" ], "headline-lg": [ "Hanken Grotesk" ], "headline-md": [ "Hanken Grotesk" ] }, "fontSize": { "headline-sm": [ "16px", { "lineHeight": "24px", "fontWeight": "600" } ], "body-sm": [ "12px", { "lineHeight": "16px", "fontWeight": "400" } ], "body-md": [ "13px", { "lineHeight": "18px", "fontWeight": "400" } ], "body-lg": [ "15px", { "lineHeight": "22px", "fontWeight": "400" } ], "display-lg": [ "28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "label-md": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" } ], "label-sm": [ "11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" } ], "headline-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" } ], "headline-md": [ "20px", { "lineHeight": "28px", "fontWeight": "600" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 w-full px-margin-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md shrink-0"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm"><span class="font-headline-sm text-headline-sm text-on-primary font-bold tracking-tight">S</span></div><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-primary leading-tight font-bold tracking-tight">SENA</span><span class="font-headline-sm text-headline-sm text-on-surface leading-tight font-semibold">SIHS</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">CGMLTI Calle 52</span></div></div><div class="hidden xl:flex items-center gap-space-xs bg-secondary-container px-space-sm py-space-2xs rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span><span class="font-label-sm text-label-sm text-on-secondary-container font-medium">Trimestre II · Sincronizado</span></div></div><div class="hidden lg:flex items-center justify-center flex-1"><nav class="flex items-center gap-space-2xs bg-surface p-space-2xs rounded-full shadow-[0_1px_4px_rgba(15,23,42,0.04)]" data-active-classes="bg-primary-container text-on-primary-container font-bold shadow-xs"><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="dashboard" href="#">Dashboard</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="mi-horario" href="#">Mi Horario</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all flex items-center gap-space-xs" data-path="constructor" href="#"><span>Constructor</span><span class="bg-secondary-container text-on-secondary-container text-[10px] px-space-xs py-0.5 rounded-full font-bold">Ágil</span></a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="fichas" href="#">Fichas</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="instructores" href="#">Instructores</a><a aria-current="page" class="px-space-md py-space-xs rounded-full transition-all bg-primary-container text-on-primary-container font-bold shadow-xs" data-path="ambientes" href="#">Ambientes</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all flex items-center gap-space-xs" data-path="solicitudes" href="#"><span>Solicitudes</span><span class="bg-error-container text-on-error-container text-[10px] px-1.5 py-0.5 rounded-full font-bold">4</span></a></nav></div><div class="flex items-center gap-space-sm shrink-0"><div class="relative hidden md:flex items-center"><span class="material-symbols-outlined absolute left-space-sm text-on-surface-variant text-[18px]">search</span><input class="w-48 xl:w-56 h-9 pl-8 pr-12 rounded-xl bg-surface text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md focus:outline-none focus:bg-surface-container-lowest shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-all" placeholder="Buscar fichas, sedes..." type="text"/><div class="absolute right-space-sm flex items-center pointer-events-none"><kbd class="bg-surface-container px-space-xs py-0.5 rounded text-[10px] font-mono text-on-surface-variant">⌘K</kbd></div></div><button aria-label="Notificaciones" class="relative w-9 h-9 rounded-xl bg-surface flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all shadow-[0_1px_3px_rgba(0,0,0,0.03)]"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-tertiary ring-2 ring-surface-container-lowest"></span></button><button class="hidden sm:inline-flex items-center gap-space-xs bg-primary text-on-primary hover:bg-on-primary-container px-space-md h-9 rounded-xl font-label-md text-label-md shadow-xs transition-all"><span class="material-symbols-outlined text-[18px]">add</span><span>Nuevo Horario</span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="hidden xl:flex flex-col text-right"><span class="font-label-md text-label-md text-on-surface leading-snug">Ing. M. Hernández</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Coordinación</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="w-full pt-16 bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_60%,_#faf8ff_100%)] min-h-screen"><div class="flex flex-col w-full">
+<!-- Content Canvas Wrap -->
+<div class="w-full px-margin-desktop py-space-xl flex flex-col gap-space-xl max-w-[1720px] mx-auto">
+<!-- Header Section with Breadcrumb & Dual View Toggle -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-md text-label-md">
+<a class="hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[15px]">grid_view</span>
+            Dashboard
+          </a>
+<span>/</span>
+<span class="text-on-surface font-semibold">Ambientes de Formación</span>
+</div>
+<div class="flex flex-wrap items-baseline gap-space-md">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Ocupación de Ambientes y Salas</h1>
+<div class="inline-flex items-center gap-space-xs bg-secondary-container text-on-secondary-container px-space-sm py-0.5 rounded-full font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+<span class="font-bold">Sede Calle 52 (52 Ambientes)</span>
+<span class="text-primary font-semibold">· 92.3% Ocupación Pico</span>
+</div>
+</div>
+</div>
+<!-- Interactive Switcher -->
+<div class="flex items-center gap-space-xs bg-surface-container-high/60 p-1.5 rounded-xl shadow-xs">
+<button class="flex items-center gap-space-xs px-space-md py-space-xs rounded-lg font-label-md text-label-md bg-surface-container-lowest text-on-surface shadow-sm font-semibold transition-all" id="btn-view-map" onclick="switchMainView('map')">
+<span class="material-symbols-outlined text-[18px] text-primary">apartment</span>
+<span>Plano de Sede</span>
+</button>
+<button class="flex items-center gap-space-xs px-space-md py-space-xs rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all" id="btn-view-list" onclick="switchMainView('list')">
+<span class="material-symbols-outlined text-[18px]">format_list_bulleted</span>
+<span>Vista Agrupada</span>
+</button>
+</div>
+</div>
+<!-- 1. Resumen de Ocupación Superior (3 KPI Cards) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- Card 1: Software -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary-container/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Piso 3 · Software &amp; Cloud</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-1">Laboratorios Software</span>
+</div>
+<span class="p-2 bg-primary-container text-on-primary-container rounded-lg">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+</span>
+</div>
+<div class="mt-space-md flex items-end justify-between">
+<div>
+<span class="font-display-lg text-display-lg text-on-surface font-bold">23<span class="text-on-surface-variant font-normal text-headline-sm">/24</span></span>
+<span class="ml-space-xs font-label-sm text-label-sm font-bold text-error">95.8% Ocupado</span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-on-surface-variant block">1 Disponible:</span>
+<span class="font-label-md text-label-md text-primary font-bold bg-primary-container px-2 py-0.5 rounded-full inline-block mt-0.5">Lab 308 (32 pts)</span>
+</div>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full mt-space-md overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all duration-700" style="width: 95.8%"></div>
+</div>
+</div>
+<!-- Card 2: Logística -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+<div class="absolute top-0 right-0 w-32 h-32 bg-secondary-container/30 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Piso 1 · Centros Prácticos</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-1">Talleres Logística</span>
+</div>
+<span class="p-2 bg-secondary-container text-on-secondary-container rounded-lg">
+<span class="material-symbols-outlined text-[20px]">precision_manufacturing</span>
+</span>
+</div>
+<div class="mt-space-md flex items-end justify-between">
+<div>
+<span class="font-display-lg text-display-lg text-on-surface font-bold">14<span class="text-on-surface-variant font-normal text-headline-sm">/16</span></span>
+<span class="ml-space-xs font-label-sm text-label-sm font-bold text-tertiary">87.5% Ocupado</span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-on-surface-variant block">2 Libres:</span>
+<span class="font-label-md text-label-md text-secondary font-bold bg-secondary-container px-2 py-0.5 rounded-full inline-block mt-0.5">Taller 101, 103</span>
+</div>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full mt-space-md overflow-hidden">
+<div class="bg-secondary h-full rounded-full transition-all duration-700" style="width: 87.5%"></div>
+</div>
+</div>
+<!-- Card 3: Polivalentes -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-xs relative overflow-hidden group hover:shadow-md transition-all">
+<div class="absolute top-0 right-0 w-32 h-32 bg-tertiary-fixed/30 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+<div class="flex items-start justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Piso 2 · Clases Magistrales</span>
+<span class="font-headline-md text-headline-md text-on-surface mt-1">Aulas Polivalentes</span>
+</div>
+<span class="p-2 bg-surface-container-highest text-on-surface rounded-lg">
+<span class="material-symbols-outlined text-[20px]">meeting_room</span>
+</span>
+</div>
+<div class="mt-space-md flex items-end justify-between">
+<div>
+<span class="font-display-lg text-display-lg text-on-surface font-bold">11<span class="text-on-surface-variant font-normal text-headline-sm">/12</span></span>
+<span class="ml-space-xs font-label-sm text-label-sm font-bold text-on-secondary-container">91.6% Ocupado</span>
+</div>
+<div class="text-right">
+<span class="font-label-sm text-label-sm text-on-surface-variant block">1 Libre:</span>
+<span class="font-label-md text-label-md text-primary font-bold bg-primary-container px-2 py-0.5 rounded-full inline-block mt-0.5">Aula 204 (40 pts)</span>
+</div>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full mt-space-md overflow-hidden">
+<div class="bg-primary-fixed-dim h-full rounded-full transition-all duration-700" style="width: 91.6%"></div>
+</div>
+</div>
+</div>
+<!-- 2. Contenido Principal: Plano de Planta Arquitectónico + Inspector Lateral -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start" id="section-map-view">
+<!-- Sector Izquierdo / Central: Selector de Pisos + Plano Interactivo -->
+<div class="xl:col-span-8 flex flex-col gap-space-md">
+<!-- Floor Selector Bar -->
+<div class="bg-surface-container-lowest p-space-sm rounded-xl shadow-xs flex flex-wrap items-center justify-between gap-space-sm">
+<div class="flex items-center gap-space-xs overflow-x-auto w-full sm:w-auto">
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all flex items-center gap-1.5 shrink-0">
+<span class="font-bold">P1</span>
+<span>Talleres &amp; Bodegas</span>
+</button>
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all flex items-center gap-1.5 shrink-0">
+<span class="font-bold">P2</span>
+<span>Aulas Polivalentes</span>
+</button>
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md bg-primary text-on-primary font-semibold shadow-xs flex items-center gap-1.5 shrink-0">
+<span class="font-bold">P3</span>
+<span>Software, 3D &amp; Cloud</span>
+<span class="w-2 h-2 rounded-full bg-primary-fixed"></span>
+</button>
+<button class="px-space-md py-2 rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high transition-all flex items-center gap-1.5 shrink-0">
+<span class="font-bold">P4</span>
+<span>Auditorio &amp; Servidores</span>
+</button>
+</div>
+<div class="hidden md:flex items-center gap-space-md px-space-sm text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-primary"></span>Libre</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-inverse-surface"></span>Ocupado</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-tertiary"></span>Cruce</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-surface-container-highest"></span>Mant.</span>
+</div>
+</div>
+<!-- Blueprint / Floor Map Architectural Canvas -->
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-xs flex flex-col gap-space-md relative overflow-hidden">
+<div class="flex items-center justify-between pb-space-sm bg-surface-container-low/50 px-space-md py-2 rounded-lg">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-primary text-[20px]">architecture</span>
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Planta Piso 3 · Ala Tecnológica</span>
+<span class="text-on-surface-variant font-label-sm text-label-sm ml-2">Cota Nivel +9.60m · Conectividad Fibra Óptica Red SENA 10Gbps</span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs text-label-sm text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">rotate_90_degrees_ccw</span>
+<span>Orientación Norte</span>
+</div>
+</div>
+<!-- Architectural Blueprint Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-space-md bg-surface p-space-md rounded-xl">
+<!-- Lab 301 (Ocupado / Regular) -->
+<div class="room-card cursor-pointer bg-surface-container-lowest hover:bg-surface-container-high/40 p-space-md rounded-xl shadow-xs transition-all flex flex-col justify-between min-h-[148px] relative group" onclick="selectRoom('301')">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Lab 301</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">ADSO Web Dev</span>
+</div>
+<span class="bg-inverse-surface text-inverse-on-surface px-2 py-0.5 rounded text-[10px] font-bold">OCUPADO</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Ficha 2689102</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Inst. Carlos Rueda</span>
+</div>
+<div class="flex items-center justify-between pt-2 text-[11px] text-on-surface-variant">
+<span>Cap: 30 pts</span>
+<span class="text-primary font-semibold">08:00 - 14:00</span>
+</div>
+</div>
+<!-- Lab 302 (Ocupado) -->
+<div class="room-card cursor-pointer bg-surface-container-lowest hover:bg-surface-container-high/40 p-space-md rounded-xl shadow-xs transition-all flex flex-col justify-between min-h-[148px] relative group" onclick="selectRoom('302')">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Lab 302</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Base de Datos</span>
+</div>
+<span class="bg-inverse-surface text-inverse-on-surface px-2 py-0.5 rounded text-[10px] font-bold">OCUPADO</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Ficha 2670142</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Inst. Liliana Gómez</span>
+</div>
+<div class="flex items-center justify-between pt-2 text-[11px] text-on-surface-variant">
+<span>Cap: 32 pts</span>
+<span class="text-primary font-semibold">10:00 - 16:00</span>
+</div>
+</div>
+<!-- Lab 303 (Ocupado) -->
+<div class="room-card cursor-pointer bg-surface-container-lowest hover:bg-surface-container-high/40 p-space-md rounded-xl shadow-xs transition-all flex flex-col justify-between min-h-[148px] relative group" onclick="selectRoom('303')">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Lab 303</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Seguridad Digital</span>
+</div>
+<span class="bg-inverse-surface text-inverse-on-surface px-2 py-0.5 rounded text-[10px] font-bold">OCUPADO</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Ficha 2710499</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Inst. Mario Buitrago</span>
+</div>
+<div class="flex items-center justify-between pt-2 text-[11px] text-on-surface-variant">
+<span>Cap: 28 pts</span>
+<span class="text-primary font-semibold">06:00 - 12:00</span>
+</div>
+</div>
+<!-- Lab 304 (CRUCE / CONFLICTO ACTIVO) -->
+<div class="room-card cursor-pointer bg-tertiary-fixed/30 hover:bg-tertiary-fixed/50 p-space-md rounded-xl shadow-md transition-all flex flex-col justify-between min-h-[148px] relative ring-2 ring-tertiary" id="card-lab-304" onclick="selectRoom('304')">
+<div class="absolute -top-2.5 -right-2 bg-tertiary text-on-tertiary px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs animate-bounce">
+<span class="material-symbols-outlined text-[13px]">warning</span>
+                CRUCE 12:00
+              </div>
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Lab 304</span>
+<span class="font-label-sm text-label-sm text-on-tertiary-container block font-medium">Audiovisual &amp; 3D</span>
+</div>
+<span class="bg-tertiary-container text-on-tertiary px-2 py-0.5 rounded text-[10px] font-bold">CONFLICTO</span>
+</div>
+<div class="flex flex-col gap-0.5 bg-surface-container-lowest/80 p-1.5 rounded">
+<span class="font-label-sm text-label-sm text-error font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-error animate-ping"></span>
+                  Ficha 2598411 vs 2712903
+                </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Doble asignación horaria</span>
+</div>
+<div class="flex items-center justify-between pt-1 text-[11px] text-tertiary font-semibold">
+<span>30 estaciones Mac</span>
+<span>Click inspeccionar →</span>
+</div>
+</div>
+<!-- Central Hallway Visual Gap -->
+<div class="col-span-2 md:col-span-4 bg-surface-container-high/40 py-2 px-space-md rounded-lg flex items-center justify-between my-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">stairs</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">Pasillo Central Técnico · Acceso Ascensores A y B</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant text-[11px]">
+<span>Salida de Emergencia</span>
+<span class="material-symbols-outlined text-[16px] text-primary">directions_run</span>
+</div>
+</div>
+<!-- Lab 305 (Ocupado) -->
+<div class="room-card cursor-pointer bg-surface-container-lowest hover:bg-surface-container-high/40 p-space-md rounded-xl shadow-xs transition-all flex flex-col justify-between min-h-[148px] relative group" onclick="selectRoom('305')">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Lab 305</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">IoT &amp; Robótica</span>
+</div>
+<span class="bg-inverse-surface text-inverse-on-surface px-2 py-0.5 rounded text-[10px] font-bold">OCUPADO</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Ficha 2699812</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Inst. Jorge Vargas</span>
+</div>
+<div class="flex items-center justify-between pt-2 text-[11px] text-on-surface-variant">
+<span>Cap: 25 pts</span>
+<span class="text-primary font-semibold">07:00 - 13:00</span>
+</div>
+</div>
+<!-- Lab 306 (Ocupado) -->
+<div class="room-card cursor-pointer bg-surface-container-lowest hover:bg-surface-container-high/40 p-space-md rounded-xl shadow-xs transition-all flex flex-col justify-between min-h-[148px] relative group" onclick="selectRoom('306')">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Lab 306</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Cloud Architecture</span>
+</div>
+<span class="bg-inverse-surface text-inverse-on-surface px-2 py-0.5 rounded text-[10px] font-bold">OCUPADO</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Ficha 2715019</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Inst. Patricia Duarte</span>
+</div>
+<div class="flex items-center justify-between pt-2 text-[11px] text-on-surface-variant">
+<span>Cap: 30 pts</span>
+<span class="text-primary font-semibold">12:00 - 18:00</span>
+</div>
+</div>
+<!-- Lab 307 (Mantenimiento Programado) -->
+<div class="room-card cursor-pointer bg-surface-container/60 hover:bg-surface-container p-space-md rounded-xl shadow-xs transition-all flex flex-col justify-between min-h-[148px] relative group" onclick="selectRoom('307')">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Lab 307</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">Rack &amp; Datacenter</span>
+</div>
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded text-[10px] font-bold">MANTENIMIENTO</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="font-body-sm text-body-sm text-on-surface font-medium">Soporte Técnico CGMLTI</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Limpieza servidores y patch</span>
+</div>
+<div class="flex items-center justify-between pt-2 text-[11px] text-on-surface-variant">
+<span>Bloqueado</span>
+<span class="font-semibold text-on-surface-variant">Hasta 18:00</span>
+</div>
+</div>
+<!-- Lab 308 (LIBRE / DISPONIBLE) -->
+<div class="room-card cursor-pointer bg-secondary-container hover:bg-primary-container p-space-md rounded-xl shadow-sm transition-all flex flex-col justify-between min-h-[148px] relative ring-2 ring-primary group" id="card-lab-308" onclick="selectRoom('308')">
+<div class="flex items-start justify-between">
+<div>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">Lab 308</span>
+<span class="font-label-sm text-label-sm text-on-secondary-container block font-semibold">Desarrollo High-End</span>
+</div>
+<span class="bg-primary text-on-primary px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 shadow-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-fixed animate-pulse"></span>
+                  DISPONIBLE
+                </span>
+</div>
+<div class="flex flex-col gap-0.5 bg-surface-container-lowest/90 p-1.5 rounded">
+<span class="font-label-sm text-label-sm text-on-secondary-container font-bold flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-primary">memory</span>
+                  32 Puestos · GPU RTX 4070
+                </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sin ficha asignada</span>
+</div>
+<div class="flex items-center justify-between pt-1 text-[11px] text-primary font-bold">
+<span>Disponible Hoy</span>
+<span>Click inspeccionar →</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Mini Visual Quick Insight Bar -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-xs flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[24px]">air</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Climatización Automatizada Piso 3</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Temperatura promedio: 21.4°C · Eficiencia energética A+</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-xs flex items-center gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-secondary-container flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined text-[24px]">wifi_tethering</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Ancho de Banda Asignado Piso 3</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Consumo en tiempo real: 4.8 Gbps / 10 Gbps</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Sector Derecho: Panel Lateral de Inspección del Ambiente -->
+<div class="xl:col-span-4 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-md flex flex-col gap-space-md transition-all" id="inspector-panel">
+<!-- Inspector Header -->
+<div class="flex items-start justify-between pb-space-sm border-b border-surface-container">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-tertiary-container text-on-tertiary" id="insp-badge-status">EN CONFLICTO</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant" id="insp-floor-label">Piso 3 · Ala Sur</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface font-bold mt-1" id="insp-room-title">Lab 304 - Audiovisual y 3D</h2>
+<span class="font-label-sm text-label-sm text-on-surface-variant" id="insp-room-subtitle">Especialidad Modelado Maya, Blender &amp; Unreal</span>
+</div>
+<div class="w-10 h-10 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[22px]" id="insp-room-icon">video_settings</span>
+</div>
+</div>
+<!-- Alert Notification Box (Dynamic) -->
+<div class="bg-error-container p-space-md rounded-xl flex flex-col gap-2" id="insp-conflict-box">
+<div class="flex items-center gap-2 text-error font-bold font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">error</span>
+<span>Cruce de Horario Crítico Detectado</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface">
+              Conflicto a las <strong>12:00 PM - 14:00 PM</strong> entre <span class="font-semibold text-primary">Ficha 2598411</span> (Animación Digital) y <span class="font-semibold text-secondary">Ficha 2712903</span> (ADSO).
+            </p>
+<div class="mt-1 flex gap-2">
+<button class="w-full bg-primary hover:bg-on-primary-container text-on-primary py-2 px-space-sm rounded-lg font-label-md text-label-md font-bold shadow-xs transition-all flex items-center justify-center gap-1.5" onclick="resolveConflictQuick()">
+<span class="material-symbols-outlined text-[16px]">swap_horiz</span>
+<span>Reasignar a Lab 308 (Libre)</span>
+</button>
+</div>
+</div>
+<!-- Room Specs Grid -->
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="bg-surface p-space-sm rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Capacidad Total</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold" id="insp-capacity">30 Estaciones</span>
+<span class="text-[11px] text-on-surface-variant">1 docente + 29 aprendices</span>
+</div>
+<div class="bg-surface p-space-sm rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Equipamiento Técnico</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold" id="insp-equipment">iMac M3 + PC RTX</span>
+<span class="text-[11px] text-on-surface-variant">Doble pantalla 4K</span>
+</div>
+<div class="bg-surface p-space-sm rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Software Licenciado</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">Autodesk &amp; Adobe CC</span>
+<span class="text-[11px] text-primary font-medium">Licencia Activa Campus</span>
+</div>
+<div class="bg-surface p-space-sm rounded-lg flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Coordinador Técnico</span>
+<span class="font-label-md text-label-md text-on-surface font-semibold">Ing. Andrés Parra</span>
+<span class="text-[11px] text-on-surface-variant">Ext. SENA 5214</span>
+</div>
+</div>
+<!-- Cronograma Diario Hora a Hora (06:00 a 22:00) -->
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Cronograma del Día</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hoy, 06:00 - 22:00</span>
+</div>
+<!-- Hour Timeline List -->
+<div class="flex flex-col gap-1.5 max-h-[300px] overflow-y-auto pr-1" id="insp-timeline">
+<!-- Block 06:00 - 10:00 -->
+<div class="bg-surface p-2 rounded-lg flex items-center justify-between border-l-4 border-primary">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm font-bold text-on-surface">06:00 - 10:00</span>
+<span class="px-1.5 py-0.2 bg-primary-container text-on-primary-container rounded text-[10px] font-semibold">Ficha 2598411</span>
+</div>
+<span class="text-[12px] text-on-surface-variant">Animación 3D · Inst. Gloria Rojas</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+</div>
+<!-- Block 10:00 - 12:00 -->
+<div class="bg-surface p-2 rounded-lg flex items-center justify-between border-l-4 border-primary">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm font-bold text-on-surface">10:00 - 12:00</span>
+<span class="px-1.5 py-0.2 bg-primary-container text-on-primary-container rounded text-[10px] font-semibold">Ficha 2598411</span>
+</div>
+<span class="text-[12px] text-on-surface-variant">Renderizado y Postproducción</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+</div>
+<!-- Block 12:00 - 14:00 (CRUCE) -->
+<div class="bg-error-container/60 p-2 rounded-lg flex items-center justify-between border-l-4 border-error">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm font-bold text-error">12:00 - 14:00</span>
+<span class="px-1.5 py-0.2 bg-error text-on-error rounded text-[10px] font-bold animate-pulse">CRUCE ACTIVO</span>
+</div>
+<span class="text-[12px] text-on-surface font-semibold">Ficha 2598411 vs Ficha 2712903</span>
+</div>
+<span class="material-symbols-outlined text-error text-[18px]">error</span>
+</div>
+<!-- Block 14:00 - 18:00 -->
+<div class="bg-surface p-2 rounded-lg flex items-center justify-between border-l-4 border-inverse-surface">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm font-bold text-on-surface">14:00 - 18:00</span>
+<span class="px-1.5 py-0.2 bg-surface-container-highest text-on-surface-variant rounded text-[10px] font-semibold">Ficha 2712903</span>
+</div>
+<span class="text-[12px] text-on-surface-variant">Desarrollo Web Frontend · Inst. Mauricio Vega</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">schedule</span>
+</div>
+<!-- Block 18:00 - 22:00 -->
+<div class="bg-surface p-2 rounded-lg flex items-center justify-between border-l-4 border-primary">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm font-bold text-on-surface">18:00 - 22:00</span>
+<span class="px-1.5 py-0.2 bg-primary-container text-on-primary-container rounded text-[10px] font-semibold">Ficha 2781033</span>
+</div>
+<span class="text-[12px] text-on-surface-variant">Jornada Nocturna ADSO · Inst. Elena Morales</span>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant text-[18px]">schedule</span>
+</div>
+</div>
+</div>
+<!-- Bottom Actions in Inspector -->
+<div class="flex items-center gap-space-sm pt-space-xs border-t border-surface-container">
+<button class="flex-1 bg-surface-container-high hover:bg-surface-container-highest text-on-surface py-2 px-space-sm rounded-lg font-label-md text-label-md font-semibold transition-all text-center" onclick="selectRoom('308')">
+              Ver Lab 308 (Libre)
+            </button>
+<button class="p-2 rounded-lg bg-surface-container-high text-on-surface-variant hover:text-on-surface" title="Exportar reporte de sala">
+<span class="material-symbols-outlined text-[20px]">print</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- 3. Vista Lista Filtrable Completa (52 Ambientes Operativos) -->
+<div class="hidden flex-col gap-space-md" id="section-list-view">
+<!-- List Control Bar -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-xs flex flex-col md:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-sm w-full md:w-auto">
+<div class="relative w-full md:w-72">
+<span class="material-symbols-outlined absolute left-3 top-2.5 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full h-9 pl-9 pr-3 rounded-lg bg-surface text-on-surface text-body-md focus:outline-none focus:bg-surface-container-lowest shadow-xs" placeholder="Filtrar por sala, ficha, instructor..." type="text"/>
+</div>
+<select class="h-9 px-3 rounded-lg bg-surface text-on-surface text-body-md focus:outline-none shadow-xs font-label-md">
+<option>Todos los Pisos (P1 a P4)</option>
+<option>Piso 1 - Talleres</option>
+<option>Piso 2 - Polivalentes</option>
+<option selected="">Piso 3 - Software &amp; 3D</option>
+<option>Piso 4 - Auditorio</option>
+</select>
+</div>
+<div class="flex items-center gap-space-xs w-full md:w-auto justify-end">
+<span class="text-on-surface-variant font-label-sm text-label-sm">Estado:</span>
+<button class="px-2.5 py-1 rounded-full text-xs font-semibold bg-primary-container text-on-primary-container">Todos (52)</button>
+<button class="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface text-on-surface-variant hover:bg-surface-container">Disponibles (4)</button>
+<button class="px-2.5 py-1 rounded-full text-xs font-semibold bg-surface text-on-surface-variant hover:bg-surface-container">Con Cruce (1)</button>
+</div>
+</div>
+<!-- Data Table Card -->
+<div class="bg-surface-container-lowest rounded-xl shadow-xs overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low/70 text-on-surface-variant font-label-md text-label-md uppercase tracking-wider">
+<th class="py-3 px-space-md">Código &amp; Ambiente</th>
+<th class="py-3 px-space-md">Piso / Sede</th>
+<th class="py-3 px-space-md">Capacidad &amp; Equipos</th>
+<th class="py-3 px-space-md">Ficha Actual / Ocupante</th>
+<th class="py-3 px-space-md">Horario / Franja</th>
+<th class="py-3 px-space-md">Estado</th>
+<th class="py-3 px-space-md text-right">Acción</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container font-body-md text-body-md text-on-surface">
+<!-- Row 1: Lab 304 (Cruce) -->
+<tr class="hover:bg-tertiary-fixed/20 transition-colors">
+<td class="py-3 px-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary text-[20px]">warning</span>
+<div>
+<span class="font-bold block">Lab 304 - Audiovisual y 3D</span>
+<span class="text-xs text-on-surface-variant">Mac Studio M2 + Pantallas 4K</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md">Piso 3 · Calle 52</td>
+<td class="py-3 px-space-md">30 estaciones (GPU Dedicada)</td>
+<td class="py-3 px-space-md">
+<div class="flex flex-col">
+<span class="text-error font-bold text-xs">Ficha 2598411 / Ficha 2712903</span>
+<span class="text-xs text-on-surface-variant">Doble asignación simultánea</span>
+</div>
+</td>
+<td class="py-3 px-space-md font-semibold text-tertiary">12:00 - 14:00 (Conflicto)</td>
+<td class="py-3 px-space-md">
+<span class="bg-tertiary-container text-on-tertiary px-2 py-0.5 rounded-full text-xs font-bold">Cruce Horario</span>
+</td>
+<td class="py-3 px-space-md text-right">
+<button class="bg-primary hover:bg-on-primary-container text-on-primary px-3 py-1 rounded text-xs font-bold transition-all" onclick="switchMainView('map'); selectRoom('304')">
+                    Resolver
+                  </button>
+</td>
+</tr>
+<!-- Row 2: Lab 308 (Libre) -->
+<tr class="hover:bg-secondary-container/40 transition-colors">
+<td class="py-3 px-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<div>
+<span class="font-bold block text-primary">Lab 308 - Desarrollo High-End</span>
+<span class="text-xs text-on-surface-variant">Intel Core i9 + RTX 4070</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md">Piso 3 · Calle 52</td>
+<td class="py-3 px-space-md">32 estaciones especializadas</td>
+<td class="py-3 px-space-md text-on-surface-variant italic">Sin ficha asignada</td>
+<td class="py-3 px-space-md font-semibold text-primary">Libre todo el día</td>
+<td class="py-3 px-space-md">
+<span class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded-full text-xs font-bold">Disponible</span>
+</td>
+<td class="py-3 px-space-md text-right">
+<button class="bg-surface-container-high text-on-surface hover:bg-surface-container-highest px-3 py-1 rounded text-xs font-semibold transition-all" onclick="switchMainView('map'); selectRoom('308')">
+                    Asignar
+                  </button>
+</td>
+</tr>
+<!-- Row 3: Lab 301 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">terminal</span>
+<div>
+<span class="font-bold block">Lab 301 - ADSO Web Dev</span>
+<span class="text-xs text-on-surface-variant">Core i7 16GB RAM</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md">Piso 3 · Calle 52</td>
+<td class="py-3 px-space-md">30 estaciones</td>
+<td class="py-3 px-space-md">Ficha 2689102 · Inst. C. Rueda</td>
+<td class="py-3 px-space-md">08:00 - 14:00</td>
+<td class="py-3 px-space-md">
+<span class="bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full text-xs font-semibold">En Clase</span>
+</td>
+<td class="py-3 px-space-md text-right">
+<button class="text-primary hover:underline text-xs font-semibold" onclick="switchMainView('map'); selectRoom('301')">Detalle</button>
+</td>
+</tr>
+<!-- Row 4: Lab 302 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-3 px-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">database</span>
+<div>
+<span class="font-bold block">Lab 302 - Base de Datos</span>
+<span class="text-xs text-on-surface-variant">Core i7 32GB RAM</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md">Piso 3 · Calle 52</td>
+<td class="py-3 px-space-md">32 estaciones</td>
+<td class="py-3 px-space-md">Ficha 2670142 · Inst. L. Gómez</td>
+<td class="py-3 px-space-md">10:00 - 16:00</td>
+<td class="py-3 px-space-md">
+<span class="bg-surface-container text-on-surface-variant px-2 py-0.5 rounded-full text-xs font-semibold">En Clase</span>
+</td>
+<td class="py-3 px-space-md text-right">
+<button class="text-primary hover:underline text-xs font-semibold" onclick="switchMainView('map'); selectRoom('302')">Detalle</button>
+</td>
+</tr>
+<!-- Row 5: Taller 101 (Piso 1) -->
+<tr class="hover:bg-secondary-container/40 transition-colors">
+<td class="py-3 px-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">check_circle</span>
+<div>
+<span class="font-bold block text-primary">Taller 101 - Picking y Packing</span>
+<span class="text-xs text-on-surface-variant">Banda transportadora y radiofrecuencia</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md">Piso 1 · Bodegas</td>
+<td class="py-3 px-space-md">35 puestos operacionales</td>
+<td class="py-3 px-space-md text-on-surface-variant italic">Sin ficha asignada</td>
+<td class="py-3 px-space-md font-semibold text-primary">Libre hasta 14:00</td>
+<td class="py-3 px-space-md">
+<span class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded-full text-xs font-bold">Disponible</span>
+</td>
+<td class="py-3 px-space-md text-right">
+<button class="bg-surface-container-high text-on-surface hover:bg-surface-container-highest px-3 py-1 rounded text-xs font-semibold transition-all">
+                    Asignar
+                  </button>
+</td>
+</tr>
+<!-- Row 6: Lab 307 (Mantenimiento) -->
+<tr class="hover:bg-surface-container-low transition-colors bg-surface-container-low/30">
+<td class="py-3 px-space-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]">build</span>
+<div>
+<span class="font-bold block text-on-surface-variant">Lab 307 - Rack &amp; Datacenter</span>
+<span class="text-xs text-on-surface-variant">Racks Cisco &amp; Servidores blade</span>
+</div>
+</div>
+</td>
+<td class="py-3 px-space-md">Piso 3 · Calle 52</td>
+<td class="py-3 px-space-md">20 terminales consola</td>
+<td class="py-3 px-space-md">Mantenimiento de Redes SENA</td>
+<td class="py-3 px-space-md text-on-surface-variant">08:00 - 18:00</td>
+<td class="py-3 px-space-md">
+<span class="bg-surface-container-highest text-on-surface-variant px-2 py-0.5 rounded-full text-xs font-bold">Mantenimiento</span>
+</td>
+<td class="py-3 px-space-md text-right">
+<button class="text-on-surface-variant hover:underline text-xs font-semibold">Reporte</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Pagination Footer -->
+<div class="p-space-md bg-surface-container-lowest border-t border-surface-container flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span>Mostrando 6 de 52 ambientes operativos</span>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded bg-surface text-on-surface-variant hover:bg-surface-container">Anterior</button>
+<button class="px-2.5 py-1 rounded bg-primary text-on-primary font-bold">1</button>
+<button class="px-2.5 py-1 rounded bg-surface text-on-surface-variant hover:bg-surface-container">2</button>
+<button class="px-2.5 py-1 rounded bg-surface text-on-surface-variant hover:bg-surface-container">3</button>
+<button class="px-2.5 py-1 rounded bg-surface text-on-surface-variant hover:bg-surface-container">Siguiente</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Client-side Interactive Logic -->
+<script>
+    function switchMainView(view) {
+      const mapView = document.getElementById('section-map-view');
+      const listView = document.getElementById('section-list-view');
+      const btnMap = document.getElementById('btn-view-map');
+      const btnList = document.getElementById('btn-view-list');
+
+      if (view === 'map') {
+        mapView.classList.remove('hidden');
+        listView.classList.add('hidden');
+        btnMap.className = "flex items-center gap-space-xs px-space-md py-space-xs rounded-lg font-label-md text-label-md bg-surface-container-lowest text-on-surface shadow-sm font-semibold transition-all";
+        btnList.className = "flex items-center gap-space-xs px-space-md py-space-xs rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all";
+      } else {
+        mapView.classList.add('hidden');
+        listView.classList.remove('hidden');
+        btnList.className = "flex items-center gap-space-xs px-space-md py-space-xs rounded-lg font-label-md text-label-md bg-surface-container-lowest text-on-surface shadow-sm font-semibold transition-all";
+        btnMap.className = "flex items-center gap-space-xs px-space-md py-space-xs rounded-lg font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all";
+      }
+    }
+
+    const roomData = {
+      '304': {
+        title: 'Lab 304 - Audiovisual y 3D',
+        subtitle: 'Especialidad Modelado Maya, Blender & Unreal',
+        floor: 'Piso 3 · Ala Sur',
+        icon: 'video_settings',
+        statusBadge: 'EN CONFLICTO',
+        statusBadgeClass: 'bg-tertiary-container text-on-tertiary',
+        hasConflict: true,
+        capacity: '30 Estaciones Mac',
+        equipment: 'iMac M3 + PC RTX 4080',
+        conflictText: 'Cruce detectado a las 12:00 entre Ficha 2598411 y Ficha 2712903',
+        timeline: `
+          <div class="bg-surface p-2 rounded-lg flex items-center justify-between border-l-4 border-primary">
+            <div class="flex flex-col"><div class="flex items-center gap-2"><span class="font-label-sm text-label-sm font-bold text-on-surface">06:00 - 10:00</span><span class="px-1.5 py-0.2 bg-primary-container text-on-primary-container rounded text-[10px] font-semibold">Ficha 2598411</span></div><span class="text-[12px] text-on-surface-variant">Animación 3D · Inst. Gloria Rojas</span></div><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+          </div>
+          <div class="bg-surface p-2 rounded-lg flex items-center justify-between border-l-4 border-primary">
+            <div class="flex flex-col"><div class="flex items-center gap-2"><span class="font-label-sm text-label-sm font-bold text-on-surface">10:00 - 12:00</span><span class="px-1.5 py-0.2 bg-primary-container text-on-primary-container rounded text-[10px] font-semibold">Ficha 2598411</span></div><span class="text-[12px] text-on-surface-variant">Renderizado y Postproducción</span></div><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+          </div>
+          <div class="bg-error-container/60 p-2 rounded-lg flex items-center justify-between border-l-4 border-error">
+            <div class="flex flex-col"><div class="flex items-center gap-2"><span class="font-label-sm text-label-sm font-bold text-error">12:00 - 14:00</span><span class="px-1.5 py-0.2 bg-error text-on-error rounded text-[10px] font-bold animate-pulse">CRUCE ACTIVO</span></div><span class="text-[12px] text-on-surface font-semibold">Ficha 2598411 vs Ficha 2712903</span></div><span class="material-symbols-outlined text-error text-[18px]">error</span>
+          </div>
+          <div class="bg-surface p-2 rounded-lg flex items-center justify-between border-l-4 border-inverse-surface">
+            <div class="flex flex-col"><div class="flex items-center gap-2"><span class="font-label-sm text-label-sm font-bold text-on-surface">14:00 - 18:00</span><span class="px-1.5 py-0.2 bg-surface-container-highest text-on-surface-variant rounded text-[10px] font-semibold">Ficha 2712903</span></div><span class="text-[12px] text-on-surface-variant">Frontend · Inst. Mauricio Vega</span></div><span class="material-symbols-outlined text-on-surface-variant text-[18px]">schedule</span>
+          </div>`
+      },
+      '308': {
+        title: 'Lab 308 - Desarrollo High-End',
+        subtitle: 'Laboratorio disponible para Inteligencia Artificial y Cloud',
+        floor: 'Piso 3 · Ala Norte',
+        icon: 'terminal',
+        statusBadge: 'DISPONIBLE',
+        statusBadgeClass: 'bg-primary text-on-primary',
+        hasConflict: false,
+        capacity: '32 Estaciones RTX 4070',
+        equipment: 'Intel Core i9 + 64GB RAM',
+        timeline: `
+          <div class="bg-secondary-container/60 p-3 rounded-lg flex flex-col gap-1 border-l-4 border-primary">
+            <span class="font-label-md text-label-md font-bold text-primary flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[18px]">check_circle</span>
+              Franja Completa Disponible (06:00 - 22:00)
+            </span>
+            <span class="text-[12px] text-on-secondary-container">Listo para recibir reasignación de Ficha 2712903 o clases especiales.</span>
+          </div>`
+      },
+      '302': {
+        title: 'Lab 302 - Base de Datos',
+        subtitle: 'Oracle, PostgreSQL & Cloud Infrastructure',
+        floor: 'Piso 3 · Ala Sur',
+        icon: 'database',
+        statusBadge: 'EN CLASE REGULAR',
+        statusBadgeClass: 'bg-inverse-surface text-inverse-on-surface',
+        hasConflict: false,
+        capacity: '32 Puestos',
+        equipment: 'Intel Core i7 + 32GB RAM',
+        timeline: `
+          <div class="bg-surface p-2 rounded-lg flex items-center justify-between border-l-4 border-primary">
+            <div class="flex flex-col"><span class="font-label-sm text-label-sm font-bold text-on-surface">10:00 - 16:00</span><span class="text-[12px] text-on-surface-variant">Ficha 2670142 · Inst. Liliana Gómez</span></div><span class="material-symbols-outlined text-primary text-[18px]">check_circle</span>
+          </div>`
+      }
+    };
+
+    function selectRoom(roomId) {
+      const room = roomData[roomId] || roomData['308'];
+      
+      document.getElementById('insp-room-title').innerText = room.title;
+      document.getElementById('insp-room-subtitle').innerText = room.subtitle;
+      document.getElementById('insp-floor-label').innerText = room.floor;
+      document.getElementById('insp-room-icon').innerText = room.icon;
+      document.getElementById('insp-capacity').innerText = room.capacity;
+      document.getElementById('insp-equipment').innerText = room.equipment;
+      
+      const badge = document.getElementById('insp-badge-status');
+      badge.className = `px-2 py-0.5 rounded text-[11px] font-bold ${room.statusBadgeClass}`;
+      badge.innerText = room.statusBadge;
+
+      const conflictBox = document.getElementById('insp-conflict-box');
+      if (room.hasConflict) {
+        conflictBox.classList.remove('hidden');
+      } else {
+        conflictBox.classList.add('hidden');
+      }
+
+      document.getElementById('insp-timeline').innerHTML = room.timeline;
+    }
+
+    function resolveConflictQuick() {
+      // Simula reasignar la ficha conflictiva a Lab 308
+      alert('¡Conflicto Resuelto! La Ficha 2712903 ha sido reasignada al Lab 308 (Piso 3, 32 Puestos) para la franja 12:00 - 14:00.');
+      
+      const lab304Card = document.getElementById('card-lab-304');
+      lab304Card.classList.remove('bg-tertiary-fixed/30', 'ring-2', 'ring-tertiary');
+      lab304Card.classList.add('bg-surface-container-lowest');
+      
+      selectRoom('304');
+      document.getElementById('insp-conflict-box').classList.add('hidden');
+      document.getElementById('insp-badge-status').className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-primary text-on-primary';
+      document.getElementById('insp-badge-status').innerText = 'NORMALIZADO';
+    }
+  </script>
+</div></main><footer class="w-full bg-surface-container-lowest py-space-xl shadow-[0_-1px_6px_rgba(0,0,0,0.02)]"><div class="w-full px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-space-md text-on-surface-variant"><div class="flex items-center gap-space-sm"><div class="w-6 h-6 rounded bg-primary flex items-center justify-center text-on-primary text-[12px] font-bold">S</div><span class="font-body-sm text-body-sm">CGMLTI Calle 52 · Regional Distrito Capital · Servicio Nacional de Aprendizaje SENA</span></div><div class="flex items-center gap-space-lg font-label-sm text-label-sm"><span>Mesa de Ayuda Académica</span><span>Términos y Normativa</span><span>Versión 3.8.4</span></div></div></footer></body></html>

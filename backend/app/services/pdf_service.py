@@ -1,3 +1,22 @@
+"""SCRUM-120: exportación a PDF, transversal (horario, ficha, nómina...).
+
+Decisión de arquitectura: ReportLab, no WeasyPrint. ReportLab es pura
+Python sin dependencias nativas de sistema (Cairo/Pango) -- instala sin
+fricción en cualquier máquina de desarrollo del equipo (Windows incluido)
+y en el despliegue de Railway / CI (`.github/workflows/ci.yml`, backend:
+solo `pip install -r requirements.txt`, sin `apt-get`), a diferencia de
+WeasyPrint, que exige librerías nativas de GTK que no siempre están
+disponibles.
+
+`generar` es el armador de documento genérico (título + subtítulo +
+secciones de tabla/texto) -- un único generador reusable en vez de uno
+distinto por pantalla, para que GET /horarios/{id}/pdf,
+GET /fichas/{id}/pdf, GET /usuarios/me/horarios/pdf y cualquier pantalla
+futura (ej. Historial de Horarios) lo reusen sin duplicar la lógica de
+armar el documento. `generar_tabla` es un atajo sobre `generar` para el
+caso más simple (una sola tabla, sin subtítulo ni múltiples secciones).
+"""
+
 from __future__ import annotations
 
 import io
@@ -48,18 +67,17 @@ class PdfService:
 
     Librería: ReportLab, no WeasyPrint. Ambas generan PDF en Python, pero
     WeasyPrint depende de librerías de sistema (Pango/Cairo/GDK-PixBuf)
-    que ni el workflow de CI (`.github/workflows/ci.yml`, backend: solo
-    `pip install -r requirements.txt`, sin `apt-get`) ni el Procfile
-    (`uvicorn` directo, sin buildpack de sistema) instalan hoy —
-    agregarla implicaría tocar ambos pipelines. ReportLab es una librería
-    pura de Python (pip-instalable, sin dependencias de sistema), así que
-    no requiere ningún cambio de infraestructura. Si el equipo prefiere
-    WeasyPrint por su ventaja real (maquetar con HTML/CSS en vez de la
-    API de bajo nivel de ReportLab), es una migración de este único
-    archivo, no de cada endpoint que lo consume."""
+    que ni el workflow de CI ni el Procfile (`uvicorn` directo, sin
+    buildpack de sistema) instalan hoy — agregarla implicaría tocar ambos
+    pipelines. ReportLab es una librería pura de Python (pip-instalable,
+    sin dependencias de sistema), así que no requiere ningún cambio de
+    infraestructura. Si el equipo prefiere WeasyPrint por su ventaja real
+    (maquetar con HTML/CSS en vez de la API de bajo nivel de ReportLab),
+    es una migración de este único archivo, no de cada endpoint que lo
+    consume."""
 
     @staticmethod
-    def generar(*, titulo: str, subtitulo: str, secciones: list[SeccionTabla | SeccionTexto]) -> bytes:
+    def generar(*, titulo: str, subtitulo: str = "", secciones: list[SeccionTabla | SeccionTexto]) -> bytes:
         buffer = io.BytesIO()
         documento = SimpleDocTemplate(
             buffer,
@@ -74,9 +92,10 @@ class PdfService:
         elementos = [
             Paragraph("SENA · Sistema Integrado de Horarios y Sedes (SIHS)", _ESTILO_MARCA),
             Paragraph(titulo, _ESTILO_TITULO),
-            Paragraph(subtitulo, _ESTILO_SUBTITULO),
-            Spacer(1, 0.6 * cm),
         ]
+        if subtitulo:
+            elementos.append(Paragraph(subtitulo, _ESTILO_SUBTITULO))
+        elementos.append(Spacer(1, 0.6 * cm))
 
         for seccion in secciones:
             elementos.append(Paragraph(seccion.titulo, _ESTILO_SECCION))
@@ -114,3 +133,13 @@ class PdfService:
 
         documento.build(elementos)
         return buffer.getvalue()
+
+    @staticmethod
+    def generar_tabla(titulo: str, columnas: list[str], filas: list[list[str]]) -> bytes:
+        """Atajo sobre `generar` para el caso más simple: una sola tabla,
+        sin subtítulo ni secciones adicionales (ej. GET
+        /usuarios/me/horarios/pdf)."""
+        return PdfService.generar(
+            titulo=titulo,
+            secciones=[SeccionTabla(titulo="", encabezados=columnas, filas=filas)],
+        )

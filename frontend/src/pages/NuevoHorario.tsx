@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { HorarioEditor } from '../components/horario/HorarioEditor'
 import type { CatalogosBloque } from '../components/horario/ModalBloque'
 import { ModalCruce } from '../components/horario/ModalCruce'
-import { apiGet, apiPost, ApiError } from '../services/api'
+import { apiDelete, apiGet, apiPost, ApiError } from '../services/api'
 import { BLOQUES, DIAS } from './horario/tipos'
 import type { BloqueClase, GridAsignaciones, Jornada as JornadaGrid } from './horario/tipos'
 import { gridVacio } from './horario/useHorarioState'
@@ -14,9 +14,11 @@ import type {
   Ambiente,
   DiaSemana,
   Ficha,
+  Horario,
   HorarioCreate,
   HorarioDryRunConflict,
   HorarioDryRunResponse,
+  HorarioGuardado,
   Jornada,
   ResultadoAprendizaje,
   Usuario,
@@ -96,6 +98,9 @@ async function validarDryRun(datos: HorarioCreate): Promise<HorarioDryRunRespons
 }
 
 export function NuevoHorario() {
+  const [searchParams] = useSearchParams()
+  const idEditar = searchParams.get('editar')
+
   const [ficha, setFicha] = useState('')
   const [aprendices, setAprendices] = useState('0')
   const [horasTrimestre, setHorasTrimestre] = useState('36')
@@ -107,6 +112,16 @@ export function NuevoHorario() {
 
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null)
   const [errorCatalogos, setErrorCatalogos] = useState<string | null>(null)
+
+  // Modo "Modificar" (?editar=<idHorarioGuardado>, desde Historial de
+  // horarios): precarga ficha/fechas/bloques/grid de ese horario guardado
+  // en vez de arrancar vacío. `datosEdicion` guarda también
+  // idHorarioGuardado/idsHorarios — al guardar, guardarHorario() borra
+  // esas filas viejas antes de crear las nuevas (ver más abajo), así el
+  // horario "editado" queda igual de nuevo que uno creado desde cero.
+  const [datosEdicion, setDatosEdicion] = useState<HorarioGuardado | null>(null)
+  const [cargandoEdicion, setCargandoEdicion] = useState(Boolean(idEditar))
+  const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
 
   // Cuando el dry-run (POST /horarios/validar) encuentra conflictos, se
   // pausa el guardado de ESE bloque y se muestra ModalCruce — el
@@ -132,12 +147,12 @@ export function NuevoHorario() {
     resolverDecisionRef.current = null
   }
 
-  // El grid arranca vacío — a diferencia de la versión anterior (con datos
-  // ficticios), ahora cada bloque de clase se elige de catálogos reales
-  // (ver ModalBloque), así que no hay nada de ejemplo que mostrar hasta que
-  // el coordinador arme el horario.
-  const [{ bloques, grid }] = useState(() => ({ bloques: [] as BloqueClase[], grid: gridVacio() }))
-  const estadoActualRef = useRef<{ bloques: BloqueClase[]; grid: GridAsignaciones }>({ bloques, grid })
+  // bloquesIniciales/gridInicial son de verdad "iniciales": HorarioEditor
+  // los usa como valor de arranque de su propio useHorarioState y después
+  // los ignora (ver useHorarioState.ts) — por eso <HorarioEditor> no se
+  // monta más abajo hasta que cargandoEdicion sea false, si no siempre
+  // arrancaría vacío aunque datosEdicion llegara un instante después.
+  const estadoActualRef = useRef<{ bloques: BloqueClase[]; grid: GridAsignaciones }>({ bloques: [], grid: gridVacio() })
   const capturarEstadoActual = useCallback((estado: { bloques: BloqueClase[]; grid: GridAsignaciones }) => {
     estadoActualRef.current = estado
   }, [])
@@ -166,6 +181,23 @@ export function NuevoHorario() {
             : 'No se pudieron cargar los catálogos (fichas, ambientes, instructores, resultados).',
         )
       })
+
+    if (idEditar) {
+      apiGet<HorarioGuardado>(`/horarios-guardados/${idEditar}`)
+        .then((snapshot) => {
+          setDatosEdicion(snapshot)
+          setFicha(snapshot.ficha)
+          setAprendices(snapshot.aprendices ?? '0')
+          setHorasTrimestre(snapshot.horasTrimestre ?? '36')
+          setFechaInicio(snapshot.fechaInicio ?? '')
+          setFechaFin(snapshot.fechaFin ?? '')
+        })
+        .catch((err: unknown) => {
+          setErrorEdicion(err instanceof ApiError ? err.message : 'No se pudo cargar el horario a modificar.')
+        })
+        .finally(() => setCargandoEdicion(false))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idEditar no cambia en la vida del componente.
   }, [])
 
   async function guardarHorario() {
@@ -174,6 +206,28 @@ export function NuevoHorario() {
     setGuardando(true)
     setErroresGuardar([])
     setMensajeExito(null)
+
+    // Modo edición: se borran primero las clases reales y el snapshot
+    // originales — todo lo de abajo (dry-run, POST /horarios/, POST
+    // /horarios-guardados/) es exactamente el mismo camino que crear desde
+    // cero, así el horario "modificado" queda con fechaCreacion nueva y
+    // sube al tope de Historial, como pidió. Si algún borrado falla (ya no
+    // existe, por ejemplo) no se frena el guardado — mismo criterio de
+    // "mejor esfuerzo" que ya tiene el resto de esta función.
+    if (datosEdicion) {
+      for (const idHorarioViejo of datosEdicion.idsHorarios ?? []) {
+        try {
+          await apiDelete(`/horarios/${idHorarioViejo}`)
+        } catch {
+          // No pasa nada si ya no existía.
+        }
+      }
+      try {
+        await apiDelete(`/horarios-guardados/${datosEdicion.idHorarioGuardado}`)
+      } catch {
+        // Idem.
+      }
+    }
 
     const { bloques: bloquesActuales, grid: gridActual } = estadoActualRef.current
     const grupos = agruparCeldas(gridActual)
@@ -185,6 +239,11 @@ export function NuevoHorario() {
     // sí habían quedado guardadas en `horarios`.
     const gridExitoso: GridAsignaciones = gridVacio()
     const idsBloquesExitosos = new Set<string>()
+    // idHorario real (tabla `horarios`) de cada bloque que sí se creó — se
+    // manda junto con el snapshot para que borrar el "Horario completo" en
+    // Historial de horarios también libere estas clases reales, no solo
+    // el resumen (bug reportado 2026-09-02: quedaban huérfanas).
+    const idsHorariosCreados: number[] = []
 
     for (const grupo of grupos) {
       const bloque = bloquesActuales.find((b) => b.id === grupo.bloqueId)
@@ -240,8 +299,9 @@ export function NuevoHorario() {
       }
 
       try {
-        await apiPost('/horarios/', datos)
+        const horarioCreado = await apiPost<Horario>('/horarios/', datos)
         idsBloquesExitosos.add(grupo.bloqueId)
+        idsHorariosCreados.push(horarioCreado.idHorario)
         for (const diaIdx of grupo.diasIdx) {
           gridExitoso[grupo.bloqueIdx][diaIdx] = grupo.bloqueId
         }
@@ -273,6 +333,7 @@ export function NuevoHorario() {
           fechaFin: fechaFin || null,
           bloques: bloquesActuales.filter((b) => idsBloquesExitosos.has(b.id)),
           grid: gridExitoso,
+          idsHorarios: idsHorariosCreados,
         })
       } catch (err) {
         // Las clases reales ya quedaron creadas — esto solo afecta al
@@ -284,7 +345,9 @@ export function NuevoHorario() {
           }`,
         )
       }
-      setMensajeExito(`${creados} clase${creados === 1 ? '' : 's'} guardada${creados === 1 ? '' : 's'} sin cruces.`)
+      setMensajeExito(
+        `${creados} clase${creados === 1 ? '' : 's'} ${datosEdicion ? 'guardada' : 'creada'}${creados === 1 ? '' : 's'} sin cruces.`,
+      )
     }
 
     setErroresGuardar(errores)
@@ -293,20 +356,38 @@ export function NuevoHorario() {
 
   return (
     <AppShell activo="Horarios">
+      <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant print:hidden">
+        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <span className="text-outline">/</span>
+        <span className="font-semibold text-primary">Constructor de Horarios</span>
+      </nav>
+
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Nuevo horario</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Define un bloque de clase eligiendo de los catálogos reales y reutilízalo en el grid —
-            al guardar, el sistema revisa cruces de ficha, instructor, ambiente y resultado
-            repetido antes de crear cada clase.
+          <div className="mb-1 flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold text-on-surface dark:text-slate-100">
+              {datosEdicion ? 'Modificar horario' : 'Constructor de Horarios'}
+            </h1>
+            <span className="rounded-full bg-secondary-container px-2.5 py-0.5 text-[11px] font-semibold text-on-secondary-container">
+              {datosEdicion ? 'Modo edición' : 'Nuevo horario'}
+            </span>
+          </div>
+          <p className="text-sm text-on-surface-variant dark:text-slate-400">
+            {datosEdicion
+              ? 'Edita los bloques de este horario completo y guarda — reemplaza las clases originales por las que queden acá, con fecha de creación nueva.'
+              : 'Define un bloque de clase eligiendo de los catálogos reales y reutilízalo en el grid — al guardar, el sistema revisa cruces de ficha, instructor, ambiente y resultado repetido antes de crear cada clase.'}
           </p>
+          {catalogos && (
+            <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
+              {catalogos.fichas.length} fichas · {catalogos.instructores.length} instructores · {catalogos.ambientes.length} ambientes disponibles
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-3 print:hidden">
           <Link
-            to="/dashboard"
-            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+            to={datosEdicion ? '/horarios/historial' : '/dashboard'}
+            className="rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             Cancelar
           </Link>
@@ -314,23 +395,29 @@ export function NuevoHorario() {
           <button
             type="button"
             onClick={() => void guardarHorario()}
-            disabled={guardando || !catalogos}
-            title={!catalogos ? 'Cargando catálogos…' : undefined}
-            className="rounded-lg bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={guardando || !catalogos || cargandoEdicion}
+            title={!catalogos ? 'Cargando catálogos…' : cargandoEdicion ? 'Cargando horario a modificar…' : undefined}
+            className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {guardando ? 'Guardando…' : 'Guardar horario'}
+            {guardando ? 'Guardando…' : datosEdicion ? 'Guardar cambios' : 'Guardar horario'}
           </button>
         </div>
       </div>
 
       {errorCatalogos && (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
+        <p className="mb-4 rounded-xl border border-error/30 bg-error-container px-3 py-2 text-sm text-on-error-container print:hidden dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
           {errorCatalogos}
         </p>
       )}
 
+      {errorEdicion && (
+        <p className="mb-4 rounded-xl border border-error/30 bg-error-container px-3 py-2 text-sm text-on-error-container print:hidden dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
+          {errorEdicion}
+        </p>
+      )}
+
       {erroresGuardar.length > 0 && (
-        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden">
+        <div className="mb-4 rounded-xl border border-error/30 bg-error-container px-3 py-2 text-sm text-on-error-container print:hidden dark:border-red-800 dark:bg-red-950/40 dark:text-red-300">
           <p className="mb-1 font-semibold">El sistema encontró cruces — esto no se guardó:</p>
           <ul className="list-disc space-y-0.5 pl-5">
             {erroresGuardar.map((e) => (
@@ -341,82 +428,157 @@ export function NuevoHorario() {
       )}
 
       {mensajeExito && (
-        <p className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 print:hidden">
+        <p className="mb-4 rounded-xl border border-primary/30 bg-primary-container px-3 py-2 text-sm text-on-primary-container print:hidden dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300">
           {mensajeExito}
         </p>
       )}
 
-      <div className="mb-6 grid gap-4 rounded-xl border border-slate-200 bg-white p-5 sm:grid-cols-4 dark:border-slate-700 dark:bg-slate-800">
-        <Campo etiqueta="Ficha (referencia del formulario)">
-          <input
-            value={ficha}
-            onChange={(e) => setFicha(e.target.value)}
-            placeholder="Ej. 3228973 B"
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-          />
-        </Campo>
-        <Campo etiqueta="Aprendices en formación a la fecha">
-          <input
-            value={aprendices}
-            onChange={(e) => setAprendices(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-          />
-        </Campo>
-        <Campo etiqueta="Horas asignadas trimestre">
-          <input
-            value={horasTrimestre}
-            onChange={(e) => setHorasTrimestre(e.target.value)}
-            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-          />
-        </Campo>
-        <Campo etiqueta="Inicio / fin de trimestre">
-          <div className="flex items-center gap-1.5">
-            <input
-              type="date"
-              value={fechaInicio}
-              onChange={(e) => setFechaInicio(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            />
-            <input
-              type="date"
-              value={fechaFin}
-              onChange={(e) => setFechaFin(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            />
+      <div className="grid gap-4 xl:grid-cols-[1fr_280px]">
+        <div className="min-w-0">
+          <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+            <Campo etiqueta="Ficha (referencia del formulario)">
+              <input
+                value={ficha}
+                onChange={(e) => setFicha(e.target.value)}
+                placeholder="Ej. 3228973 B"
+                className="w-40 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              />
+            </Campo>
+            <Campo etiqueta="Aprendices en formación a la fecha">
+              <input
+                value={aprendices}
+                onChange={(e) => setAprendices(e.target.value)}
+                className="w-24 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              />
+            </Campo>
+            <Campo etiqueta="Horas asignadas trimestre">
+              <input
+                value={horasTrimestre}
+                onChange={(e) => setHorasTrimestre(e.target.value)}
+                className="w-24 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+              />
+            </Campo>
+            <Campo etiqueta="Inicio / fin de trimestre">
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="date"
+                  value={fechaInicio}
+                  onChange={(e) => setFechaInicio(e.target.value)}
+                  className="rounded-xl border border-outline-variant bg-surface-container-lowest px-2 py-2 text-xs text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                />
+                <input
+                  type="date"
+                  value={fechaFin}
+                  onChange={(e) => setFechaFin(e.target.value)}
+                  className="rounded-xl border border-outline-variant bg-surface-container-lowest px-2 py-2 text-xs text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                />
+              </div>
+            </Campo>
           </div>
-        </Campo>
-      </div>
 
-      <div className="mb-6">
-        {catalogos ? (
-          <HorarioEditor
-            bloquesIniciales={bloques}
-            gridInicial={grid}
-            onCambiarEstado={capturarEstadoActual}
-            catalogos={catalogos}
-          />
-        ) : (
-          !errorCatalogos && <p className="text-sm text-slate-500">Cargando catálogos…</p>
-        )}
-      </div>
+          {catalogos && !cargandoEdicion ? (
+            <HorarioEditor
+              bloquesIniciales={datosEdicion?.bloques ?? []}
+              gridInicial={datosEdicion?.grid ?? gridVacio()}
+              onCambiarEstado={capturarEstadoActual}
+              catalogos={catalogos}
+            />
+          ) : (
+            !errorCatalogos && !errorEdicion && <p className="text-sm text-on-surface-variant">Cargando…</p>
+          )}
+        </div>
 
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-5 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-        <p className="mb-2 font-semibold text-slate-900 dark:text-slate-100">Dirección sede principal y sedes</p>
-        <ul className="space-y-0.5">
-          {SEDES.map((sede) => (
-            <li key={sede.nombre}>
-              <span className="font-medium text-slate-700 dark:text-slate-300">{sede.nombre}:</span> {sede.direccion}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-3 text-xs text-slate-500 print:hidden dark:text-slate-400">
-          Plantilla base:{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">
-            _Docs/Diseño/plantillas-institucionales/disponibilidad-ficha-3228973B.pdf
-          </code>
-          . Reglas de color/tipografía en{' '}
-          <code className="rounded bg-slate-100 px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">_Docs/Diseño/GUIA_DE_MARCA.md</code>.
-        </p>
+        <aside className="flex flex-col gap-4 print:hidden">
+          <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
+            <div className="flex items-center gap-2 border-b border-outline-variant bg-error-container/40 px-4 py-3 dark:border-slate-700 dark:bg-red-950/20">
+              <span className="material-symbols-outlined text-[18px] text-error dark:text-red-400">shield</span>
+              <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Auditoría en Tiempo Real</p>
+            </div>
+            <div className="p-4">
+              <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
+                Consulta los cruces ya detectados entre horarios guardados de la sede antes de programar más clases —
+                mismas 5 categorías del motor real: cruce de ficha, instructor, ambiente, resultado repetido y regla
+                institucional (RF-011).
+              </p>
+              <Link
+                to="/horarios/auditoria"
+                className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-on-primary-container"
+              >
+                Ver auditoría de cruces →
+              </Link>
+            </div>
+          </div>
+
+          {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
+              real del backend. No existe un motor de sugerencias algorítmicas
+              ni un endpoint de ocupación agregada por sede: los textos y el
+              87.4% de acá son de vitrina, tal como los muestra el mockup
+              constructor_de_horarios_sihs_sena. No usar como si fuera
+              dinámico sin agregar el fetch/campo correspondiente primero. */}
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-xs font-bold uppercase tracking-wide text-on-surface dark:text-slate-100">Sugerencias del Sistema</p>
+              <span className="material-symbols-outlined text-[16px] text-primary" aria-hidden="true">auto_awesome</span>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="rounded-lg bg-surface p-2 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-xs font-bold text-primary">
+                    <span className="material-symbols-outlined text-[14px]" aria-hidden="true">bolt</span>
+                    Capacidad Óptima
+                  </span>
+                  <span className="font-mono text-[10px] text-on-surface-variant dark:text-slate-400">+15% eficiencia</span>
+                </div>
+                <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
+                  Mover Ficha 2689104 al Lab 306 permite liberar 12 puestos subutilizados en Bloque Mañana.
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-surface p-2 dark:bg-slate-900/60">
+                <div className="flex items-center justify-between">
+                  <span className="flex items-center gap-1 text-xs font-bold text-tertiary">
+                    <span className="material-symbols-outlined text-[14px]" aria-hidden="true">timelapse</span>
+                    Ventana de Docente
+                  </span>
+                  <span className="font-mono text-[10px] text-on-surface-variant dark:text-slate-400">Sin huecos</span>
+                </div>
+                <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
+                  Compactar franja de Ing. Sonia Méndez para evitar 2 horas muertas el día Miércoles.
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between rounded-lg bg-secondary-container/50 p-2">
+                <div className="flex flex-col">
+                  <span className="text-xs font-semibold text-on-secondary-container">Ocupación Sede Calle 52</span>
+                  <span className="text-lg font-bold text-primary">87.4%</span>
+                </div>
+                <svg className="h-8 w-20 text-primary" fill="none" viewBox="0 0 100 30" aria-hidden="true">
+                  <path d="M0 25 L20 18 L40 22 L60 8 L80 14 L100 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+            <p className="mb-2 font-semibold text-on-surface dark:text-slate-100">Dirección sede principal y sedes</p>
+            <ul className="space-y-0.5">
+              {SEDES.map((sede) => (
+                <li key={sede.nombre}>
+                  <span className="font-medium text-on-surface-variant dark:text-slate-300">{sede.nombre}:</span> {sede.direccion}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-xs text-on-surface-variant dark:text-slate-400">
+              Plantilla base:{' '}
+              <code className="rounded bg-surface-container px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">
+                _Docs/Diseño/plantillas-institucionales/disponibilidad-ficha-3228973B.pdf
+              </code>
+              . Reglas de color/tipografía en{' '}
+              <code className="rounded bg-surface-container px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">_Docs/Diseño/GUIA_DE_MARCA.md</code>.
+            </p>
+          </div>
+        </aside>
       </div>
 
       {conflictoPendiente && (
@@ -434,7 +596,7 @@ export function NuevoHorario() {
 function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-on-surface-variant">
         {etiqueta}
       </span>
       {children}

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import { renderConProviders } from '../test/renderConProviders'
 import { AppShell } from './AppShell'
-import type { Usuario } from '../types/api'
+import type { Notificacion, Usuario } from '../types/api'
 
 const apiGetMock = vi.fn()
 vi.mock('../services/api', () => ({
@@ -22,45 +22,90 @@ function crearPerfil(roles: string[]): Usuario {
   }
 }
 
+/** apiGet lo llama AppShell tanto para el perfil (`/usuarios/me`) como
+ * para las notificaciones (`/notificaciones/`) -- discrimina por el
+ * primer argumento para no devolver el perfil donde se espera un array. */
+function mockearApiGet(perfil: Usuario, notificaciones: Notificacion[] = []) {
+  apiGetMock.mockImplementation((ruta: string) => {
+    if (ruta === '/notificaciones/') return Promise.resolve(notificaciones)
+    return Promise.resolve(perfil)
+  })
+}
+
 describe('AppShell', () => {
-  it('un Aprendiz ve el grupo "MI TRABAJO" con sus 4 pantallas, sin duplicarlas en "GESTIÓN"', async () => {
-    apiGetMock.mockResolvedValue(crearPerfil(['Aprendiz']))
+  it('un Aprendiz ve el grupo "Mi trabajo" con sus 4 pantallas, en un desplegable propio del navbar', async () => {
+    mockearApiGet(crearPerfil(['Aprendiz']))
     renderConProviders(
       <AppShell activo="Inicio">
         <p>contenido</p>
       </AppShell>,
     )
 
-    expect(await screen.findByText('MI TRABAJO')).toBeInTheDocument()
+    const botonGrupo = await screen.findByRole('button', { name: 'Mi trabajo' })
+    fireEvent.click(botonGrupo)
 
-    const asideElementos = document.querySelectorAll('aside nav')
-    const grupoTrabajo = within(asideElementos[0] as HTMLElement)
-    const grupoGestion = within(asideElementos[1] as HTMLElement)
-
-    for (const etiqueta of ['Mi Horario', 'Mensajes Docentes', 'Avisos y Eventos', 'Notificaciones']) {
-      expect(grupoTrabajo.getByText(etiqueta)).toBeInTheDocument()
-      expect(grupoGestion.queryByText(etiqueta)).not.toBeInTheDocument()
+    for (const etiqueta of ['Mi horario', 'Mensajes Docentes', 'Notificaciones', 'Avisos y Eventos']) {
+      expect(screen.getByText(etiqueta)).toBeInTheDocument()
     }
   })
 
-  it('un Coordinador no ve el grupo "MI TRABAJO" ni las pantallas exclusivas de Aprendiz, pero sí Avisos y Eventos', async () => {
-    apiGetMock.mockResolvedValue(crearPerfil(['Coordinador']))
+  it('un Instructor ve "Mi horario" plano en el navbar (un solo ítem no abre desplegable)', async () => {
+    mockearApiGet(crearPerfil(['Instructor']))
     renderConProviders(
       <AppShell activo="Inicio">
         <p>contenido</p>
       </AppShell>,
     )
 
-    await screen.findByText('GESTIÓN')
+    expect(await screen.findByText('Mi horario')).toBeInTheDocument()
+    // Un solo ítem en el grupo -> se renderiza como link plano, sin botón
+    // de desplegable "Mi trabajo".
+    expect(screen.queryByRole('button', { name: 'Mi trabajo' })).not.toBeInTheDocument()
+  })
 
-    expect(screen.queryByText('MI TRABAJO')).not.toBeInTheDocument()
-    // Mi Horario/Mensajes Docentes/Notificaciones son exclusivas de
-    // Aprendiz (SOLO_APRENDIZ) -- ocultas por completo para otros roles.
-    expect(screen.queryByText('Mi Horario')).not.toBeInTheDocument()
+  it('un Coordinador no ve el grupo "Mi trabajo" ni sus pantallas exclusivas de Aprendiz/Instructor', async () => {
+    mockearApiGet(crearPerfil(['Coordinador']))
+    renderConProviders(
+      <AppShell activo="Inicio">
+        <p>contenido</p>
+      </AppShell>,
+    )
+
+    await screen.findByRole('button', { name: 'Programación' })
+
+    expect(screen.queryByRole('button', { name: 'Mi trabajo' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Mi horario')).not.toBeInTheDocument()
     expect(screen.queryByText('Mensajes Docentes')).not.toBeInTheDocument()
-    expect(screen.queryByText('Notificaciones')).not.toBeInTheDocument()
-    // Avisos y Eventos no está en SOLO_APRENDIZ -- sigue visible para
-    // cualquier rol en la lista general.
-    expect(screen.getByText('Avisos y Eventos')).toBeInTheDocument()
+    // "Notificaciones" (Centro de Notificaciones del Aprendiz) y "Avisos y
+    // Eventos" son exclusivas de Aprendiz -- ocultas para Coordinador.
+    expect(screen.queryByText('Avisos y Eventos')).not.toBeInTheDocument()
+  })
+
+  it('un Administrador ve "Solicitudes de acceso" dentro de Administración', async () => {
+    mockearApiGet(crearPerfil(['Administrador']))
+    renderConProviders(
+      <AppShell activo="Inicio">
+        <p>contenido</p>
+      </AppShell>,
+    )
+
+    const botonGrupo = await screen.findByRole('button', { name: 'Administración' })
+    fireEvent.click(botonGrupo)
+
+    expect(screen.getByText('Solicitudes de acceso')).toBeInTheDocument()
+  })
+
+  it('un Coordinador no ve "Solicitudes de acceso" (soloAdmin)', async () => {
+    mockearApiGet(crearPerfil(['Coordinador']))
+    renderConProviders(
+      <AppShell activo="Inicio">
+        <p>contenido</p>
+      </AppShell>,
+    )
+
+    const botonGrupo = await screen.findByRole('button', { name: 'Administración' })
+    fireEvent.click(botonGrupo)
+
+    expect(screen.queryByText('Solicitudes de acceso')).not.toBeInTheDocument()
   })
 })

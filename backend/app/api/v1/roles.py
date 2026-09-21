@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import require_admin
+from app.core.supabase_auth import require_admin, require_lectura_catalogo
 from app.schemas.rol import RolCreate, RolResponse, RolUpdate
 from app.services.rol_service import RolService
 
@@ -21,7 +21,7 @@ def crear_rol(
 @router.get("/", response_model=list[RolResponse])
 def obtener_roles(
     db: Session = Depends(get_db),
-    usuario=Depends(require_admin),
+    usuario=Depends(require_lectura_catalogo),
 ):
     return RolService.obtener_todos(db)
 
@@ -30,7 +30,7 @@ def obtener_roles(
 def obtener_rol(
     id_rol: int,
     db: Session = Depends(get_db),
-    usuario=Depends(require_admin),
+    usuario=Depends(require_lectura_catalogo),
 ):
     rol = RolService.obtener_por_id(db, id_rol)
 

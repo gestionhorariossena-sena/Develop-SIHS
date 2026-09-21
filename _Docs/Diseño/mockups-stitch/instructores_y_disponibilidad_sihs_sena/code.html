@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Hanken+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-container-high": "#e2e7ff", "primary": "#006b2c", "tertiary-fixed": "#ffdcc3", "surface-dim": "#d2d9f4", "surface-container-highest": "#dae2fd", "surface": "#f8fafc", "on-secondary-fixed": "#052100", "secondary-container": "#eaf7ec", "primary-fixed-dim": "#62df7d", "secondary-fixed-dim": "#6fdf43", "on-error-container": "#93000a", "on-tertiary": "#ffffff", "on-error": "#ffffff", "tertiary": "#8d4b00", "tertiary-container": "#b15f00", "on-tertiary-fixed": "#2f1500", "on-primary-fixed-variant": "#005320", "primary-fixed": "#7ffc97", "outline": "#cbd5e1", "surface-variant": "#dae2fd", "on-tertiary-container": "#92400e", "surface-container-low": "#f2f3ff", "background": "#faf8ff", "surface-tint": "#006e2d", "inverse-on-surface": "#eef0ff", "on-primary-fixed": "#002109", "surface-bright": "#faf8ff", "secondary-fixed": "#8afd5d", "primary-container": "#dcfce7", "on-secondary-container": "#257400", "surface-container-lowest": "#ffffff", "inverse-primary": "#62df7d", "error-container": "#fee2e2", "on-tertiary-fixed-variant": "#6e3900", "on-surface-variant": "#3e4a3d", "inverse-surface": "#1e293b", "on-secondary-fixed-variant": "#185200", "tertiary-fixed-dim": "#ffb77d", "outline-variant": "#bdcaba", "on-primary-container": "#14532d", "surface-container": "#e2e8f0", "on-primary": "#ffffff", "on-secondary": "#ffffff", "secondary": "#226d00", "on-surface": "#131b2e", "on-background": "#131b2e", "error": "#dc2626" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-base": "1rem", "space-3xl": "3rem", "space-2xl": "2rem", "space-2xs": "0.125rem", "gutter": "1rem", "space-xs": "0.25rem", "space-md": "0.75rem", "space-lg": "1.25rem", "space-xl": "1.5rem", "space-sm": "0.5rem", "margin-mobile": "1rem", "margin-desktop": "1.5rem" }, "fontFamily": { "headline-sm": [ "Hanken Grotesk" ], "body-sm": [ "Geist" ], "body-md": [ "Geist" ], "body-lg": [ "Geist" ], "display-lg": [ "Hanken Grotesk" ], "label-md": [ "Geist" ], "label-sm": [ "Geist" ], "headline-lg": [ "Hanken Grotesk" ], "headline-md": [ "Hanken Grotesk" ] }, "fontSize": { "headline-sm": [ "16px", { "lineHeight": "24px", "fontWeight": "600" } ], "body-sm": [ "12px", { "lineHeight": "16px", "fontWeight": "400" } ], "body-md": [ "13px", { "lineHeight": "18px", "fontWeight": "400" } ], "body-lg": [ "15px", { "lineHeight": "22px", "fontWeight": "400" } ], "display-lg": [ "28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "label-md": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" } ], "label-sm": [ "11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" } ], "headline-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" } ], "headline-md": [ "20px", { "lineHeight": "28px", "fontWeight": "600" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 w-full px-margin-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md shrink-0"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm"><span class="font-headline-sm text-headline-sm text-on-primary font-bold tracking-tight">S</span></div><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-primary leading-tight font-bold tracking-tight">SENA</span><span class="font-headline-sm text-headline-sm text-on-surface leading-tight font-semibold">SIHS</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">CGMLTI Calle 52</span></div></div><div class="hidden xl:flex items-center gap-space-xs bg-secondary-container px-space-sm py-space-2xs rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span><span class="font-label-sm text-label-sm text-on-secondary-container font-medium">Trimestre II · Sincronizado</span></div></div><div class="hidden lg:flex items-center justify-center flex-1"><nav class="flex items-center gap-space-2xs bg-surface p-space-2xs rounded-full shadow-[0_1px_4px_rgba(15,23,42,0.04)]" data-active-classes="bg-primary-container text-on-primary-container font-bold shadow-xs"><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="dashboard" href="#">Dashboard</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="mi-horario" href="#">Mi Horario</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all flex items-center gap-space-xs" data-path="constructor" href="#"><span>Constructor</span><span class="bg-secondary-container text-on-secondary-container text-[10px] px-space-xs py-0.5 rounded-full font-bold">Ágil</span></a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="fichas" href="#">Fichas</a><a aria-current="page" class="px-space-md py-space-xs rounded-full transition-all bg-primary-container text-on-primary-container font-bold shadow-xs" data-path="instructores" href="#">Instructores</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="ambientes" href="#">Ambientes</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all flex items-center gap-space-xs" data-path="solicitudes" href="#"><span>Solicitudes</span><span class="bg-error-container text-on-error-container text-[10px] px-1.5 py-0.5 rounded-full font-bold">4</span></a></nav></div><div class="flex items-center gap-space-sm shrink-0"><div class="relative hidden md:flex items-center"><span class="material-symbols-outlined absolute left-space-sm text-on-surface-variant text-[18px]">search</span><input class="w-48 xl:w-56 h-9 pl-8 pr-12 rounded-xl bg-surface text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md focus:outline-none focus:bg-surface-container-lowest shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-all" placeholder="Buscar fichas, sedes..." type="text"/><div class="absolute right-space-sm flex items-center pointer-events-none"><kbd class="bg-surface-container px-space-xs py-0.5 rounded text-[10px] font-mono text-on-surface-variant">⌘K</kbd></div></div><button aria-label="Notificaciones" class="relative w-9 h-9 rounded-xl bg-surface flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all shadow-[0_1px_3px_rgba(0,0,0,0.03)]"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-tertiary ring-2 ring-surface-container-lowest"></span></button><button class="hidden sm:inline-flex items-center gap-space-xs bg-primary text-on-primary hover:bg-on-primary-container px-space-md h-9 rounded-xl font-label-md text-label-md shadow-xs transition-all"><span class="material-symbols-outlined text-[18px]">add</span><span>Nuevo Horario</span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="hidden xl:flex flex-col text-right"><span class="font-label-md text-label-md text-on-surface leading-snug">Ing. M. Hernández</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Coordinación</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="w-full pt-16 bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_60%,_#faf8ff_100%)] min-h-screen"><div class="flex flex-col w-full">
+<div class="w-full px-margin-desktop py-space-xl flex flex-col gap-space-xl">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<a class="hover:text-primary transition-colors" href="#">Dashboard</a>
+<span>/</span>
+<span class="text-primary font-semibold">Instructores</span>
+<span class="mx-space-xs bg-secondary-container text-on-secondary-container px-space-xs py-0.5 rounded-full font-bold">Trimestre II - 2025</span>
+</div>
+<div class="flex items-baseline gap-space-sm">
+<h1 class="font-display-lg text-display-lg text-on-surface tracking-tight">Directorio y Disponibilidad</h1>
+<span class="text-on-surface-variant font-body-sm text-body-sm hidden sm:inline">| CGMLTI Regional Distrito Capital</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm self-start md:self-auto">
+<button class="inline-flex items-center gap-space-xs bg-surface-container-lowest text-on-surface hover:bg-surface-container-high px-space-md h-9 rounded-xl font-label-md text-label-md shadow-sm transition-all">
+<span class="material-symbols-outlined text-[18px] text-on-surface-variant">file_download</span>
+<span>Exportar Carga Docente</span>
+</button>
+<button class="inline-flex items-center gap-space-xs bg-primary text-on-primary hover:bg-on-primary-container px-space-md h-9 rounded-xl font-label-md text-label-md shadow-sm transition-all">
+<span class="material-symbols-outlined text-[18px]">person_add</span>
+<span>+ Registrar Instructor</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Total Instructores</span>
+<span class="w-8 h-8 rounded-lg bg-surface-container-high flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">badge</span>
+</span>
+</div>
+<div class="my-space-md flex items-baseline gap-space-sm">
+<span class="font-display-lg text-display-lg font-bold text-on-surface">92</span>
+<span class="text-on-surface-variant font-body-sm text-body-sm">docentes</span>
+</div>
+<div class="flex items-center gap-space-xs text-primary font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+<span class="font-semibold">+3 este trimestre</span>
+<span class="text-on-surface-variant font-normal">(95.6% activos)</span>
+</div>
+<div class="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-primary-container/20 pointer-events-none group-hover:scale-125 transition-transform duration-500"></div>
+</div>
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Con Carga Completa</span>
+<span class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</span>
+</div>
+<div class="my-space-md flex items-baseline gap-space-sm">
+<span class="font-display-lg text-display-lg font-bold text-on-surface">86</span>
+<span class="text-on-primary-container bg-primary-container font-label-sm text-label-sm px-space-xs py-0.5 rounded-full font-bold">93.4% asignados</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-full rounded-full transition-all duration-700" style="width: 93.4%"></div>
+</div>
+<div class="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-secondary-container/30 pointer-events-none group-hover:scale-125 transition-transform duration-500"></div>
+</div>
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Disponibles Asignación</span>
+<span class="w-8 h-8 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-[18px]">event_available</span>
+</span>
+</div>
+<div class="my-space-md flex items-baseline gap-space-sm">
+<span class="font-display-lg text-display-lg font-bold text-secondary">6</span>
+<span class="text-on-surface-variant font-body-sm text-body-sm">con cupo horario</span>
+</div>
+<div class="flex items-center gap-space-xs text-on-secondary-container font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
+<span>Listos para cubrir franjas libres</span>
+</div>
+<div class="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-secondary-fixed/20 pointer-events-none group-hover:scale-125 transition-transform duration-500"></div>
+</div>
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between relative overflow-hidden group">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Horas Semanales Totales</span>
+<span class="w-8 h-8 rounded-lg bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+</span>
+</div>
+<div class="my-space-md flex items-baseline gap-space-sm">
+<span class="font-display-lg text-display-lg font-bold text-on-surface">3,450</span>
+<span class="text-on-surface-variant font-body-sm text-body-sm">hrs / semana</span>
+</div>
+<div class="flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span>Meta: 3,680 hrs</span>
+<span class="font-semibold text-primary">Capacidad 93.7%</span>
+</div>
+<div class="absolute -bottom-6 -right-6 w-20 h-20 rounded-full bg-tertiary-fixed/30 pointer-events-none group-hover:scale-125 transition-transform duration-500"></div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col lg:flex-row gap-space-md items-stretch lg:items-center justify-between">
+<div class="relative flex-1 min-w-[280px]">
+<span class="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full h-10 pl-10 pr-space-md rounded-xl bg-surface text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md focus:outline-none focus:bg-surface-container-lowest shadow-sm transition-all" id="searchInput" placeholder="Buscar por nombre, documento de identidad o especialidad..." type="text"/>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm">
+<div class="flex items-center bg-surface px-space-sm rounded-xl shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant mr-1">category</span>
+<select class="bg-transparent text-on-surface font-label-md text-label-md h-10 focus:outline-none pr-space-sm cursor-pointer" id="filterArea">
+<option value="all">Todas las Áreas</option>
+<option value="sistemas">Sistemas &amp; Software (ADSO)</option>
+<option value="redes">Redes &amp; Infraestructura Cisco</option>
+<option value="multimedia">Animación &amp; Multimedia</option>
+<option value="logistica">Logística &amp; Cadena</option>
+<option value="bilinguismo">Bilingüismo</option>
+<option value="transversales">Transversales</option>
+</select>
+</div>
+<div class="flex items-center bg-surface px-space-sm rounded-xl shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant mr-1">contract</span>
+<select class="bg-transparent text-on-surface font-label-md text-label-md h-10 focus:outline-none pr-space-sm cursor-pointer" id="filterVinculacion">
+<option value="all">Vinculación (Todas)</option>
+<option value="planta">Carrera Administrativa / Planta</option>
+<option value="contratista">Contratista</option>
+</select>
+</div>
+<div class="flex items-center bg-surface px-space-sm rounded-xl shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant mr-1">wb_twilight</span>
+<select class="bg-transparent text-on-surface font-label-md text-label-md h-10 focus:outline-none pr-space-sm cursor-pointer" id="filterTurno">
+<option value="all">Jornada (Todas)</option>
+<option value="diurna">Diurna (06:00 - 12:00)</option>
+<option value="tarde">Tarde (12:00 - 18:00)</option>
+<option value="nocturna">Nocturna (18:00 - 22:00)</option>
+</select>
+</div>
+<button class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high shadow-sm transition-all" id="resetFilters" title="Limpiar filtros">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+</button>
+</div>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<div class="lg:col-span-7 bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="p-space-md px-space-lg flex items-center justify-between bg-surface-container-low/60">
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-headline-sm text-on-surface">Listado de Docentes</span>
+<span class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-2 py-0.5 rounded-full font-bold">6 seleccionados</span>
+</div>
+<div class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+<span>Ordenar por:</span>
+<span class="font-semibold text-primary cursor-pointer hover:underline">Mayor Asignación</span>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left font-body-md text-body-md">
+<thead>
+<tr class="bg-surface-container-low/40 text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-space-sm px-space-md">Instructor</th>
+<th class="py-space-sm px-space-sm">Área / Línea</th>
+<th class="py-space-sm px-space-sm min-w-[140px]">Carga Horaria</th>
+<th class="py-space-sm px-space-sm">Jornada</th>
+<th class="py-space-sm px-space-sm">Vinculación</th>
+<th class="py-space-sm px-space-sm text-center">Fichas</th>
+<th class="py-space-sm px-space-sm text-right pr-space-md">Acción</th>
+</tr>
+</thead>
+<tbody class="text-on-surface divide-y divide-transparent" id="instructorTableBody">
+<tr class="instructor-row bg-secondary-container/40 hover:bg-secondary-container/60 cursor-pointer transition-colors" data-id="1">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover shadow-xs" data-alt="Professional headshot of male senior software engineering professor, friendly expression, clean corporate lighting in modern university campus" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1drPAiGVfnE-uYugVkTQUSR9FwngiFj75gfFkzx3HbbXgCL4Szdul4tss5vORh0JKroTMDzRUeqj1ka896zV_1Dd78Jy_70ESGiWhVmeciERaT7h4rGKYc2XAkErl6tJ7DxBnFkxKcsxRNcPSZ0pP9Mf1IC4xOI5HNOpGHxnZ-4Ii2CbgIL544ZzSQwIgj-wi0P7A6y4k3TobMQg4xDtVcyj23RthetQcCiOEa9AKmVvqmvFBdPnh"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-surface-container-lowest"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Ing. Carlos Morales</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CC 79.845.120</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="font-label-md text-label-md font-semibold text-primary">ADSO &amp; Cloud</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Arquitectura Microservicios</p>
+</td>
+<td class="py-space-md px-space-sm">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-sm text-label-sm">
+<span class="font-bold text-on-surface">38 / 40h</span>
+<span class="text-primary font-bold">95%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 95%"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-surface-container px-space-xs py-0.5 rounded text-[11px] font-medium text-on-surface-variant">Diurna</span>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold">Planta</span>
+</td>
+<td class="py-space-md px-space-sm text-center">
+<span class="font-label-md text-label-md font-bold px-2 py-0.5 bg-surface-container-high rounded-full">2</span>
+</td>
+<td class="py-space-md px-space-sm text-right pr-space-md">
+<button class="w-8 h-8 rounded-lg bg-surface hover:bg-surface-container text-primary flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</td>
+</tr>
+<tr class="instructor-row hover:bg-surface-container-low/50 cursor-pointer transition-colors" data-id="2">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover shadow-xs" data-alt="Portrait of young female 3D design and digital animation teacher wearing glasses, natural warm lighting, sleek modern media laboratory background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj2lKXJ9l3JaoZGJylElyBNJolTaY9q4QCBjT7QozX6woJYAtcXr8w430aiqaug1W8uzLQ16k8vKjLrmpfmWT9Yqm0GV2KGEFgqLE8mdGxEPlXDoryZIcHSQXr64hE3OXWr9L8haed-bxh1S5eHfHhMPwdhtgxjLw_2hdFKQDSU9BcXWgwlHIi7NQkNxJC4t2LnYcbeKf2bG3MCbnrJYRBFxAMSUP_xOJ_Y2BrCJdfxhy4tkp6wBS_"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-error ring-2 ring-surface-container-lowest"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Lic. Diana C. Prieto</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CC 52.341.902</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="font-label-md text-label-md font-semibold text-tertiary">Animación 3D</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Modelado &amp; Render</p>
+</td>
+<td class="py-space-md px-space-sm">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-sm text-label-sm">
+<span class="font-bold text-error">40 / 40h</span>
+<span class="text-error font-bold">100%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-error h-full rounded-full" style="width: 100%"></div>
+</div>
+<span class="text-[10px] text-error font-semibold flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]">warning</span> Cruce Lab 304
+                    </span>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-surface-container px-space-xs py-0.5 rounded text-[11px] font-medium text-on-surface-variant">Tarde</span>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-surface-container-high text-on-surface px-2 py-0.5 rounded-full font-label-sm text-label-sm">Contrato</span>
+</td>
+<td class="py-space-md px-space-sm text-center">
+<span class="font-label-md text-label-md font-bold px-2 py-0.5 bg-surface-container-high rounded-full">2</span>
+</td>
+<td class="py-space-md px-space-sm text-right pr-space-md">
+<button class="w-8 h-8 rounded-lg bg-surface hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</td>
+</tr>
+<tr class="instructor-row hover:bg-surface-container-low/50 cursor-pointer transition-colors" data-id="3">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="relative">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant font-bold text-sm">RV</div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-surface-container-lowest"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Mg. Roberto Valenzuela</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CC 19.349.512</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="font-label-md text-label-md font-semibold text-secondary">Logística &amp; Cadena</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Gestión Portuaria</p>
+</td>
+<td class="py-space-md px-space-sm">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-sm text-label-sm">
+<span class="font-bold text-on-surface">32 / 40h</span>
+<span class="text-secondary font-bold">80%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 80%"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-surface-container px-space-xs py-0.5 rounded text-[11px] font-medium text-on-surface-variant">Tarde</span>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-primary-container text-on-primary-container px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold">Planta</span>
+</td>
+<td class="py-space-md px-space-sm text-center">
+<span class="font-label-md text-label-md font-bold px-2 py-0.5 bg-surface-container-high rounded-full">3</span>
+</td>
+<td class="py-space-md px-space-sm text-right pr-space-md">
+<button class="w-8 h-8 rounded-lg bg-surface hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</td>
+</tr>
+<tr class="instructor-row hover:bg-surface-container-low/50 cursor-pointer transition-colors" data-id="4">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="relative">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant font-bold text-sm">AG</div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-surface-container-lowest"></span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Ing. Álvaro Gómez</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CC 80.129.400</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="font-label-md text-label-md font-semibold text-primary">Redes Cisco</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">CCNA Switching &amp; Routing</p>
+</td>
+<td class="py-space-md px-space-sm">
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-sm text-label-sm">
+<span class="font-bold text-on-surface">28 / 40h</span>
+<span class="text-primary font-bold">70%</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 70%"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-surface-container px-space-xs py-0.5 rounded text-[11px] font-medium text-on-surface-variant">Nocturna</span>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-surface-container-high text-on-surface px-2 py-0.5 rounded-full font-label-sm text-label-sm">Contrato</span>
+</td>
+<td class="py-space-md px-space-sm text-center">
+<span class="font-label-md text-label-md font-bold px-2 py-0.5 bg-surface-container-high rounded-full">2</span>
+</td>
+<td class="py-space-md px-space-sm text-right pr-space-md">
+<button class="w-8 h-8 rounded-lg bg-surface hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</td>
+</tr>
+<tr class="instructor-row hover:bg-surface-container-low/50 cursor-pointer transition-colors bg-secondary-container/10" data-id="5">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="relative">
+<img class="w-10 h-10 rounded-full object-cover shadow-xs" data-alt="Portrait of confident Latina woman data science professor in modern tech center office, soft ambient green tint, natural friendly posture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvzW5z-79CIgxThbovhp89ySs8tDvxt4q_cIDFVfD665qtYkY-NO2GF_XqStJosNFFxYzMyEPxwKPnCnvNoYw5b44Yl2lD65nXlA5ZD32NHcVg798gBYmZZUdpNdjA3f66NKIWYF2bH2hky_ENgRXiSFG0NnnFhyv2WrAdtTP6b6Ypwbg_Bu6Uf3Hwm0XhCxv5IdffJXnepcOVKJ_5oZ5deFiIKRXa29wyg_r1UzHAVCKOAcfO9Qrs"/>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-secondary-fixed ring-2 ring-surface-container-lowest"></span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Ing. Maritza Benítez</span>
+<span class="bg-secondary text-on-secondary text-[9px] px-1 rounded-full font-bold uppercase">Nueva</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CC 1.014.288.932</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="font-label-md text-label-md font-semibold text-primary">Analítica de Datos</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Python &amp; Business Intel</p>
+</td>
+<td class="py-space-md px-space-sm">
+<div class="flex flex-col gap-1">
+<span class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold px-2 py-0.5 rounded-full w-max">
+                      Disponible (0/40h)
+                    </span>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 0%"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-surface-container px-space-xs py-0.5 rounded text-[11px] font-medium text-on-surface-variant">Diurna/Tarde</span>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-surface-container-high text-on-surface px-2 py-0.5 rounded-full font-label-sm text-label-sm">Contratación</span>
+</td>
+<td class="py-space-md px-space-sm text-center">
+<span class="font-label-md text-label-md font-bold px-2 py-0.5 bg-surface-container text-on-surface-variant rounded-full">0</span>
+</td>
+<td class="py-space-md px-space-sm text-right pr-space-md">
+<button class="w-8 h-8 rounded-lg bg-surface hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</td>
+</tr>
+<tr class="instructor-row hover:bg-surface-container-low/50 cursor-pointer transition-colors bg-secondary-container/10" data-id="6">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-sm">
+<div class="relative">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant font-bold text-sm">GO</div>
+<span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-secondary-fixed ring-2 ring-surface-container-lowest"></span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Prof. Gabriel Ospina</span>
+<span class="bg-secondary text-on-secondary text-[9px] px-1 rounded-full font-bold uppercase">Nuevo</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CC 1.020.449.120</span>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="font-label-md text-label-md font-semibold text-primary">Cisco &amp; Ciberseg.</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Defensa Perimetral</p>
+</td>
+<td class="py-space-md px-space-sm">
+<div class="flex flex-col gap-1">
+<span class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold px-2 py-0.5 rounded-full w-max">
+                      Disponible (0/40h)
+                    </span>
+<div class="w-full bg-surface-container rounded-full h-1.5 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 0%"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-surface-container px-space-xs py-0.5 rounded text-[11px] font-medium text-on-surface-variant">Tarde/Noche</span>
+</td>
+<td class="py-space-md px-space-sm">
+<span class="bg-surface-container-high text-on-surface px-2 py-0.5 rounded-full font-label-sm text-label-sm">Contratación</span>
+</td>
+<td class="py-space-md px-space-sm text-center">
+<span class="font-label-md text-label-md font-bold px-2 py-0.5 bg-surface-container text-on-surface-variant rounded-full">0</span>
+</td>
+<td class="py-space-md px-space-sm text-right pr-space-md">
+<button class="w-8 h-8 rounded-lg bg-surface hover:bg-surface-container text-on-surface-variant flex items-center justify-center transition-all">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-space-md flex flex-col sm:flex-row items-center justify-between gap-space-sm bg-surface-container-low/40">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Mostrando 6 de 92 instructores registrados</span>
+<div class="flex items-center gap-space-xs">
+<button class="w-8 h-8 rounded bg-surface hover:bg-surface-container-high text-on-surface flex items-center justify-center font-bold text-body-sm" disabled="">
+<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+</button>
+<span class="px-space-sm py-0.5 bg-primary text-on-primary rounded font-label-sm text-label-sm font-bold">1</span>
+<span class="px-space-sm py-0.5 text-on-surface-variant rounded font-label-sm text-label-sm hover:bg-surface cursor-pointer">2</span>
+<span class="px-space-sm py-0.5 text-on-surface-variant rounded font-label-sm text-label-sm hover:bg-surface cursor-pointer">3</span>
+<span class="text-on-surface-variant font-label-sm">...</span>
+<span class="px-space-sm py-0.5 text-on-surface-variant rounded font-label-sm text-label-sm hover:bg-surface cursor-pointer">16</span>
+<button class="w-8 h-8 rounded bg-surface hover:bg-surface-container-high text-on-surface flex items-center justify-center font-bold text-body-sm">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="p-space-lg bg-gradient-to-br from-primary/10 via-surface-container-lowest to-surface flex items-start justify-between">
+<div class="flex gap-space-md items-center">
+<div class="relative">
+<img class="w-16 h-16 rounded-2xl object-cover shadow-sm" data-alt="Close up profile photo of senior Colombian engineering instructor in contemporary tech office environment with smart casual attire" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACCsLgeSJysL2ycxOY5GhCw2jMk8RIduVl8_e0tA8kY0MeYXZ7eCcYGZkNTEt-w-pfGR3z7TDa4OR7acGvU97-8spd2pLLmYibS79D0h5rq_OwKLYqaEI0_d8EWOGcRUyneO6vZDq24yfHkCoJlXFnVmojaz2agvFjmpenvHp0DrctoER4c38F0aV_1O0eY5MYMbl8yzzmboMXv-03oYgNABShDuXjVR4mTdBreNjJ3oYvaO9T9DYh"/>
+<span class="absolute -bottom-1 -right-1 bg-primary text-on-primary rounded-full p-0.5 shadow-sm">
+<span class="material-symbols-outlined text-[14px] block">verified</span>
+</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs">
+<h2 class="font-headline-lg text-headline-lg text-on-surface">Ing. Carlos Morales</h2>
+</div>
+<span class="font-label-md text-label-md text-primary font-bold">Instructor Técnico Líder ADSO</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Sede Calle 52 · Coordinación Telemática</span>
+</div>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-space-sm py-1 rounded-full font-label-sm text-label-sm font-bold">
+              Planta
+            </span>
+</div>
+<div class="px-space-lg py-space-md flex flex-col gap-space-md">
+<div class="flex flex-col gap-space-xs">
+<div class="flex justify-between items-center">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Distribución de Carga Semanal</span>
+<span class="font-headline-sm text-headline-sm text-primary font-bold">38 / 40 hrs (95%)</span>
+</div>
+<div class="w-full bg-surface-container rounded-full h-2.5 overflow-hidden flex">
+<div class="bg-primary h-full" style="width: 75%" title="Lectiva Presencial (30h)"></div>
+<div class="bg-secondary h-full" style="width: 10%" title="Asesoría Proyectos (4h)"></div>
+<div class="bg-tertiary-fixed-dim h-full" style="width: 15%" title="Preparación Curricular (6h)"></div>
+</div>
+<div class="grid grid-cols-3 gap-space-xs text-[11px] pt-1 text-on-surface-variant font-label-sm">
+<div class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-sm bg-primary"></span>
+<span>30h Lectiva</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-sm bg-secondary"></span>
+<span>4h Proyectos</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="w-2.5 h-2.5 rounded-sm bg-tertiary-fixed-dim"></span>
+<span>6h Preparación</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Horario Semanal Condensado</span>
+<span class="font-label-sm text-label-sm text-primary font-medium hover:underline cursor-pointer">Ver cuadrícula completa</span>
+</div>
+<div class="bg-surface rounded-xl p-space-sm flex flex-col gap-1.5">
+<div class="grid grid-cols-5 gap-1 text-center font-label-sm text-[10px] text-on-surface-variant font-bold uppercase pb-1">
+<div>LUN</div>
+<div>MAR</div>
+<div>MIÉ</div>
+<div>JUE</div>
+<div>VIE</div>
+</div>
+<div class="grid grid-cols-5 gap-1 text-[11px]">
+<div class="bg-primary-container p-1.5 rounded flex flex-col justify-between h-16">
+<span class="font-bold text-on-primary-container leading-none">06-12</span>
+<span class="text-[10px] text-on-primary-container font-semibold truncate">Lab 302</span>
+</div>
+<div class="bg-primary-container p-1.5 rounded flex flex-col justify-between h-16">
+<span class="font-bold text-on-primary-container leading-none">06-12</span>
+<span class="text-[10px] text-on-primary-container font-semibold truncate">Lab 302</span>
+</div>
+<div class="bg-secondary-container p-1.5 rounded flex flex-col justify-between h-16">
+<span class="font-bold text-on-secondary-container leading-none">08-12</span>
+<span class="text-[10px] text-on-secondary-container truncate">Lab Proy</span>
+</div>
+<div class="bg-primary-container p-1.5 rounded flex flex-col justify-between h-16">
+<span class="font-bold text-on-primary-container leading-none">06-12</span>
+<span class="text-[10px] text-on-primary-container font-semibold truncate">Lab 302</span>
+</div>
+<div class="bg-surface-container-high p-1.5 rounded flex flex-col justify-between h-16">
+<span class="font-bold text-on-surface leading-none">06-12</span>
+<span class="text-[10px] text-on-surface-variant truncate">Prep/Coord</span>
+</div>
+</div>
+<div class="flex items-center justify-between text-[11px] text-on-surface-variant px-1 pt-1">
+<span>Ambiente Fijo Asignado: <strong class="text-on-surface">Laboratorio 302 - Calle 52</strong></span>
+<span class="text-primary font-semibold">2h libres (Vie Tarde)</span>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Fichas a Cargo Activas</span>
+<div class="flex flex-col gap-space-xs">
+<div class="p-space-sm bg-surface rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-container flex items-center justify-center text-primary font-bold text-body-sm">
+                      26
+                    </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md text-on-surface font-bold">Ficha 2670142</span>
+<span class="bg-primary/10 text-primary text-[10px] font-bold px-1.5 rounded">Etapa Lectiva</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate max-w-[220px]">ADSO - Tecnólogo en Desarrollo de Software</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-label-md text-label-md font-bold text-on-surface">32 Aprendices</span>
+<p class="text-[10px] text-on-surface-variant">Jornada Diurna</p>
+</div>
+</div>
+<div class="p-space-sm bg-surface rounded-xl flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-secondary-container flex items-center justify-center text-secondary font-bold text-body-sm">
+                      28
+                    </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1">
+<span class="font-label-md text-label-md text-on-surface font-bold">Ficha 2824901</span>
+<span class="bg-secondary/10 text-secondary text-[10px] font-bold px-1.5 rounded">Proyectos</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate max-w-[220px]">ADSO - Semillero Cloud Computing</span>
+</div>
+</div>
+<div class="text-right">
+<span class="font-label-md text-label-md font-bold text-on-surface">28 Aprendices</span>
+<p class="text-[10px] text-on-surface-variant">Tardes / Alterna</p>
+</div>
+</div>
+</div>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-space-sm pt-space-xs">
+<a class="flex-1 w-full inline-flex items-center justify-center gap-space-xs bg-primary text-on-primary hover:bg-on-primary-container h-10 rounded-xl font-label-md text-label-md shadow-sm transition-all text-center" data-path="constructor" href="#">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+<span>Ajustar Carga en Constructor</span>
+</a>
+<button class="w-full sm:w-auto inline-flex items-center justify-center gap-space-xs bg-surface-container text-on-surface hover:bg-surface-container-high px-space-md h-10 rounded-xl font-label-md text-label-md transition-all">
+<span class="material-symbols-outlined text-[18px] text-primary">chat</span>
+<span>Teams / Correo</span>
+</button>
+</div>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-xl bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[20px]">notification_important</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">Alerta de Solicitud de Cambio</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Lic. Diana Prieto solicita permuta de laboratorio por cruce técnico de render</span>
+</div>
+</div>
+<button class="bg-surface hover:bg-error-container hover:text-on-error-container px-space-md py-1 rounded-lg font-label-sm text-label-sm font-semibold transition-all">
+            Revisar
+          </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const rows = document.querySelectorAll('.instructor-row');
+    rows.forEach(row => {
+      row.addEventListener('click', () => {
+        rows.forEach(r => {
+          r.classList.remove('bg-secondary-container/40', 'hover:bg-secondary-container/60');
+          r.classList.add('hover:bg-surface-container-low/50');
+        });
+        row.classList.remove('hover:bg-surface-container-low/50');
+        row.classList.add('bg-secondary-container/40', 'hover:bg-secondary-container/60');
+      });
+    });
+
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase().trim();
+        rows.forEach(row => {
+          const text = row.textContent.toLowerCase();
+          row.style.display = text.includes(query) ? '' : 'none';
+        });
+      });
+    }
+
+    const resetBtn = document.getElementById('resetFilters');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        document.getElementById('filterArea').value = 'all';
+        document.getElementById('filterVinculacion').value = 'all';
+        document.getElementById('filterTurno').value = 'all';
+        rows.forEach(row => row.style.display = '');
+      });
+    }
+  });
+</script></main><footer class="w-full bg-surface-container-lowest py-space-xl shadow-[0_-1px_6px_rgba(0,0,0,0.02)]"><div class="w-full px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-space-md text-on-surface-variant"><div class="flex items-center gap-space-sm"><div class="w-6 h-6 rounded bg-primary flex items-center justify-center text-on-primary text-[12px] font-bold">S</div><span class="font-body-sm text-body-sm">CGMLTI Calle 52 · Regional Distrito Capital · Servicio Nacional de Aprendizaje SENA</span></div><div class="flex items-center gap-space-lg font-label-sm text-label-sm"><span>Mesa de Ayuda Académica</span><span>Términos y Normativa</span><span>Versión 3.8.4</span></div></div></footer></body></html>

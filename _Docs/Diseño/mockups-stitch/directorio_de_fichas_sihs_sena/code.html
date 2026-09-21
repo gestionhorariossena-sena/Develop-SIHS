@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+
+<html lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Hanken+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-container-high": "#e2e7ff", "primary": "#006b2c", "tertiary-fixed": "#ffdcc3", "surface-dim": "#d2d9f4", "surface-container-highest": "#dae2fd", "surface": "#f8fafc", "on-secondary-fixed": "#052100", "secondary-container": "#eaf7ec", "primary-fixed-dim": "#62df7d", "secondary-fixed-dim": "#6fdf43", "on-error-container": "#93000a", "on-tertiary": "#ffffff", "on-error": "#ffffff", "tertiary": "#8d4b00", "tertiary-container": "#b15f00", "on-tertiary-fixed": "#2f1500", "on-primary-fixed-variant": "#005320", "primary-fixed": "#7ffc97", "outline": "#cbd5e1", "surface-variant": "#dae2fd", "on-tertiary-container": "#92400e", "surface-container-low": "#f2f3ff", "background": "#faf8ff", "surface-tint": "#006e2d", "inverse-on-surface": "#eef0ff", "on-primary-fixed": "#002109", "surface-bright": "#faf8ff", "secondary-fixed": "#8afd5d", "primary-container": "#dcfce7", "on-secondary-container": "#257400", "surface-container-lowest": "#ffffff", "inverse-primary": "#62df7d", "error-container": "#fee2e2", "on-tertiary-fixed-variant": "#6e3900", "on-surface-variant": "#3e4a3d", "inverse-surface": "#1e293b", "on-secondary-fixed-variant": "#185200", "tertiary-fixed-dim": "#ffb77d", "outline-variant": "#bdcaba", "on-primary-container": "#14532d", "surface-container": "#e2e8f0", "on-primary": "#ffffff", "on-secondary": "#ffffff", "secondary": "#226d00", "on-surface": "#131b2e", "on-background": "#131b2e", "error": "#dc2626" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "space-base": "1rem", "space-3xl": "3rem", "space-2xl": "2rem", "space-2xs": "0.125rem", "gutter": "1rem", "space-xs": "0.25rem", "space-md": "0.75rem", "space-lg": "1.25rem", "space-xl": "1.5rem", "space-sm": "0.5rem", "margin-mobile": "1rem", "margin-desktop": "1.5rem" }, "fontFamily": { "headline-sm": [ "Hanken Grotesk" ], "body-sm": [ "Geist" ], "body-md": [ "Geist" ], "body-lg": [ "Geist" ], "display-lg": [ "Hanken Grotesk" ], "label-md": [ "Geist" ], "label-sm": [ "Geist" ], "headline-lg": [ "Hanken Grotesk" ], "headline-md": [ "Hanken Grotesk" ] }, "fontSize": { "headline-sm": [ "16px", { "lineHeight": "24px", "fontWeight": "600" } ], "body-sm": [ "12px", { "lineHeight": "16px", "fontWeight": "400" } ], "body-md": [ "13px", { "lineHeight": "18px", "fontWeight": "400" } ], "body-lg": [ "15px", { "lineHeight": "22px", "fontWeight": "400" } ], "display-lg": [ "28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "label-md": [ "12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" } ], "label-sm": [ "11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" } ], "headline-lg": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" } ], "headline-md": [ "20px", { "lineHeight": "28px", "fontWeight": "600" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface min-h-screen"><header class="fixed top-0 w-full z-50 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-16 w-full px-margin-desktop flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md shrink-0"><div class="flex items-center gap-space-sm"><div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-sm"><span class="font-headline-sm text-headline-sm text-on-primary font-bold tracking-tight">S</span></div><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-primary leading-tight font-bold tracking-tight">SENA</span><span class="font-headline-sm text-headline-sm text-on-surface leading-tight font-semibold">SIHS</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">CGMLTI Calle 52</span></div></div><div class="hidden xl:flex items-center gap-space-xs bg-secondary-container px-space-sm py-space-2xs rounded-full"><span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span><span class="font-label-sm text-label-sm text-on-secondary-container font-medium">Trimestre II · Sincronizado</span></div></div><div class="hidden lg:flex items-center justify-center flex-1"><nav class="flex items-center gap-space-2xs bg-surface p-space-2xs rounded-full shadow-[0_1px_4px_rgba(15,23,42,0.04)]" data-active-classes="bg-primary-container text-on-primary-container font-bold shadow-xs"><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="dashboard" href="#">Dashboard</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="mi-horario" href="#">Mi Horario</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all flex items-center gap-space-xs" data-path="constructor" href="#"><span>Constructor</span><span class="bg-secondary-container text-on-secondary-container text-[10px] px-space-xs py-0.5 rounded-full font-bold">Ágil</span></a><a aria-current="page" class="px-space-md py-space-xs rounded-full transition-all bg-primary-container text-on-primary-container font-bold shadow-xs" data-path="fichas" href="#">Fichas</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="instructores" href="#">Instructores</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="ambientes" href="#">Ambientes</a><a class="px-space-md py-space-xs rounded-full font-label-md text-label-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all flex items-center gap-space-xs" data-path="solicitudes" href="#"><span>Solicitudes</span><span class="bg-error-container text-on-error-container text-[10px] px-1.5 py-0.5 rounded-full font-bold">4</span></a></nav></div><div class="flex items-center gap-space-sm shrink-0"><div class="relative hidden md:flex items-center"><span class="material-symbols-outlined absolute left-space-sm text-on-surface-variant text-[18px]">search</span><input class="w-48 xl:w-56 h-9 pl-8 pr-12 rounded-xl bg-surface text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md focus:outline-none focus:bg-surface-container-lowest shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-all" placeholder="Buscar fichas, sedes..." type="text"/><div class="absolute right-space-sm flex items-center pointer-events-none"><kbd class="bg-surface-container px-space-xs py-0.5 rounded text-[10px] font-mono text-on-surface-variant">⌘K</kbd></div></div><button aria-label="Notificaciones" class="relative w-9 h-9 rounded-xl bg-surface flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all shadow-[0_1px_3px_rgba(0,0,0,0.03)]"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-tertiary ring-2 ring-surface-container-lowest"></span></button><button class="hidden sm:inline-flex items-center gap-space-xs bg-primary text-on-primary hover:bg-on-primary-container px-space-md h-9 rounded-xl font-label-md text-label-md shadow-xs transition-all"><span class="material-symbols-outlined text-[18px]">add</span><span>Nuevo Horario</span></button><div class="flex items-center gap-space-sm pl-space-xs"><div class="hidden xl:flex flex-col text-right"><span class="font-label-md text-label-md text-on-surface leading-snug">Ing. M. Hernández</span><span class="font-label-sm text-label-sm text-on-surface-variant leading-none">Coordinación</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="w-full pt-16 bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_60%,_#faf8ff_100%)] min-h-screen"><div class="flex flex-col w-full">
+<div class="w-full px-margin-desktop py-space-xl flex flex-col gap-space-xl">
+<!-- Breadcrumb & Macro Title Header -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg">
+<div class="flex flex-col gap-space-xs">
+<nav class="flex items-center gap-space-xs font-label-sm text-label-sm text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">Dashboard</a>
+<span>/</span>
+<span class="text-on-surface font-semibold">Fichas</span>
+</nav>
+<div class="flex items-baseline gap-space-md flex-wrap">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Directorio de Fichas de Caracterización</h1>
+<span class="inline-flex items-center gap-space-xs bg-secondary-container px-space-sm py-0.5 rounded-full font-label-sm text-label-sm text-on-secondary-container font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            142 Fichas Activas
+          </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">
+          Centro de Gestión de Mercados, Logística y Tecnologías de la Información. Monitoreo de cupos, asignación horaria semanal y ambientes asignados.
+        </p>
+</div>
+<!-- Header Actions -->
+<div class="flex items-center gap-space-sm shrink-0 flex-wrap">
+<div class="flex items-center bg-surface-container-lowest rounded-xl shadow-sm p-1">
+<button class="inline-flex items-center gap-space-xs px-space-md h-8 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface transition-all font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">table_view</span>
+<span>Excel</span>
+</button>
+<button class="inline-flex items-center gap-space-xs px-space-md h-8 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface transition-all font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+<span>Reporte PDF</span>
+</button>
+</div>
+<button class="inline-flex items-center gap-space-xs bg-primary hover:bg-on-primary-container text-on-primary h-10 px-space-lg rounded-xl font-label-md text-label-md shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+<span>Nueva Ficha</span>
+</button>
+</div>
+</div>
+<!-- Quick Stats Cards Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ocupación Horaria Total</span>
+<span class="font-display-lg text-display-lg text-on-surface font-bold mt-1">94.2%</span>
+<span class="font-body-sm text-body-sm text-primary flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span> +3.8% vs trimestre anterior
+          </span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined text-[24px]">calendar_month</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Fichas en Etapa Lectiva</span>
+<span class="font-display-lg text-display-lg text-on-surface font-bold mt-1">118</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">83% del total regional</span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined text-[24px]">school</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Franjas Pendientes</span>
+<span class="font-display-lg text-display-lg text-tertiary font-bold mt-1">9</span>
+<span class="font-body-sm text-body-sm text-tertiary flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">warning</span> Requieren asignación
+          </span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed-variant">
+<span class="material-symbols-outlined text-[24px]">schedule</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex items-center justify-between">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ambientes Especializados</span>
+<span class="font-display-lg text-display-lg text-on-surface font-bold mt-1">42 / 46</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">Labs sede Calle 52</span>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-high flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[24px]">devices</span>
+</div>
+</div>
+</div>
+<!-- Filter Toolbar -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md">
+<!-- Search Specific Input -->
+<div class="relative flex-1 max-w-md">
+<span class="material-symbols-outlined absolute left-space-md top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+<input class="w-full h-10 pl-10 pr- space-md rounded-lg bg-surface text-on-surface placeholder:text-on-surface-variant font-body-md text-body-md focus:outline-none focus:bg-surface-container-low transition-colors shadow-inner" placeholder="Buscar por Ficha ID, programa, instructor o ambiente..." type="text"/>
+</div>
+<!-- Filter Selectors -->
+<div class="flex items-center gap-space-sm flex-wrap">
+<!-- Jornada -->
+<div class="flex items-center gap-space-xs bg-surface px-space-md h-10 rounded-lg">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Jornada:</span>
+<select class="bg-transparent font-label-md text-label-md text-on-surface focus:outline-none cursor-pointer">
+<option>Todas</option>
+<option selected="">Diurna (06:00 - 12:00)</option>
+<option>Tarde (12:00 - 18:00)</option>
+<option>Nocturna (18:00 - 22:00)</option>
+<option>Madrugada (22:00 - 06:00)</option>
+</select>
+</div>
+<!-- Programa -->
+<div class="flex items-center gap-space-xs bg-surface px-space-md h-10 rounded-lg">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Programa:</span>
+<select class="bg-transparent font-label-md text-label-md text-on-surface focus:outline-none cursor-pointer">
+<option>Todos los programas</option>
+<option>ADSO - Desarrollo Software</option>
+<option>Animación 3D</option>
+<option>Gestión Logística</option>
+<option>Redes Cisco</option>
+<option>Ciberseguridad</option>
+</select>
+</div>
+<!-- Sede -->
+<div class="flex items-center gap-space-xs bg-surface px-space-md h-10 rounded-lg">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sede:</span>
+<select class="bg-transparent font-label-md text-label-md text-on-surface focus:outline-none cursor-pointer">
+<option>Todas las sedes</option>
+<option selected="">Calle 52 (Principal)</option>
+<option>Fontibón (Alterna)</option>
+</select>
+</div>
+<!-- Estado -->
+<div class="flex items-center gap-space-xs bg-surface px-space-md h-10 rounded-lg">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Estado:</span>
+<select class="bg-transparent font-label-md text-label-md text-on-surface focus:outline-none cursor-pointer">
+<option>Cualquier Estado</option>
+<option selected="">Lectiva (Presencial)</option>
+<option>En ejecución</option>
+<option>Productiva</option>
+</select>
+</div>
+<button class="h-10 w-10 flex items-center justify-center rounded-lg bg-surface text-on-surface-variant hover:text-on-surface transition-colors" title="Limpiar filtros">
+<span class="material-symbols-outlined text-[20px]">filter_alt_off</span>
+</button>
+</div>
+</div>
+<!-- Active Filter Tags -->
+<div class="flex items-center gap-space-xs flex-wrap font-label-sm text-label-sm text-on-surface-variant pt-space-xs">
+<span class="text-[11px] uppercase tracking-wider font-semibold">Filtros activos:</span>
+<span class="inline-flex items-center gap-1 bg-surface-container px-space-sm py-0.5 rounded-full text-on-surface">
+          Diurna <span class="material-symbols-outlined text-[14px] cursor-pointer">close</span>
+</span>
+<span class="inline-flex items-center gap-1 bg-surface-container px-space-sm py-0.5 rounded-full text-on-surface">
+          Sede Calle 52 <span class="material-symbols-outlined text-[14px] cursor-pointer">close</span>
+</span>
+<span class="inline-flex items-center gap-1 bg-surface-container px-space-sm py-0.5 rounded-full text-on-surface">
+          Etapa Lectiva <span class="material-symbols-outlined text-[14px] cursor-pointer">close</span>
+</span>
+<button class="text-primary font-semibold hover:underline ml-space-xs text-[11px]">Restablecer todo</button>
+</div>
+</div>
+<!-- Main Workspace Split: Table + Detail Inspector Drawer -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- Fichas Data Table Section (Cols 8 or 12) -->
+<div class="lg:col-span-8 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Table Sub-header -->
+<div class="p-space-md flex items-center justify-between bg-surface-container-low/50">
+<div class="flex items-center gap-space-sm">
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Listado de Fichas</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Mostrando 1 - 5 de 142</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="p-1 rounded-md text-on-surface-variant hover:text-on-surface hover:bg-surface">
+<span class="material-symbols-outlined text-[20px]">view_column</span>
+</button>
+<button class="p-1 rounded-md text-on-surface-variant hover:text-on-surface hover:bg-surface">
+<span class="material-symbols-outlined text-[20px]">density_medium</span>
+</button>
+</div>
+</div>
+<!-- The Table -->
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left font-body-md text-body-md border-collapse">
+<thead>
+<tr class="bg-surface font-label-md text-label-md text-on-surface-variant tracking-wider uppercase text-[11px]">
+<th class="py-space-md px-space-md font-semibold">Ficha ID</th>
+<th class="py-space-md px-space-md font-semibold">Programa Formativo</th>
+<th class="py-space-md px-space-md font-semibold">Jornada / Trimestre</th>
+<th class="py-space-md px-space-md font-semibold">Instructor Líder</th>
+<th class="py-space-md px-space-md font-semibold">Ambiente</th>
+<th class="py-space-md px-space-md font-semibold">Programación</th>
+<th class="py-space-md px-space-md text-right font-semibold">Acciones</th>
+</tr>
+</thead>
+<tbody class="divide-y-0">
+<!-- Row 1: Ficha 2670142 (Active Selected) -->
+<tr class="bg-primary-container/20 hover:bg-primary-container/30 cursor-pointer transition-all">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<span class="w-1.5 h-6 rounded-full bg-primary"></span>
+<span class="font-mono font-bold text-on-surface text-body-md">2670142</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">ADSO IV</span>
+<span class="text-on-surface-variant text-[11px] truncate max-w-[180px]">Análisis y Desarrollo de Software</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Diurna</span>
+<span class="text-on-surface-variant text-[11px]">Trimestre 4 · Calle 52</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-on-surface font-bold">CM</div>
+<span class="text-on-surface text-body-sm font-medium">Ing. C. Morales</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1 bg-surface-container px-space-sm py-0.5 rounded text-[12px] font-medium text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-primary">computer</span> Lab 302
+                    </span>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col gap-1 w-28">
+<div class="flex justify-between text-[11px] font-semibold text-on-primary-container">
+<span>100%</span>
+<span>30 hrs</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-primary hover:bg-primary-container transition-colors" title="Abrir en Constructor">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors" title="Opciones">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: Ficha 2598411 -->
+<tr class="hover:bg-surface transition-colors cursor-pointer">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs pl-2">
+<span class="font-mono font-bold text-on-surface text-body-md">2598411</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Animación 3D</span>
+<span class="text-on-surface-variant text-[11px] truncate max-w-[180px]">Producción de Medios Audiovisuales</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Tarde</span>
+<span class="text-on-surface-variant text-[11px]">Trimestre 6 · Calle 52</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-on-surface font-bold">VG</div>
+<span class="text-on-surface text-body-sm font-medium">Arq. V. Gómez</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1 bg-surface-container px-space-sm py-0.5 rounded text-[12px] font-medium text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-tertiary">palette</span> Render Lab
+                    </span>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col gap-1 w-28">
+<div class="flex justify-between text-[11px] font-semibold text-tertiary">
+<span>80%</span>
+<span class="text-tertiary font-bold">Falta 1 franja</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 80%"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:text-primary transition-colors" title="Abrir en Constructor">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface transition-colors" title="Opciones">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Ficha 2712903 -->
+<tr class="hover:bg-surface transition-colors cursor-pointer">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs pl-2">
+<span class="font-mono font-bold text-on-surface text-body-md">2712903</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Gestión Logística</span>
+<span class="text-on-surface-variant text-[11px] truncate max-w-[180px]">Distribución y Cadena de Suministro</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Tarde</span>
+<span class="text-on-surface-variant text-[11px]">Trimestre 2 · Fontibón</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-on-surface font-bold">LR</div>
+<span class="text-on-surface text-body-sm font-medium">Dra. L. Rincón</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1 bg-surface-container px-space-sm py-0.5 rounded text-[12px] font-medium text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-primary">warehouse</span> Aula 104
+                    </span>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col gap-1 w-28">
+<div class="flex justify-between text-[11px] font-semibold text-on-primary-container">
+<span>100%</span>
+<span>30 hrs</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:text-primary transition-colors" title="Abrir en Constructor">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface transition-colors" title="Opciones">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4: Ficha 2694180 -->
+<tr class="hover:bg-surface transition-colors cursor-pointer">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs pl-2">
+<span class="font-mono font-bold text-on-surface text-body-md">2694180</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Redes Cisco</span>
+<span class="text-on-surface-variant text-[11px] truncate max-w-[180px]">Gestión de Redes y Telecomunicaciones</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Nocturna</span>
+<span class="text-on-surface-variant text-[11px]">Trimestre 5 · Calle 52</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-on-surface font-bold">FP</div>
+<span class="text-on-surface text-body-sm font-medium">Ing. F. Parra</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1 bg-surface-container px-space-sm py-0.5 rounded text-[12px] font-medium text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-primary">router</span> Cisco Lab
+                    </span>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col gap-1 w-28">
+<div class="flex justify-between text-[11px] font-semibold text-on-primary-container">
+<span>100%</span>
+<span>24 hrs</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 100%"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:text-primary transition-colors" title="Abrir en Constructor">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface transition-colors" title="Opciones">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5: Ficha 2821904 -->
+<tr class="hover:bg-surface transition-colors cursor-pointer">
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs pl-2">
+<span class="font-mono font-bold text-on-surface text-body-md">2821904</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-semibold text-on-surface">Ciberseguridad</span>
+<span class="text-on-surface-variant text-[11px] truncate max-w-[180px]">Seguridad de la Información e Infraestructura</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface">Diurna</span>
+<span class="text-on-surface-variant text-[11px]">Trimestre 1 · Calle 52</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex items-center gap-space-xs">
+<div class="w-6 h-6 rounded-full bg-surface-container flex items-center justify-center font-label-sm text-label-sm text-on-surface font-bold">AR</div>
+<span class="text-on-surface text-body-sm font-medium">Ing. A. Ramos</span>
+</div>
+</td>
+<td class="py-space-md px-space-md">
+<span class="inline-flex items-center gap-1 bg-surface-container px-space-sm py-0.5 rounded text-[12px] font-medium text-on-surface">
+<span class="material-symbols-outlined text-[14px] text-tertiary">lock</span> SecOps Lab
+                    </span>
+</td>
+<td class="py-space-md px-space-md">
+<div class="flex flex-col gap-1 w-28">
+<div class="flex justify-between text-[11px] font-semibold text-tertiary">
+<span>75%</span>
+<span class="text-tertiary font-bold">Falta 1 franja</span>
+</div>
+<div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
+<div class="bg-tertiary h-full rounded-full" style="width: 75%"></div>
+</div>
+</div>
+</td>
+<td class="py-space-md px-space-md text-right">
+<div class="flex items-center justify-end gap-1">
+<button class="p-1 rounded text-on-surface-variant hover:text-primary transition-colors" title="Abrir en Constructor">
+<span class="material-symbols-outlined text-[18px]">calendar_today</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:text-on-surface transition-colors" title="Opciones">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Bar -->
+<div class="p-space-md bg-surface-container-low/30 flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>Mostrando 5 de 142 registros</span>
+<div class="flex items-center gap-space-xs">
+<button class="px-2 py-1 rounded bg-surface hover:bg-surface-container text-on-surface transition-colors disabled:opacity-40" disabled="">
+<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+</button>
+<button class="px-2 py-1 rounded bg-primary text-on-primary font-bold">1</button>
+<button class="px-2 py-1 rounded bg-surface hover:bg-surface-container text-on-surface transition-colors">2</button>
+<button class="px-2 py-1 rounded bg-surface hover:bg-surface-container text-on-surface transition-colors">3</button>
+<span>...</span>
+<button class="px-2 py-1 rounded bg-surface hover:bg-surface-container text-on-surface transition-colors">29</button>
+<button class="px-2 py-1 rounded bg-surface hover:bg-surface-container text-on-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Practical Informational Callout -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-lg bg-secondary-container flex items-center justify-center text-on-secondary-container shrink-0">
+<span class="material-symbols-outlined text-[22px]">info</span>
+</div>
+<div class="flex flex-col gap-1">
+<span class="font-headline-sm text-headline-sm text-on-surface">Validación de Cruces y Disponibilidad de Instructores</span>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Las fichas marcadas con franjas pendientes presentan conflictos de disponibilidad horaria con instructores técnicos o transversales. Utilice el <strong class="text-primary font-semibold">Constructor Ágil</strong> para redistribuir las franjas sin colisiones en bloques lectivos.
+            </p>
+</div>
+</div>
+</div>
+<!-- Detail Drawer / Expanded Inspector Panel (Cols 4) -->
+<div class="lg:col-span-4 flex flex-col gap-space-md sticky top-20">
+<!-- Main Card Inspector for Selected Ficha -->
+<div class="bg-surface-container-lowest rounded-xl shadow-md p-space-lg flex flex-col gap-space-lg relative overflow-hidden">
+<!-- Top Accent Band -->
+<div class="absolute top-0 left-0 right-0 h-1.5 bg-primary"></div>
+<!-- Card Header & Badge -->
+<div class="flex items-start justify-between gap-space-sm pt-space-xs">
+<div class="flex flex-col">
+<span class="font-mono font-bold text-headline-lg text-on-surface tracking-tight">Ficha 2670142</span>
+<span class="font-label-md text-label-md text-primary font-semibold">Análisis y Desarrollo de Software (ADSO)</span>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-space-sm py-0.5 rounded-full font-label-sm text-label-sm font-bold flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span> Activa
+            </span>
+</div>
+<!-- Representative Image Showcase -->
+<div class="w-full h-36 rounded-xl overflow-hidden relative shadow-inner">
+<img class="w-full h-full object-cover" data-alt="Modern bright software development computer laboratory at SENA institute with students collaborating in front of desktop computer dual monitors displaying code editors, clean architectural lighting, mint green ambient reflections, corporate high educational aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnds7jURBHOtro8eYUesrz0TIqRrST3avhcJY0Apkpto8p-VnLoee1D3Gs1UHdPBKEqv7_C_gvJEGqjHUkXbIqjcz8SUmIfwKkuEg-DX59EDNU2iD8U563ZQiXXkSFW_uPri9WkTWayKKgNgXh9CEvAVPVdB48LilP_mq1dvFBA8W-mne72hbyfN_ul_lGMcGrkRDRPQM5KjCJ78yZ13WYVN_U-uPQ8-mGS9UnlU2i6XmC1oJbQwOL"/>
+<div class="absolute bottom-2 left-2 bg-inverse-surface/85 backdrop-blur-md px-space-sm py-0.5 rounded text-inverse-on-surface font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">meeting_room</span>
+<span>Lab 302 · Capacidad: 32 Aprendices</span>
+</div>
+</div>
+<!-- Academic Key Metadata Grid -->
+<div class="grid grid-cols-2 gap-space-sm p-space-sm bg-surface rounded-xl">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Jornada</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Diurna (06:00 - 12:00)</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Trimestre Formativo</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Trimestre IV (Lectiva)</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sede Asignada</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Calle 52 - Torre A</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Vocero Aprendiz</span>
+<span class="font-body-md text-body-md text-on-surface font-semibold">Andrés David Rocha</span>
+</div>
+</div>
+<!-- Associated Instructors Section -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-bold">Equipo de Instructores Asignados</span>
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between p-space-xs rounded-lg hover:bg-surface transition-colors">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-label-sm">CM</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface leading-tight">Ing. Carlos Morales</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Instructor Técnico Líder</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">18h/sem</span>
+</div>
+<div class="flex items-center justify-between p-space-xs rounded-lg hover:bg-surface transition-colors">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-bold text-label-sm">MS</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface leading-tight">Lic. Marta Soler</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Bilingüismo e Inglés Técnico</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">6h/sem</span>
+</div>
+<div class="flex items-center justify-between p-space-xs rounded-lg hover:bg-surface transition-colors">
+<div class="flex items-center gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container text-on-surface flex items-center justify-center font-bold text-label-sm">PS</div>
+<div class="flex flex-col">
+<span class="font-body-md text-body-md font-semibold text-on-surface leading-tight">Lic. Pedro Silva</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Competencias Transversales</span>
+</div>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">6h/sem</span>
+</div>
+</div>
+</div>
+<!-- Weekly Distribution Schedule Miniature -->
+<div class="flex flex-col gap-space-xs">
+<div class="flex items-center justify-between">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-bold">Horario Semanal Resumido</span>
+<span class="font-label-sm text-label-sm text-on-secondary-container font-semibold">30 / 30 Horas</span>
+</div>
+<div class="grid grid-cols-5 gap-1 text-center font-label-sm text-label-sm">
+<div class="p-2 rounded bg-surface flex flex-col gap-0.5">
+<span class="font-bold text-on-surface-variant">LUN</span>
+<span class="text-[10px] text-primary font-semibold">06-12</span>
+<span class="text-[9px] text-on-surface-variant truncate">Lab 302</span>
+</div>
+<div class="p-2 rounded bg-surface flex flex-col gap-0.5">
+<span class="font-bold text-on-surface-variant">MAR</span>
+<span class="text-[10px] text-primary font-semibold">06-12</span>
+<span class="text-[9px] text-on-surface-variant truncate">Lab 302</span>
+</div>
+<div class="p-2 rounded bg-surface flex flex-col gap-0.5">
+<span class="font-bold text-on-surface-variant">MIÉ</span>
+<span class="text-[10px] text-primary font-semibold">06-12</span>
+<span class="text-[9px] text-on-surface-variant truncate">Inglés</span>
+</div>
+<div class="p-2 rounded bg-surface flex flex-col gap-0.5">
+<span class="font-bold text-on-surface-variant">JUE</span>
+<span class="text-[10px] text-primary font-semibold">06-12</span>
+<span class="text-[9px] text-on-surface-variant truncate">Lab 302</span>
+</div>
+<div class="p-2 rounded bg-surface flex flex-col gap-0.5">
+<span class="font-bold text-on-surface-variant">VIE</span>
+<span class="text-[10px] text-primary font-semibold">06-12</span>
+<span class="text-[9px] text-on-surface-variant truncate">Transv.</span>
+</div>
+</div>
+</div>
+<!-- Recent Modification History -->
+<div class="flex flex-col gap-space-xs">
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant font-bold">Historial de Cambios Recientes</span>
+<div class="flex flex-col gap-2 font-body-sm text-body-sm text-on-surface-variant">
+<div class="flex items-start gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0"></span>
+<div class="flex flex-col">
+<span class="text-on-surface font-medium">Reasignación de Ambiente a Lab 302</span>
+<span class="text-[11px] text-on-surface-variant">Ayer, 16:45 por Coordinación Académica</span>
+</div>
+</div>
+<div class="flex items-start gap-2">
+<span class="w-1.5 h-1.5 rounded-full bg-outline-variant mt-1.5 shrink-0"></span>
+<div class="flex flex-col">
+<span class="text-on-surface font-medium">Ajuste de bloque transversal Viernes</span>
+<span class="text-[11px] text-on-surface-variant">14 Mayo, 10:20 por Lic. Pedro Silva</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Primary CTA Button -->
+<div class="pt-space-xs flex flex-col gap-space-xs">
+<button class="w-full h-11 bg-primary hover:bg-on-primary-container text-on-primary rounded-xl font-label-md text-label-md flex items-center justify-center gap-space-xs shadow-sm transition-all hover:scale-[1.01] active:scale-[0.99]">
+<span class="material-symbols-outlined text-[20px]">tune</span>
+<span>Abrir en Constructor</span>
+</button>
+<div class="flex items-center justify-between px-1">
+<button class="text-on-surface-variant hover:text-primary font-label-sm text-label-sm py-1">Ver Plan de Estudios</button>
+<button class="text-on-surface-variant hover:text-error font-label-sm text-label-sm py-1">Notificar Ficha</button>
+</div>
+</div>
+</div>
+<!-- Fast Context Card: Vocero Direct Channel -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-xl bg-surface-container flex items-center justify-center text-on-surface">
+<span class="material-symbols-outlined text-[22px]">record_voice_over</span>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-sm text-headline-sm text-on-surface">Contacto Vocero</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">ad_rocha@soy.sena.edu.co</span>
+</div>
+</div>
+<button class="p-2 rounded-lg bg-surface text-on-surface hover:text-primary hover:bg-surface-container-low transition-colors" title="Enviar Mensaje Directo">
+<span class="material-symbols-outlined text-[18px]">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div></main><footer class="w-full bg-surface-container-lowest py-space-xl shadow-[0_-1px_6px_rgba(0,0,0,0.02)]"><div class="w-full px-margin-desktop flex flex-col md:flex-row items-center justify-between gap-space-md text-on-surface-variant"><div class="flex items-center gap-space-sm"><div class="w-6 h-6 rounded bg-primary flex items-center justify-center text-on-primary text-[12px] font-bold">S</div><span class="font-body-sm text-body-sm">CGMLTI Calle 52 · Regional Distrito Capital · Servicio Nacional de Aprendizaje SENA</span></div><div class="flex items-center gap-space-lg font-label-sm text-label-sm"><span>Mesa de Ayuda Académica</span><span>Términos y Normativa</span><span>Versión 3.8.4</span></div></div></footer></body></html>

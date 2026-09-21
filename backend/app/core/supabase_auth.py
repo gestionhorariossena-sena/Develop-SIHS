@@ -66,6 +66,7 @@ def get_current_user(
             idUsuario=supabase_user_id,
             nombre=(email or "usuario").split("@")[0],
             email=email,
+            numeroDocumento=(datos_supabase.get("user_metadata") or {}).get("numero_documento") or None,
         )
         db.add(usuario)
         db.commit()
@@ -108,3 +109,13 @@ require_aprendiz = require_role("Aprendiz")
 # (fichas, ambientes, instructores, resultados, jornadas, días, trimestres)
 # — la escritura de esos catálogos sigue siendo solo de Administrador.
 require_lectura_catalogo = require_roles("Coordinador", "Administrador")
+
+# Igual que require_lectura_catalogo, pero también admite Instructor — para
+# los catálogos de solo lectura (ficha, ambiente, resultado de aprendizaje,
+# competencia, día) que un Instructor necesita para ver el DETALLE de SU
+# PROPIA franja/sesión en "Detalle de Franja y Ambiente" (MiHorario.tsx →
+# DetalleFranjaAmbiente.tsx). No amplía nada de escritura, ni endpoints que
+# devuelvan el horario COMPLETO de otro instructor/ficha/ambiente (eso
+# sigue siendo solo Coordinador/Administrador) — solo datos de catálogo
+# (nombre, código, descripción) que no son sensibles.
+require_lectura_catalogo_o_instructor = require_roles("Coordinador", "Administrador", "Instructor")

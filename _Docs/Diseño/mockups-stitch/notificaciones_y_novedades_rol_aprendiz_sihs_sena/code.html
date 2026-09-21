@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="es"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><title>SENA SIHS - Portal del Aprendiz CGMLTI</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=Hanken+Grotesk:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base { html, body { margin: 0; padding: 0; } body { overscroll-behavior: none; } main > :first-child { margin-top: 0 !important; } main > :last-child { margin-bottom: 0 !important; } } ::-webkit-scrollbar { display: none; } @keyframes pulse-soft { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.9); } } .pulse-badge { animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "primary": "#006b2c", "secondary-fixed-dim": "#6fdf43", "on-tertiary-container": "#fffbff", "tertiary-container": "#b15f00", "on-surface-variant": "#3e4a3d", "on-primary-fixed-variant": "#005320", "surface": "#f8fafc", "surface-bright": "#ffffff", "primary-fixed-dim": "#62df7d", "inverse-surface": "#1e293b", "on-error": "#ffffff", "surface-container": "#e2e8f0", "background": "#faf8ff", "surface-container-high": "#e2e7ff", "on-tertiary-fixed-variant": "#6e3900", "on-primary-container": "#f7fff2", "on-tertiary-fixed": "#2f1500", "surface-dim": "#d2d9f4", "surface-container-low": "#f1f5f9", "on-secondary": "#ffffff", "primary-container": "#00873a", "on-secondary-fixed": "#052100", "on-primary": "#ffffff", "secondary-fixed": "#8afd5d", "secondary-container": "#eaf7ec", "tertiary": "#8d4b00", "inverse-primary": "#62df7d", "error-container": "#ffdad6", "on-secondary-container": "#257400", "surface-tint": "#006e2d", "surface-container-lowest": "#ffffff", "on-background": "#131b2e", "tertiary-fixed": "#ffdcc3", "surface-variant": "#dae2fd", "primary-fixed": "#7ffc97", "secondary": "#226d00", "on-error-container": "#93000a", "on-primary-fixed": "#002109", "inverse-on-surface": "#f8fafc", "surface-container-highest": "#94a3b8", "error": "#dc2626", "on-tertiary": "#ffffff", "outline-variant": "#e2e8f0", "on-secondary-fixed-variant": "#185200", "on-surface": "#131b2e", "tertiary-fixed-dim": "#ffb77d", "outline": "#cbd5e1" }, "borderRadius": { "DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem" }, "spacing": { "margin-mobile": "1rem", "margin-desktop": "1.5rem", "space-xl": "1.5rem", "gutter": "1rem", "space-sm": "0.5rem", "space-xs": "0.25rem", "space-3xl": "3rem", "space-base": "1rem", "space-2xs": "0.125rem", "space-lg": "1.25rem", "space-md": "0.75rem", "space-2xl": "2rem" }, "fontFamily": { "body-lg": ["Geist"], "label-sm": ["Geist"], "headline-sm": ["Hanken Grotesk"], "display-lg": ["Hanken Grotesk"], "headline-lg": ["Hanken Grotesk"], "label-md": ["Geist"], "body-md": ["Geist"], "body-sm": ["Geist"], "headline-md": ["Hanken Grotesk"] }, "fontSize": { "body-lg": ["15px", { "lineHeight": "22px", "fontWeight": "400" }], "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600" }], "headline-sm": ["16px", { "lineHeight": "24px", "fontWeight": "600" }], "display-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "headline-lg": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600" }], "body-md": ["13px", { "lineHeight": "18px", "fontWeight": "400" }], "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "headline-md": ["20px", { "lineHeight": "28px", "fontWeight": "600" }] } } } };</script></head><body class="min-h-full bg-surface text-on-surface font-body-md text-body-md antialiased selection:bg-secondary-container selection:text-primary"><header class="fixed top-0 left-0 right-0 z-50 bg-surface-bright/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-20 w-full px-margin-desktop flex items-center justify-between gap-space-lg"><div class="flex items-center gap-space-xl"><div class="flex items-center gap-space-md"><div class="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm ring-2 ring-secondary-container"><span class="material-symbols-outlined text-[22px]">domain</span></div><div class="flex flex-col"><div class="flex items-center gap-space-xs"><span class="font-headline-sm text-headline-sm text-on-surface font-bold tracking-tight">SENA</span><span class="px-1.5 py-0.5 rounded-lg bg-secondary-container text-primary font-label-sm text-label-sm uppercase">SIHS</span></div><span class="font-label-sm text-label-sm text-on-surface-variant font-medium tracking-wide">Portal Aprendiz</span></div></div><div class="hidden xl:flex items-center gap-space-sm pl-space-base"><div class="flex items-center gap-2 px-space-md py-1.5 rounded-full bg-surface-container-low"><span class="w-2 h-2 rounded-full bg-primary-container pulse-badge"></span><span class="font-label-sm text-label-sm text-on-surface font-semibold">CGMLTI Calle 52</span><span class="text-outline">|</span><span class="font-label-sm text-label-sm text-on-surface-variant">Trimestre II · Sincronizado</span></div></div></div><nav class="hidden lg:flex items-center gap-space-xs p-1 rounded-xl bg-surface-container-low" data-active-classes="bg-secondary-container text-primary font-semibold rounded-xl"><a class="flex items-center px-space-md py-2 rounded-xl text-on-surface-variant hover:bg-surface-bright hover:text-on-surface transition-colors font-label-md text-label-md" data-path="mi-horario" href="#">Mi Horario</a><a class="flex items-center px-space-md py-2 rounded-xl text-on-surface-variant hover:bg-surface-bright hover:text-on-surface transition-colors font-label-md text-label-md" data-path="avisos-y-eventos" href="#">Avisos &amp; Eventos</a><a class="flex items-center px-space-md py-2 rounded-xl text-on-surface-variant hover:bg-surface-bright hover:text-on-surface transition-colors font-label-md text-label-md relative" data-path="mensajes-docentes" href="#">Mensajes Docentes<span class="ml-1.5 px-1.5 py-0.2 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm text-[10px]">2</span></a><a aria-current="page" class="flex items-center px-space-md py-2 transition-colors relative bg-secondary-container text-primary font-semibold rounded-xl" data-path="notificaciones" href="#">Notificaciones<span class="ml-1.5 px-1.5 py-0.2 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-sm text-label-sm text-[10px]">3</span></a><a class="flex items-center px-space-md py-2 rounded-xl text-on-surface-variant hover:bg-surface-bright hover:text-on-surface transition-colors font-label-md text-label-md" data-path="ambientes" href="#">Ambientes</a></nav><div class="flex items-center gap-space-md"><button class="hidden sm:flex items-center gap-space-md px-space-md py-1.5 rounded-xl bg-surface-container-low text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[18px]">search</span><span class="font-body-sm text-body-sm hidden md:inline">Buscar en SIHS...</span><kbd class="px-1.5 py-0.5 rounded bg-surface-bright text-on-surface-variant font-label-sm text-[10px] shadow-sm font-mono">⌘K</kbd></button><button aria-label="Alertas institucionales" class="relative p-2 rounded-xl text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-tertiary-container"></span></button><div class="flex items-center gap-space-md pl-space-sm"><div class="hidden md:flex flex-col text-right"><span class="font-label-md text-label-md text-on-surface font-semibold">Sara Rodríguez M.</span><span class="font-label-sm text-label-sm text-on-surface-variant">Ficha 2670142 (ADSO)</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></div></header><main class="w-full pt-20 min-h-[calc(100vh-80px)] bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_60%)]"><div class="flex flex-col w-full px-margin-desktop py-space-xl max-w-7xl mx-auto space-y-space-xl">
+<!-- Encabezado Principal de Control -->
+<section class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg bg-surface-bright p-space-xl rounded-xl shadow-sm relative overflow-hidden">
+<div class="absolute -right-12 -top-12 w-56 h-56 rounded-full bg-secondary-container/40 pointer-events-none blur-3xl"></div>
+<div class="space-y-space-xs relative z-10">
+<div class="flex items-center gap-space-sm">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-secondary-container text-primary font-label-sm text-label-sm">
+<span class="w-2 h-2 rounded-full bg-primary pulse-badge"></span>
+          Canal Oficial Activo
+        </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">CGMLTI · Calle 52</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight">Centro de Notificaciones</h1>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-2">
+<span class="font-semibold text-on-surface">Ficha 2670142</span>
+<span>•</span>
+<span>Tecnología en Análisis y Desarrollo de Software (ADSO)</span>
+<span>•</span>
+<span class="text-primary font-semibold" id="unread-counter-text">3 notificaciones no leídas</span>
+</p>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm relative z-10">
+<button class="inline-flex items-center gap-2 px-space-md py-2 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-all" id="mark-all-read-btn" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">done_all</span>
+<span>Marcar todas como leídas</span>
+</button>
+<button class="inline-flex items-center gap-2 px-space-md py-2 rounded-xl bg-primary text-on-primary font-label-md text-label-md shadow-sm hover:opacity-95 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+<span>Gestionar avisos</span>
+</button>
+</div>
+</section>
+<!-- Métricas Rápidas en Tarjetas Horizontales -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-space-lg">
+<div class="flex items-center justify-between p-space-lg bg-surface-bright rounded-xl shadow-sm group hover:shadow-md transition-shadow">
+<div class="space-y-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Pendientes por revisar</span>
+<div class="flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg font-bold text-on-surface" id="metric-unread-count">3</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">requieren atención</span>
+</div>
+</div>
+<div class="w-12 h-12 rounded-xl bg-secondary-container flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">mark_email_unread</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-space-lg bg-surface-bright rounded-xl shadow-sm group hover:shadow-md transition-shadow">
+<div class="space-y-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Cambios en la semana</span>
+<div class="flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg font-bold text-tertiary-container">1</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">modificación de aula</span>
+</div>
+</div>
+<div class="w-12 h-12 rounded-xl bg-tertiary-fixed flex items-center justify-center text-tertiary-container group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[24px]">swap_horiz</span>
+</div>
+</div>
+<div class="flex items-center justify-between p-space-lg bg-surface-bright rounded-xl shadow-sm group hover:shadow-md transition-shadow">
+<div class="space-y-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Recordatorios programados</span>
+<div class="flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg font-bold text-on-surface">2</span>
+<span class="font-label-sm text-label-sm text-primary font-semibold">a 30 min activos</span>
+</div>
+</div>
+<div class="w-12 h-12 rounded-xl bg-surface-container-low flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-[24px]">alarm_on</span>
+</div>
+</div>
+</section>
+<!-- Barra de Filtros Segmentados -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-space-md">
+<div class="flex items-center p-1 bg-surface-container-low rounded-xl overflow-x-auto" id="filter-tabs">
+<button class="tab-btn px-space-md py-1.5 rounded-xl bg-surface-bright font-label-md text-label-md text-on-surface shadow-sm font-semibold whitespace-nowrap transition-all" data-filter="all" type="button">
+        Todas <span class="ml-1 px-1.5 py-0.5 rounded-full bg-secondary-container text-primary text-[10px]" id="filter-total-pill">4</span>
+</button>
+<button class="tab-btn px-space-md py-1.5 rounded-xl text-on-surface-variant hover:text-on-surface font-label-md text-label-md whitespace-nowrap transition-all" data-filter="cambios" type="button">
+        Cambios de Aula &amp; Horario
+      </button>
+<button class="tab-btn px-space-md py-1.5 rounded-xl text-on-surface-variant hover:text-on-surface font-label-md text-label-md whitespace-nowrap transition-all" data-filter="recordatorios" type="button">
+        Recordatorios de Tareas
+      </button>
+<button class="tab-btn px-space-md py-1.5 rounded-xl text-on-surface-variant hover:text-on-surface font-label-md text-label-md whitespace-nowrap transition-all" data-filter="sistema" type="button">
+        Sistema &amp; Coordinación
+      </button>
+</div>
+<div class="flex items-center gap-2 self-end sm:self-auto">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Ordenar por:</span>
+<select class="bg-surface-bright text-on-surface font-label-sm text-label-sm rounded-xl px-2.5 py-1.5 shadow-sm outline-none focus:ring-1 focus:ring-primary cursor-pointer">
+<option value="recent">Más recientes primero</option>
+<option value="priority">Prioridad académica</option>
+</select>
+</div>
+</div>
+<!-- Layout Principal Dividido: Feed Central + Barra Lateral -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+<!-- Feed Central de Novedades (8 Columnas en Desktop) -->
+<div class="lg:col-span-8 space-y-space-xl" id="notifications-feed">
+<!-- SECCIÓN: HOY -->
+<div class="space-y-space-md" data-section="hoy">
+<div class="flex items-center gap-space-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Hoy</h2>
+<span class="text-on-surface-variant font-label-sm text-label-sm">• Miércoles 28 de Mayo</span>
+</div>
+<!-- Notificación 1: Prioritaria (Cambio de ambiente) -->
+<article class="notification-card unread p-space-lg bg-surface-bright rounded-xl shadow-sm hover:shadow-md transition-all space-y-space-md relative overflow-hidden" data-category="cambios" data-id="notif-1">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-tertiary-container"></div>
+<div class="flex items-start justify-between gap-space-md">
+<div class="flex items-start gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-xl bg-tertiary-fixed flex items-center justify-center text-tertiary-container shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[20px]">meeting_room</span>
+</div>
+<div class="space-y-1 min-w-0">
+<div class="flex flex-wrap items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed-variant font-label-sm text-label-sm font-semibold">
+                    Reubicación de Aula
+                  </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Hace 25 min</span>
+<span class="status-dot w-2 h-2 rounded-full bg-primary shrink-0" title="No leído"></span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                  Cambio temporal de ambiente para la sesión de mañana
+                </h3>
+</div>
+</div>
+<button aria-label="Opciones de notificación" class="text-on-surface-variant hover:text-on-surface p-1 rounded-lg" type="button">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="pl-14 space-y-space-md">
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              La sesión programada de <strong class="text-on-surface">Desarrollo Web</strong> con el <strong class="text-on-surface">Ing. Carlos Morales</strong> se trasladará provisionalmente del <span class="line-through text-outline font-mono">Lab 302</span> al <span class="font-semibold text-primary font-mono bg-secondary-container px-2 py-0.5 rounded-lg">Lab 305</span> debido a jornada de calibración y mantenimiento preventivo en la red eléctrica.
+            </p>
+<div class="flex flex-wrap items-center gap-space-sm p-3 rounded-xl bg-surface-container-low">
+<div class="flex items-center gap-1.5 text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">schedule</span>
+<span>07:00 AM - 10:00 AM</span>
+</div>
+<span class="text-outline">|</span>
+<div class="flex items-center gap-1.5 text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px] text-primary">person</span>
+<span>Ing. Carlos Morales</span>
+</div>
+<span class="text-outline">|</span>
+<span class="font-label-sm text-label-sm text-primary font-medium">Sede Calle 52 · Piso 3</span>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm pt-1">
+<a class="inline-flex items-center gap-1.5 px-space-md py-1.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md hover:opacity-95 transition-opacity" data-path="mi-horario" href="#">
+<span class="material-symbols-outlined text-[16px]">calendar_today</span>
+<span>Ver en mi horario</span>
+</a>
+<button class="action-dismiss inline-flex items-center gap-1.5 px-space-md py-1.5 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">check</span>
+<span>Entendido</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Notificación 2: Recordatorio de Tarea -->
+<article class="notification-card unread p-space-lg bg-surface-bright rounded-xl shadow-sm hover:shadow-md transition-all space-y-space-md relative overflow-hidden" data-category="recordatorios" data-id="notif-2">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+<div class="flex items-start justify-between gap-space-md">
+<div class="flex items-start gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-xl bg-secondary-container flex items-center justify-center text-primary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">notifications_active</span>
+</div>
+<div class="space-y-1 min-w-0">
+<div class="flex flex-wrap items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-secondary-container text-primary font-label-sm text-label-sm font-semibold">
+                    Plazo Crítico · 24h
+                  </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Hace 2 horas</span>
+<span class="status-dot w-2 h-2 rounded-full bg-primary shrink-0" title="No leído"></span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                  Entrega de Proyecto Formativo en 24h
+                </h3>
+</div>
+</div>
+<button aria-label="Opciones de notificación" class="text-on-surface-variant hover:text-on-surface p-1 rounded-lg" type="button">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="pl-14 space-y-space-md">
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Recuerda cargar la URL del repositorio de GitHub con los avances de la <strong class="text-on-surface">API RESTful en Node/Express</strong> y la suite de pruebas funcionales requerida por la <strong class="text-on-surface">Lic. Diana Prieto</strong>.
+            </p>
+<div class="flex items-center gap-3 p-2.5 rounded-xl bg-surface-container-low max-w-lg">
+<span class="material-symbols-outlined text-primary text-[20px]">terminal</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface font-mono font-medium truncate">sprint2_backend_rest_adso2670142</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Límite: Jueves 29, 11:59 PM (Territorium/Zajuna)</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm pt-1">
+<button class="action-dismiss inline-flex items-center gap-1.5 px-space-md py-1.5 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+<span>Confirmar entrega realizada</span>
+</button>
+</div>
+</div>
+</article>
+</div>
+<!-- SECCIÓN: ESTA SEMANA -->
+<div class="space-y-space-md" data-section="esta-semana">
+<div class="flex items-center gap-space-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-on-surface-variant"></span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Esta semana</h2>
+<span class="text-on-surface-variant font-label-sm text-label-sm">• Días previos</span>
+</div>
+<!-- Notificación 3: Informativa Sprint -->
+<article class="notification-card unread p-space-lg bg-surface-bright rounded-xl shadow-sm hover:shadow-md transition-all space-y-space-md relative overflow-hidden" data-category="sistema" data-id="notif-3">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary"></div>
+<div class="flex items-start justify-between gap-space-md">
+<div class="flex items-start gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-primary shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[20px]">grading</span>
+</div>
+<div class="space-y-1 min-w-0">
+<div class="flex flex-wrap items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm font-semibold">
+                    Evaluación de Competencia
+                  </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Martes 27</span>
+<span class="status-dot w-2 h-2 rounded-full bg-primary shrink-0" title="No leído"></span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                  Publicación de calificaciones del Sprint 2
+                </h3>
+</div>
+</div>
+<button aria-label="Opciones de notificación" class="text-on-surface-variant hover:text-on-surface p-1 rounded-lg" type="button">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="pl-14 space-y-space-md">
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              El evaluador ha asentado las notas de resultado de aprendizaje para la competencia técnica <span class="font-mono text-on-surface font-medium">220501096 - Construcción del software</span>. Tu resultado actual registra estado: <strong class="text-primary font-semibold">Aprobado (A)</strong>.
+            </p>
+<div class="flex items-center gap-2">
+<button class="action-dismiss inline-flex items-center gap-1.5 px-space-md py-1.5 rounded-xl bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span>Archivar en historial</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Notificación 4: Coordinación / Jornada Pedagógica -->
+<article class="notification-card read p-space-lg bg-surface-bright/80 rounded-xl shadow-sm hover:shadow-md transition-all space-y-space-md relative overflow-hidden opacity-90" data-category="sistema" data-id="notif-4">
+<div class="flex items-start justify-between gap-space-md">
+<div class="flex items-start gap-space-md min-w-0">
+<div class="w-10 h-10 rounded-xl bg-surface-container-low flex items-center justify-center text-on-surface-variant shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[20px]">groups</span>
+</div>
+<div class="space-y-1 min-w-0">
+<div class="flex flex-wrap items-center gap-2">
+<span class="px-2 py-0.5 rounded-full bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm font-semibold">
+                    Circular de Coordinación
+                  </span>
+<span class="text-on-surface-variant font-label-sm text-label-sm">Lunes 26</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">Leída</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">
+                  Jornada pedagógica de instructores el próximo viernes 30
+                </h3>
+</div>
+</div>
+<button aria-label="Opciones de notificación" class="text-on-surface-variant hover:text-on-surface p-1 rounded-lg" type="button">
+<span class="material-symbols-outlined text-[20px]">more_vert</span>
+</button>
+</div>
+<div class="pl-14 space-y-space-md">
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Se informa a la comunidad de aprendices de la jornada diurna y mixta que el <strong class="text-on-surface">viernes 30 de Mayo</strong> no habrá formación presencial en la franja de 01:00 PM a 06:00 PM por reunión institucional de claustro docente.
+            </p>
+<div class="inline-flex items-center gap-1.5 text-on-surface-variant font-label-sm text-label-sm bg-surface-container-low px-2.5 py-1 rounded-lg">
+<span class="material-symbols-outlined text-[15px] text-primary">verified</span>
+<span>Emitido por: Coordinación Académica CGMLTI</span>
+</div>
+</div>
+</article>
+</div>
+</div>
+<!-- Panel Lateral Derecho: Filtros Rápidos, Canales & Instructores (4 Columnas) -->
+<aside class="lg:col-span-4 space-y-space-xl">
+<!-- Preferencias de Notificación y Canales -->
+<div class="bg-surface-bright rounded-xl p-space-lg shadow-sm space-y-space-lg">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Canales de Entrega</h3>
+<span class="material-symbols-outlined text-primary text-[20px]">mark_email_read</span>
+</div>
+<div class="space-y-space-md">
+<div class="flex items-center justify-between p-space-md rounded-xl bg-surface-container-low">
+<div class="flex items-center gap-space-md min-w-0">
+<span class="material-symbols-outlined text-primary text-[20px]">devices</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Alertas en Pantalla</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Push en navegador SIHS</span>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<div class="flex items-center justify-between p-space-md rounded-xl bg-surface-container-low">
+<div class="flex items-center gap-space-md min-w-0">
+<span class="material-symbols-outlined text-primary text-[20px]">mail</span>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Correo Institucional</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">srodriguez@sena.edu.co</span>
+</div>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-9 h-5 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+<div class="pt-space-xs space-y-space-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block font-semibold">Anticipación de Alerta</span>
+<div class="flex items-center justify-between p-space-md rounded-xl bg-secondary-container">
+<div class="flex items-center gap-space-sm text-primary">
+<span class="material-symbols-outlined text-[20px]">timer</span>
+<span class="font-label-md text-label-md font-semibold">Recordar 30 min antes</span>
+</div>
+<span class="px-2 py-0.5 bg-surface-bright text-primary rounded-full font-label-sm text-label-sm font-bold shadow-2xs">Activo</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant px-1">
+            Recibirás aviso con suficiente tiempo para desplazarte entre bloques de formación y talleres.
+          </p>
+</div>
+</div>
+<!-- Instructores Seguidos de la Ficha 2670142 -->
+<div class="bg-surface-bright rounded-xl p-space-lg shadow-sm space-y-space-md">
+<div class="flex items-center justify-between">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Instructores de la Ficha</h3>
+<span class="font-label-sm text-label-sm text-primary font-semibold">3 seguidos</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant">
+          Notificaciones prioritarias activadas para anuncios emitidos por tus docentes en este trimestre:
+        </p>
+<div class="space-y-space-xs">
+<div class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-space-md">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-primary font-bold text-label-sm">
+                CM
+              </div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Ing. Carlos Morales</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Desarrollo Web &amp; Frontend</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+</div>
+<div class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-space-md">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-primary font-bold text-label-sm">
+                DP
+              </div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Lic. Diana Prieto</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Bases de Datos &amp; Backend</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+</div>
+<div class="flex items-center justify-between p-2.5 rounded-xl hover:bg-surface-container-low transition-colors">
+<div class="flex items-center gap-space-md">
+<div class="w-8 h-8 rounded-full bg-secondary-container flex items-center justify-center text-primary font-bold text-label-sm">
+                RV
+              </div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">Mg. Roberto Valenzuela</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Metodologías Ágiles &amp; Calidad</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+</div>
+</div>
+</div>
+<!-- Resumen de Actividad Institucional -->
+<div class="p-space-lg rounded-xl bg-surface-bright shadow-sm space-y-space-sm relative overflow-hidden">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">help_outline</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold">¿Inconsistencia en horario?</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          Si notas choque entre ambientes asignados o ausencias no reportadas, contacta a la coordinación de tu programa en el CGMLTI.
+        </p>
+<div class="pt-2">
+<a class="inline-flex items-center gap-1 font-label-md text-label-md text-primary hover:underline" data-path="directorio-centro" href="#">
+<span>Directorio de Coordinación</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</a>
+</div>
+</div>
+</aside>
+</div>
+</div>
+<script>
+  (function() {
+    const unreadPill = document.getElementById('unread-counter-text');
+    const metricUnread = document.getElementById('metric-unread-count');
+    const markAllBtn = document.getElementById('mark-all-read-btn');
+    const filterTabs = document.querySelectorAll('#filter-tabs button');
+    const cards = document.querySelectorAll('.notification-card');
+    const dismissBtns = document.querySelectorAll('.action-dismiss');
+
+    function updateUnreadCount() {
+      const remainingUnread = document.querySelectorAll('.notification-card.unread').length;
+      if (unreadPill) {
+        unreadPill.textContent = remainingUnread === 0 
+          ? 'Sin notificaciones pendientes' 
+          : `${remainingUnread} notificaciones no leídas`;
+      }
+      if (metricUnread) {
+        metricUnread.textContent = remainingUnread;
+      }
+    }
+
+    if (markAllBtn) {
+      markAllBtn.addEventListener('click', () => {
+        cards.forEach(card => {
+          card.classList.remove('unread');
+          card.classList.add('read');
+          card.classList.add('opacity-85');
+          const dot = card.querySelector('.status-dot');
+          if (dot) dot.remove();
+        });
+        updateUnreadCount();
+      });
+    }
+
+    dismissBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const card = e.target.closest('.notification-card');
+        if (card) {
+          card.classList.remove('unread');
+          card.classList.add('read');
+          card.classList.add('opacity-85');
+          const dot = card.querySelector('.status-dot');
+          if (dot) dot.remove();
+          updateUnreadCount();
+        }
+      });
+    });
+
+    filterTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        filterTabs.forEach(t => {
+          t.classList.remove('bg-surface-bright', 'shadow-sm', 'text-on-surface', 'font-semibold');
+          t.classList.add('text-on-surface-variant');
+        });
+        tab.classList.add('bg-surface-bright', 'shadow-sm', 'text-on-surface', 'font-semibold');
+        tab.classList.remove('text-on-surface-variant');
+
+        const filter = tab.getAttribute('data-filter');
+        cards.forEach(card => {
+          if (filter === 'all' || card.getAttribute('data-category') === filter) {
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+          } else {
+            card.style.display = 'none';
+          }
+        });
+      });
+    });
+  })();
+</script></main><footer class="w-full bg-surface-bright shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="w-full px-margin-desktop py-space-xl flex flex-col md:flex-row items-center justify-between gap-space-md"><div class="flex items-center gap-space-md"><div class="w-6 h-6 rounded-lg bg-primary flex items-center justify-center text-on-primary"><span class="material-symbols-outlined text-[15px]">school</span></div><span class="font-label-md text-label-md text-on-surface-variant">© SENA CGMLTI Calle 52 · Regional Distrito Capital · Sistema Integrado de Horarios y Sedes</span></div><div class="flex items-center gap-space-lg text-on-surface-variant font-label-sm text-label-sm"><a class="hover:text-primary transition-colors" data-path="soporte-tecnico" href="#">Mesa de Ayuda</a><span class="text-outline">•</span><a class="hover:text-primary transition-colors" data-path="directorio-centro" href="#">Directorio Coordinación</a><span class="text-outline">•</span><a class="hover:text-primary transition-colors" data-path="reglamento-aprendiz" href="#">Reglamento del Aprendiz</a></div></div></footer></body></html>

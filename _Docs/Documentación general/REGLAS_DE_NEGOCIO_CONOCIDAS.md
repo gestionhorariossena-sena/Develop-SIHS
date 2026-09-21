@@ -54,6 +54,26 @@ la misma ficha** (en su matriz Excel lo marca con un punto rojo). Es una
 validación distinta a las tres de arriba — no compara horas, compara que
 `(idFicha, idResultado)` no se repita en `horarios`.
 
+⚠️ **Corrección 2026-09-02:** la regla original comparaba `(idFicha,
+idResultado)` sin mirar el día, así que partir una misma clase en dos
+bloques el mismo día (antes y después del descanso) se rechazaba como
+"resultado repetido" — falso positivo, no es el duplicado real que la
+regla quiere evitar. Ahora un horario existente que comparte al menos un
+día con el nuevo se trata como continuación de la misma clase (no se
+marca); solo se marca si el resultado ya se programó en un día
+completamente distinto, que sigue siendo el caso que hay que bloquear.
+
+⚠️ **Corrección 2026-09-12:** la regla (después de la corrección de
+arriba) seguía sin mirar el instructor — bloqueaba `(idFicha,
+idResultado)` en un día distinto sin importar quién lo dicta, así que
+dos instructores repartiéndose el mismo resultado en días distintos
+(reparto válido) se marcaba igual como duplicado. Encontrado al probar
+el generador de horarios con datos reales (varios instructores
+distintos cubriendo el mismo resultado en fichas de ADSO). Ahora solo
+cuenta como duplicado si es el **mismo instructor** repitiendo
+`(idFicha, idResultado)` en un día no relacionado; instructores
+distintos nunca chocan por esta regla.
+
 - Entre bloques que cruzan de ambiente/sede hay un margen de traslado que
   hoy se negocia a mano con los instructores (ej. salir 11:30, recibir a
   la 1 o 2 pm en el otro sitio) — no es una regla dura del sistema, es
@@ -71,6 +91,17 @@ validación distinta a las tres de arriba — no compara horas, compara que
 - ❓ **¿Cuál es el criterio real detrás de esa restricción?** Probablemente
   algo como "tiempo mínimo de traslado entre sede A y sede B", configurable
   por par de sedes, no una regla de jornada. Falta confirmarlo.
+- ✅ **Resuelto 2026-09-12:** a pesar de esta corrección, RF-011 (el
+  requisito formal) sí tenía codificada la regla dura "mismo instructor,
+  jornadas continuas, sede distinta, mismo día" en
+  `HorarioService._validar_reglas_instructor` — quedó así desde el
+  principio porque el requisito formal mandaba sobre el hallazgo de
+  entrevista hasta que el equipo lo confirmara (ver el propio código, que
+  ya dejaba esto anotado). Encontrado al probar el generador de horarios
+  con datos reales (bloqueó asignaciones válidas de instructores reales
+  en fichas de ADSO) — el equipo confirmó que la entrevista manda: la
+  regla se quitó del código. El margen de traslado sigue siendo
+  coordinación humana, no una restricción dura del sistema.
 
 **Lógica ya definida para automatizar la detección** (ver
 `database/02_datos_prueba.sql` líneas 215-225, y el `EXCLUDE` constraint

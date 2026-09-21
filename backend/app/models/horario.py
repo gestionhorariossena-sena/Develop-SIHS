@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, Column, ForeignKey, Integer, Table, Time
+from sqlalchemy import Boolean, CheckConstraint, Column, DateTime, ForeignKey, Integer, Table, Time, func, true
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -17,9 +17,11 @@ horario_dia = Table(
 
 class Horario(Base):
     """El módulo objetivo del proyecto: crear esto detectando cruces de
-    ficha/instructor/ambiente solapados, más las reglas de RF-011 (tope de
-    horas/semana por tipo de contrato, jornada Noche vedada para planta,
-    y centro de formación en jornadas continuas). Ver
+    ficha/instructor/ambiente solapados, más las reglas de RF-011 (tope
+    de horas/semana por tipo de contrato, jornada Noche vedada para
+    planta -- la tercera parte de RF-011, centro de formación en
+    jornadas continuas, se quitó el 2026-09-12 por contradecir un
+    hallazgo real de entrevista, ver REGLAS_DE_NEGOCIO_CONOCIDAS.md). Ver
     _Docs/Documentación general/REGLAS_DE_NEGOCIO_CONOCIDAS.md y
     _Docs/Informes de requisitos/Requisitos Funcionales V4.pdf (RF-011) —
     las validaciones viven en HorarioService, no acá."""
@@ -39,6 +41,19 @@ class Horario(Base):
     idInstructor = Column(UUID(as_uuid=True), ForeignKey("usuarios.idUsuario"), nullable=False)
     idFicha = Column(Integer, ForeignKey("fichas.idFicha"), nullable=False)
     idResultado = Column(Integer, ForeignKey("resultados_aprendizaje.idResultado"), nullable=False)
+
+    # Habilitan el backlog de Historial de horarios (pedido 2026-09-03):
+    # ordenar por más reciente y desactivar sin borrar. fechaModificacion
+    # se actualiza sola en cada UPDATE — no hace falta tocarla a mano en
+    # HorarioService.actualizar().
+    fechaCreacion = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    fechaModificacion = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    activo = Column(Boolean, server_default=true(), nullable=False)
+    # Visibilidad para el instructor (vistas de "Mi horario", pedido
+    # 2026-09-03) — distinto de `activo`, que es para cruces/RF-011. Default
+    # true: no oculta de golpe los horarios ya creados antes de que este
+    # campo existiera, ver el docstring de la migración.
+    publicado = Column(Boolean, server_default=true(), nullable=False)
 
     instructor = relationship("Usuario")
     ficha = relationship("Ficha")

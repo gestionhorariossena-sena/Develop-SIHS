@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+
+<html class="light" lang="es">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Panel de Administración — Solicitudes de Acceso · SIHS SENA</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&amp;family=Hanken+Grotesk:wght@500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              DEFAULT: "#16a34a",
+              soft: "#dcfce7",
+              glow: "rgba(22, 163, 74, 0.12)",
+              dark: "#14532d"
+            },
+            sena: "#39a900",
+            surface: {
+              50: "#f8fafc",
+              100: "#f1f5f9",
+              200: "#e2e8f0",
+              300: "#cbd5e1",
+              800: "#1e293b",
+              900: "#0f172a"
+            }
+          },
+          fontFamily: {
+            sans: ["Geist", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+            display: ["Hanken Grotesk", "Geist", "sans-serif"]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      background: linear-gradient(180deg, #eaf7ec 0%, #f4fbf6 180px, #ffffff 650px, #f8fafc 100%);
+      color: #0f172a;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    .badge-ring {
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.05);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col text-slate-800 font-sans selection:bg-emerald-500/20 selection:text-emerald-800 antialiased" style="background: linear-gradient(rgb(184, 238, 198) 0%, rgb(216, 246, 225) 160px, rgb(237, 251, 242) 380px, rgb(255, 255, 255) 680px, rgb(255, 255, 255) 100%); min-height: 100vh;">
+<!-- TOP HEADER (Rol Administrador SIHS SENA) -->
+<header class="sticky top-0 z-50 px-6 py-3 bg-white/90 backdrop-blur-xl border-b border-emerald-100/90 shadow-[0_1px_3px_rgba(0,0,0,0.03)] transition-all"><div class="max-w-7xl mx-auto flex items-center justify-between gap-3"><div class="flex items-center gap-3 shrink-0"><div class="flex items-center gap-2 pr-3 border-r border-slate-200"><div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center text-white font-extrabold text-sm shadow-sm"><span class="material-symbols-outlined text-[20px]">grid_view</span></div><div class="flex flex-col"><span class="font-display font-extrabold text-slate-900 tracking-tight text-sm leading-none flex items-center gap-1">SENA <span class="text-emerald-700">SIHS</span></span><span class="text-[10px] text-slate-500 font-mono leading-tight mt-0.5">CGMLTI Calle 52</span></div></div><div class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-medium text-emerald-800"><span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span>Trimestre II · Sincronizado</span></div></div><nav class="hidden lg:flex items-center gap-1 p-1 rounded-full bg-slate-100/90 border border-slate-200 text-xs font-medium"><a class="px-3 py-1 rounded-full text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all" href="#">Dashboard</a><a class="px-3 py-1 rounded-full text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all" href="#">Mi Horario</a><a class="px-3 py-1 rounded-full text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all" href="#">Constructor Ágil</a><a class="px-3 py-1 rounded-full text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all" href="#">Fichas</a><a class="px-3 py-1 rounded-full text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all" href="#">Instructores</a><a class="px-3 py-1 rounded-full text-slate-600 hover:text-slate-900 hover:bg-white/80 transition-all" href="#">Ambientes</a><a class="flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-600 text-white font-semibold shadow-sm transition-all" href="#"><span class="material-symbols-outlined text-[15px]">admin_panel_settings</span><span>Admin · Solicitudes</span><span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-white/20 text-white leading-none">6</span></a></nav><div class="flex items-center gap-2.5 shrink-0"><div class="relative hidden xl:block"><span class="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[15px] text-slate-400">search</span><input class="w-56 bg-slate-50 border border-slate-200 rounded-full pl-8 pr-12 py-1 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/30 transition-all" placeholder="Buscar fichas, sedes..." type="text"/><span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-slate-400 border border-slate-200 bg-white px-1.5 py-0.2 rounded shadow-sm">⌘K</span></div><button class="relative p-1.5 rounded-full text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all" title="Notificaciones"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-amber-500 ring-2 ring-white"></span></button><button class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-all active:scale-95"><span class="material-symbols-outlined text-[16px]">add</span><span>Nuevo Horario</span></button><div class="h-4 w-px bg-slate-200 hidden sm:block"></div><div class="flex items-center gap-2 pl-1"><div class="w-7 h-7 rounded-full bg-emerald-100 border border-emerald-300 text-emerald-800 font-bold text-xs flex items-center justify-center shadow-sm">MH</div><div class="hidden md:flex flex-col text-xs leading-none"><span class="font-medium text-slate-800">Ing. M. Hernández</span><span class="text-[10px] text-slate-500 mt-0.5">Coordinación Académica</span></div></div></div></div></header>
+<!-- MAIN WRAPPER -->
+<main class="flex-1 px-4 sm:px-8 py-7 max-w-7xl w-full mx-auto space-y-6">
+<!-- HERO & EXECUTIVE AUDIT SUMMARY -->
+<section class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<div class="flex items-center gap-2 text-xs font-medium text-slate-500 mb-1">
+<span class="text-purple-800 font-semibold bg-purple-100 px-2 py-0.5 rounded">Zona Restringida · Solo Administradores</span>
+<span class="text-slate-300">·</span>
+<span>Módulo de Control de Acceso y Alta de Usuarios</span>
+</div>
+<h1 class="text-2xl sm:text-3xl font-display font-bold text-slate-900 tracking-tight flex items-center gap-3">
+          Solicitudes de Acceso al Sistema
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-sm">
+<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+            6 Pendientes de Validación
+          </span>
+</h1>
+<p class="text-xs sm:text-sm text-slate-600 mt-1 max-w-3xl">
+          Revisa, valida la identidad y aprueba las peticiones de registro originadas desde el portal público de registro («¿Eres coordinador o instructor? Solicita acceso»). Al aprobar, el sistema genera credenciales provisionales seguras y asigna el rol vía <span class="font-mono text-xs text-slate-700 bg-slate-100 px-1 py-0.5 rounded">POST /usuario-rol/asignar</span>.
+        </p>
+</div>
+<!-- Quick Controls -->
+<div class="flex items-center gap-2 shrink-0">
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-all shadow-sm">
+<span class="material-symbols-outlined text-[16px] text-slate-500">download</span>
+<span>Exportar Registro (CSV)</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition-all active:scale-95">
+<span class="material-symbols-outlined text-[16px]">sync</span>
+<span>Sincronizar Cola</span>
+</button>
+</div>
+</section>
+<!-- METRICS CARDS -->
+<section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="p-4 rounded-xl bg-white border border-amber-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
+<div class="flex items-center justify-between text-xs text-slate-600">
+<span class="font-medium">Pendientes de Aprobación</span>
+<span class="p-1.5 rounded-lg bg-amber-50 text-amber-700">
+<span class="material-symbols-outlined text-[18px]">pending_actions</span>
+</span>
+</div>
+<div class="my-2">
+<div class="text-3xl font-display font-bold text-amber-700">6</div>
+<p class="text-[11px] text-amber-800 font-medium mt-0.5">4 Coordinadores · 2 Instructores</p>
+</div>
+<div class="pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-slate-400">schedule</span>
+<span>Tiempo prom. en cola: 3.4 horas</span>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between hover:border-emerald-300 hover:shadow-md transition-all">
+<div class="flex items-center justify-between text-xs text-slate-600">
+<span class="font-medium">Aprobadas Este Mes</span>
+<span class="p-1.5 rounded-lg bg-emerald-50 text-emerald-700">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</span>
+</div>
+<div class="my-2">
+<div class="text-3xl font-display font-bold text-slate-900">38</div>
+<p class="text-[11px] text-emerald-700 font-medium mt-0.5">Credenciales temporales despachadas</p>
+</div>
+<div class="pt-2 border-t border-slate-100 text-[11px] text-slate-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-emerald-600">lock_reset</span>
+<span>100% cambiaron clave al 1er login</span>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-white border border-slate-200 shadow-sm flex flex-col justify-between hover:border-slate-300 hover:shadow-md transition-all">
+<div class="flex items-center justify-between text-xs text-slate-600">
+<span class="font-medium">Rechazadas con Justificación</span>
+<span class="p-1.5 rounded-lg bg-slate-100 text-slate-600">
+<span class="material-symbols-outlined text-[18px]">block</span>
+</span>
+</div>
+<div class="my-2">
+<div class="text-3xl font-display font-bold text-slate-900">4</div>
+<p class="text-[11px] text-slate-500 mt-0.5">Correos institucionales no válidos</p>
+</div>
+<div class="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+<span>Notificación formal remitida</span>
+</div>
+</div>
+<div class="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between text-xs text-emerald-900">
+<span class="font-semibold">Protocolo de Seguridad</span>
+<span class="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+<span class="material-symbols-outlined text-[18px]">verified_user</span>
+</span>
+</div>
+<div class="my-2">
+<div class="text-xs font-semibold text-emerald-950">Autenticación Forzada 1er Ingreso</div>
+<p class="text-[11px] text-emerald-800 leading-snug mt-1">
+            Contraseña autogenerada con entropía SHA-256 válida por 48 horas con revocación automática.
+          </p>
+</div>
+<div class="pt-2 border-t border-emerald-200/80 text-[10px] text-emerald-700 font-mono">
+          SMTP institucional activo &amp; en línea
+        </div>
+</div>
+</section>
+<!-- MAIN INTERACTIVE SECTION: TABS + CARDS + MODAL PREVIEW -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+<!-- LEFT / MAIN: REQUESTS LIST (8 COLS) -->
+<div class="lg:col-span-8 space-y-4">
+<!-- Filter Tabs & Quick Search Controls -->
+<div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<!-- Segmented Filter Tabs -->
+<div class="inline-flex p-1 rounded-lg bg-slate-100 text-xs font-medium" id="filter-tabs">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white text-emerald-800 font-bold shadow-sm transition-all" data-tab="pendientes">
+<span>Pendientes</span>
+<span class="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-800 font-bold">6</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all" data-tab="aprobadas">
+<span>Aprobadas (38)</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all" data-tab="rechazadas">
+<span>Rechazadas (4)</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all" data-tab="todas">
+<span>Historial Completo</span>
+</button>
+</div>
+<!-- Secondary Filters -->
+<div class="flex items-center gap-2">
+<select class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-700 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500">
+<option>Todos los roles solicitados</option>
+<option>Rol: Coordinación Académica</option>
+<option>Rol: Instructor Contratista</option>
+<option>Rol: Instructor de Planta</option>
+</select>
+</div>
+</div>
+<!-- SOLICITUD 1: EN EVALUACIÓN (EXPANDIDA CON ACCIONES DIRECTAS) -->
+<article class="p-5 rounded-xl bg-white border-2 border-emerald-500/40 shadow-sm hover:shadow-md transition-all space-y-4">
+<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+<div class="flex items-start gap-3.5">
+<div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center font-bold text-sm shrink-0">
+                MB
+              </div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="font-display font-bold text-slate-900 text-base">Ing. Maritza Benítez Cardona</h3>
+<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+                    Solicita: Coordinación Académica
+                  </span>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Pendiente de validación
+                  </span>
+</div>
+<div class="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap font-mono">
+<span class="text-slate-700 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-slate-400">mail</span>
+                    mbenitez@sena.edu.co
+                  </span>
+<span>·</span>
+<span>C.C. 52.849.120</span>
+<span>·</span>
+<span class="text-slate-500">Radicado: 24 Mayo 2025, 08:35 AM (Hace 2h)</span>
+</div>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-md text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+              ID #REQ-2025-0142
+            </span>
+</div>
+<!-- Justificación del solicitante -->
+<div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+<div class="font-semibold text-slate-700 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-emerald-600">format_quote</span>
+<span>Motivo y justificación declarada por el solicitante:</span>
+</div>
+<p class="text-slate-700 leading-relaxed pl-5 italic">
+              «Asumí funciones como Coordinadora Académica de la jornada Mañana en el Centro de Gestión de Mercados, Logística y TI (Sede Calle 52). Requiero acceso de administración para asignación de ambientes de laboratorio 301 a 306 y resolución de novedades de fichas ADSO y Multimedia.»
+            </p>
+</div>
+<!-- Selector de Rol Definitivo a Asignar en Backend (POST /usuario-rol/asignar) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">Rol a otorgar en sistema:</label>
+<select class="w-full text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm">
+<option selected="">Coordinación Académica (Permiso de programación y asignación)</option>
+<option>Instructor (Solo consulta de horario y registro de asistencia)</option>
+<option>Administrador (Control total del sistema)</option>
+</select>
+</div>
+<div>
+<label class="block text-xs font-semibold text-slate-700 mb-1">Sede y jornada autorizada:</label>
+<select class="w-full text-xs bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-800 font-medium focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm">
+<option selected="">CGMLTI Calle 52 — Todas las jornadas</option>
+<option>CGMLTI Calle 52 — Solo Jornada Diurna</option>
+<option>CGMLTI Calle 52 — Solo Jornada Nocturna</option>
+</select>
+</div>
+</div>
+<!-- Acciones de Aprobación / Rechazo -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-200">
+<div class="flex items-center gap-2 text-[11px] text-slate-500">
+<span class="material-symbols-outlined text-[15px] text-emerald-600">mark_email_read</span>
+<span>Enviará contraseña provisoria al correo institucional y forzará reseteo al entrar.</span>
+</div>
+<div class="flex items-center gap-2 justify-end">
+<button class="inline-flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 text-slate-700 text-xs font-medium transition-all" onclick="document.getElementById('reject-drawer').classList.remove('hidden')">
+<span class="material-symbols-outlined text-[15px]">close</span>
+<span>Rechazar</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm hover:shadow transition-all active:scale-95" onclick="alert('Solicitud Aprobada. Se ejecutó POST /usuario-rol/asignar con rol Coordinación y se despachó credencial temporal con cambio forzado en primer inicio.')">
+<span class="material-symbols-outlined text-[16px]">check</span>
+<span>Aprobar y Enviar Credencial</span>
+</button>
+</div>
+</div>
+</article>
+<!-- SOLICITUD 2: DOCENTE INSTRUCTOR CONTRATISTA -->
+<article class="p-5 rounded-xl bg-white border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all space-y-4">
+<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+<div class="flex items-start gap-3.5">
+<div class="w-11 h-11 rounded-xl bg-slate-100 text-slate-700 border border-slate-200 flex items-center justify-center font-bold text-sm shrink-0">
+                GO
+              </div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="font-display font-bold text-slate-900 text-base">Prof. Gabriel Ospina Rivas</h3>
+<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    Solicita: Instructor de Formación
+                  </span>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                    Pendiente
+                  </span>
+</div>
+<div class="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap font-mono">
+<span class="text-slate-700 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-slate-400">mail</span>
+                    gospina.contratista@sena.edu.co
+                  </span>
+<span>·</span>
+<span>C.C. 79.432.890</span>
+<span>·</span>
+<span class="text-slate-500">Radicado: Hoy, 06:15 AM (Hace 4h)</span>
+</div>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-md text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+              ID #REQ-2025-0141
+            </span>
+</div>
+<div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+<div class="font-semibold text-slate-700 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-emerald-600">format_quote</span>
+<span>Motivo y justificación declarada por el solicitante:</span>
+</div>
+<p class="text-slate-700 leading-relaxed pl-5 italic">
+              «Contrato de prestación de servicios No. 2025-C891 para orientar la competencia de Redes y Telecomunicaciones CISCO en jornada mixta (tarde y noche). Necesito ver mis franjas asignadas y registrar novedades.»
+            </p>
+</div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+<div class="text-[11px] text-slate-500 font-mono">
+              Rol sugerido automático: <strong class="text-slate-800">Instructor (Carga Presencial)</strong>
+</div>
+<div class="flex items-center gap-2 justify-end">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 text-slate-700 text-xs font-medium transition-all">
+<span class="material-symbols-outlined text-[15px]">close</span>
+<span>Rechazar</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm hover:shadow transition-all active:scale-95">
+<span class="material-symbols-outlined text-[16px]">check</span>
+<span>Aprobar y Enviar Credencial</span>
+</button>
+</div>
+</div>
+</article>
+<!-- SOLICITUD 3: OTRA SOLICITUD DE COORDINACIÓN -->
+<article class="p-5 rounded-xl bg-white border border-slate-200 shadow-sm hover:border-slate-300 hover:shadow-md transition-all space-y-4">
+<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+<div class="flex items-start gap-3.5">
+<div class="w-11 h-11 rounded-xl bg-purple-50 text-purple-700 border border-purple-200 flex items-center justify-center font-bold text-sm shrink-0">
+                JH
+              </div>
+<div>
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="font-display font-bold text-slate-900 text-base">Lic. Jorge Herrera Valderrama</h3>
+<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+                    Solicita: Coordinación de Articulación con la Media
+                  </span>
+<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                    Pendiente
+                  </span>
+</div>
+<div class="flex items-center gap-3 text-xs text-slate-500 mt-1 flex-wrap font-mono">
+<span class="text-slate-700 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-slate-400">mail</span>
+                    jherrera.coordinacion@sena.edu.co
+                  </span>
+<span>·</span>
+<span>C.C. 19.824.502</span>
+<span>·</span>
+<span class="text-slate-500">Radicado: Ayer, 04:20 PM</span>
+</div>
+</div>
+</div>
+<span class="px-2.5 py-1 rounded-md text-[11px] font-mono bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+              ID #REQ-2025-0139
+            </span>
+</div>
+<div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-xs space-y-1.5">
+<div class="font-semibold text-slate-700 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-emerald-600">format_quote</span>
+<span>Motivo y justificación declarada por el solicitante:</span>
+</div>
+<p class="text-slate-700 leading-relaxed pl-5 italic">
+              «Coordinación de colegios en convenio para el CGMLTI. Necesitamos programar los ambientes de cómputo los días sábados y validar fichas técnicas de articulación.»
+            </p>
+</div>
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+<div class="text-[11px] text-slate-500 font-mono">
+              Requiere confirmación con Subdirección de Centro
+            </div>
+<div class="flex items-center gap-2 justify-end">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-rose-50 hover:text-rose-700 text-slate-700 text-xs font-medium transition-all">
+<span class="material-symbols-outlined text-[15px]">close</span>
+<span>Rechazar</span>
+</button>
+<button class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm hover:shadow transition-all active:scale-95">
+<span class="material-symbols-outlined text-[16px]">check</span>
+<span>Aprobar y Enviar Credencial</span>
+</button>
+</div>
+</div>
+</article>
+<!-- PAGINATION / MORE -->
+<div class="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between text-xs text-slate-500 shadow-sm">
+<span>Mostrando 3 de 6 solicitudes pendientes</span>
+<div class="flex items-center gap-1">
+<button class="px-2.5 py-1 rounded border border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed">Anterior</button>
+<button class="px-2.5 py-1 rounded border border-emerald-500 bg-emerald-50 text-emerald-700 font-bold">1</button>
+<button class="px-2.5 py-1 rounded border border-slate-200 hover:bg-slate-50 text-slate-700">2</button>
+<button class="px-2.5 py-1 rounded border border-slate-200 hover:bg-slate-50 text-slate-700">Siguiente</button>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: AUDIT LOG, DETAILS & REJECTION DRAWER (4 COLS) -->
+<div class="lg:col-span-4 space-y-4">
+<!-- PROTOCOLO DE APROBACIÓN & NOTIFICACIÓN AUTOMÁTICA -->
+<div class="p-4 rounded-xl bg-white border border-slate-200 shadow-sm space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-emerald-600">lock_clock</span>
+<h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Flujo al Aprobar</h4>
+</div>
+<span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">Automatizado</span>
+</div>
+<div class="space-y-2.5 text-xs text-slate-600">
+<div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+<span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">1</span>
+<div>
+<span class="font-semibold text-slate-800">Ejecución del Endpoint:</span>
+<p class="text-[11px] text-slate-500 font-mono mt-0.5">POST /usuario-rol/asignar</p>
+<p class="text-[11px] text-slate-600 mt-0.5">Vincula ID de usuario con el rol verificado en la base de datos central.</p>
+</div>
+</div>
+<div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+<span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</span>
+<div>
+<span class="font-semibold text-slate-800">Despacho de Credencial Temporal:</span>
+<p class="text-[11px] text-slate-600 mt-0.5">El sistema envía un correo al dominio institucional con contraseña autogenerada de un solo uso.</p>
+</div>
+</div>
+<div class="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-100">
+<span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</span>
+<div>
+<span class="font-semibold text-slate-800">Cambio Forzado en 1er Ingreso:</span>
+<p class="text-[11px] text-slate-600 mt-0.5">La bandera <code class="text-[10px] font-mono bg-slate-200 px-1 rounded">debe_cambiar_clave = true</code> impide navegar hasta establecer clave personal.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- RECENT APPROVALS HISTORIAL PREVIEW -->
+<div class="p-4 rounded-xl bg-white border border-slate-200 shadow-sm space-y-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-slate-500">history</span>
+<h4 class="text-xs font-bold text-slate-900 uppercase tracking-wide">Últimas Evaluadas</h4>
+</div>
+<a class="text-[11px] text-emerald-700 font-semibold hover:underline" href="#">Ver historial</a>
+</div>
+<div class="space-y-2 text-xs">
+<!-- Aprobada 1 -->
+<div class="p-2.5 rounded-lg border border-slate-100 bg-slate-50 hover:bg-slate-100/80 transition-colors flex items-center justify-between">
+<div>
+<div class="font-semibold text-slate-800 text-[11px]">Ing. Carlos Morales</div>
+<div class="text-[10px] text-slate-500 font-mono">Rol: Instructor · Aprobado ayer</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+<span class="material-symbols-outlined text-[12px]">check</span> Aprobado
+              </span>
+</div>
+<!-- Aprobada 2 -->
+<div class="p-2.5 rounded-lg border border-slate-100 bg-slate-50 hover:bg-slate-100/80 transition-colors flex items-center justify-between">
+<div>
+<div class="font-semibold text-slate-800 text-[11px]">Lic. Diana C. Prieto</div>
+<div class="text-[10px] text-slate-500 font-mono">Rol: Instructor · Aprobado 22 Mayo</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+<span class="material-symbols-outlined text-[12px]">check</span> Aprobado
+              </span>
+</div>
+<!-- Rechazada 1 -->
+<div class="p-2.5 rounded-lg border border-rose-100 bg-rose-50/50 hover:bg-rose-50 transition-colors flex items-center justify-between">
+<div>
+<div class="font-semibold text-slate-800 text-[11px]">Mauricio R. (Externo)</div>
+<div class="text-[10px] text-rose-700 font-mono">Rechazado: Correo Gmail no corporativo</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">
+<span class="material-symbols-outlined text-[12px]">close</span> Rechazado
+              </span>
+</div>
+</div>
+</div>
+<!-- FORMULARIO / MOTIVO DE RECHAZO (INTERACTIVO/EXPANDIBLE) -->
+<div class="p-4 rounded-xl bg-amber-50/80 border border-amber-200 shadow-sm space-y-3" id="reject-drawer">
+<div class="flex items-center justify-between text-amber-900">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-amber-700">report</span>
+<span class="text-xs font-bold uppercase tracking-wide">Protocolo de Rechazo</span>
+</div>
+<span class="text-[10px] font-mono text-amber-800">Auditable</span>
+</div>
+<p class="text-[11px] text-amber-900 leading-snug">
+            Al rechazar una solicitud, es obligatorio ingresar el motivo formal que se notificará al solicitante para orientarlo en el trámite correcto:
+          </p>
+<div class="space-y-2">
+<select class="w-full text-xs bg-white border border-amber-300 rounded-lg p-2 text-slate-800 focus:ring-1 focus:ring-amber-500">
+<option>Motivo: Correo electrónico no coincide con dominio institucional @sena.edu.co</option>
+<option>Motivo: Falta soporte de resolución de nombramiento o contrato vigente</option>
+<option>Motivo: Centro o sede no corresponde a CGMLTI Calle 52</option>
+<option>Motivo: Solicitud duplicada</option>
+<option>Otro motivo personalizado...</option>
+</select>
+<textarea class="w-full text-xs bg-white border border-amber-300 rounded-lg p-2 text-slate-800 placeholder-slate-400 focus:ring-1 focus:ring-amber-500" placeholder="Observación adicional para el solicitante (opcional)..." rows="2"></textarea>
+</div>
+<div class="flex items-center justify-end gap-2 pt-1">
+<button class="px-3 py-1.5 rounded-lg border border-amber-300 text-amber-900 hover:bg-amber-100 text-xs font-medium transition-all" onclick="document.getElementById('reject-drawer').classList.add('hidden')">
+              Cancelar
+            </button>
+<button class="px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-800 text-white text-xs font-semibold shadow-sm transition-all" onclick="alert('Solicitud rechazada formalmente. Se ha notificado al usuario con el motivo seleccionado.'); document.getElementById('reject-drawer').classList.add('hidden')">
+              Confirmar Rechazo
+            </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- CLIENT-SIDE TAB TOGGLE SCRIPT -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabs = document.querySelectorAll('#filter-tabs button');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => {
+            t.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all';
+          });
+          tab.className = 'flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-white text-emerald-800 font-bold shadow-sm transition-all';
+        });
+      });
+    });
+  </script>
+</body>
+</html>
