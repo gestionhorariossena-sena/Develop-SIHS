@@ -43,6 +43,19 @@ Con las dos consolas corriendo a la vez, ya se puede entrar al sistema
 desde el navegador. Usuarios de prueba en
 [`database/README.md`](./database/README.md).
 
+**Opcional — Consola 3 — App Móvil (Flutter):**
+
+La app móvil consume el mismo backend y Supabase que el frontend web.
+
+```bash
+cd mobile
+flutter pub get
+cp .env.example .env        # y pegar ahí las credenciales reales
+flutter run
+```
+
+Para más detalles, ver [`mobile/README.md`](./mobile/README.md).
+
 ---
 
 ## 🛠️ Tecnologías Utilizadas
@@ -61,6 +74,13 @@ desde el navegador. Usuarios de prueba en
 * **Estilos:** TailwindCSS
 * **Rutas:** React Router
 * **Cliente Supabase:** `@supabase/supabase-js`
+
+### **Mobile**
+* **Framework:** [Flutter](https://flutter.dev/) (Dart)
+* **Estado:** Provider
+* **HTTP Client:** Dio
+* **Autenticación:** Supabase Flutter SDK
+* **Base de Datos:** PostgreSQL (misma que backend, vía Supabase)
 
 ### **Infraestructura y Herramientas**
 * **Control de Versiones:** Git & GitHub
@@ -100,6 +120,19 @@ PROYECTO-SIHS/
 │   ├── package.json          # Dependencias de Node.js
 │   ├── ESTRUCTURA.md         # 👉 Qué es cada archivo, cómo consumir el backend
 │   └── OBJETIVO_Y_SERVICIOS_FALTANTES.md  # 👉 Qué pantallas faltan
+│
+├── mobile/                   # Cliente Móvil (Flutter - iOS/Android/Web)
+│   ├── lib/
+│   │   ├── main.dart         # Punto de entrada de la app
+│   │   ├── config/           # Configuración (AppConfig)
+│   │   ├── models/           # Modelos de datos (Usuario, Horario)
+│   │   ├── services/         # Servicios (Auth, API, Horarios)
+│   │   ├── providers/        # State management (Provider)
+│   │   ├── screens/          # Pantallas (Login, Home)
+│   │   └── widgets/          # Widgets reutilizables
+│   ├── .env.example          # Plantilla de variables de entorno
+│   ├── pubspec.yaml          # Dependencias de Flutter
+│   └── README.md             # 👉 Setup, arquitectura, endpoints
 │
 ├── database/                 # Esquema y guía de la base de datos (Supabase)
 │   ├── README.md             # 👉 Cómo configurar y conectarte a la BD
