@@ -548,6 +548,71 @@ antes del fix) -- borradas con un script de un solo uso en scratchpad,
 verificando primero que ninguna tuviera horarios reales antes de
 tocarla (las 10 de ADSO con 127 horarios reales quedaron intactas).
 
+### Fichas con letra distintiva + nivelFormacion nunca se leía del archivo principal
+
+Dos ajustes más, mismo archivo real:
+
+1. **Fichas con letra distintiva** (ej. "3228973A"/"3228973B", o con
+   espacio "3171242 A"/"3171242 B"): son DOS fichas reales distintas
+   que comparten número base -- no confundir con el guion de
+   unificación (mismo caso, ficha física única). `_codigo_ficha_desde_texto`
+   ahora reconoce ambos formatos con un patrón (`^(\d+)\s*([A-Za-z])$`)
+   antes de intentar el split por guion, y conserva la letra
+   (normalizada, sin espacio) como parte del codigoFicha real.
+2. **nivelFormacion nunca se leía del archivo principal**, solo del
+   complementario -- así que un archivo único que sí trae su propia
+   columna "NIVEL" (como LIDERES DE FICHA) igual pedía crear el
+   programa a mano por falta de ese dato. Se lee directo del principal
+   primero, con el complementario como respaldo -- mismo patrón
+   aplicado a coordinacion/codigoPrograma/fechas/faseActual por
+   consistencia, aunque hoy solo nivelFormacion aparece en archivos
+   sin complementario.
+
+**Límite real que sigue pendiente (no es un bug)**: `codigoPrograma`
+(el código oficial SENA) es NOT NULL + único en la BD y no aparece en
+ningún archivo salvo el complementario (hoja FICHAS de PROGRAMACIÓN
+CGMLTI) -- para un programa que todavía no existe en el catálogo,
+seguir pidiendo ese código a mano es correcto, no hay ninguna fuente
+real de la que inventarlo. Los programas que YA existen en el
+catálogo ya no piden nada (los resuelve el fix de nombres normalizado
+de la sección anterior).
+
+### Fase en número romano + tope de necesidades por lote (evita cuelgues de minutos)
+
+Dos cosas más al probar con ~50 fichas reales de una:
+
+1. **Fase en número romano**: la hoja "2026_TRIM 03" trae la fase en
+   la columna "TRM" como número romano (`I`..`VII`, valores reales
+   confirmados), no como entero plano como la columna "TRI" de
+   PROGRAMACIÓN CGMLTI -- mismo campo (`fase_actual`), formato de
+   valor distinto según el archivo. `_valor_entero` ahora reconoce
+   ambos cuando el campo es `fase_actual`.
+2. **Resolver ficha por ficha en vez de un solo modelo gigante**: con
+   ~50 fichas SIN faseActual seleccionadas juntas (cada una trae TODOS
+   sus resultados pendientes), el request se quedó colgado **8+
+   minutos** -- `_muestra_rotada` ya acotaba las opciones POR necesidad,
+   pero construir un solo modelo con todas las necesidades juntas sigue
+   siendo `O(necesidades × opciones)`, y con cientos/miles de
+   necesidades eso tarda minutos en Python puro antes de llegar siquiera
+   al solver. El frontend hacía timeout a los 45s sin que el coordinador
+   supiera por qué, y el proceso seguía consumiendo CPU/memoria en el
+   servidor mucho después de que el navegador ya había desistido. Un
+   primer fix falló rápido con un mensaje pidiendo reducir el lote
+   (`_MAX_NECESIDADES_POR_LOTE = 300`), pero eso obligaba al coordinador
+   a generar las 50 fichas a mano en grupos chicos. `_generar_bloques_por_ficha`
+   (`asistente_horario_service.py`) en cambio resuelve un CP-SAT chico
+   **por ficha**, acarreando qué instructor/ambiente ya quedó ocupado de
+   una ficha a la siguiente (`generar_horario` acepta `ocupados_instructor`/
+   `ocupados_ambiente`) -- cada modelo individual es rápido (decenas de
+   resultados, no miles) y el lote completo de 50 fichas reales queda
+   dentro de un presupuesto de 30s (`_PRESUPUESTO_TIEMPO_TOTAL_SEG`).
+   `_LIMITE_CANDIDATOS` bajó de 8 a 6 para que el catálogo real de
+   instructores/ambientes también entre en ese presupuesto. Si igual no
+   alcanza el tiempo o no caben todas (catálogo de instructores/ambientes
+   insuficiente), las fichas que sí se pudieron programar se devuelven
+   como propuesta usable (`factible=true`) y las demás quedan listadas en
+   `fichasSinProgramar` para reintentar, en vez de tumbar todo el lote.
+
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
 `POST /horarios/generar-propuesta` ya existe y está conectado a un

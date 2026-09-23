@@ -46,6 +46,22 @@ class FichaService:
         return FichaRepository.actualizar(db, ficha)
 
     @staticmethod
+    def actualizar_fase_actual(db, id_ficha, fase_actual):
+        """Update mínimo para el botón "Actualizar fase" del asistente de
+        programación -- a propósito no pasa por `actualizar()` (que exige
+        codigoFicha/idPrograma/etc. completos): el wizard solo tiene la
+        fase que leyó del Excel para una ficha que YA EXISTE, no el resto
+        de sus datos, y no hay por qué pedírselos solo para corregir un
+        campo."""
+        ficha = FichaRepository.obtener_por_id(db, id_ficha)
+
+        if not ficha:
+            return None
+
+        ficha.faseActual = fase_actual
+        return FichaRepository.actualizar(db, ficha)
+
+    @staticmethod
     def eliminar(db, id_ficha):
         ficha = FichaRepository.obtener_por_id(db, id_ficha)
 

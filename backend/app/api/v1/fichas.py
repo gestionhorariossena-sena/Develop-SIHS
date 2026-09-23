@@ -6,12 +6,13 @@ from app.core.database import get_db
 from app.core.supabase_auth import (
     get_current_user,
     require_admin,
+    require_admin_o_coordinador,
     require_lectura_catalogo,
     require_lectura_catalogo_o_instructor,
 )
 from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
 from app.repositories.horario_repository import HorarioRepository
-from app.schemas.ficha import FichaCreate, FichaResponse, FichaUpdate
+from app.schemas.ficha import FichaCreate, FichaFaseActualUpdate, FichaResponse, FichaUpdate
 from app.schemas.ficha_usuario import VoceroResponse
 from app.schemas.horario import HorarioResponse
 from app.services.auditoria_service import AuditoriaService
@@ -87,6 +88,31 @@ def obtener_vocero_ficha(
         raise HTTPException(status_code=404, detail="Ficha no encontrada")
 
     return FichaUsuarioService.obtener_voceros(db, id_ficha)
+
+
+@router.patch("/{id_ficha}/fase-actual", response_model=FichaResponse)
+def actualizar_fase_actual_ficha(
+    id_ficha: int,
+    data: FichaFaseActualUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_admin_o_coordinador),
+):
+    """Botón "Actualizar fase" del asistente de programación (paso 2):
+    una ficha que ya existe en el catálogo no recibe faseActual de un
+    re-import (solo se escribe al CREARLA) -- este endpoint deja que el
+    coordinador la sincronice con lo que trae el Excel sin tener que
+    editar la ficha completa en Fichas. Mismos roles que el resto del
+    asistente (Coordinador/Administrador), no solo Administrador como el
+    PUT completo de abajo -- corregir esto es parte normal de armar el
+    horario, no de administrar el catálogo."""
+    ficha = FichaService.actualizar_fase_actual(db, id_ficha, data.faseActual)
+
+    if not ficha:
+        raise HTTPException(status_code=404, detail="Ficha no encontrada")
+
+    AuditoriaService.registrar(db, usuario=usuario, accion="ACTUALIZAR", entidad="fichas", id_entidad=id_ficha)
+
+    return ficha
 
 
 @router.get("/{id_ficha}/pdf")

@@ -455,7 +455,7 @@ export function AppShell({ activo, children }: AppShellProps) {
 
             <button
               onClick={() => void signOut()}
-              className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-all hover:bg-surface-container-high dark:border-slate-700"
+              className="shrink-0 whitespace-nowrap rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-all hover:bg-surface-container-high dark:border-slate-700"
             >
               Cerrar sesión
             </button>

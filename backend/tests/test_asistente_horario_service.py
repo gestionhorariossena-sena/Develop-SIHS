@@ -143,6 +143,104 @@ def test_previsualizar_excel_ficha_unificada_con_guion_usa_el_codigo_de_la_izqui
     assert fila.advertencia is None
 
 
+def test_previsualizar_excel_fichas_con_letra_distintiva_son_fichas_distintas(db_session, monkeypatch):
+    # Caso real distinto del de unificación con guion: "3228973A" y
+    # "3228973B" (o "3171242 A"/"3171242 B", con espacio) son DOS fichas
+    # diferentes que comparten número base, no la misma ficha repetida.
+    # Confirmado con el usuario: se conserva la letra como parte del
+    # codigoFicha real (normalizada, sin espacio).
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=201, codigo_ficha="3228973A")
+    contenido = _xlsx_con_encabezado([
+        ["FICHA", "PROGRAMA"],
+        ["3228973A", "ADSO"],
+        ["3228973B", "ADSO"],
+        ["3171242 A", "ADSO"],
+    ])
+    _mock_clasificacion(monkeypatch, {"FICHA": ("ficha", 1.0), "PROGRAMA": ("programa", 1.0)})
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    assert resultado.filas[0].codigoFicha == "3228973A"
+    assert resultado.filas[0].fichaExiste is True
+    assert resultado.filas[0].idFicha == 201
+
+    assert resultado.filas[1].codigoFicha == "3228973B"
+    assert resultado.filas[1].fichaExiste is False  # no existe en el catálogo, es otra ficha
+
+    assert resultado.filas[2].codigoFicha == "3171242A"  # espacio normalizado
+
+
+def test_previsualizar_excel_ficha_con_letra_unificada_con_guion(db_session, monkeypatch):
+    # Caso real combinado: "3228970 A - B" es la ficha "3228970 A"
+    # (con letra distintiva) unificada con su par "B". El segmento de
+    # la izquierda del guion todavía tiene la letra -- hay que
+    # reconocerla ahí también, no solo comprobar que sea numérico puro.
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=202, codigo_ficha="3228970A")
+    contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], ["3228970 A - B", "ADSO"]])
+    _mock_clasificacion(monkeypatch, {"FICHA": ("ficha", 1.0), "PROGRAMA": ("programa", 1.0)})
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    fila = resultado.filas[0]
+    assert fila.codigoFicha == "3228970A"
+    assert fila.fichaExiste is True
+    assert fila.idFicha == 202
+    assert fila.advertencia is None
+
+
+def test_previsualizar_excel_ficha_con_parentesis_usa_el_de_adentro(db_session, monkeypatch):
+    # Caso real: "3311985 (3288277)" -- confirmado con el usuario que se
+    # usa el número DENTRO del paréntesis como el código real (al revés
+    # que la regla del guion, donde se usa el de la izquierda).
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=203, codigo_ficha="3288277")
+    contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], ["3311985 (3288277)", "ADSO"]])
+    _mock_clasificacion(monkeypatch, {"FICHA": ("ficha", 1.0), "PROGRAMA": ("programa", 1.0)})
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    fila = resultado.filas[0]
+    assert fila.codigoFicha == "3288277"
+    assert fila.fichaExiste is True
+    assert fila.idFicha == 203
+    assert fila.advertencia is None
+
+
+def test_previsualizar_excel_nivel_formacion_se_lee_directo_del_archivo_principal(db_session, monkeypatch):
+    # Bug real: nivelFormacion solo se leía del archivo COMPLEMENTARIO,
+    # nunca de una columna "NIVEL" que ya viniera en el archivo principal
+    # (ej. LIDERES DE FICHA sí trae NIVEL) -- así que crear una ficha
+    # nueva pedía elegir/crear el programa a mano aunque el nivel ya
+    # estuviera ahí mismo, sin necesidad de un segundo archivo.
+    _crear_tablas_extra(db_session)
+    contenido = _xlsx_con_encabezado([["FICHA", "NIVEL", "PROGRAMA"], [999999, "TECNÓLOGO", "ADSO"]])
+    _mock_clasificacion(monkeypatch, {
+        "FICHA": ("ficha", 1.0), "NIVEL": ("nivel_formacion", 0.95), "PROGRAMA": ("programa", 1.0),
+    })
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    assert resultado.filas[0].nivelFormacion == "TECNÓLOGO"
+
+
+def test_previsualizar_excel_fase_actual_en_numero_romano(db_session, monkeypatch):
+    # La hoja "2026_TRIM 03" real trae la fase como número romano en la
+    # columna "TRM" (valores reales vistos: I..VII), no como entero
+    # plano como la columna "TRI" de PROGRAMACIÓN CGMLTI -- ambas son el
+    # mismo campo, solo el formato del valor cambia según el archivo.
+    _crear_tablas_extra(db_session)
+    contenido = _xlsx_con_encabezado([["FICHA", "TRM", "PROGRAMA"], [999999, "VII", "ADSO"]])
+    _mock_clasificacion(monkeypatch, {
+        "FICHA": ("ficha", 1.0), "TRM": ("fase_actual", 0.9), "PROGRAMA": ("programa", 1.0),
+    })
+
+    resultado = previsualizar_excel(db_session, contenido, "archivo.xlsx")
+
+    assert resultado.filas[0].faseActual == 7
+
+
 def test_previsualizar_excel_texto_libre_en_ficha_sigue_pidiendo_revision(db_session, monkeypatch):
     _crear_tablas_extra(db_session)
     contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], ["VER OBSERVACIONES", "ADSO"]])
@@ -282,6 +380,88 @@ def test_generar_propuesta_no_explota_con_catalogo_real_de_instructores_y_ambien
     assert duracion < 20.0, f"tardó {duracion:.1f}s -- _muestra_rotada dejó de acotar los candidatos"
     assert resultado.factible is True
     assert len(resultado.bloques) == 10
+
+
+def test_generar_propuesta_lote_grande_se_resuelve_ficha_por_ficha_sin_colgarse(db_session, monkeypatch):
+    # Caso real 2026-09-12: el coordinador seleccionó ~50 fichas SIN
+    # faseActual (cada una trae TODOS sus resultados pendientes, no solo
+    # los de una fase) -- eso son cientos de necesidades, y aunque
+    # _muestra_rotada acota las opciones POR necesidad, construir un solo
+    # modelo con todas juntas era demasiado lento (el request se quedaba
+    # colgado hasta que el frontend hacía timeout a los 45s). Antes esto
+    # fallaba rápido con un mensaje pidiendo reducir el lote; ahora
+    # _generar_bloques_por_ficha resuelve un modelo chico POR FICHA
+    # (acarreando qué instructor/ambiente ya quedó ocupado de una ficha a
+    # la siguiente) y las 50 fichas sí quedan programadas, sin que el
+    # coordinador tenga que hacer nada manual.
+    _crear_tablas_extra(db_session)
+    db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
+    db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="ADSO", activo=True, idCoordinacion=1))
+    db_session.add(Trimestre(idTrimestre=1, nombre="2026-3", fechaInicio=date(2026, 7, 1), fechaFin=date(2026, 9, 30), estado="activo"))
+    db_session.add(Sede(id=1, nombre="Sede Demo", direccion="Calle 1", tipo="principal"))
+    for i in range(50):
+        db_session.add(Ambiente(id=i + 1, numero_ambiente=100 + i, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1))
+    db_session.add(CompetenciaFormacion(idCompetencia=1, codigo="C1", descripcion="Competencia demo", idPrograma=1))
+    for i in range(13):
+        db_session.add(ResultadoAprendizaje(idResultado=i + 1, codigo=f"RA-{i}", descripcion=f"Resultado {i}", idCompetencia=1))
+    for i in range(50):
+        db_session.add(Ficha(idFicha=i + 1, codigoFicha=str(1000000 + i), idPrograma=1, idTrimestre=1, idSede=1))
+    # Catálogo de instructores realista (el centro real tiene ~215, ver
+    # _LIMITE_CANDIDATOS) -- con muy pocos instructores compitiendo por
+    # 50 fichas × 13 resultados, algunas fichas quedarían legítimamente
+    # sin cupo (eso lo cubre el otro test, con partial success).
+    for i in range(215):
+        db_session.add(Usuario(idUsuario=uuid.uuid4(), nombre=f"Instructor {i}", email=f"i{i}@demo.sihs", tipoContrato="contratista", estado="activo"))
+    db_session.commit()
+
+    # El presupuesto de tiempo real (30s, ver _PRESUPUESTO_TIEMPO_TOTAL_SEG)
+    # protege el timeout del frontend, no lo que este test quiere probar --
+    # bajo carga compartida de CI/suite completa, el solve de las 50 fichas
+    # (~15-20s en aislado) puede estirarse lo suficiente para que el
+    # presupuesto real corte la última ficha por tiempo, no por
+    # infactibilidad, hacienda el test flaky. Se agranda solo para este
+    # test para que la aserción sea sobre factibilidad real, no sobre
+    # cuánta CPU había libre en el momento en que corrió.
+    monkeypatch.setattr("app.services.asistente_horario_service._PRESUPUESTO_TIEMPO_TOTAL_SEG", 120.0)
+
+    inicio = time_module.perf_counter()
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=list(range(1, 51)), jornada="MAÑANA")
+    duracion = time_module.perf_counter() - inicio
+
+    assert duracion < 60.0, f"tardó {duracion:.1f}s -- debería resolverse en segundos, no colgarse"
+    assert resultado.factible is True
+    assert resultado.fichasSinProgramar == []
+    assert len(resultado.bloques) == 50 * 13
+    assert {b.idFicha for b in resultado.bloques} == set(range(1, 51))
+
+
+def test_generar_propuesta_reporta_fichas_sin_programar_cuando_faltan_recursos(db_session):
+    # Con un catálogo de instructores/ambientes chico, no todas las
+    # fichas caben sin chocar -- eso no debe tumbar la propuesta entera:
+    # las fichas que sí se pudieron programar se devuelven como
+    # bloques usables (factible=True) y las que no, se listan en
+    # `fichasSinProgramar` para que el coordinador sepa cuáles reintentar.
+    _crear_tablas_extra(db_session)
+    db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
+    db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="ADSO", activo=True, idCoordinacion=1))
+    db_session.add(Trimestre(idTrimestre=1, nombre="2026-3", fechaInicio=date(2026, 7, 1), fechaFin=date(2026, 9, 30), estado="activo"))
+    db_session.add(Sede(id=1, nombre="Sede Demo", direccion="Calle 1", tipo="principal"))
+    db_session.add(Ambiente(id=1, numero_ambiente=101, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1))
+    db_session.add(CompetenciaFormacion(idCompetencia=1, codigo="C1", descripcion="Competencia demo", idPrograma=1))
+    for i in range(13):
+        db_session.add(ResultadoAprendizaje(idResultado=i + 1, codigo=f"RA-{i}", descripcion=f"Resultado {i}", idCompetencia=1))
+    for i in range(10):
+        db_session.add(Ficha(idFicha=i + 1, codigoFicha=str(1000000 + i), idPrograma=1, idTrimestre=1, idSede=1))
+    instructor_id = uuid.uuid4()
+    db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana@demo.sihs", tipoContrato="contratista", estado="activo"))
+    db_session.commit()
+
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=list(range(1, 11)), jornada="MAÑANA")
+
+    assert resultado.factible is True
+    assert len(resultado.bloques) > 0
+    assert len(resultado.fichasSinProgramar) > 0
+    assert "no se pudieron programar" in resultado.mensaje
 
 
 def test_generar_propuesta_filtra_por_fase_actual_de_la_ficha(db_session):

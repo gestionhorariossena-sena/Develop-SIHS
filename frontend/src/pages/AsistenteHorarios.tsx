@@ -1,15 +1,20 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
+import { GridAsistente } from '../components/horario/GridAsistente'
+import { celdasDesdeHorarios } from '../components/horario/celdasAsistente'
+import type { CeldaAsistente } from '../components/horario/celdasAsistente'
+import { apiGet, apiPatch, apiPost, apiPostForm, ApiError } from '../services/api'
 import type {
   BloquePropuesto,
   Coordinacion,
   CoordinacionCreate,
   Ficha,
   FichaCreate,
+  FichaFaseActualUpdate,
   FilaImportada,
   GenerarPropuestaResponse,
+  Horario,
   HorarioDryRunRequest,
   HorarioDryRunResponse,
   ImportarExcelPreviewResponse,
@@ -62,6 +67,12 @@ type Paso = 1 | 2 | 3 | 4
 // optimizador -- de verdad pueden tardar más, sobre todo en la primera
 // llamada "fría" de la sesión.
 const TIMEOUT_ASISTENTE_MS = 45000
+// generar-propuesta resuelve el solver ficha por ficha (ver
+// _generar_bloques_por_ficha en el backend) con un presupuesto propio de
+// hasta 30s antes de devolver una propuesta parcial -- 45s no deja
+// margen para eso más la ida y vuelta HTTP real, así que este paso usa
+// un timeout más largo que los otros dos del asistente.
+const TIMEOUT_GENERAR_PROPUESTA_MS = 60000
 
 const NOMBRES_DIA: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes' }
 
@@ -150,10 +161,32 @@ export function AsistenteHorarios() {
   const [creandoFicha, setCreandoFicha] = useState(false)
   const [errorCreacionFicha, setErrorCreacionFicha] = useState<string | null>(null)
 
+  // Paso 2 -- botón "Actualizar fase" por fila, para fichas que YA
+  // EXISTEN pero cuyo faseActual guardado no coincide con el que trae
+  // este Excel: el import solo escribe faseActual al crear una ficha
+  // nueva, así que una ya existente no se sincroniza sola con un
+  // re-import (ver PLAN_INTEGRACION_IA.md). `filaActualizandoFase` es el
+  // número de fila en curso, para deshabilitar su botón mientras pega.
+  const [filaActualizandoFase, setFilaActualizandoFase] = useState<number | null>(null)
+  const [errorActualizarFase, setErrorActualizarFase] = useState<{ fila: number; mensaje: string } | null>(null)
+
   const [generando, setGenerando] = useState(false)
   const [propuesta, setPropuesta] = useState<GenerarPropuestaResponse | null>(null)
   const [bloques, setBloques] = useState<BloqueValidado[]>([])
   const [errorPropuesta, setErrorPropuesta] = useState<string | null>(null)
+
+  // Grid semanal del paso 3 ("ver el horario completo") -- combina lo ya
+  // guardado en BD para estas fichas/trimestre con lo que la propuesta
+  // agrega, para revisar todo junto antes de confirmar. Colapsada por
+  // defecto: la tabla plana ya alcanza para lotes chicos, el grid es
+  // para cuando de verdad hace falta ver el conjunto completo.
+  const [mostrarGrid, setMostrarGrid] = useState(false)
+  const [horariosExistentes, setHorariosExistentes] = useState<Horario[]>([])
+  const [cargandoExistentes, setCargandoExistentes] = useState(false)
+  // Índices en `bloques` que el coordinador quitó a mano desde el grid
+  // ("ver corregir") -- no se regenera toda la propuesta solo para
+  // excluir un bloque puntual.
+  const [indicesExcluidos, setIndicesExcluidos] = useState<Set<number>>(new Set())
 
   const [pregunta, setPregunta] = useState('')
   const [respuestaPregunta, setRespuestaPregunta] = useState<string | null>(null)
@@ -297,6 +330,34 @@ export function AsistenteHorarios() {
     }
   }
 
+  async function actualizarFase(fila: FilaImportada) {
+    if (!fila.idFicha || fila.faseActual === null) return
+    setFilaActualizandoFase(fila.fila)
+    setErrorActualizarFase((previo) => (previo?.fila === fila.fila ? null : previo))
+    try {
+      const actualizada = await apiPatch<Ficha>(`/fichas/${fila.idFicha}/fase-actual`, {
+        faseActual: fila.faseActual,
+      } satisfies FichaFaseActualUpdate)
+      setPrevisualizacion((previo) =>
+        previo
+          ? {
+              ...previo,
+              filas: previo.filas.map((f) =>
+                f.fila === fila.fila ? { ...f, faseActualEnBD: actualizada.faseActual ?? null } : f
+              ),
+            }
+          : previo
+      )
+    } catch (error) {
+      setErrorActualizarFase({
+        fila: fila.fila,
+        mensaje: error instanceof ApiError ? error.message : 'No se pudo actualizar la fase.',
+      })
+    } finally {
+      setFilaActualizandoFase(null)
+    }
+  }
+
   const idsFichaListas = useMemo(() => {
     if (!previsualizacion) return []
     const ids = previsualizacion.filas
@@ -324,17 +385,40 @@ export function AsistenteHorarios() {
     }
   }
 
+  // Lo que ya estaba guardado en BD para estas fichas/trimestre -- para
+  // el grid del paso 3 ("ver el horario completo"). No filtra por
+  // jornada: el coordinador quiere ver TODO lo de la ficha, no solo la
+  // jornada de este lote. Se trae aparte del listado general (no hay un
+  // GET /horarios/?idFicha=... filtrado en el backend todavía) y se
+  // filtra en el cliente -- el dataset de un centro es chico (cientos de
+  // filas), no miles.
+  async function cargarHorariosExistentes(idsFicha: number[], idTrim: number) {
+    setCargandoExistentes(true)
+    try {
+      const todos = await apiGet<Horario[]>('/horarios/')
+      setHorariosExistentes(
+        todos.filter((h) => h.activo && h.idTrimestre === idTrim && idsFicha.includes(h.idFicha))
+      )
+    } catch {
+      setHorariosExistentes([])
+    } finally {
+      setCargandoExistentes(false)
+    }
+  }
+
   async function generarPropuesta() {
     if (!idTrimestre || idsFichaListas.length === 0) return
     setGenerando(true)
     setErrorPropuesta(null)
     setPropuesta(null)
     setBloques([])
+    setIndicesExcluidos(new Set())
+    void cargarHorariosExistentes(idsFichaListas, idTrimestre)
     try {
       const resultado = await apiPost<GenerarPropuestaResponse>(
         '/horarios/asistente/generar-propuesta',
         { idTrimestre, idsFicha: idsFichaListas, jornada },
-        TIMEOUT_ASISTENTE_MS
+        TIMEOUT_GENERAR_PROPUESTA_MS
       )
       setPropuesta(resultado)
       if (!resultado.factible || resultado.bloques.length === 0) return
@@ -397,14 +481,19 @@ export function AsistenteHorarios() {
   }
 
   async function confirmarYGuardar() {
-    const bloquesListos = bloques.filter((b) => b.estado === 'sinCruces')
+    const bloquesListos = bloques.filter((b, i) => b.estado === 'sinCruces' && !indicesExcluidos.has(i))
     if (bloquesListos.length === 0 || !idTrimestre) return
     setConfirmando(true)
     const resultados: Record<number, 'ok' | string> = {}
+    // Publicar en lote (instructor + estudiante) al confirmar -- antes
+    // había que ir uno por uno a Horarios completos y darle "Publicar" a
+    // cada fila. Se hace por fuera del try/catch de creación: si crear el
+    // horario falla, no tiene sentido intentar publicarlo.
+    const idsCreados: number[] = []
     for (let i = 0; i < bloquesListos.length; i++) {
       const b = bloquesListos[i]
       try {
-        await apiPost('/horarios/', {
+        const creado = await apiPost<Horario>('/horarios/', {
           horaInicio: b.horaInicio,
           horaFin: b.horaFin,
           idJornada: b.idJornada,
@@ -415,17 +504,60 @@ export function AsistenteHorarios() {
           idResultado: b.idResultado,
           dias: b.dias,
         })
+        idsCreados.push(creado.idHorario)
         resultados[i] = 'ok'
       } catch (error) {
         resultados[i] = error instanceof ApiError ? error.message : 'No se pudo guardar.'
       }
       setResultadosConfirmacion({ ...resultados })
     }
+
+    await Promise.all(
+      idsCreados.map((idHorario) =>
+        apiPatch(`/horarios/${idHorario}/estado`, { publicado: true }).catch(() => {
+          // No fatal: el horario ya quedó creado y visible en Historial;
+          // si publicar falla, el coordinador lo hace a mano desde
+          // Horarios completos. No vale la pena bloquear la confirmación
+          // por esto.
+        })
+      )
+    )
     setConfirmando(false)
   }
 
-  const bloquesListos = bloques.filter((b) => b.estado === 'sinCruces')
+  const bloquesListos = bloques.filter((b, i) => b.estado === 'sinCruces' && !indicesExcluidos.has(i))
   const bloquesConConflicto = bloques.filter((b) => b.estado === 'conflicto')
+
+  // Combina lo ya guardado en BD con lo que la propuesta agrega, para el
+  // grid del paso 3 ("ver el horario completo, desplegar hacia abajo").
+  const celdasGrid: CeldaAsistente[] = [
+    ...celdasDesdeHorarios(horariosExistentes),
+    ...bloques
+      .map(
+        (b, indice): [CeldaAsistente, number] => [
+          {
+            id: `nuevo-${indice}`,
+            origen: 'nuevo',
+            fichaCodigo: b.fichaCodigo,
+            instructorNombre: b.instructorNombre,
+            ambienteNombre: b.ambienteNombre,
+            resultadoDescripcion: b.resultadoDescripcion,
+            horaInicio: b.horaInicio,
+            dias: b.dias,
+            estado: b.estado,
+          },
+          indice,
+        ]
+      )
+      .filter(([, indice]) => !indicesExcluidos.has(indice))
+      .map(([celda]) => celda),
+  ]
+
+  function quitarBloqueNuevo(id: string) {
+    const indice = Number(id.replace('nuevo-', ''))
+    if (Number.isNaN(indice)) return
+    setIndicesExcluidos((previo) => new Set(previo).add(indice))
+  }
 
   return (
     <AppShell activo="Asistente IA">
@@ -632,6 +764,20 @@ export function AsistenteHorarios() {
                             >
                               {filaCreandoFicha === f.fila ? 'Cancelar' : 'Crear ficha'}
                             </button>
+                          )}
+                          {f.fichaExiste && f.faseActual !== null && f.faseActual !== f.faseActualEnBD && (
+                            <button
+                              type="button"
+                              disabled={filaActualizandoFase === f.fila}
+                              onClick={() => void actualizarFase(f)}
+                              title={`El Excel trae fase ${f.faseActual}, la ficha tiene guardada ${f.faseActualEnBD ?? 'ninguna'}.`}
+                              className="font-medium text-primary hover:underline disabled:cursor-not-allowed disabled:opacity-50 dark:text-sena-400"
+                            >
+                              {filaActualizandoFase === f.fila ? 'Actualizando…' : `Actualizar fase a ${f.faseActual}`}
+                            </button>
+                          )}
+                          {errorActualizarFase?.fila === f.fila && (
+                            <p className="mt-1 text-xs text-red-700 dark:text-red-400">{errorActualizarFase.mensaje}</p>
                           )}
                         </td>
                       </tr>
@@ -880,6 +1026,11 @@ export function AsistenteHorarios() {
             {propuesta && propuesta.bloques.length === 0 && (
               <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{propuesta.mensaje}</p>
             )}
+            {propuesta && propuesta.bloques.length > 0 && propuesta.fichasSinProgramar.length > 0 && (
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
+                {propuesta.mensaje}
+              </p>
+            )}
 
             {bloquesConConflicto.length > 0 && (
               <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">
@@ -934,6 +1085,32 @@ export function AsistenteHorarios() {
               </div>
             )}
 
+            {bloques.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setMostrarGrid((previo) => !previo)}
+                  className="text-sm font-medium text-primary hover:underline dark:text-sena-400"
+                >
+                  {mostrarGrid ? '↑ Ocultar horario completo' : '↓ Ver horario completo (lo ya guardado + esta propuesta)'}
+                </button>
+
+                {mostrarGrid && (
+                  <div className="mt-3 space-y-2">
+                    {cargandoExistentes && (
+                      <p className="text-xs text-on-surface-variant dark:text-slate-400">Cargando lo ya guardado…</p>
+                    )}
+                    {indicesExcluidos.size > 0 && (
+                      <p className="text-xs text-on-surface-variant dark:text-slate-400">
+                        {indicesExcluidos.size} bloque{indicesExcluidos.size === 1 ? '' : 's'} nuevo{indicesExcluidos.size === 1 ? '' : 's'} quitado{indicesExcluidos.size === 1 ? '' : 's'} de la propuesta -- genera de nuevo para recuperarlo{indicesExcluidos.size === 1 ? '' : 's'}.
+                      </p>
+                    )}
+                    <GridAsistente celdas={celdasGrid} onQuitarNuevo={quitarBloqueNuevo} />
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex justify-between">
               <button type="button" onClick={() => setPaso(2)} className="text-sm font-medium text-on-surface-variant hover:text-on-surface dark:text-slate-400">
                 ← Volver a revisión de datos
@@ -954,7 +1131,7 @@ export function AsistenteHorarios() {
           <section className="space-y-4">
             <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
               <p className="text-sm text-on-surface-variant dark:text-slate-300">
-                Vas a guardar <strong>{bloquesListos.length}</strong> horario{bloquesListos.length === 1 ? '' : 's'} nuevo{bloquesListos.length === 1 ? '' : 's'}. Esta es la última confirmación.
+                Vas a guardar <strong>{bloquesListos.length}</strong> horario{bloquesListos.length === 1 ? '' : 's'} nuevo{bloquesListos.length === 1 ? '' : 's'}, y quedarán publicados de una vez (visibles para instructor y aprendiz en "Mi horario"). Esta es la última confirmación.
               </p>
             </div>
 
@@ -971,6 +1148,17 @@ export function AsistenteHorarios() {
                 </li>
               ))}
             </ul>
+
+            {!confirmando && bloquesListos.length > 0 && Object.keys(resultadosConfirmacion).length === bloquesListos.length && (
+              <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                {bloquesListos.every((_, i) => resultadosConfirmacion[i] === 'ok')
+                  ? 'Listo, todo se guardó y quedó publicado.'
+                  : 'Algunos bloques no se pudieron guardar -- revisa los mensajes de arriba.'}{' '}
+                <Link to="/horarios/completos" className="font-semibold underline">
+                  Ver en Horarios completos →
+                </Link>
+              </div>
+            )}
 
             <div className="flex justify-between">
               <button type="button" onClick={() => setPaso(3)} className="text-sm font-medium text-on-surface-variant hover:text-on-surface dark:text-slate-400">

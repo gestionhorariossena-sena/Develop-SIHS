@@ -127,11 +127,13 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('Contrato: Planta')).toBeInTheDocument()
     expect(screen.getByText('Número: 101')).toBeInTheDocument()
     expect(screen.getByText('Sede: Sede principal')).toBeInTheDocument()
-    // "CPL18" aparece dos veces: en el grid (tema del bloque asignado) y en
-    // la tarjeta "Tema" del detalle.
-    expect(screen.getAllByText('CPL18').length).toBeGreaterThan(0)
-    expect(screen.getByText('Gestión de inventarios')).toBeInTheDocument()
-    expect(screen.getByText('Horario semanal — igual que en el creador de horarios')).toBeInTheDocument()
+    // "CPL18" (código) solo en la tarjeta "Tema" del detalle -- el grid
+    // muestra la DESCRIPCIÓN del resultado (único dato que también tienen
+    // los bloques "nuevos" del asistente, que no traen código), así que
+    // "Gestión de inventarios" aparece dos veces: grid + tarjeta.
+    expect(screen.getByText('CPL18')).toBeInTheDocument()
+    expect(screen.getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
+    expect(screen.getByText('Horario semanal')).toBeInTheDocument()
 
     expect(await screen.findByText('10h / 40h')).toBeInTheDocument()
 
@@ -208,5 +210,31 @@ describe('HorariosCompletos', () => {
     await waitFor(() => {
       expect(screen.getByText('No se pudo cargar el listado de horarios.')).toBeInTheDocument()
     })
+  })
+
+  it('un horario creado por el Asistente (franja propia, no la institucional) sí aparece en el grid y con jornada correcta', async () => {
+    // Regresión 2026-09-14: el grid del drawer y la columna Jornada de la
+    // tabla solo reconocían las 2 franjas institucionales fijas
+    // (06:15/09:00 para Mañana) por coincidencia EXACTA de hora --
+    // cualquier horario creado por el Asistente de Programación (franjas
+    // propias del generador CP-SAT: 07:00/09:00/11:00/...) se mostraba
+    // "Sin definir" en Jornada y desaparecía por completo del grid
+    // semanal, aunque la fila de la tabla sí lo mostrara.
+    const horarioDelAsistente: Horario = { ...HORARIO, horaInicio: '07:00:00', horaFin: '09:00:00' }
+    mockeaBase([horarioDelAsistente])
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+    await screen.findByText('3228973 B')
+
+    // Columna Jornada de la tabla: ya no "Sin definir".
+    expect(screen.getAllByText('Mañana').length).toBeGreaterThan(0)
+    expect(screen.queryByText('Sin definir')).not.toBeInTheDocument()
+
+    // Grid del drawer expandido: el bloque sí aparece (antes se descartaba
+    // en silencio -- "Gestión de inventarios" solo aparecería una vez, en
+    // la tarjeta de detalle, si el grid lo hubiera perdido).
+    await usuario.click(screen.getAllByText('3228973 B')[0])
+    await screen.findByText('Horario #7')
+    expect(screen.getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
   })
 })

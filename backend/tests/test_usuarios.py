@@ -99,6 +99,24 @@ def test_obtener_usuario_inexistente_da_404(client, autenticar_como):
     assert respuesta.status_code == 404
 
 
+def test_listar_usuarios_no_truena_con_email_de_instructor_sin_cuenta(client, autenticar_como, crear_usuario):
+    # Regresión: UsuarioResponse.email era EmailStr -- instructores
+    # importados sin cuenta real usan un placeholder deliberado con
+    # dominio ".local" (ej. "juan@instructores.sihs.sin-cuenta.local")
+    # para dejar claro que no tienen login. pydantic-email-validator
+    # rechaza ".local" por ser un TLD de uso especial (RFC 6761), así que
+    # GET /usuarios/ (y todo lo que dependiera de él: Vista por
+    # Instructor, el buscador del asistente) tronaba con 500 apenas la
+    # lista incluía uno de estos usuarios -- encontrado en vivo el
+    # 2026-09-14, bloqueaba por completo esas pantallas.
+    _, headers = autenticar_como("Coordinador")
+    crear_usuario(nombre="Sin Cuenta", email="instructor@instructores.sihs.sin-cuenta.local")
+
+    respuesta = client.get("/api/v1/usuarios/", headers=headers)
+
+    assert respuesta.status_code == 200
+    correos = [u["email"] for u in respuesta.json()]
+    assert "instructor@instructores.sihs.sin-cuenta.local" in correos
 def test_me_expone_debe_cambiar_clave(client, autenticar_como):
     _, headers = autenticar_como("Aprendiz")
 

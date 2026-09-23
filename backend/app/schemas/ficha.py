@@ -27,6 +27,16 @@ class FichaUpdate(FichaBase):
     pass
 
 
+class FichaFaseActualUpdate(BaseModel):
+    """Payload mínimo para el botón "Actualizar fase" del asistente de
+    programación (paso 2) -- a diferencia de FichaUpdate, no exige mandar
+    codigoFicha/idPrograma/idTrimestre/etc. porque el wizard solo tiene
+    a mano lo que vino del Excel, no la ficha completa como la carga la
+    página Fichas."""
+
+    faseActual: int
+
+
 class FichaResponse(FichaBase):
     model_config = ConfigDict(from_attributes=True)
 
