@@ -587,19 +587,31 @@ Dos cosas más al probar con ~50 fichas reales de una:
    PROGRAMACIÓN CGMLTI -- mismo campo (`fase_actual`), formato de
    valor distinto según el archivo. `_valor_entero` ahora reconoce
    ambos cuando el campo es `fase_actual`.
-2. **Tope de necesidades por lote** (`_MAX_NECESIDADES_POR_LOTE = 300`):
-   con ~50 fichas SIN faseActual seleccionadas juntas (cada una trae
-   TODOS sus resultados pendientes), el request se quedó colgado
-   **8+ minutos** -- `_muestra_rotada` ya acotaba las opciones POR
-   necesidad, pero construir el modelo sigue siendo
-   `O(necesidades × opciones)`, y con miles de necesidades eso tarda
-   minutos en Python puro antes de llegar siquiera al solver. El
-   frontend hacía timeout a los 45s sin que el coordinador supiera por
-   qué, y el proceso seguía consumiendo CPU/memoria en el servidor
-   mucho después de que el navegador ya había desistido. Ahora
-   `generar_propuesta` cuenta las necesidades ANTES de construir nada
-   y, si pasan de 300, devuelve de inmediato el mismo tipo de mensaje
-   accionable ("reduce el lote o define la fase") en vez de colgarse.
+2. **Resolver ficha por ficha en vez de un solo modelo gigante**: con
+   ~50 fichas SIN faseActual seleccionadas juntas (cada una trae TODOS
+   sus resultados pendientes), el request se quedó colgado **8+
+   minutos** -- `_muestra_rotada` ya acotaba las opciones POR necesidad,
+   pero construir un solo modelo con todas las necesidades juntas sigue
+   siendo `O(necesidades × opciones)`, y con cientos/miles de
+   necesidades eso tarda minutos en Python puro antes de llegar siquiera
+   al solver. El frontend hacía timeout a los 45s sin que el coordinador
+   supiera por qué, y el proceso seguía consumiendo CPU/memoria en el
+   servidor mucho después de que el navegador ya había desistido. Un
+   primer fix falló rápido con un mensaje pidiendo reducir el lote
+   (`_MAX_NECESIDADES_POR_LOTE = 300`), pero eso obligaba al coordinador
+   a generar las 50 fichas a mano en grupos chicos. `_generar_bloques_por_ficha`
+   (`asistente_horario_service.py`) en cambio resuelve un CP-SAT chico
+   **por ficha**, acarreando qué instructor/ambiente ya quedó ocupado de
+   una ficha a la siguiente (`generar_horario` acepta `ocupados_instructor`/
+   `ocupados_ambiente`) -- cada modelo individual es rápido (decenas de
+   resultados, no miles) y el lote completo de 50 fichas reales queda
+   dentro de un presupuesto de 30s (`_PRESUPUESTO_TIEMPO_TOTAL_SEG`).
+   `_LIMITE_CANDIDATOS` bajó de 8 a 6 para que el catálogo real de
+   instructores/ambientes también entre en ese presupuesto. Si igual no
+   alcanza el tiempo o no caben todas (catálogo de instructores/ambientes
+   insuficiente), las fichas que sí se pudieron programar se devuelven
+   como propuesta usable (`factible=true`) y las demás quedan listadas en
+   `fichasSinProgramar` para reintentar, en vez de tumbar todo el lote.
 
 ## Asistente de programación — el wizard conectado de punta a punta (hecho)
 
