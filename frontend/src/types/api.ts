@@ -321,6 +321,18 @@ export interface FilaImportada {
   fechaFinLectiva: string | null
   fechaFinProductiva: string | null
   faseActual: number | null
+  // Solo viene lleno cuando fichaExiste=true -- lo que la ficha YA TIENE
+  // guardado en la BD. El import solo escribe faseActual al CREAR una
+  // ficha nueva, así que una que ya existe no se sincroniza sola con un
+  // re-import; si difiere de `faseActual` (lo que trae el Excel), el
+  // wizard ofrece el botón "Actualizar fase".
+  faseActualEnBD: number | null
+}
+
+// Espejo de FichaFaseActualUpdate -- payload mínimo del botón
+// "Actualizar fase" (PATCH /fichas/{id}/fase-actual).
+export interface FichaFaseActualUpdate {
+  faseActual: number
 }
 
 // Espejo de ProgramaCreate/CoordinacionCreate -- usados por "Crear
@@ -429,6 +441,7 @@ export interface GenerarPropuestaResponse {
   bloques: BloquePropuesto[]
   factible: boolean
   mensaje: string
+  fichasSinProgramar: string[]
 }
 
 export interface PreguntaHorarioRequest {

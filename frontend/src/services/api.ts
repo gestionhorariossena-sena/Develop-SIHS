@@ -57,22 +57,38 @@ export class ApiError extends Error {
  * Dashboard.tsx. Ver frontend/ESTRUCTURA.md para más detalle.
  */
 async function request<T>(path: string, options: RequestInit = {}, timeoutMs: number = TIMEOUT_MS): Promise<T> {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession()
-
-  const headers = new Headers(options.headers)
-  if (!(options.body instanceof FormData)) {
-    headers.set('Content-Type', 'application/json')
-  }
-  if (session) {
-    headers.set('Authorization', `Bearer ${session.access_token}`)
-  }
-
   const controller = new AbortController()
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
 
   try {
+    // `supabase.auth.getSession()` antes vivía FUERA de este try/timeout —
+    // si esa llamada se colgaba (ej. Supabase intentando refrescar un
+    // access token vencido y la red tardando o fallando en silencio), el
+    // fetch de verdad nunca llegaba a dispararse: el AbortController se
+    // creaba DESPUÉS de esa espera, así que `timeoutMs` no protegía nada
+    // todavía. El resultado, visto en vivo el 2026-09-14: la petición se
+    // quedaba "pending" para siempre en el navegador (nunca llegaba ni
+    // siquiera al log del backend), mientras OTRA petición en la misma
+    // pantalla sí completaba su timeout real y mostraba el mensaje 504 —
+    // dando la falsa impresión de "el servidor tardó" cuando el servidor
+    // nunca había recibido nada. Ahora la espera de sesión corre bajo el
+    // mismo `controller.signal`: si se cuelga, el timeout la corta igual
+    // que cortaría un fetch lento.
+    const sesionAbortada = new Promise<never>((_, reject) => {
+      controller.signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')))
+    })
+    const {
+      data: { session },
+    } = await Promise.race([supabase.auth.getSession(), sesionAbortada])
+
+    const headers = new Headers(options.headers)
+    if (!(options.body instanceof FormData)) {
+      headers.set('Content-Type', 'application/json')
+    }
+    if (session) {
+      headers.set('Authorization', `Bearer ${session.access_token}`)
+    }
+
     const response = await fetch(`${API_URL}${path}`, {
       ...options,
       headers,
@@ -112,7 +128,7 @@ async function request<T>(path: string, options: RequestInit = {}, timeoutMs: nu
   }
 }
 
-export const apiGet = <T>(path: string) => request<T>(path)
+export const apiGet = <T>(path: string, timeoutMs?: number) => request<T>(path, {}, timeoutMs)
 
 // `timeoutMs` opcional: el default (15s) alcanza para el CRUD normal, pero
 // se queda corto para endpoints que dependen de una llamada real a IA o de
