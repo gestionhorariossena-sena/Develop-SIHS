@@ -104,6 +104,16 @@ def fake_supabase(monkeypatch):
     debe responder Supabase para ese token; cualquier otro token no
     registrado se comporta como un token inválido/expirado (401).
     """
+    # _verificar_token_supabase cachea su resultado por token (ver su
+    # docstring) para no golpear a Supabase en cada request -- ese cache es
+    # un dict a nivel de módulo que sobrevive entre tests, así que si dos
+    # tests reusaran el mismo string de token con datos distintos, el
+    # segundo vería (falsamente) los datos cacheados del primero. Se limpia
+    # acá, al principio de cada test que use este fixture.
+    from app.core import supabase_auth
+
+    supabase_auth._cache_tokens.clear()
+
     usuarios_por_token: dict[str, dict] = {}
 
     class FakeResponse:

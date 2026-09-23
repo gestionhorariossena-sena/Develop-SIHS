@@ -216,7 +216,7 @@ def obtener_horarios(
     db: Session = Depends(get_db),
     usuario=Depends(require_puede_programar),
 ):
-    return [_a_response(db, h) for h in HorarioService.obtener_todos(db)]
+    return HorarioService.obtener_todos_con_respuesta(db)
 
 
 @router.get("/{id_horario}", response_model=HorarioResponse)
