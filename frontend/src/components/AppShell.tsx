@@ -16,6 +16,8 @@ interface ItemNav {
   /** Solo para quien tenga el rol Instructor — pantallas de autoservicio
    * ("Mi horario"), no tiene sentido que las vea un Coordinador/Aprendiz. */
   soloInstructor?: boolean
+  /** Espejo de `soloInstructor` para el autoservicio del Aprendiz. */
+  soloAprendiz?: boolean
   /** Solo Administrador — más estricto que `soloGestion` (que también deja
    * pasar a Coordinador). Panel de Administración de solicitudes de acceso
    * (SCRUM-121): "Ni Coordinador ni ningún otro rol la ve" es regla de
@@ -53,6 +55,7 @@ const NAV: GrupoNav[] = [
     grupo: 'Mi trabajo',
     items: [
       { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
+      { etiqueta: 'Mi horario', ruta: '/mi-horario-aprendiz', soloAprendiz: true },
     ],
   },
   {
@@ -150,6 +153,9 @@ export function AppShell({ activo, children }: AppShellProps) {
   const esInstructor =
     miPerfil?.roles.some((rol) => rol.nombre === 'Instructor') ?? false
 
+  const esAprendiz =
+    miPerfil?.roles.some((rol) => rol.nombre === 'Aprendiz') ?? false
+
   const esAdministrador =
     miPerfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
 
@@ -163,6 +169,7 @@ export function AppShell({ activo, children }: AppShellProps) {
       (item) =>
         (!item.soloGestion || puedeGestionarUsuarios) &&
         (!item.soloInstructor || esInstructor) &&
+        (!item.soloAprendiz || esAprendiz) &&
         (!item.soloAdmin || esAdministrador),
     ),
   })).filter((grupo) => grupo.items.length > 0)
@@ -436,7 +443,7 @@ export function AppShell({ activo, children }: AppShellProps) {
 
             <button
               onClick={() => void signOut()}
-              className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-all hover:bg-surface-container-high dark:border-slate-700"
+              className="shrink-0 whitespace-nowrap rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-all hover:bg-surface-container-high dark:border-slate-700"
             >
               Cerrar sesión
             </button>

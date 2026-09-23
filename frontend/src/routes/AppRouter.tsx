@@ -4,7 +4,7 @@ import { Login } from '../pages/Login'
 import { Registro } from '../pages/Registro'
 import { RecuperarContrasena } from '../pages/RecuperarContrasena'
 import { RestablecerContrasena } from '../pages/RestablecerContrasena'
-import { Dashboard } from '../pages/Dashboard'
+import { DashboardRouter } from '../pages/DashboardRouter'
 import { NuevoHorario } from '../pages/NuevoHorario'
 import { AsistenteHorarios } from '../pages/AsistenteHorarios'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
@@ -19,6 +19,7 @@ import { Fichas } from '../pages/Fichas'
 import { VistaFichas } from '../pages/VistaFichas'
 import { VistaAmbientes } from '../pages/VistaAmbientes'
 import { MiHorario } from '../pages/MiHorario'
+import { MiHorarioAprendiz } from '../pages/MiHorarioAprendiz'
 import { DetalleFranjaAmbiente } from '../pages/DetalleFranjaAmbiente'
 import { Usuarios } from '../pages/Usuarios'
 import { CodigoInstructor } from '../pages/CodigoInstructor'
@@ -46,7 +47,7 @@ export function AppRouter() {
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <Dashboard />
+            <DashboardRouter />
           </ProtectedRoute>
         }
       />
@@ -63,6 +64,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <MiHorario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mi-horario-aprendiz"
+        element={
+          <ProtectedRoute>
+            <MiHorarioAprendiz />
           </ProtectedRoute>
         }
       />

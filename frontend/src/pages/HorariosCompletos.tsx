@@ -2,10 +2,8 @@ import { Fragment, useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
-import { GridHorario } from '../components/horario/GridHorario'
-import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
+import { celdasDesdeHorarios, GridAsistente } from '../components/horario/GridAsistente'
 import { nombresDias } from '../components/relacionados/formatoBloque'
-import { BLOQUES } from './horario/tipos'
 import type { Jornada } from './horario/tipos'
 import { colorParaBloque } from './horario/gridLogic'
 import type { ColorBloque } from './horario/gridLogic'
@@ -34,8 +32,19 @@ function badgeEstadoPublicacion(publicado: boolean) {
     : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
 }
 
-function jornadaDeHorario(horario: Horario): Jornada | null {
-  return BLOQUES.find((bloque) => bloque.horaInicio24 === horario.horaInicio)?.jornada ?? null
+// Por RANGO de hora (< 12 Mañana, < 18 Tarde, si no Noche), no por
+// coincidencia exacta con las 2 franjas institucionales fijas -- mismo
+// criterio que ya usa GridSemanalInstructor.tsx (Mi Horario del
+// instructor). Antes, esto solo reconocía las horas de BLOQUES
+// (06:15/09:00/12:00/15:00/18:00/20:00): cualquier horario creado por el
+// Asistente de Programación (franjas propias: 07:00/09:00/11:00/13:00/
+// 15:00/17:00, ver GridAsistente.tsx) devolvía `null` y se mostraba como
+// "Sin definir" en la tabla -- encontrado en vivo el 2026-09-14.
+function jornadaDeHorario(horario: Horario): Jornada {
+  const hora = Number(horario.horaInicio.split(':')[0])
+  if (hora < 12) return 'Mañana'
+  if (hora < 18) return 'Tarde'
+  return 'Noche'
 }
 
 function formatoHora(hora: string) {
@@ -96,11 +105,7 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
       .catch(() => setErrorCarga(true))
   }, [horario.idInstructor])
 
-  // Sin ocultarFilasVacias a propósito: el pedido fue mostrar el horario
-  // "tal como se ve en el creador" (NuevoHorario.tsx), o sea la plantilla
-  // institucional completa (las 3 jornadas, los 6 bloques, Receso incluido)
-  // con la única celda asignada resaltada, no un recorte a lo mínimo.
-  const { bloques, grid } = convertirHorariosAGrid([horario])
+  const celdas = celdasDesdeHorarios([horario])
 
   return (
     <div className="space-y-4 p-4">
@@ -136,8 +141,8 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
         </div>
       </div>
 
-      <SeccionDrawer titulo="Horario semanal — igual que en el creador de horarios">
-        <GridHorario bloques={bloques} grid={grid} hayBloqueActivo={false} soloLectura />
+      <SeccionDrawer titulo="Horario semanal">
+        <GridAsistente celdas={celdas} />
       </SeccionDrawer>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -268,9 +273,26 @@ export function HorariosCompletos() {
   // es el mismo GET /horarios/auditoria-cruces ya construido.
   const [auditoria, setAuditoria] = useState<AuditoriaCrucesResponse | null>(null)
 
+  // Acotado al trimestre ACTIVO por defecto (no `?` sin filtro = TODOS los
+  // trimestres desde siempre) -- auditar_conflictos revalida cada horario
+  // activo contra todos los demás (varias queries de cruce por horario,
+  // no solo de datos), así que el conjunto que se audita importa mucho:
+  // sin acotar, con el catálogo real (130+ horarios de varios trimestres)
+  // este panel se quedaba "Auditando horarios…" por minutos sin terminar
+  // (encontrado en vivo el 2026-09-14, medido: pasó de 2 minutos sin
+  // completar). Acotar al trimestre activo no arregla el N+1 de fondo
+  // (eso requiere revisar con calma la lógica de cruces, no es un ajuste
+  // de una tarde), pero reduce el conjunto real al que un coordinador de
+  // verdad necesita auditar hoy. Espera a que `trimestres` cargue para
+  // saber cuál es el activo -- por eso depende de `trimestres`, no corre
+  // una sola vez al montar como antes.
   useEffect(() => {
-    apiGet<AuditoriaCrucesResponse>('/horarios/auditoria-cruces').then(setAuditoria).catch(() => {})
-  }, [])
+    if (trimestres.length === 0) return
+    const activo = trimestres.find((t) => t.estado === 'activo') ?? trimestres[0]
+    apiGet<AuditoriaCrucesResponse>(`/horarios/auditoria-cruces?idTrimestre=${activo.idTrimestre}`, 60000)
+      .then(setAuditoria)
+      .catch(() => {})
+  }, [trimestres])
 
   useEffect(() => {
     apiGet<Horario[]>('/horarios/')
@@ -431,7 +453,7 @@ export function HorariosCompletos() {
               <td className={`border-l-4 px-4 py-3 font-semibold text-on-surface dark:text-slate-100 ${color.borde}`}>{horario.fichaCodigo}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.instructorNombre ?? 'Sin definir'}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.ambienteNombre ?? 'Sin definir'}</td>
-              <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{jornada ?? 'Sin definir'}</span></td>
+              <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{jornada}</span></td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{nombresDias(horario.dias, diasPorId)}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{trimestrePorId.get(horario.idTrimestre)?.nombre ?? 'Sin definir'}</td>

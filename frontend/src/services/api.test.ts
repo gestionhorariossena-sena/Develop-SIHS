@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('./supabaseClient', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn(),
+    },
+  },
+}))
 
 describe('getUserFriendlyApiMessage', () => {
   beforeEach(() => {
@@ -32,5 +40,50 @@ describe('getUserFriendlyApiMessage', () => {
     expect(getUserFriendlyApiMessage(422, '')).toBe(
       'Los datos enviados no son válidos. Revisa la información antes de guardar.',
     )
+  })
+})
+
+describe('apiGet — timeout cuando supabase.auth.getSession() se cuelga', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    vi.stubEnv('VITE_SUPABASE_URL', 'https://example.supabase.co')
+    vi.stubEnv('VITE_SUPABASE_ANON_KEY', 'example-key')
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('corta con ApiError 504 en vez de quedarse pending para siempre', async () => {
+    // Reproduce el bug real (2026-09-14, HorariosCompletos.tsx): antes,
+    // `getSession()` corría FUERA del AbortController/timeout -- si esa
+    // llamada nunca resolvía (Supabase intentando refrescar un token
+    // vencido sin éxito), el fetch real nunca se disparaba y la promesa
+    // de `request()` quedaba pending para siempre, sin importar
+    // `timeoutMs`. Se simula con una promesa de getSession() que nunca
+    // se resuelve, y se verifica que el timeout SÍ corta la espera.
+    const { supabase } = await import('./supabaseClient')
+    vi.mocked(supabase.auth.getSession).mockReturnValue(new Promise(() => {}) as never)
+
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const { apiGet, ApiError } = await import('./api')
+    const promesa = apiGet('/horarios/')
+
+    let error: unknown
+    promesa.catch((e: unknown) => {
+      error = e
+    })
+
+    await vi.advanceTimersByTimeAsync(20000)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect((error as InstanceType<typeof ApiError>).status).toBe(504)
+    // El fetch real nunca debió dispararse -- la espera de sesión ya
+    // estaba colgada antes de llegar ahí.
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
