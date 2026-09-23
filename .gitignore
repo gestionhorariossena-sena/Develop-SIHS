@@ -22,3 +22,10 @@ frontend/.env.local
 .vscode/
 .idea/
 .DS_Store
+
+# Archivos de trabajo local (datos reales, mockups, capturas)
+*.xlsx
+*.xls
+*.jpeg
+*.jpg
+sidebar.png
