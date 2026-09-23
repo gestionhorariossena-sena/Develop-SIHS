@@ -382,15 +382,65 @@ def test_generar_propuesta_no_explota_con_catalogo_real_de_instructores_y_ambien
     assert len(resultado.bloques) == 10
 
 
-def test_generar_propuesta_lote_gigante_falla_rapido_en_vez_de_colgarse(db_session):
+def test_generar_propuesta_lote_grande_se_resuelve_ficha_por_ficha_sin_colgarse(db_session, monkeypatch):
     # Caso real 2026-09-12: el coordinador seleccionó ~50 fichas SIN
     # faseActual (cada una trae TODOS sus resultados pendientes, no solo
-    # los de una fase) -- eso son miles de necesidades, y aunque
-    # _muestra_rotada acota las opciones POR necesidad, construir el
-    # modelo sigue siendo O(necesidades × opciones): el request se quedó
-    # colgado varios minutos hasta que el frontend hizo timeout (45s) sin
-    # que nadie supiera por qué. Ahora debe fallar de inmediato con un
-    # mensaje claro, sin siquiera intentar construir el modelo.
+    # los de una fase) -- eso son cientos de necesidades, y aunque
+    # _muestra_rotada acota las opciones POR necesidad, construir un solo
+    # modelo con todas juntas era demasiado lento (el request se quedaba
+    # colgado hasta que el frontend hacía timeout a los 45s). Antes esto
+    # fallaba rápido con un mensaje pidiendo reducir el lote; ahora
+    # _generar_bloques_por_ficha resuelve un modelo chico POR FICHA
+    # (acarreando qué instructor/ambiente ya quedó ocupado de una ficha a
+    # la siguiente) y las 50 fichas sí quedan programadas, sin que el
+    # coordinador tenga que hacer nada manual.
+    _crear_tablas_extra(db_session)
+    db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
+    db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="ADSO", activo=True, idCoordinacion=1))
+    db_session.add(Trimestre(idTrimestre=1, nombre="2026-3", fechaInicio=date(2026, 7, 1), fechaFin=date(2026, 9, 30), estado="activo"))
+    db_session.add(Sede(id=1, nombre="Sede Demo", direccion="Calle 1", tipo="principal"))
+    for i in range(50):
+        db_session.add(Ambiente(id=i + 1, numero_ambiente=100 + i, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1))
+    db_session.add(CompetenciaFormacion(idCompetencia=1, codigo="C1", descripcion="Competencia demo", idPrograma=1))
+    for i in range(13):
+        db_session.add(ResultadoAprendizaje(idResultado=i + 1, codigo=f"RA-{i}", descripcion=f"Resultado {i}", idCompetencia=1))
+    for i in range(50):
+        db_session.add(Ficha(idFicha=i + 1, codigoFicha=str(1000000 + i), idPrograma=1, idTrimestre=1, idSede=1))
+    # Catálogo de instructores realista (el centro real tiene ~215, ver
+    # _LIMITE_CANDIDATOS) -- con muy pocos instructores compitiendo por
+    # 50 fichas × 13 resultados, algunas fichas quedarían legítimamente
+    # sin cupo (eso lo cubre el otro test, con partial success).
+    for i in range(215):
+        db_session.add(Usuario(idUsuario=uuid.uuid4(), nombre=f"Instructor {i}", email=f"i{i}@demo.sihs", tipoContrato="contratista", estado="activo"))
+    db_session.commit()
+
+    # El presupuesto de tiempo real (30s, ver _PRESUPUESTO_TIEMPO_TOTAL_SEG)
+    # protege el timeout del frontend, no lo que este test quiere probar --
+    # bajo carga compartida de CI/suite completa, el solve de las 50 fichas
+    # (~15-20s en aislado) puede estirarse lo suficiente para que el
+    # presupuesto real corte la última ficha por tiempo, no por
+    # infactibilidad, hacienda el test flaky. Se agranda solo para este
+    # test para que la aserción sea sobre factibilidad real, no sobre
+    # cuánta CPU había libre en el momento en que corrió.
+    monkeypatch.setattr("app.services.asistente_horario_service._PRESUPUESTO_TIEMPO_TOTAL_SEG", 120.0)
+
+    inicio = time_module.perf_counter()
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=list(range(1, 51)), jornada="MAÑANA")
+    duracion = time_module.perf_counter() - inicio
+
+    assert duracion < 60.0, f"tardó {duracion:.1f}s -- debería resolverse en segundos, no colgarse"
+    assert resultado.factible is True
+    assert resultado.fichasSinProgramar == []
+    assert len(resultado.bloques) == 50 * 13
+    assert {b.idFicha for b in resultado.bloques} == set(range(1, 51))
+
+
+def test_generar_propuesta_reporta_fichas_sin_programar_cuando_faltan_recursos(db_session):
+    # Con un catálogo de instructores/ambientes chico, no todas las
+    # fichas caben sin chocar -- eso no debe tumbar la propuesta entera:
+    # las fichas que sí se pudieron programar se devuelven como
+    # bloques usables (factible=True) y las que no, se listan en
+    # `fichasSinProgramar` para que el coordinador sepa cuáles reintentar.
     _crear_tablas_extra(db_session)
     db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
     db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="ADSO", activo=True, idCoordinacion=1))
@@ -400,21 +450,18 @@ def test_generar_propuesta_lote_gigante_falla_rapido_en_vez_de_colgarse(db_sessi
     db_session.add(CompetenciaFormacion(idCompetencia=1, codigo="C1", descripcion="Competencia demo", idPrograma=1))
     for i in range(13):
         db_session.add(ResultadoAprendizaje(idResultado=i + 1, codigo=f"RA-{i}", descripcion=f"Resultado {i}", idCompetencia=1))
-    for i in range(50):
+    for i in range(10):
         db_session.add(Ficha(idFicha=i + 1, codigoFicha=str(1000000 + i), idPrograma=1, idTrimestre=1, idSede=1))
     instructor_id = uuid.uuid4()
     db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana@demo.sihs", tipoContrato="contratista", estado="activo"))
     db_session.commit()
 
-    inicio = time_module.perf_counter()
-    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=list(range(1, 51)), jornada="MAÑANA")
-    duracion = time_module.perf_counter() - inicio
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=list(range(1, 11)), jornada="MAÑANA")
 
-    assert duracion < 2.0, f"tardó {duracion:.1f}s -- debería fallar antes de construir el modelo"
-    assert resultado.factible is False
-    assert resultado.bloques == []
-    assert "Reduce cuántas fichas" in resultado.mensaje
-    assert "fase actual" in resultado.mensaje
+    assert resultado.factible is True
+    assert len(resultado.bloques) > 0
+    assert len(resultado.fichasSinProgramar) > 0
+    assert "no se pudieron programar" in resultado.mensaje
 
 
 def test_generar_propuesta_filtra_por_fase_actual_de_la_ficha(db_session):

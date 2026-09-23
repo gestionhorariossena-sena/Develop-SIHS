@@ -43,6 +43,12 @@ class FilaImportada(BaseModel):
     # la columna "TRI" de la hoja FICHAS de PROGRAMACIÓN CGMLTI es esto,
     # no la duración del programa). Ver PLAN_INTEGRACION_IA.md.
     faseActual: int | None = None
+    # Solo se llena cuando fichaExiste=True -- lo que la ficha YA TIENE
+    # guardado en la BD, para comparar contra `faseActual` (lo que trae
+    # el Excel) y decidir si mostrar "Actualizar fase". Distintos porque
+    # el import solo escribe faseActual al CREAR una ficha nueva -- una
+    # que ya existe no se sincroniza sola con un re-import.
+    faseActualEnBD: int | None = None
 
 
 class ImportarExcelPreviewResponse(BaseModel):
@@ -90,6 +96,11 @@ class GenerarPropuestaResponse(BaseModel):
     bloques: list[BloquePropuesto]
     factible: bool
     mensaje: str
+    # Códigos de ficha que no se pudieron programar sin choques en este
+    # lote (ver _generar_bloques_por_ficha) -- vacío cuando todo el lote
+    # se resolvió. Puede venir no vacío incluso con factible=True: los
+    # bloques de las demás fichas siguen siendo una propuesta usable.
+    fichasSinProgramar: list[str] = []
 
 
 class PreguntaHorarioRequest(BaseModel):
