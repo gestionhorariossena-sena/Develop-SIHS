@@ -51,3 +51,43 @@ def test_actualizar_ficha_persiste_fase_actual(client, db_session, autenticar_co
 
     assert respuesta.status_code == 200
     assert respuesta.json()["faseActual"] == 3
+
+
+def test_actualizar_fase_actual_ficha_permite_solo_ese_campo(client, db_session, autenticar_como):
+    # Botón "Actualizar fase" del asistente (paso 2): una ficha que ya
+    # existe no recibe faseActual de un re-import (solo se escribe al
+    # crearla) -- este endpoint deja corregirla sin mandar el resto de
+    # los datos de la ficha, a diferencia de PUT /fichas/{id}.
+    _catalogo(db_session)
+    _, headers_admin = autenticar_como("Administrador")
+    creada = client.post(
+        "/api/v1/fichas/",
+        json={"codigoFicha": "100", "idPrograma": 1, "idTrimestre": 1},
+        headers=headers_admin,
+    ).json()
+    assert creada["faseActual"] is None
+
+    # A diferencia de crear/actualizar la ficha completa (solo
+    # Administrador), un Coordinador arma el horario con el asistente y
+    # debe poder corregir esto sin escalar a un admin.
+    _, headers_coordinador = autenticar_como("Coordinador")
+    respuesta = client.patch(
+        f"/api/v1/fichas/{creada['idFicha']}/fase-actual",
+        json={"faseActual": 2},
+        headers=headers_coordinador,
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["faseActual"] == 2
+    # El resto de la ficha no se tocó.
+    assert respuesta.json()["codigoFicha"] == "100"
+    assert respuesta.json()["idPrograma"] == 1
+
+
+def test_actualizar_fase_actual_ficha_inexistente_da_404(client, db_session, autenticar_como):
+    _catalogo(db_session)
+    _, headers = autenticar_como("Coordinador")
+
+    respuesta = client.patch("/api/v1/fichas/9999/fase-actual", json={"faseActual": 1}, headers=headers)
+
+    assert respuesta.status_code == 404
