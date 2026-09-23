@@ -13,6 +13,7 @@ const SIN_ROL: Usuario = {
   fechaRegistro: '2026-01-01',
   roles: [],
   especialidades: [],
+  debeCambiarClave: false,
 }
 
 const ROLES: Rol[] = [

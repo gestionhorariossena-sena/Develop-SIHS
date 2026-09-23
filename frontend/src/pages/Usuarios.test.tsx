@@ -12,6 +12,7 @@ const INSTRUCTOR: Usuario = {
   fechaRegistro: '2026-01-01',
   roles: [{ idRol: 1, nombre: 'Instructor' }],
   especialidades: [],
+  debeCambiarClave: false,
 }
 
 const ROLES: Rol[] = [{ idRol: 1, nombre: 'Instructor' }, { idRol: 2, nombre: 'Coordinador' }]

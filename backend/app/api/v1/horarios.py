@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy.orm import Session
 
 from app.ai.client import AIServiceError
@@ -8,7 +8,8 @@ from app.ai.schemas import ResumenAuditoriaIA, RespuestaPreguntaHorario
 from app.ai.tasks.explain_conflict import resumir_auditoria
 from app.ai.tasks.responder_pregunta import responder_pregunta
 from app.core.database import get_db
-from app.core.supabase_auth import require_roles
+from app.core.supabase_auth import get_current_user, require_roles
+from app.repositories.horario_repository import HorarioRepository
 from app.schemas.asistente_horario import (
     GenerarPropuestaRequest,
     GenerarPropuestaResponse,
@@ -28,6 +29,7 @@ from app.services.asistente_horario_service import generar_propuesta as generar_
 from app.services.asistente_horario_service import previsualizar_excel
 from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import CruceHorarioError, HorarioService
+from app.services.pdf_service import PdfService, SeccionTexto
 
 router = APIRouter(prefix="/horarios", tags=["horarios"])
 
@@ -208,7 +210,7 @@ def crear_horario(
         db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=horario.idHorario, detalle=detalle
     )
 
-    return _a_response(db, horario)
+    return HorarioService.a_response(db, horario)
 
 
 @router.get("/", response_model=list[HorarioResponse])
@@ -230,7 +232,53 @@ def obtener_horario(
     if not horario:
         raise HTTPException(status_code=404, detail="Horario no encontrado")
 
-    return _a_response(db, horario)
+    return HorarioService.a_response(db, horario)
+
+
+@router.get("/{id_horario}/pdf")
+def descargar_horario_pdf(
+    id_horario: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(get_current_user),
+):
+    """"Ficha de sesión" descargable de un bloque puntual (instructor,
+    ficha, ambiente, día/hora, resultado de aprendizaje) — GET
+    /horarios/{id}/pdf de la épica transversal de exportación a PDF
+    (ver PdfService). Abierto a cualquier usuario autenticado, mismo
+    criterio que GET /fichas/{id}/vocero: no es dato sensible, y tanto
+    instructor como aprendiz necesitan poder descargar su propia sesión
+    sin tener rol de gestión."""
+    horario = HorarioService.obtener_por_id(db, id_horario)
+
+    if not horario:
+        raise HTTPException(status_code=404, detail="Horario no encontrado")
+
+    nombres_dias = HorarioRepository.obtener_nombres_dias(db, id_horario)
+    contenido = PdfService.generar(
+        titulo="Ficha de Sesión",
+        subtitulo=f"Horario #{horario.idHorario}",
+        secciones=[
+            SeccionTexto(
+                titulo="Datos de la sesión",
+                lineas=[
+                    f"Ficha: {horario.ficha.codigoFicha if horario.ficha else '—'}",
+                    f"Instructor: {horario.instructor.nombre if horario.instructor else '—'}",
+                    f"Ambiente: {horario.ambiente.nombre if horario.ambiente else '—'}",
+                    f"Resultado de aprendizaje: "
+                    f"{(horario.resultado.codigo + ' — ') if horario.resultado and horario.resultado.codigo else ''}"
+                    f"{horario.resultado.descripcion if horario.resultado else '—'}",
+                    f"Día(s): {nombres_dias}",
+                    f"Horario: {horario.horaInicio.strftime('%H:%M')} - {horario.horaFin.strftime('%H:%M')}",
+                ],
+            ),
+        ],
+    )
+
+    return Response(
+        content=contenido,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="ficha-sesion-horario-{id_horario}.pdf"'},
+    )
 
 
 @router.put("/{id_horario}", response_model=HorarioResponse)
@@ -255,7 +303,7 @@ def actualizar_horario(
         db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=id_horario, detalle=detalle
     )
 
-    return _a_response(db, horario)
+    return HorarioService.a_response(db, horario)
 
 
 @router.patch("/{id_horario}/estado", response_model=HorarioResponse)

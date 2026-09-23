@@ -28,7 +28,7 @@ class UsuarioLoginDocumentoResponse(BaseModel):
 
 
 class UsuarioResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     idUsuario: UUID
     nombre: str
@@ -54,6 +54,9 @@ class UsuarioResponse(BaseModel):
     codigoInstructor: str | None = None
     idTrimestre: int | None = None
     sigla: str | None = None
+    # Fuerza la pantalla de cambio de contraseña obligatorio en el primer
+    # login con credencial temporal — ver app/models/usuario.py y
+    # ProtectedRoute.tsx (frontend), que es quien la consume.
     debeCambiarClave: bool = False
     roles: list[RolResponse] = []
     especialidades: list[EspecialidadResponse] = []

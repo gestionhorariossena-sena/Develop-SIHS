@@ -4,13 +4,18 @@ import { Login } from '../pages/Login'
 import { Registro } from '../pages/Registro'
 import { RecuperarContrasena } from '../pages/RecuperarContrasena'
 import { RestablecerContrasena } from '../pages/RestablecerContrasena'
+import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
 import { DashboardRouter } from '../pages/DashboardRouter'
 import { NuevoHorario } from '../pages/NuevoHorario'
 import { AsistenteHorarios } from '../pages/AsistenteHorarios'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
+import { MiHorarioRouter } from '../pages/MiHorarioRouter'
+import { MensajesDocentes } from '../pages/MensajesDocentes'
+import { Notificaciones } from '../pages/Notificaciones'
 import { CalendarioGeneral } from '../pages/CalendarioGeneral'
 import { HorariosCompletos } from '../pages/HorariosCompletos'
 import { AuditoriaCruces } from '../pages/AuditoriaCruces'
+import { Avisos } from '../pages/Avisos'
 import { Ambientes } from '../pages/Ambientes'
 import { Sedes } from '../pages/Sedes'
 import { Instructores } from '../pages/Instructores'
@@ -18,8 +23,6 @@ import { VistaInstructores } from '../pages/VistaInstructores'
 import { Fichas } from '../pages/Fichas'
 import { VistaFichas } from '../pages/VistaFichas'
 import { VistaAmbientes } from '../pages/VistaAmbientes'
-import { MiHorario } from '../pages/MiHorario'
-import { MiHorarioAprendiz } from '../pages/MiHorarioAprendiz'
 import { DetalleFranjaAmbiente } from '../pages/DetalleFranjaAmbiente'
 import { Usuarios } from '../pages/Usuarios'
 import { CodigoInstructor } from '../pages/CodigoInstructor'
@@ -44,6 +47,14 @@ export function AppRouter() {
       <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
       <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
       <Route
+        path="/cambiar-clave-obligatorio"
+        element={
+          <ProtectedRoute>
+            <CambiarClaveObligatorio />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
@@ -63,15 +74,7 @@ export function AppRouter() {
         path="/mi-horario"
         element={
           <ProtectedRoute>
-            <MiHorario />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/mi-horario-aprendiz"
-        element={
-          <ProtectedRoute>
-            <MiHorarioAprendiz />
+            <MiHorarioRouter />
           </ProtectedRoute>
         }
       />
@@ -80,6 +83,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute>
             <DetalleFranjaAmbiente />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mensajes-docentes"
+        element={
+          <ProtectedRoute roles={['Aprendiz']}>
+            <MensajesDocentes />
           </ProtectedRoute>
         }
       />
@@ -116,10 +127,34 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/mensajes-docentes"
+        element={
+          <ProtectedRoute>
+            <MensajesDocentes />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/horarios/auditoria"
         element={
           <ProtectedRoute>
             <AuditoriaCruces />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/avisos"
+        element={
+          <ProtectedRoute roles={['Aprendiz']}>
+            <Avisos />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notificaciones"
+        element={
+          <ProtectedRoute>
+            <Notificaciones />
           </ProtectedRoute>
         }
       />

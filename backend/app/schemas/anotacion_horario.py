@@ -1,29 +1,30 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+EtiquetaAnotacion = Literal["Examen", "Entrega", "Importante", "Normal"]
 
-class AnotacionHorarioCreate(BaseModel):
-    idHorario: int
+
+class AnotacionHorarioBase(BaseModel):
+    idHorario: int | None = None
     nota: str
-    etiqueta: str
+    etiqueta: EtiquetaAnotacion = "Normal"
     recordatorioActivo: bool = False
 
 
-class AnotacionHorarioUpdate(BaseModel):
-    nota: str
-    etiqueta: str
-    recordatorioActivo: bool
+class AnotacionHorarioCreate(AnotacionHorarioBase):
+    pass
 
 
-class AnotacionHorarioResponse(BaseModel):
+class AnotacionHorarioUpdate(AnotacionHorarioBase):
+    pass
+
+
+class AnotacionHorarioResponse(AnotacionHorarioBase):
     model_config = ConfigDict(from_attributes=True)
 
     idAnotacion: int
     idUsuario: UUID
-    idHorario: int
-    nota: str
-    etiqueta: str
-    recordatorioActivo: bool
     fechaCreacion: datetime

@@ -16,7 +16,9 @@ interface ItemNav {
   /** Solo para quien tenga el rol Instructor — pantallas de autoservicio
    * ("Mi horario"), no tiene sentido que las vea un Coordinador/Aprendiz. */
   soloInstructor?: boolean
-  /** Espejo de `soloInstructor` para el autoservicio del Aprendiz. */
+  /** Solo para quien tenga el rol Aprendiz — mismo criterio que
+   * `soloInstructor`, para autoservicio del Aprendiz ("Avisos y Eventos",
+   * "Mensajes Docentes"). */
   soloAprendiz?: boolean
   /** Solo Administrador — más estricto que `soloGestion` (que también deja
    * pasar a Coordinador). Panel de Administración de solicitudes de acceso
@@ -54,8 +56,18 @@ const NAV: GrupoNav[] = [
   {
     grupo: 'Mi trabajo',
     items: [
+      // Dos ítems "Mi horario" con la misma ruta a propósito:
+      // MiHorarioRouter.tsx elige, según el rol, entre MiHorario.tsx
+      // (carga lectiva del Instructor) y MiHorarioAprendiz.tsx (grilla +
+      // organizador personal del Aprendiz) -- son pantallas distintas que
+      // comparten ruta y etiqueta, no una sola pantalla con permisos
+      // distintos. El filtro de roles de más abajo deja pasar como
+      // máximo uno de los dos para un usuario dado.
       { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
-      { etiqueta: 'Mi horario', ruta: '/mi-horario-aprendiz', soloAprendiz: true },
+      { etiqueta: 'Mi horario', ruta: '/mi-horario', soloAprendiz: true },
+      { etiqueta: 'Mensajes Docentes', ruta: '/mensajes-docentes', soloAprendiz: true },
+      { etiqueta: 'Notificaciones', ruta: '/notificaciones', soloAprendiz: true },
+      { etiqueta: 'Avisos y Eventos', ruta: '/avisos', soloAprendiz: true },
     ],
   },
   {
@@ -161,7 +173,7 @@ export function AppShell({ activo, children }: AppShellProps) {
 
   // Los ítems marcados soloGestion solo tienen sentido para un
   // Administrador o Coordinador — mismo criterio que antes tenía "Usuarios".
-  // soloInstructor es el espejo para el grupo "Mi trabajo". soloAdmin es más
+  // soloInstructor/soloAprendiz son el espejo para el grupo "Mi trabajo". soloAdmin es más
   // estricto: ni Coordinador la ve (Panel de Administración, SCRUM-121).
   const nav = NAV.map((grupo) => ({
     ...grupo,

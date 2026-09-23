@@ -117,3 +117,34 @@ def test_listar_usuarios_no_truena_con_email_de_instructor_sin_cuenta(client, au
     assert respuesta.status_code == 200
     correos = [u["email"] for u in respuesta.json()]
     assert "instructor@instructores.sihs.sin-cuenta.local" in correos
+def test_me_expone_debe_cambiar_clave(client, autenticar_como):
+    _, headers = autenticar_como("Aprendiz")
+
+    respuesta = client.get("/api/v1/usuarios/me", headers=headers)
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["debeCambiarClave"] is False
+
+
+def test_confirmar_cambio_clave_requiere_autenticacion(client):
+    respuesta = client.patch("/api/v1/usuarios/me/confirmar-cambio-clave")
+
+    assert respuesta.status_code == 401
+
+
+def test_confirmar_cambio_clave_limpia_el_flag(client, db_session, autenticar_como):
+    from app.models.usuario import Usuario
+
+    usuario, headers = autenticar_como("Aprendiz")
+    usuario_db = db_session.get(Usuario, usuario.idUsuario)
+    usuario_db.debeCambiarClave = True
+    db_session.commit()
+
+    respuesta = client.patch("/api/v1/usuarios/me/confirmar-cambio-clave", headers=headers)
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["debeCambiarClave"] is False
+
+    # Persistido de verdad, no solo en la respuesta.
+    verificacion = client.get("/api/v1/usuarios/me", headers=headers)
+    assert verificacion.json()["debeCambiarClave"] is False

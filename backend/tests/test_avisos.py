@@ -70,7 +70,7 @@ def test_crear_aviso_requiere_coordinador_o_administrador(client, db_session, au
 def test_crear_y_listar_avisos(client, db_session, autenticar_como):
     _crear_tablas_extra(db_session)
     _poblar_catalogos_basicos(db_session)
-    _, headers = autenticar_como("Coordinador")
+    coordinador, headers = autenticar_como("Coordinador")
 
     respuesta = client.post(
         "/api/v1/avisos/",
@@ -86,10 +86,14 @@ def test_crear_y_listar_avisos(client, db_session, autenticar_como):
     aviso = respuesta.json()
     assert aviso["titulo"] == "Suspensión de clases"
     assert aviso["idSede"] == 1
+    # El frontend (pantalla "Avisos & Eventos" del Aprendiz) muestra "Publicado
+    # por <nombre>" sin pedirlo aparte — ver AvisoService._a_response.
+    assert aviso["publicadorNombre"] == coordinador.nombre
 
     listado = client.get("/api/v1/avisos/", headers=headers)
     assert listado.status_code == 200
     assert len(listado.json()) == 1
+    assert listado.json()[0]["publicadorNombre"] == coordinador.nombre
 
 
 def test_listar_avisos_filtrado_por_categoria_y_ficha(client, db_session, autenticar_como):

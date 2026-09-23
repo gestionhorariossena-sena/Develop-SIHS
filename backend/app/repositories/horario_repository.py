@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.ambiente import Ambiente
+from app.models.dia_semana import DiaSemana
 from app.models.horario import Horario, horario_dia
 
 def _relaciones_para_respuesta():
@@ -68,6 +69,14 @@ class HorarioRepository:
         for fila in filas:
             dias_por_horario.setdefault(fila.idHorario, []).append(fila.idDia)
         return dias_por_horario
+
+    @staticmethod
+    def obtener_nombres_dias(db: Session, id_horario: int) -> str:
+        """'Lunes y Miércoles' — para el PDF de PdfService, que necesita
+        texto legible en vez de ids de "diasDeLaSemana"."""
+        ids_dias = HorarioRepository.obtener_dias(db, id_horario)
+        dias = db.query(DiaSemana).filter(DiaSemana.idDia.in_(ids_dias)).order_by(DiaSemana.idDia).all()
+        return " y ".join(d.nombreDia for d in dias) if dias else "días sin especificar"
 
     @staticmethod
     def crear(db: Session, horario: Horario, dias: list[int]):
@@ -151,8 +160,9 @@ class HorarioRepository:
 
     @staticmethod
     def obtener_por_ficha(db: Session, id_ficha: int) -> list[Horario]:
-        """GET /fichas/{id}/horarios (SCRUM-47) y /ficha-usuario/mi-horario
-        del Aprendiz — grid/relacionados de una ficha. Con eager loading
+        """GET /fichas/{id}/horarios (SCRUM-47), /ficha-usuario/mi-horario
+        del Aprendiz y la grilla semanal de GET /fichas/{id}/pdf
+        (PdfService) — grid/relacionados de una ficha. Con eager loading
         (ver _relaciones_para_respuesta): sin esto, una ficha con ~15
         horarios tardaba ~10s en /ficha-usuario/mi-horario (medido en vivo
         el 2026-09-14) por el mismo N+1 que ya se resolvió en obtener_todos."""
