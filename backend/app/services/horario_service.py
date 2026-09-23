@@ -34,12 +34,19 @@ class HorarioService:
         return HorarioRepository.obtener_por_id(db, id_horario)
 
     @staticmethod
-    def a_response(db, horario) -> dict:
+    def a_response(db, horario, dias: list[int] | None = None) -> dict:
         """Serializa un Horario a la forma de HorarioResponse, enriquecido
         con los nombres/códigos de instructor/ficha/ambiente/resultado —
         movido acá desde api/v1/horarios.py (`_a_response`) para
         reutilizarlo también en los GET por instructor/ficha/ambiente que
-        alimentan el drawer de relacionados (SCRUM-46/47/48)."""
+        alimentan el drawer de relacionados (SCRUM-46/47/48).
+
+        `dias`: si el llamador ya los trajo en bloque para MUCHOS horarios
+        a la vez (ver HorarioRepository.obtener_dias_por_horarios), se
+        pasan acá para no repetir un query por horario. Si se omite (el
+        caso normal de crear/actualizar/obtener UN horario suelto), cae al
+        query individual de siempre -- un query extra no importa cuando
+        es uno solo, sí importa multiplicado por cientos en un listado."""
         return {
             "idHorario": horario.idHorario,
             "horaInicio": horario.horaInicio,
@@ -54,13 +61,29 @@ class HorarioService:
             "fechaModificacion": horario.fechaModificacion,
             "activo": horario.activo,
             "publicado": horario.publicado,
-            "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
+            "dias": dias if dias is not None else HorarioRepository.obtener_dias(db, horario.idHorario),
             "instructorNombre": horario.instructor.nombre if horario.instructor else None,
             "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
             "ambienteNombre": horario.ambiente.nombre if horario.ambiente else None,
             "resultadoCodigo": horario.resultado.codigo if horario.resultado else None,
             "resultadoDescripcion": horario.resultado.descripcion if horario.resultado else None,
         }
+
+    @staticmethod
+    def obtener_todos_con_respuesta(db) -> list[dict]:
+        """Versión bulk de `obtener_todos` + `a_response` -- ver
+        HorarioRepository._RELACIONES_PARA_RESPUESTA y
+        obtener_dias_por_horarios. Antes, GET /horarios/ hacía
+        obtener_todos() (1 query) y luego a_response(db, h) POR CADA
+        horario (5 queries más: días + 4 relaciones lazy-load), sin
+        límite de cuántos horarios hay -- con el catálogo real (130+
+        horarios) eso tardaba 47s medido en vivo el 2026-09-14, muy por
+        encima del timeout del frontend. Con eager loading + bulk-days el
+        costo pasa a ser ~3 queries totales sin importar cuántos horarios
+        haya."""
+        horarios = HorarioRepository.obtener_todos(db)
+        dias_por_horario = HorarioRepository.obtener_dias_por_horarios(db, [h.idHorario for h in horarios])
+        return [HorarioService.a_response(db, h, dias=dias_por_horario.get(h.idHorario, [])) for h in horarios]
 
     @staticmethod
     def obtener_por_instructor(db, id_instructor) -> list[dict]:
@@ -73,8 +96,12 @@ class HorarioService:
 
     @staticmethod
     def obtener_por_ficha(db, id_ficha) -> list[dict]:
-        """GET /fichas/{id}/horarios (SCRUM-47) — horarios de una ficha."""
-        return [HorarioService.a_response(db, h) for h in HorarioRepository.obtener_por_ficha(db, id_ficha)]
+        """GET /fichas/{id}/horarios (SCRUM-47) y /ficha-usuario/mi-horario
+        del Aprendiz — horarios de una ficha. Bulk-days igual que
+        obtener_todos_con_respuesta, ver su docstring."""
+        horarios = HorarioRepository.obtener_por_ficha(db, id_ficha)
+        dias_por_horario = HorarioRepository.obtener_dias_por_horarios(db, [h.idHorario for h in horarios])
+        return [HorarioService.a_response(db, h, dias=dias_por_horario.get(h.idHorario, [])) for h in horarios]
 
     @staticmethod
     def obtener_por_ambiente(db, id_ambiente) -> list[dict]:
@@ -346,6 +373,13 @@ class HorarioService:
         from app.schemas.horario import HorarioDryRunRequest  # evita import circular a nivel de módulo
 
         horarios = HorarioRepository.obtener_activos(db, id_trimestre=id_trimestre, id_sede=id_sede)
+        # Bulk en vez de un `obtener_dias` por horario -- ver
+        # HorarioService.obtener_todos_con_respuesta, mismo problema N+1.
+        # No elimina el costo dominante de este barrido (validar_dry_run
+        # se sigue llamando una vez POR horario, con sus propias queries
+        # de buscar_solape), pero saca del camino el N+1 más barato de
+        # arreglar sin tocar la lógica de detección de cruces.
+        dias_por_horario = HorarioRepository.obtener_dias_por_horarios(db, [h.idHorario for h in horarios])
 
         pares_vistos: set[tuple[int, int, str]] = set()
         instructores_vistos: set = set()
@@ -361,7 +395,7 @@ class HorarioService:
                 idInstructor=horario.idInstructor,
                 idFicha=horario.idFicha,
                 idResultado=horario.idResultado,
-                dias=HorarioRepository.obtener_dias(db, horario.idHorario),
+                dias=dias_por_horario.get(horario.idHorario, []),
             )
 
             for conflicto in HorarioService.validar_dry_run(db, candidato, excluir_id=horario.idHorario):
