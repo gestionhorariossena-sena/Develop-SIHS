@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.models.ambiente import Ambiente
 from app.models.dia_semana import DiaSemana
 from app.models.horario import Horario, horario_dia
+from app.models.trimestre import Trimestre
 
 def _relaciones_para_respuesta():
     """Relaciones que HorarioService.a_response necesita leer para CADA
@@ -146,7 +147,11 @@ class HorarioRepository:
 
     @staticmethod
     def obtener_por_instructor(
-        db: Session, id_instructor, excluir_id: int | None = None
+        db: Session,
+        id_instructor,
+        excluir_id: int | None = None,
+        fecha_inicio=None,
+        fecha_fin=None,
     ) -> list[Horario]:
         """Todos los horarios ya asignados a un instructor, sin filtrar por
         día/hora — HorarioService los usa para sumar horas semanales y
@@ -154,6 +159,11 @@ class HorarioRepository:
         los activos: uno desactivado no debería sumar a la carga semanal
         ni aparecer como vigente en el drawer de relacionados."""
         query = db.query(Horario).filter(Horario.idInstructor == id_instructor, Horario.activo.is_(True))
+        if fecha_inicio is not None and fecha_fin is not None:
+            query = query.join(Trimestre, Horario.idTrimestre == Trimestre.idTrimestre).filter(
+                Trimestre.fechaInicio <= fecha_fin,
+                Trimestre.fechaFin >= fecha_inicio,
+            )
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)
         return query.all()
