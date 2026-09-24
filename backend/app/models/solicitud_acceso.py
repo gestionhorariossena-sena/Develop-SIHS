@@ -1,5 +1,6 @@
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -33,3 +34,7 @@ class SolicitudAcceso(Base):
     fechaSolicitud = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     fechaResolucion = Column(DateTime(timezone=True), nullable=True)
     idAdminResolvio = Column(UUID(as_uuid=True), ForeignKey("usuarios.idUsuario"), nullable=True)
+
+    # El panel muestra el nombre del rol pedido, no su id. Solo lectura —
+    # no cambia el esquema, así que no lleva migración.
+    rolSolicitado = relationship("Rol", lazy="joined")

@@ -1,5 +1,6 @@
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, false
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -19,6 +20,24 @@ class Conversacion(Base):
     idAprendiz = Column(UUID(as_uuid=True), ForeignKey("usuarios.idUsuario"), nullable=False)
     idInstructor = Column(UUID(as_uuid=True), ForeignKey("usuarios.idUsuario"), nullable=False)
     fechaCreacion = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # Dos FK a la misma tabla: SQLAlchemy necesita que se le diga cuál usa
+    # cada relación.
+    aprendiz = relationship("Usuario", foreign_keys=[idAprendiz], lazy="joined")
+    instructor = relationship("Usuario", foreign_keys=[idInstructor], lazy="joined")
+
+    # Sin esto la bandeja mostraba UUID en vez de nombres: ni el Instructor
+    # ni el Aprendiz tienen permiso sobre `GET /usuarios/` (es
+    # `require_lectura_catalogo`, solo Coordinador/Administrador), así que
+    # no pueden resolverlos por su cuenta — y son los dos únicos que ven
+    # esta pantalla.
+    @property
+    def aprendizNombre(self) -> str | None:
+        return self.aprendiz.nombre if self.aprendiz else None
+
+    @property
+    def instructorNombre(self) -> str | None:
+        return self.instructor.nombre if self.instructor else None
 
 
 class Mensaje(Base):

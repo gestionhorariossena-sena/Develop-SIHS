@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.supabase_auth import require_admin, require_lectura_catalogo_o_instructor
 from app.schemas.competencia_formacion import (
+    CompetenciaEspecialidadesUpdate,
     CompetenciaFormacionCreate,
     CompetenciaFormacionResponse,
     CompetenciaFormacionUpdate,
@@ -93,3 +94,24 @@ def eliminar_competencia(
         raise HTTPException(status_code=404, detail="Competencia no encontrada")
 
     return {"mensaje": "Competencia eliminada"}
+
+
+@router.put("/{id_competencia}/especialidades", response_model=CompetenciaFormacionResponse)
+def actualizar_especialidades_de_competencia(
+    id_competencia: int,
+    data: CompetenciaEspecialidadesUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_admin),
+):
+    """Qué fortalezas habilitan esta competencia — el dato que hace
+    posible avisar cuando a un instructor le asignan un resultado de
+    aprendizaje que no es lo suyo (ver
+    HorarioService._validar_fortaleza_instructor)."""
+    competencia = CompetenciaFormacionService.reemplazar_especialidades(
+        db, id_competencia, data.idsEspecialidades
+    )
+
+    if not competencia:
+        raise HTTPException(status_code=404, detail="Competencia no encontrada")
+
+    return competencia

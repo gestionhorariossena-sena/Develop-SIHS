@@ -86,8 +86,8 @@ const fechaHoy = (() => {
  * DashboardRouter.tsx) — antes todo usuario caía en el mismo Dashboard.tsx
  * pensado para Coordinador ("Accesos de coordinación", cruces de todo el
  * centro), lo cual no tenía sentido para un Instructor. Rediseño sobre el
- * mockup Stitch "Inicio Instructor" (ver INICIO INSTRUCTOR.jpeg en la raíz
- * del repo y GUIA_DE_MARCA.md para los tokens).
+ * mockup Stitch "Inicio Instructor" (ver _Docs/Diseño/mockups-stitch/ y
+ * GUIA_DE_MARCA.md para los tokens).
  *
  * Es un resumen del día, no reemplaza "Mi Horario Semanal" (MiHorario.tsx,
  * `/mi-horario`) que sigue siendo la vista semanal completa de solo

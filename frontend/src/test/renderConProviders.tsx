@@ -6,11 +6,25 @@ import type { AuthContextValue } from '../context/auth-context'
 import { ThemeProvider } from '../context/ThemeContext'
 
 /** Sesión falsa mínima — suficiente para que useAuth() no reviente al
- * renderizar páginas envueltas en <AppShell>, que la exige vía contexto. */
-const sesionFalsa: AuthContextValue = {
-  session: null,
-  loading: false,
-  signOut: async () => {},
+ * renderizar páginas envueltas en <AppShell>, que la exige vía contexto.
+ *
+ * Trae un `user.id` porque AppShell pide el perfil por ese id
+ * (`services/perfil.ts`); con `session: null` no pedía ninguno y el navbar
+ * se dibujaba sin roles. El id es distinto en cada render a propósito:
+ * ese servicio cachea el perfil por persona y su caché vive en el módulo,
+ * así que un id fijo haría que un test viera los roles que mockeó el
+ * anterior. */
+let sesionesCreadas = 0
+
+function crearSesionFalsa(): AuthContextValue {
+  sesionesCreadas += 1
+  return {
+    session: {
+      user: { id: `usuario-de-prueba-${sesionesCreadas}` },
+    } as AuthContextValue['session'],
+    loading: false,
+    signOut: async () => {},
+  }
 }
 
 /** Envuelve con MemoryRouter (AppShell usa <Link>), AuthContext (AppShell
@@ -26,7 +40,7 @@ export function renderConProviders(ui: ReactElement, initialEntries: string[] = 
   return render(
     <MemoryRouter initialEntries={initialEntries}>
       <ThemeProvider>
-        <AuthContext.Provider value={sesionFalsa}>{ui}</AuthContext.Provider>
+        <AuthContext.Provider value={crearSesionFalsa()}>{ui}</AuthContext.Provider>
       </ThemeProvider>
     </MemoryRouter>,
   )

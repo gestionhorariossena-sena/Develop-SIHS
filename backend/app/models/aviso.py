@@ -36,3 +36,18 @@ class Aviso(Base):
     publicador = relationship("Usuario")
     ficha = relationship("Ficha")
     sede = relationship("Sede")
+
+    # Lo que el tablón necesita mostrar en vez de los ids crudos. Como
+    # propiedades y no en el servicio porque `AvisoResponse` serializa el
+    # modelo directo (`from_attributes`), así que las lee de acá sola.
+    @property
+    def fichaCodigo(self) -> str | None:
+        return self.ficha.codigoFicha if self.ficha else None
+
+    @property
+    def sedeNombre(self) -> str | None:
+        return self.sede.nombre if self.sede else None
+
+    @property
+    def publicadoPor(self) -> str | None:
+        return self.publicador.nombre if self.publicador else None

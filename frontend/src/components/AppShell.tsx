@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import senaLogo from '../assets/sena-logo.jpeg'
 import { useAuth } from '../hooks/useAuth'
 import { apiGet } from '../services/api'
+import { getPerfil } from '../services/perfil'
 import type { Notificacion, Usuario } from '../types/api'
 import { NotificacionesPanel } from './NotificacionesPanel'
 import { ThemeSelector } from './ThemeSelector'
@@ -56,6 +57,10 @@ const NAV: GrupoNav[] = [
     items: [
       { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
       { etiqueta: 'Mi horario', ruta: '/mi-horario-aprendiz', soloAprendiz: true },
+      // Solo el Aprendiz abre conversaciones (lo valida el backend), así
+      // que por ahora el ítem es suyo; la bandeja del Instructor es otra
+      // pantalla pendiente de diseño.
+      { etiqueta: 'Mensajes', ruta: '/mensajes', soloAprendiz: true },
     ],
   },
   {
@@ -91,20 +96,36 @@ const NAV: GrupoNav[] = [
   {
     grupo: 'Operación',
     items: [
-      { etiqueta: 'Cambios', soloGestion: true },
-      { etiqueta: 'Notificaciones', soloGestion: true },
+      // H-4: la bandeja de lo que reportan los instructores. Estuvo en
+      // gris desde siempre aunque su backend estaba completo.
+      { etiqueta: 'Cambios', ruta: '/cambios', soloGestion: true },
+      // El tablón de comunicados (`GET /avisos/`) lo lee CUALQUIER sesión,
+      // así que este ítem no lleva restricción: es el mismo destino para
+      // aprendiz, instructor y coordinación. Ocupa el lugar del ítem
+      // "Notificaciones" que vivía en gris acá (H-11) — la campana ya
+      // cubre lo personal, esto es el canal oficial del centro.
+      { etiqueta: 'Avisos', ruta: '/avisos' },
     ],
   },
   {
     grupo: 'Administración',
     items: [
-      { etiqueta: 'Usuarios', ruta: '/usuarios', soloGestion: true },
+      // H-6: asignar y quitar roles exige Administrador en el backend
+      // (`usuario_rol.py`), así que un Coordinador entraba a las dos
+      // pantallas, veía los botones y se comía un 403 al usarlos. La regla
+      // real es que repartir roles es del Administrador, y el menú ahora
+      // dice lo mismo que el backend.
+      { etiqueta: 'Usuarios', ruta: '/usuarios', soloAdmin: true },
       { etiqueta: 'Código de instructor', ruta: '/codigo-instructor', soloGestion: true },
-      { etiqueta: 'Roles', ruta: '/roles', soloGestion: true },
-      // SCRUM-121: reemplaza funcionalmente el ítem "Aprobar solicitudes de
-      // registro" (antes acá, apuntaba a AprobarlicitarSolicitudes.tsx) —
-      // esa ruta sigue viva, solo se retiró como entrada de navegación.
+      { etiqueta: 'Roles', ruta: '/roles', soloAdmin: true },
+      // Dos caminos de alta, cada uno con su caso (H-7):
+      //  - "Solicitudes de acceso": gente SIN cuenta, que la pidió desde el
+      //    registro. Aprobar crea la cuenta (`/solicitudes-acceso`).
+      //  - "Usuarios sin rol": gente que YA se registró por el formulario
+      //    normal (Instructor/Aprendiz) y quedó sin ningún rol, así que no
+      //    puede usar nada. El Panel no los ve: no hay solicitud detrás.
       { etiqueta: 'Solicitudes de acceso', ruta: '/panel-administracion', soloAdmin: true },
+      { etiqueta: 'Usuarios sin rol', ruta: '/aprobar-solicitudes', soloAdmin: true },
       { etiqueta: 'Configuración', soloGestion: true },
     ],
   },
@@ -131,7 +152,8 @@ interface AppShellProps {
  * acá y aparece habilitado automáticamente.
  */
 export function AppShell({ activo, children }: AppShellProps) {
-  const { signOut } = useAuth()
+  const { signOut, session } = useAuth()
+  const idUsuario = session?.user?.id ?? ''
 
   const [miPerfil, setMiPerfil] = useState<Usuario | null>(null)
   const [errorPerfil, setErrorPerfil] = useState<string | null>(null)
@@ -174,8 +196,12 @@ export function AppShell({ activo, children }: AppShellProps) {
     ),
   })).filter((grupo) => grupo.items.length > 0)
 
+  // Mismo perfil cacheado que consulta ProtectedRoute al entrar a la
+  // pantalla: los dos corren siempre juntos, así que comparten el request.
   useEffect(() => {
-    apiGet<Usuario>('/usuarios/me')
+    if (!idUsuario) return
+
+    getPerfil(idUsuario)
       .then((perfil) => {
         setMiPerfil(perfil)
         setErrorPerfil(null)
@@ -188,7 +214,7 @@ export function AppShell({ activo, children }: AppShellProps) {
 
         setErrorPerfil(mensaje)
       })
-  }, [])
+  }, [idUsuario])
 
   useEffect(() => {
     apiGet<Notificacion[]>('/notificaciones/')
@@ -342,7 +368,17 @@ export function AppShell({ activo, children }: AppShellProps) {
             </span>
           </div>
 
-          <nav ref={dropdownRef} className="hidden flex-1 items-center justify-center gap-1 lg:flex">
+          {/* `min-w-0` es lo que mantiene visible el bloque de la derecha:
+            * un item flex tiene `min-width: auto` por defecto, así que sin
+            * esto la nav se niega a encogerse por debajo del ancho de sus
+            * botones y empuja las acciones (shrink-0) fuera de la pantalla.
+            * Con los roles que abren más grupos de menú — Coordinador,
+            * Administrador — eso dejaba "Cerrar sesión" cortado al borde
+            * derecho en casi todas las vistas. */}
+          <nav
+            ref={dropdownRef}
+            className="hidden min-w-0 flex-1 items-center justify-center gap-1 overflow-hidden lg:flex"
+          >
             <Link
               to={INICIO.ruta!}
               className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all ${
@@ -441,11 +477,18 @@ export function AppShell({ activo, children }: AppShellProps) {
               </div>
             </div>
 
+            {/* Botón de icono (h-9 w-9, como notificaciones) y no uno con
+              * texto: el de antes medía ~120px y era lo primero que se
+              * salía de la barra cuando la nav crecía. El texto vive en
+              * aria-label/title, así que sigue siendo alcanzable por
+              * lectores de pantalla y por getByRole(..., { name }). */}
             <button
               onClick={() => void signOut()}
-              className="shrink-0 whitespace-nowrap rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-all hover:bg-surface-container-high dark:border-slate-700"
+              title="Cerrar sesión"
+              aria-label="Cerrar sesión"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-outline text-on-surface-variant transition-all hover:bg-surface-container-high hover:text-on-surface dark:border-slate-700"
             >
-              Cerrar sesión
+              <span className="material-symbols-outlined text-[20px]">logout</span>
             </button>
           </div>
         </div>

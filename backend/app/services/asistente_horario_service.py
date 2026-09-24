@@ -40,6 +40,12 @@ from app.schemas.asistente_horario import (
 )
 from app.scheduling.generator import FRANJAS_POR_JORNADA, NecesidadHorario, generar_horario
 
+# Lunes a viernes: el generador solo usa PATRONES_DE_DIA 1..5 (ver
+# app/scheduling/generator.py). La capacidad semanal de UNA ficha es
+# franjas de su jornada × estos días -- su techo duro, porque no puede
+# estar en dos sitios a la vez.
+_DIAS_HABILES = 5
+
 CONFIANZA_MINIMA = 0.7
 MAX_FILAS_PREVIA = 50
 
@@ -564,7 +570,7 @@ def _diagnostico_infactibilidad(necesidades: list[NecesidadHorario], jornada: st
     qué palanca mover: menos fichas/resultados por lote, más
     instructores/ambientes, o definir la fase actual de cada ficha para
     no intentar programar currículo de trimestres que todavía no tocan."""
-    dias_por_semana = 5
+    dias_por_semana = _DIAS_HABILES
     franjas = len(FRANJAS_POR_JORNADA.get(jornada, []))
 
     ids_instructor: set[str] = set()
@@ -631,8 +637,16 @@ _MAX_NECESIDADES_POR_FICHA = 300
 # devuelve como propuesta parcial (factible=True) y el resto queda en
 # `fichasSinProgramar` para reintentar en un lote más chico, en vez de
 # dejar que el frontend haga timeout sin ninguna propuesta.
-_PRESUPUESTO_TIEMPO_TOTAL_SEG = 30.0
-_TIEMPO_LIMITE_SOLVER_POR_FICHA_SEG = 5.0
+#
+# Subido de 30s a 50s el 2026-09-24 junto con el cambio a propuestas
+# parciales: maximizar cuántos resultados caben es más caro que parar en
+# la primera solución factible, así que cada ficha tiende a consumir su
+# tiempo límite completo. Con 30s, un lote de 10 fichas se quedaba sin
+# presupuesto a mitad de camino y las últimas caían por reloj, no por
+# infactibilidad. El timeout del frontend para este paso (90s, ver
+# TIMEOUT_GENERAR_PROPUESTA_MS) deja margen sobre esto.
+_PRESUPUESTO_TIEMPO_TOTAL_SEG = 50.0
+_TIEMPO_LIMITE_SOLVER_POR_FICHA_SEG = 4.0
 
 
 def _muestra_rotada(candidatos: list, tamano: int, offset: int) -> list:
@@ -666,6 +680,14 @@ def generar_propuesta(
     # definidos todavía" (nada que programar porque no hay currículo
     # cargado) -- son causas muy distintas y el mensaje debe decir cuál es.
     hay_programas_sin_resultados = False
+    # Fichas que el coordinador seleccionó pero que ni llegan al solver.
+    # Sin esto el paso 3 devolvía bloques de 6 de las 10 fichas pedidas
+    # sin decir una palabra de las otras 4, y la omisión parecía un fallo
+    # del generador cuando en realidad eran datos: currículo sin cargar o
+    # trabajo ya hecho.
+    fichas_sin_curriculo: list[str] = []
+    fichas_ya_programadas: list[str] = []
+    fichas_sin_ambiente: list[str] = []
 
     for id_ficha in ids_ficha:
         ficha = fichas_por_id.get(id_ficha)
@@ -674,10 +696,14 @@ def generar_propuesta(
 
         ids_ambiente = catalogo.ids_ambiente_de(ficha)
         if not ids_ambiente:
+            fichas_sin_ambiente.append(ficha.codigoFicha)
             continue
 
         if not catalogo.tiene_algun_resultado_definido(ficha):
             hay_programas_sin_resultados = True
+            fichas_sin_curriculo.append(ficha.codigoFicha)
+        elif not catalogo.resultados_pendientes(ficha):
+            fichas_ya_programadas.append(ficha.codigoFicha)
 
         for resultado in catalogo.resultados_pendientes(ficha):
             resultados_por_id[resultado.idResultado] = resultado
@@ -703,7 +729,7 @@ def generar_propuesta(
             mensaje = "Las fichas seleccionadas ya tienen todos sus resultados programados."
         return GenerarPropuestaResponse(bloques=[], factible=True, mensaje=mensaje)
 
-    asignaciones, fichas_sin_programar = _generar_bloques_por_ficha(
+    asignaciones, fichas_sin_programar, resultados_sin_programar = _generar_bloques_por_ficha(
         necesidades_por_ficha,
         catalogo.ocupados_instructor,
         catalogo.ocupados_ambiente,
@@ -746,6 +772,14 @@ def generar_propuesta(
     ]
 
     codigos_fichas_sin_programar = [fichas_por_id[fid].codigoFicha for fid in fichas_sin_programar]
+    partes = [f"{len(bloques)} bloques propuestos."]
+
+    if resultados_sin_programar:
+        partes.append(
+            f"{resultados_sin_programar} resultado(s) de aprendizaje no cupieron en la semana y "
+            "quedaron sin programar -- puedes agregarlos a mano o generarlos en otra jornada."
+        )
+
     if codigos_fichas_sin_programar:
         # No todas fallan por lo mismo: una ficha con más necesidades que
         # slots hay en una semana (franjas × 5 días) no cabe SIN IMPORTAR
@@ -756,7 +790,7 @@ def generar_propuesta(
         # vivo el 2026-09-13: el mensaje genérico ("no quedan
         # instructores/ambientes") llevaba al coordinador a buscar en el
         # lugar equivocado para estas fichas.
-        capacidad_semanal = len(FRANJAS_POR_JORNADA[jornada]) * 5
+        capacidad_semanal = len(FRANJAS_POR_JORNADA[jornada]) * _DIAS_HABILES
         sin_fase = [
             fichas_por_id[fid].codigoFicha
             for fid in fichas_sin_programar
@@ -764,7 +798,6 @@ def generar_propuesta(
         ]
         sin_recursos = [c for c in codigos_fichas_sin_programar if c not in sin_fase]
 
-        partes = [f"{len(bloques)} bloques propuestos."]
         if sin_fase:
             partes.append(
                 f"{len(sin_fase)} ficha(s) ({', '.join(sin_fase)}) traen más resultados pendientes que "
@@ -780,9 +813,28 @@ def generar_propuesta(
                 "jornada. Genera esas fichas por separado, en otra jornada, o con más instructores/ambientes "
                 "disponibles."
             )
-        mensaje = " ".join(partes)
-    else:
-        mensaje = f"{len(bloques)} bloques propuestos."
+
+    # Fichas que el coordinador seleccionó y que ni siquiera llegaron al
+    # solver. Cada causa se dice por separado porque la acción que pide
+    # es distinta -- y ninguna se arregla reintentando la generación.
+    if fichas_ya_programadas:
+        partes.append(
+            f"{len(fichas_ya_programadas)} ficha(s) ({', '.join(fichas_ya_programadas)}) ya tienen "
+            "programado todo lo que les toca en este trimestre -- no había nada pendiente que agregarles."
+        )
+    if fichas_sin_curriculo:
+        partes.append(
+            f"{len(fichas_sin_curriculo)} ficha(s) ({', '.join(fichas_sin_curriculo)}) no se pudieron "
+            "incluir porque su programa todavía no tiene resultados de aprendizaje cargados -- hay que "
+            "cargar ese contenido curricular antes de poder programarlas."
+        )
+    if fichas_sin_ambiente:
+        partes.append(
+            f"{len(fichas_sin_ambiente)} ficha(s) ({', '.join(fichas_sin_ambiente)}) no se pudieron "
+            "incluir porque no hay ambientes disponibles en su sede."
+        )
+
+    mensaje = " ".join(partes)
     return GenerarPropuestaResponse(
         bloques=bloques, factible=True, mensaje=mensaje, fichasSinProgramar=codigos_fichas_sin_programar
     )
@@ -793,7 +845,7 @@ def _generar_bloques_por_ficha(
     ocupados_instructor: set,
     ocupados_ambiente: set,
     ocupados_ficha: set,
-) -> tuple[list, list[int]]:
+) -> tuple[list, list[int], int]:
     """Resuelve el CP-SAT ficha por ficha en vez de todas las necesidades
     juntas en un solo modelo. Encontrado en vivo el 2026-09-12: ~50
     fichas sin faseActual seleccionadas juntas son miles de necesidades,
@@ -811,26 +863,46 @@ def _generar_bloques_por_ficha(
     existente, no solo con lo que se va asignando dentro de este mismo
     lote. Se mutan in-place (el llamador los sigue usando después).
 
-    Devuelve (bloques_asignados, ids_ficha_sin_programar). Una ficha
-    puede quedar sin programar por infactibilidad genuina (ya no caben
-    sus resultados sin chocar con lo que otras fichas -- o la BD -- ya
-    ocuparon) o porque se agotó el presupuesto de tiempo total del lote
-    -- en cualquier caso se reporta para que el coordinador la reintente
-    en vez de dejar todo el request sin respuesta."""
+    Devuelve (bloques_asignados, ids_ficha_sin_programar,
+    resultados_sin_programar). Cada ficha se resuelve en modo parcial
+    (ver `permitir_parcial` en generar_horario): programa cuantos de sus
+    resultados quepan y deja los demás fuera, en vez de caer entera
+    cuando no caben todos. Una ficha solo entra en
+    `ids_ficha_sin_programar` si no se le pudo asignar NI UN bloque, o si
+    se agotó el presupuesto de tiempo del lote antes de llegar a ella.
+
+    Hasta el 2026-09-24 esto era todo-o-nada por ficha, y como una ficha
+    con más resultados pendientes que slots tiene en la semana es
+    infactible por definición, un lote de 10 fichas podía devolver cero
+    bloques -- ver el docstring de generar_horario."""
     inicio = time.perf_counter()
     bloques: list = []
     fichas_sin_programar: list[int] = []
+    resultados_sin_programar = 0
 
     ids_ficha = list(necesidades_por_ficha)
     for indice, id_ficha in enumerate(ids_ficha):
         necesidades_ficha = necesidades_por_ficha[id_ficha]
 
-        if len(necesidades_ficha) > _MAX_NECESIDADES_POR_FICHA:
-            fichas_sin_programar.append(id_ficha)
-            continue
+        # Una ficha no puede estar en dos sitios a la vez, así que su
+        # techo por semana es franjas × 5 días -- 15 en MAÑANA/TARDE.
+        # Pedirle al solver que acomode las 276 necesidades de una ficha
+        # sin faseActual es pedirle que descarte 261 por fuerza bruta:
+        # gasta todo su tiempo límite y se queda sin encontrar ni una
+        # solución, y la ficha caía entera por reloj (encontrado en vivo
+        # el 2026-09-24: 10 fichas reales daban 2 con bloques en MAÑANA y
+        # 0 en TARDE). Recortar al techo de antemano deja un modelo chico
+        # que sí se resuelve, y lo que sobra se reporta igual: no cabía
+        # de ninguna manera.
+        capacidad_semanal = len(FRANJAS_POR_JORNADA[necesidades_ficha[0].jornada]) * _DIAS_HABILES
+        tope = min(capacidad_semanal, _MAX_NECESIDADES_POR_FICHA)
+        if len(necesidades_ficha) > tope:
+            resultados_sin_programar += len(necesidades_ficha) - tope
+            necesidades_ficha = necesidades_ficha[:tope]
 
         if time.perf_counter() - inicio > _PRESUPUESTO_TIEMPO_TOTAL_SEG:
             fichas_sin_programar.extend(ids_ficha[indice:])
+            resultados_sin_programar += sum(len(necesidades_por_ficha[f]) for f in ids_ficha[indice:])
             break
 
         asignacion_ficha = generar_horario(
@@ -839,10 +911,19 @@ def _generar_bloques_por_ficha(
             ocupados_instructor=ocupados_instructor,
             ocupados_ambiente=ocupados_ambiente,
             ocupados_ficha=ocupados_ficha,
+            permitir_parcial=True,
         )
-        if asignacion_ficha is None:
+        # Con permitir_parcial solo devuelve None si el solver no encontró
+        # NADA en su tiempo límite -- ni siquiera un bloque.
+        if not asignacion_ficha:
             fichas_sin_programar.append(id_ficha)
+            resultados_sin_programar += len(necesidades_ficha)
             continue
+
+        # La ficha aportó bloques, pero puede que no para todos sus
+        # resultados: los que no cupieron se reportan sin que la ficha
+        # entera cuente como fallida.
+        resultados_sin_programar += len(necesidades_ficha) - len(asignacion_ficha)
 
         bloques.extend(asignacion_ficha)
         for b in asignacion_ficha:
@@ -851,4 +932,4 @@ def _generar_bloques_por_ficha(
                 ocupados_ambiente.add((b.id_ambiente, (b.hora_inicio, b.hora_fin), dia))
                 ocupados_ficha.add((b.id_ficha, (b.hora_inicio, b.hora_fin), dia))
 
-    return bloques, fichas_sin_programar
+    return bloques, fichas_sin_programar, resultados_sin_programar

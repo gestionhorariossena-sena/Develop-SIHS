@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { apiGet } from '../services/api'
+import { getPerfil } from '../services/perfil'
 import type { Usuario } from '../types/api'
 
 interface ProtectedRouteProps {
@@ -14,6 +14,15 @@ interface ProtectedRouteProps {
  * Protege una página para usuarios autenticados.
  * Si se especifican roles, también verifica que el usuario tenga
  * al menos uno de los roles requeridos.
+ *
+ * Sin `roles` la pantalla queda abierta a cualquier sesión — reservarlo
+ * para las que ya reparten por rol adentro (`/dashboard`). Toda ruta
+ * privada nueva debería declarar los suyos: hasta H-5 ninguna lo hacía y
+ * cualquiera llegaba escribiendo la URL a pantallas que no podía usar,
+ * para toparse con un 403 del backend a mitad de un formulario.
+ *
+ * El perfil se pide por `getPerfil()` (cacheado por sesión) y no con un
+ * apiGet suelto: esto corre en CADA navegación.
  */
 export function ProtectedRoute({
   children,
@@ -26,16 +35,19 @@ export function ProtectedRoute({
   const [perfil, setPerfil] = useState<Usuario | null>(null)
   const [loadingPerfil, setLoadingPerfil] = useState(requiereRol)
 
-  const rolesKey = roles?.join('|') ?? ''
+  const idUsuario = session?.user?.id ?? ''
 
   useEffect(() => {
-    if (!session || !requiereRol) {
+    if (!idUsuario || !requiereRol) {
       return
     }
 
+    // `loadingPerfil` ya arranca en true cuando la ruta pide roles, y este
+    // componente se monta de nuevo en cada navegación: no hace falta
+    // volver a ponerlo acá.
     let cancelado = false
 
-    apiGet<Usuario>('/usuarios/me')
+    getPerfil(idUsuario)
       .then((usuario) => {
         if (!cancelado) {
           setPerfil(usuario)
@@ -55,7 +67,7 @@ export function ProtectedRoute({
     return () => {
       cancelado = true
     }
-  }, [session, requiereRol, rolesKey])
+  }, [idUsuario, requiereRol])
 
   if (loading) {
     return (
@@ -85,6 +97,9 @@ export function ProtectedRoute({
     perfil?.roles.some((rol) => roles?.includes(rol.nombre)) ?? false
 
   if (!tieneRolRequerido) {
+    // A /dashboard, que ya reparte por rol (DashboardRouter.tsx) y manda a
+    // un Aprendiz a su propia pantalla. Es una puerta cerrada, no un error:
+    // la persona acaba donde sí puede trabajar.
     return <Navigate to="/dashboard" replace />
   }
 

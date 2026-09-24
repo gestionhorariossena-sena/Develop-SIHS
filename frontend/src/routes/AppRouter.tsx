@@ -28,13 +28,28 @@ import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
 import { PanelAdministracion } from '../pages/PanelAdministracion'
 import { ProtectedRoute } from './ProtectedRoute'
 import { Programas } from '../pages/Programas'
+import { CambiosHorario } from '../pages/CambiosHorario'
+import { Avisos } from '../pages/Avisos'
+import { MensajesAprendiz } from '../pages/MensajesAprendiz'
+
+/**
+ * Quién puede abrir cada pantalla. Mismo criterio que usa el navbar para
+ * decidir qué ítems muestra (`AppShell.tsx`): GESTION es su `soloGestion`,
+ * ADMIN su `soloAdmin`. Están acá arriba y no repetidos ruta por ruta para
+ * que cambiar la regla de un grupo entero sea un solo renglón.
+ */
+const GESTION = ['Administrador', 'Coordinador']
+const ADMIN = ['Administrador']
+const INSTRUCTOR = ['Instructor']
+const APRENDIZ = ['Aprendiz']
 
 /**
  * Todas las rutas de la app viven acá. Para agregar una página nueva:
  *   1. Crear el componente en src/pages/.
  *   2. Importarlo arriba.
- *   3. Agregar un <Route> — si necesita sesión iniciada, envolverlo en
- *      <ProtectedRoute> como está Dashboard.
+ *   3. Agregar un <Route> envuelto en <ProtectedRoute roles={...}> con los
+ *      roles que pueden abrirla. Solo se deja sin `roles` lo que de verdad
+ *      sirve a cualquier rol (`/dashboard`, que reparte por rol adentro).
  */
 export function AppRouter() {
   return (
@@ -54,7 +69,7 @@ export function AppRouter() {
       <Route
         path="/calendario"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <CalendarioGeneral />
           </ProtectedRoute>
         }
@@ -62,7 +77,7 @@ export function AppRouter() {
       <Route
         path="/mi-horario"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={INSTRUCTOR}>
             <MiHorario />
           </ProtectedRoute>
         }
@@ -70,7 +85,7 @@ export function AppRouter() {
       <Route
         path="/mi-horario-aprendiz"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={APRENDIZ}>
             <MiHorarioAprendiz />
           </ProtectedRoute>
         }
@@ -78,7 +93,7 @@ export function AppRouter() {
       <Route
         path="/mi-horario/detalle-franja"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={INSTRUCTOR}>
             <DetalleFranjaAmbiente />
           </ProtectedRoute>
         }
@@ -86,7 +101,7 @@ export function AppRouter() {
       <Route
         path="/horarios/nuevo"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <NuevoHorario />
           </ProtectedRoute>
         }
@@ -94,7 +109,7 @@ export function AppRouter() {
       <Route
         path="/horarios/asistente-ia"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <AsistenteHorarios />
           </ProtectedRoute>
         }
@@ -102,7 +117,7 @@ export function AppRouter() {
       <Route
         path="/horarios/completos"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <HorariosCompletos />
           </ProtectedRoute>
         }
@@ -110,7 +125,7 @@ export function AppRouter() {
       <Route
         path="/horarios/historial"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <HistorialHorarios />
           </ProtectedRoute>
         }
@@ -118,15 +133,40 @@ export function AppRouter() {
       <Route
         path="/horarios/auditoria"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <AuditoriaCruces />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mensajes"
+        element={
+          <ProtectedRoute roles={APRENDIZ}>
+            <MensajesAprendiz />
+          </ProtectedRoute>
+        }
+      />
+      {/* El tablón de comunicados lo lee cualquier sesión: sin `roles`. */}
+      <Route
+        path="/avisos"
+        element={
+          <ProtectedRoute>
+            <Avisos />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/cambios"
+        element={
+          <ProtectedRoute roles={GESTION}>
+            <CambiosHorario />
           </ProtectedRoute>
         }
       />
       <Route
         path="/ambientes"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <Ambientes />
           </ProtectedRoute>
         }
@@ -134,7 +174,7 @@ export function AppRouter() {
       <Route
         path="/sedes"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <Sedes />
           </ProtectedRoute>
         }
@@ -142,7 +182,7 @@ export function AppRouter() {
       <Route
         path="/instructores"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <Instructores />
           </ProtectedRoute>
         }
@@ -150,7 +190,7 @@ export function AppRouter() {
       <Route
         path="/vista-instructores"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <VistaInstructores />
           </ProtectedRoute>
         }
@@ -158,7 +198,7 @@ export function AppRouter() {
       <Route
         path="/fichas"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <Fichas />
           </ProtectedRoute>
         }
@@ -166,7 +206,7 @@ export function AppRouter() {
       <Route
         path="/vista-fichas"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <VistaFichas />
           </ProtectedRoute>
         }
@@ -174,7 +214,7 @@ export function AppRouter() {
       <Route
         path="/programas"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <Programas />
           </ProtectedRoute>
         }
@@ -182,15 +222,17 @@ export function AppRouter() {
       <Route
         path="/vista-ambientes"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <VistaAmbientes />
           </ProtectedRoute>
         }
       />
+      {/* H-6: asignar/quitar rol es solo de Administrador en el backend,
+          así que estas dos no son de gestión sino de administración. */}
       <Route
         path="/usuarios"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={ADMIN}>
             <Usuarios />
           </ProtectedRoute>
         }
@@ -198,7 +240,7 @@ export function AppRouter() {
       <Route
         path="/codigo-instructor"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={GESTION}>
             <CodigoInstructor />
           </ProtectedRoute>
         }
@@ -206,7 +248,7 @@ export function AppRouter() {
       <Route
         path="/roles"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={ADMIN}>
             <Roles />
           </ProtectedRoute>
         }
@@ -214,7 +256,7 @@ export function AppRouter() {
       <Route
         path="/aprobar-solicitudes"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={ADMIN}>
             <AprobarlicitarSolicitudes />
           </ProtectedRoute>
         }
@@ -222,7 +264,7 @@ export function AppRouter() {
       <Route
         path="/panel-administracion"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute roles={ADMIN}>
             <PanelAdministracion />
           </ProtectedRoute>
         }
