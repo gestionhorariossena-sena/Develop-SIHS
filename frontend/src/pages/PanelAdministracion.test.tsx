@@ -119,7 +119,12 @@ describe('PanelAdministracion', () => {
 
   it('Aprobar y Enviar Credencial: llama a POST /solicitudes-acceso/{id}/aprobar con el rol elegido (no el solicitado por defecto)', async () => {
     mockeaCatalogos([SOLICITUD_PENDIENTE])
-    apiPostMock.mockResolvedValue({})
+    apiPostMock.mockResolvedValue({
+      solicitud: { ...SOLICITUD_PENDIENTE, estado: 'aprobada' },
+      email: SOLICITUD_PENDIENTE.email,
+      passwordTemporal: 'Xy7-clave-temporal',
+      correoEnviado: true,
+    })
     const usuario = userEvent.setup()
     renderConProviders(<PanelAdministracion />)
 
@@ -129,6 +134,29 @@ describe('PanelAdministracion', () => {
 
     expect(apiPostMock).toHaveBeenCalledWith('/solicitudes-acceso/142/aprobar', { idRol: 2 })
     expect(await screen.findByText(/Solicitud de Maritza Benítez Cardona aprobada/)).toBeInTheDocument()
+  })
+
+  // H-15: el SMTP del proyecto de Supabase sigue sin configurar, así que el
+  // backend responde correoEnviado:false. Decir "se despachó una credencial"
+  // ahí dejaba a la persona esperando un correo que nunca llega.
+  it('si el correo no salió, muestra la clave temporal para entregarla a mano', async () => {
+    mockeaCatalogos([SOLICITUD_PENDIENTE])
+    apiPostMock.mockResolvedValue({
+      solicitud: { ...SOLICITUD_PENDIENTE, estado: 'aprobada' },
+      email: SOLICITUD_PENDIENTE.email,
+      passwordTemporal: 'Xy7-clave-temporal',
+      correoEnviado: false,
+    })
+    const usuario = userEvent.setup()
+    renderConProviders(<PanelAdministracion />)
+
+    await screen.findByText('Maritza Benítez Cardona')
+    await usuario.click(screen.getByRole('button', { name: /Aprobar y Enviar Credencial/ }))
+
+    const aviso = await screen.findByRole('status')
+    expect(aviso).toHaveTextContent('Xy7-clave-temporal')
+    expect(aviso).toHaveTextContent(SOLICITUD_PENDIENTE.email)
+    expect(screen.queryByText(/Se despachó una credencial temporal/)).not.toBeInTheDocument()
   })
 
   it('Rechazar: arma motivoRechazo desde el select + observación y llama a POST /rechazar', async () => {

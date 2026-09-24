@@ -73,12 +73,18 @@ function renderProtectedRoute(roles?: string[]) {
   )
 }
 
+let sesionesCreadas = 0
+
 describe('ProtectedRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
+    // Con `user.id`: el perfil se pide por ese id (services/perfil.ts lo
+    // usa como clave de su caché), no con un apiGet suelto. Distinto en
+    // cada caso para que ninguno herede el perfil que mockeó el anterior.
+    sesionesCreadas += 1
     useAuthMock.mockReturnValue({
-      session: {} as ReturnType<typeof useAuth>['session'],
+      session: { user: { id: `usuario-${sesionesCreadas}` } } as ReturnType<typeof useAuth>['session'],
       loading: false,
       signOut: vi.fn(),
     })

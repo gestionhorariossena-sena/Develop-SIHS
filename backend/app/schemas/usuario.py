@@ -59,6 +59,14 @@ class UsuarioResponse(BaseModel):
     especialidades: list[EspecialidadResponse] = []
 
 
+class UsuarioEspecialidadesUpdate(BaseModel):
+    """PUT /usuarios/{id}/especialidades — fortalezas del instructor.
+    Mismo criterio que CompetenciaEspecialidadesUpdate: se manda el
+    conjunto completo, no altas/bajas sueltas."""
+
+    idsEspecialidades: list[int]
+
+
 class CargaSemanalResponse(BaseModel):
     """GET /usuarios/{id}/carga-semanal — horas ya asignadas vs. el tope
     de RF-011, para la sección "Carga semanal" del drawer de instructor.

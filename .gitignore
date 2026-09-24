@@ -18,6 +18,12 @@ frontend/dist/
 frontend/.env
 frontend/.env.local
 
+# Móvil (Flutter)
+mobile/.env
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins-dependencies
+
 # Editores / Sistema
 .vscode/
 .idea/
@@ -28,4 +34,3 @@ frontend/.env.local
 *.xls
 *.jpeg
 *.jpg
-sidebar.png

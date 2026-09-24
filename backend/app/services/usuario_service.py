@@ -2,6 +2,7 @@ import random
 import string
 from uuid import UUID
 
+from app.models.especialidad import Especialidad
 from app.repositories.trimestre_repository import TrimestreRepository
 from app.repositories.usuario_repository import UsuarioRepository
 
@@ -70,3 +71,23 @@ class UsuarioService:
             "codigo": codigo_normalizado,
             "idUsuario": usuario.idUsuario,
         }
+
+    @staticmethod
+    def reemplazar_especialidades(db, id_usuario: UUID, ids_especialidades: list[int]):
+        """Fortalezas del instructor (qué sabe dictar). Junto con el mapeo
+        competencia -> especialidades es lo que permite avisar cuando se
+        le asigna un resultado de aprendizaje que no es de su área — ver
+        HorarioService._validar_fortaleza_instructor.
+
+        Devuelve el usuario actualizado, o None si no existe."""
+        usuario = UsuarioRepository.obtener_por_id(db, id_usuario)
+
+        if not usuario:
+            return None
+
+        usuario.especialidades = (
+            db.query(Especialidad).filter(Especialidad.idEspecialidad.in_(ids_especialidades)).all()
+            if ids_especialidades
+            else []
+        )
+        return UsuarioRepository.actualizar(db, usuario)

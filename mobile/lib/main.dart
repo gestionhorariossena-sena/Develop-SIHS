@@ -5,25 +5,35 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/app_config.dart';
 import 'providers/auth_provider.dart';
 import 'providers/horario_provider.dart';
-import 'screens/login_screen.dart';
+import 'services/auth_service.dart';
 import 'screens/home_screen.dart';
+import 'screens/login_screen.dart';
+import 'theme/app_theme.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final config = AppConfig();
-  await config.init();
+  await AppConfig().init();
 
   await Supabase.initialize(
-    url: config.supabaseUrl,
-    anonKey: config.supabaseAnonKey,
+    url: AppConfig().supabaseUrl,
+    // `anonKey` está marcado como deprecado a favor de `publishableKey`,
+    // pero el proyecto todavía usa la anon key JWT clásica — la misma que
+    // leen backend/.env y frontend/.env. El día que Supabase emita una
+    // publishable key (`sb_publishable_...`) se cambian los tres a la vez.
+    // ignore: deprecated_member_use
+    anonKey: AppConfig().supabaseAnonKey,
   );
 
-  runApp(const MyApp());
+  // Antes de armar los providers: si en el último login se desmarcó
+  // "Mantener sesión iniciada", la sesión guardada se descarta acá.
+  await AuthService.cerrarSesionSiNoSeDebeRecordar();
+
+  runApp(const SihsApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({Key? key}) : super(key: key);
+class SihsApp extends StatelessWidget {
+  const SihsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -34,39 +44,26 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'SIHS',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF2196F3),
-            brightness: Brightness.light,
-          ),
-          useMaterial3: true,
-        ),
-        darkTheme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF2196F3),
-            brightness: Brightness.dark,
-          ),
-          useMaterial3: true,
-        ),
-        home: const _Home(),
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.claro,
+        darkTheme: AppTheme.oscuro,
+        themeMode: ThemeMode.system,
+        home: const PuertaDeEntrada(),
       ),
     );
   }
 }
 
-class _Home extends StatelessWidget {
-  const _Home({Key? key}) : super(key: key);
+/// Decide qué pantalla mostrar según la sesión. Es el único lugar que
+/// navega entre Login y Home: así, cerrar sesión desde cualquier punto
+/// (incluido el 401 del ErrorInterceptor) devuelve al Login sin que nadie
+/// más tenga que enterarse.
+class PuertaDeEntrada extends StatelessWidget {
+  const PuertaDeEntrada({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        if (authProvider.isAuthenticated) {
-          return HomeScreen();
-        } else {
-          return const LoginScreen();
-        }
-      },
-    );
+    final autenticado = context.select<AuthProvider, bool>((a) => a.isAuthenticated);
+    return autenticado ? const HomeScreen() : const LoginScreen();
   }
 }

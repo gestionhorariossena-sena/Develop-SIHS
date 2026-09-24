@@ -15,11 +15,19 @@ function formatFecha(iso: string) {
 /**
  * SCRUM-10: Pantalla de administrador para aprobar solicitudes de registro
  * y asignar roles a usuarios sin rol.
- * 
+ *
  * Usuarios se registran sin rol. El administrador debe:
  * 1. Ver lista de usuarios sin rol asignado
  * 2. Seleccionar un rol disponible
  * 3. Asignarlo con POST /usuario-rol/asignar
+ *
+ * NO es lo mismo que PanelAdministracion.tsx, y por eso las dos siguen
+ * vivas (decisión de H-7, 2026-09-24). El Panel atiende a quien NO tiene
+ * cuenta todavía y pidió acceso desde el registro; esta atiende a quien ya
+ * se registró con el formulario normal (Instructor/Aprendiz) y quedó sin
+ * ningún rol, así que entra al sistema y no puede hacer nada. No hay
+ * ninguna fila en `solicitudes_acceso` detrás de esa gente, así que el
+ * Panel no la ve. En el navbar es "Usuarios sin rol" (AppShell.tsx).
  */
 export function AprobarlicitarSolicitudes() {
   const [usuariosSinRol, setUsuariosSinRol] = useState<Usuario[]>([])

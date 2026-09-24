@@ -68,7 +68,7 @@ class _UUIDComoTextoParaSQLite(types.TypeDecorator):
 SQLiteDialect.colspecs = {**SQLiteDialect.colspecs, PostgresUUID: _UUIDComoTextoParaSQLite}
 
 RAIZ_REPO = Path(__file__).resolve().parent.parent.parent
-EXCEL_PATH = RAIZ_REPO / "LIDERES DE FICHA 2026_pruebas.xlsx"
+EXCEL_PATH = RAIZ_REPO / "_Docs" / "datos-muestra" / "LIDERES DE FICHA 2026_pruebas.xlsx"
 HOJA = "2026_TRIM 03"
 FILA_ENCABEZADO = 3
 MAX_FICHAS_DEMO = 8

@@ -1,5 +1,8 @@
-from fastapi import FastAPI
+import logging
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.api.v1.health import router as health_router
 from app.api.v1.roles import router as roles_router
@@ -27,10 +30,58 @@ from app.api.v1.notificaciones import router as notificaciones_router
 from app.api.v1.mensajeria import router as mensajeria_router
 from app.api.v1.anotaciones_horario import router as anotaciones_horario_router
 from app.api.v1.avisos import router as avisos_router
+from app.api.v1.solicitudes_acceso import router as solicitudes_acceso_router
 from app.api.v1.solicitudes_cambio_horario import router as solicitudes_cambio_horario_router
 
 
 app = FastAPI(title=settings.app_name)
+
+# La capa de IA es opcional: sin clave el sistema funciona completo, pero el
+# asistente de programación no puede importar un Excel. Avisarlo al arrancar
+# evita descubrirlo recién al usarlo, con un 503 en mitad del flujo.
+if not settings.gemini_api_key:
+    logging.getLogger("uvicorn.error").warning(
+        "GEMINI_API_KEY no está configurada: el asistente de programación "
+        "responderá 503 al importar un Excel. Revisa backend/.env"
+    )
+
+@app.middleware("http")
+async def convertir_errores_no_manejados(request: Request, call_next):
+    """Convierte cualquier excepción no manejada en un 500 con cuerpo JSON.
+
+    Sin esto, la excepción sube hasta el ServerErrorMiddleware de
+    Starlette y la respuesta sale SIN pasar por CORSMiddleware: el
+    navegador ve un cuerpo sin Access-Control-Allow-Origin, `fetch` lanza
+    un TypeError, y la pantalla muestra "No se pudo conectar con el
+    servidor. Revisa tu conexión" -- culpando a la red de un error del
+    servidor que sí ocurrió y sí quedó en el log. Encontrado en vivo el
+    2026-09-24: el paso 4 del asistente fallaba así en TODOS sus bloques
+    porque `especialidad_competencia` no existía en la base (migración
+    a7c31f5b9e02 sin aplicar), y el mensaje mandaba al coordinador a
+    revisar su wifi.
+
+    Va como middleware y NO como `@app.exception_handler(Exception)`
+    justo por eso: los exception handlers corren en el
+    ServerErrorMiddleware, que envuelve a CORSMiddleware desde afuera, y
+    su respuesta tampoco recibiría los headers. Se registra ANTES que
+    CORS a propósito -- `add_middleware` inserta al principio, así que lo
+    último registrado queda por fuera, y este tiene que quedar por
+    dentro para que CORS alcance a decorar su respuesta.
+
+    El detalle real va al log del servidor, no a la respuesta: quien usa
+    la app no puede hacer nada con un traceback, y exponerlo filtra la
+    estructura interna."""
+    try:
+        return await call_next(request)
+    except Exception:
+        logging.getLogger("uvicorn.error").exception(
+            "Error no manejado en %s %s", request.method, request.url.path
+        )
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "El servidor tuvo un problema procesando esta solicitud."},
+        )
+
 
 # Desarrollo: acepta cualquier puerto de localhost (Vite salta al siguiente
 # puerto libre — 5174, 5175... — si 5173 ya está ocupado por otro proyecto,
@@ -71,3 +122,4 @@ app.include_router(mensajeria_router, prefix="/api/v1")
 app.include_router(anotaciones_horario_router, prefix="/api/v1")
 app.include_router(avisos_router, prefix="/api/v1")
 app.include_router(solicitudes_cambio_horario_router, prefix="/api/v1")
+app.include_router(solicitudes_acceso_router, prefix="/api/v1")

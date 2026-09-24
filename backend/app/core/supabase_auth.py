@@ -106,17 +106,49 @@ def get_current_user(
         # Primer request autenticado de este usuario: Supabase Auth ya lo
         # validó, pero todavía no tiene fila de perfil en "usuarios". La
         # creamos aquí para no obligar a un paso manual de registro aparte.
+        metadata = datos_supabase.get("user_metadata") or {}
+
         usuario = Usuario(
             idUsuario=supabase_user_id,
             nombre=(email or "usuario").split("@")[0],
             email=email,
-            numeroDocumento=(datos_supabase.get("user_metadata") or {}).get("numero_documento") or None,
+            numeroDocumento=metadata.get("numero_documento") or None,
         )
         db.add(usuario)
         db.commit()
         db.refresh(usuario)
 
+        _vincular_ficha_del_registro(db, usuario, metadata)
+
     return usuario
+
+
+def _vincular_ficha_del_registro(db: Session, usuario: Usuario, metadata: dict) -> None:
+    """H-2: el registro ya le pide el código de ficha al aprendiz y lo
+    guarda en la metadata de Supabase, pero hasta el 2026-09-24 nadie lo
+    leía nunca — se le pedía el dato y después se le volvía a pedir. Si el
+    código existe, el vínculo queda hecho antes de que llegue a su primera
+    pantalla.
+
+    Si el código no corresponde a ninguna ficha (un dígito de más, una
+    ficha que el centro todavía no cargó) no se interrumpe el login: el
+    formulario de "Mi horario" (H-1) queda como camino de rescate, y para
+    eso sirve — también para quien se registró antes de que esto existiera.
+    """
+    codigo_ficha = (metadata.get("codigo_ficha") or "").strip()
+    if not codigo_ficha:
+        return
+
+    # Import local: este módulo es una dependencia de casi todos los
+    # routers, y los servicios importan modelos que a su vez lo importan.
+    from app.services.ficha_usuario_service import FichaUsuarioService
+
+    try:
+        FichaUsuarioService.vincular(db, usuario.idUsuario, codigo_ficha)
+    except Exception:
+        # Nada de lo que pase acá debe tumbar la autenticación: el perfil
+        # ya quedó creado y la persona puede vincularse a mano.
+        db.rollback()
 
 
 def require_role(role_name: str):

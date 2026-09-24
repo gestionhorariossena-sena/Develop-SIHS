@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { DetalleFranjaAmbiente } from './DetalleFranjaAmbiente'
 import type { Ambiente, CompetenciaFormacion, Ficha, Horario, ResultadoAprendizaje, Usuario } from '../types/api'
@@ -39,8 +40,10 @@ const COMPETENCIA: CompetenciaFormacion = {
 }
 
 const apiGetMock = vi.fn()
+const apiPostMock = vi.fn()
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiPost: (...args: unknown[]) => apiPostMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -52,6 +55,7 @@ function mockRespuestasCompletas() {
     if (path === '/ambientes/5') return Promise.resolve(AMBIENTE)
     if (path === '/resultados-aprendizaje/3') return Promise.resolve(RESULTADO)
     if (path === '/competencias-formacion/9') return Promise.resolve(COMPETENCIA)
+    if (path === '/solicitudes-cambio-horario/mias') return Promise.resolve([])
     return Promise.reject(new Error('no mockeado'))
   })
 }
@@ -106,9 +110,72 @@ describe('DetalleFranjaAmbiente', () => {
 
     await screen.findByText('Detalle de Sesión Formativa: Análisis y Desarrollo de Software')
 
+    // No hay exportación de ficha ni concepto de "sesión" que cerrar.
     expect(screen.getByRole('button', { name: /Descargar Ficha/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Reportar Novedad/ })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /Radicar Solicitud de Cambio o Novedad/ })).toBeDisabled()
     expect(screen.getByRole('button', { name: /Cerrar Sesión de Formación/ })).toBeDisabled()
+  })
+
+  // H-4: reportar SÍ tiene backend desde siempre — lo que faltaba era
+  // esta pantalla. Es la única voz del instructor en el sistema.
+  it('reportar una novedad manda el tipo y el motivo a /solicitudes-cambio-horario', async () => {
+    mockRespuestasCompletas()
+    apiPostMock.mockResolvedValue({
+      idSolicitud: 10, idInstructor: 'u1', idHorarioOrigen: 1, tipo: 'cambio-ambiente',
+      motivo: 'El videobeam no enciende.', estado: 'pendiente',
+      fechaSolicitud: '2026-09-24T10:00:00Z', fechaResolucion: null, idAdminResolvio: null,
+    })
+    const usuario = userEvent.setup()
+    renderConProviders(<DetalleFranjaAmbiente />, ['/mi-horario/detalle-franja?horario=1&dia=Lunes'])
+
+    await screen.findByText('Detalle de Sesión Formativa: Análisis y Desarrollo de Software')
+    await usuario.click(screen.getByRole('button', { name: /Reportar Novedad/ }))
+
+    const modal = await screen.findByRole('dialog')
+    await usuario.click(within(modal).getByLabelText(/Cambio de ambiente/))
+    await usuario.type(within(modal).getByLabelText('¿Qué pasó?'), 'El videobeam no enciende.')
+    await usuario.click(within(modal).getByRole('button', { name: 'Enviar a coordinación' }))
+
+    expect(apiPostMock).toHaveBeenCalledWith('/solicitudes-cambio-horario/', {
+      idHorarioOrigen: 1,
+      tipo: 'cambio-ambiente',
+      motivo: 'El videobeam no enciende.',
+    })
+
+    // Y queda a la vista, para que no lo reporte dos veces creyendo que se perdió.
+    expect(await screen.findByText('Lo que ya reportaste de esta franja')).toBeInTheDocument()
+    expect(screen.getByText('En revisión de coordinación')).toBeInTheDocument()
+  })
+
+  it('lo ya reportado de esta franja se muestra con su estado', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/solicitudes-cambio-horario/mias') {
+        return Promise.resolve([
+          {
+            idSolicitud: 4, idInstructor: 'u1', idHorarioOrigen: 1, tipo: 'novedad',
+            motivo: 'Faltaron sillas.', estado: 'aprobada',
+            fechaSolicitud: '2026-09-20T10:00:00Z', fechaResolucion: '2026-09-21T10:00:00Z',
+            idAdminResolvio: 'c1',
+          },
+          // De otra franja: no debe aparecer acá.
+          {
+            idSolicitud: 5, idInstructor: 'u1', idHorarioOrigen: 99, tipo: 'permuta',
+            motivo: 'Otra franja distinta.', estado: 'pendiente',
+            fechaSolicitud: '2026-09-20T10:00:00Z', fechaResolucion: null, idAdminResolvio: null,
+          },
+        ])
+      }
+      if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+      if (path === '/usuarios/me') return Promise.resolve(PERFIL)
+      if (path === '/fichas/7') return Promise.resolve(FICHA)
+      if (path === '/ambientes/5') return Promise.resolve(AMBIENTE)
+      if (path === '/resultados-aprendizaje/3') return Promise.resolve(RESULTADO)
+      if (path === '/competencias-formacion/9') return Promise.resolve(COMPETENCIA)
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<DetalleFranjaAmbiente />, ['/mi-horario/detalle-franja?horario=1&dia=Lunes'])
+
+    expect(await screen.findByText('Faltaron sillas.')).toBeInTheDocument()
+    expect(screen.getByText('Aprobada por coordinación')).toBeInTheDocument()
+    expect(screen.queryByText('Otra franja distinta.')).not.toBeInTheDocument()
   })
 })

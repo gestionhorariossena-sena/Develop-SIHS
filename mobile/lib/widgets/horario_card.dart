@@ -1,23 +1,33 @@
 import 'package:flutter/material.dart';
+
 import '../models/horario.dart';
 
+/// Tarjeta de un bloque de clase — PROMPT_HOME_SCREEN.md §3.
+///
+/// Encabezado (día + hora + estado), divisor y hasta tres filas de detalle.
+/// [mostrarInstructor] se apaga cuando quien mira ES el instructor de la
+/// clase: repetir su propio nombre en cada tarjeta no aporta nada.
 class HorarioCard extends StatelessWidget {
-  final Horario horario;
+  final SesionHorario sesion;
+  final bool mostrarInstructor;
+  final VoidCallback? onTap;
 
   const HorarioCard({
-    Key? key,
-    required this.horario,
-  }) : super(key: key);
+    super.key,
+    required this.sesion,
+    this.mostrarInstructor = true,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final colores = Theme.of(context).colorScheme;
+    final textos = Theme.of(context).textTheme;
+    final horario = sesion.horario;
+
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
-        onTap: () {
-          // Por ahora solo muestra más detalles
-          _mostrarDetalles(context);
-        },
+        onTap: onTap ?? () => mostrarDetalles(context, sesion, mostrarInstructor),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -25,69 +35,58 @@ class HorarioCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          horario.diaTexto,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          sesion.diaTexto,
+                          style: textos.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          horario.horaTexto,
-                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                color: Theme.of(context).colorScheme.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
+                          sesion.rangoHorarioTexto,
+                          style: textos.bodyLarge?.copyWith(
+                            color: colores.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      horario.publicado ? 'Publicado' : 'Borrador',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
-                          ),
-                    ),
-                  ),
+                  _Insignia(publicado: horario.publicado),
                 ],
               ),
               const SizedBox(height: 12),
-              Container(
-                height: 1,
-                color: Colors.grey[300],
-              ),
+              const Divider(),
               const SizedBox(height: 12),
-              _BuildDetailRow(
-                icon: Icons.book_outlined,
-                label: 'Ficha',
-                value: horario.fichaTexto,
+              _FilaDetalle(
+                icono: Icons.menu_book_outlined,
+                etiqueta: 'Tema',
+                valor: horario.temaTexto,
               ),
               const SizedBox(height: 8),
-              _BuildDetailRow(
-                icon: Icons.location_on_outlined,
-                label: 'Ambiente',
-                value: horario.ambienteTexto,
+              _FilaDetalle(
+                icono: Icons.badge_outlined,
+                etiqueta: 'Ficha',
+                valor: horario.fichaTexto,
               ),
-              if (horario.instructor != null) ...[
+              const SizedBox(height: 8),
+              _FilaDetalle(
+                icono: Icons.location_on_outlined,
+                etiqueta: 'Ambiente',
+                valor: horario.ambienteTexto,
+              ),
+              if (mostrarInstructor) ...[
                 const SizedBox(height: 8),
-                _BuildDetailRow(
-                  icon: Icons.person_outlined,
-                  label: 'Instructor',
-                  value: horario.instructor!.nombre,
+                _FilaDetalle(
+                  icono: Icons.person_outline,
+                  etiqueta: 'Instructor',
+                  valor: horario.instructorTexto,
                 ),
               ],
             ],
@@ -96,72 +95,119 @@ class HorarioCard extends StatelessWidget {
       ),
     );
   }
+}
 
-  void _mostrarDetalles(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Detalles del Horario',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 24),
-            _DetailItem(label: 'Día', value: horario.diaTexto),
-            _DetailItem(label: 'Hora', value: horario.horaTexto),
-            _DetailItem(label: 'Ficha', value: horario.fichaTexto),
-            _DetailItem(label: 'Ambiente', value: horario.ambienteTexto),
-            if (horario.instructor != null)
-              _DetailItem(label: 'Instructor', value: horario.instructor!.nombre),
-            if (horario.observaciones != null)
-              _DetailItem(label: 'Observaciones', value: horario.observaciones!),
-            const SizedBox(height: 16),
-            FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cerrar'),
-            ),
-          ],
+/// Bottom sheet con el detalle completo del bloque.
+void mostrarDetalles(
+  BuildContext context,
+  SesionHorario sesion,
+  bool mostrarInstructor,
+) {
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    isScrollControlled: true,
+    builder: (context) {
+      final horario = sesion.horario;
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Detalle de la clase',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 20),
+              _ItemDetalle(etiqueta: 'Día', valor: sesion.diaTexto),
+              _ItemDetalle(etiqueta: 'Hora', valor: sesion.rangoHorarioTexto),
+              _ItemDetalle(etiqueta: 'Tema', valor: horario.temaTexto),
+              _ItemDetalle(etiqueta: 'Ficha', valor: horario.fichaTexto),
+              _ItemDetalle(etiqueta: 'Ambiente', valor: horario.ambienteTexto),
+              if (mostrarInstructor)
+                _ItemDetalle(
+                  etiqueta: 'Instructor',
+                  valor: horario.instructorTexto,
+                ),
+              _ItemDetalle(
+                etiqueta: 'Estado',
+                valor: horario.publicado ? 'Publicado' : 'Borrador',
+              ),
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cerrar'),
+              ),
+            ],
+          ),
         ),
+      );
+    },
+  );
+}
+
+class _Insignia extends StatelessWidget {
+  final bool publicado;
+
+  const _Insignia({required this.publicado});
+
+  @override
+  Widget build(BuildContext context) {
+    final colores = Theme.of(context).colorScheme;
+    final esVerde = publicado;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: esVerde ? colores.secondaryContainer : colores.surfaceContainerHigh,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        publicado ? 'Publicado' : 'Borrador',
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: esVerde
+                  ? colores.onSecondaryContainer
+                  : colores.onSurfaceVariant,
+            ),
       ),
     );
   }
 }
 
-class _BuildDetailRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
+class _FilaDetalle extends StatelessWidget {
+  final IconData icono;
+  final String etiqueta;
+  final String valor;
 
-  const _BuildDetailRow({
-    required this.icon,
-    required this.label,
-    required this.value,
+  const _FilaDetalle({
+    required this.icono,
+    required this.etiqueta,
+    required this.valor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final colores = Theme.of(context).colorScheme;
+    final textos = Theme.of(context).textTheme;
+
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 18, color: Colors.grey[600]),
+        Icon(icono, size: 18, color: colores.onSurfaceVariant),
         const SizedBox(width: 8),
         Text(
-          label,
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
-              ),
+          '$etiqueta:',
+          style: textos.bodySmall?.copyWith(color: colores.onSurfaceVariant),
         ),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
-            value,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-            maxLines: 1,
+            valor,
+            style: textos.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
         ),
@@ -170,35 +216,28 @@ class _BuildDetailRow extends StatelessWidget {
   }
 }
 
-class _DetailItem extends StatelessWidget {
-  final String label;
-  final String value;
+class _ItemDetalle extends StatelessWidget {
+  final String etiqueta;
+  final String valor;
 
-  const _DetailItem({
-    required this.label,
-    required this.value,
-  });
+  const _ItemDetalle({required this.etiqueta, required this.valor});
 
   @override
   Widget build(BuildContext context) {
+    final colores = Theme.of(context).colorScheme;
+    final textos = Theme.of(context).textTheme;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            etiqueta,
+            style: textos.labelSmall?.copyWith(color: colores.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
+          Text(valor, style: textos.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
         ],
       ),
     );
