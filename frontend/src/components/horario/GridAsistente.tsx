@@ -72,6 +72,14 @@ export interface MarcaDeCelda {
   recordatorioActivo: boolean
 }
 
+/** Lo que el Aprendiz anotó sobre uno de sus bloques — lo justo para
+ * pintarlo en la celda, no el registro entero. */
+export interface MarcaDeCelda {
+  etiqueta: string
+  nota: string
+  recordatorioActivo: boolean
+}
+
 interface GridAsistenteProps {
   celdas: CeldaAsistente[]
   /** Si viene, cada celda "nueva" muestra un botón "Quitar" -- para
