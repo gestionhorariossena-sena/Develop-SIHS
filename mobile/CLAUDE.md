@@ -54,6 +54,33 @@ daría 403. Los nombres de día se resuelven localmente en
 | Instructor | `GET /usuarios/me/horarios` | el backend ya filtra a solo publicados |
 | Todos | `GET /usuarios/me` | **imprescindible**: el JWT solo trae id y email; los roles están en la BD |
 
+## Pantallas (diseños de `mobile/diseños movil/*.zip`)
+
+Cada ZIP trae `screen.png` + `code.html` + `DESIGN.md` (tokens de Stitch).
+La paleta de `AppTheme` sale de esos tokens (primary `#006b2c`, surface
+`#faf8ff`); el esquema oscuro se derivó a mano porque los diseños solo
+traen el claro.
+
+| Diseño | Implementación |
+|---|---|
+| Login Aprendices / Login Instructores | `login_screen.dart` — una sola pantalla; el chip de portal alterna el titular. El backend no distingue portales: el rol lo decide `/usuarios/me` |
+| Recuperación de contraseña | `recuperar_password_screen.dart` — `resetPasswordForEmail` de Supabase |
+| Vista movil Aprendiz / Vista Instructor Movil | `home_screen.dart` + `sesion_card.dart` — mismo layout para ambos roles |
+
+**Del diseño se implementó**: encabezado verde con saludo y rol, ficha del
+aprendiz (`/ficha-usuario/mi-ficha`), selector de días de la semana con
+fecha real y marca de "Hoy", filtro Mañana/Tarde/Noche, tarjetas con franja
+de color y píldora de estado (En curso / Finalizado / Por iniciar, calculada
+contra el reloj), detalle en bottom sheet, pull-to-refresh, bottom nav
+(Mi horario / Perfil).
+
+**Del diseño se omitió, por no existir en el backend**: asistencias, nº de
+aprendices por sesión, "Ver lista" de aprendices, "Novedad", sincronización
+con SOFIA Plus, buscador global, tabs "Por ambientes"/"Fichas asignadas" y
+la campana de avisos. Se prefirió omitirlos a dibujarlos con datos
+inventados. `/avisos` y `/notificaciones` sí existen (`get_current_user`,
+sin exigir rol) y son el siguiente candidato natural.
+
 ## Decisiones tomadas (y por qué)
 
 - **Una tarjeta por día, no por fila de `horarios`.** Una clase de 3 días es
@@ -65,6 +92,12 @@ daría 403. Los nombres de día se resuelven localmente en
 - **Aprendiz sin ficha = estado propio, no error.** El 404 se traduce a una
   instrucción ("vincúlala en la web") en vez de "algo salió mal". Vincular es
   una escritura y el móvil es de lectura — de ahí que remita a la web.
+- **"Mantener sesión iniciada" se respeta al revés.** supabase_flutter
+  persiste siempre; se guarda la decisión en SharedPreferences y
+  `AuthService.cerrarSesionSiNoSeDebeRecordar()` descarta la sesión en el
+  siguiente arranque si se desmarcó.
+- **Jornada deducida de la hora, no de `idJornada`.** El catálogo
+  `/jornadas` exige Coordinador/Admin: un Aprendiz recibiría 403.
 - **Cuenta sin roles = estado propio.** Reproducido el 2026-09-24 con
   `juan@mail.com` de `database/02_datos_prueba.sql`: el backend responde
   403 "No autorizado", que manda a revisar la contraseña cuando lo que falta
@@ -82,7 +115,7 @@ daría 403. Los nombres de día se resuelven localmente en
 
 ## Tests
 
-`flutter test` — 37 casos. `test/ayudas.dart` tiene los dobles
+`flutter test` — 40 casos. `test/ayudas.dart` tiene los dobles
 (`AuthFalso`, `HorariosFalsos`), los constructores de datos de prueba y
 `envolver()` para montar un widget con tema y providers.
 
@@ -91,12 +124,12 @@ red, y una fuente que no carga cambia las métricas de texto.
 
 ## Pendiente / ideas
 
-- Faltan diseños (y por tanto pantallas) más allá de Login y Home. Los
-  prompts de diseño viven en la raíz de `mobile/`: `BRAND_GUIDE_SIHS_MOBILE.md`,
-  `PROMPT_LOGIN_SCREEN.md`, `PROMPT_HOME_SCREEN.md`.
-- Candidatos naturales de siguiente pantalla, con endpoint ya existente:
-  vista semanal en grid, detalle de franja, avisos
-  (`/avisos`), notificaciones (`/notificaciones`), descarga del PDF
-  (`GET /usuarios/me/horarios/pdf`).
+- Pantalla de avisos/notificaciones (`/avisos`, `/notificaciones`) — la
+  campana del diseño.
+- Descarga del horario en PDF: `GET /usuarios/me/horarios/pdf` ya existe.
+- Deep link para que el correo de recuperación abra la app y no la web.
+- Los prompts de diseño viejos (`BRAND_GUIDE_SIHS_MOBILE.md`,
+  `PROMPT_*.md`) ya no están en el árbol de trabajo; siguen en git, en el
+  commit `4d71eac`. Los diseños vigentes son los ZIP de `diseños movil/`.
 - No hay caché offline. Si se quiere, el camino es SQLite/Drift en
   `HorarioService`, sin tocar pantallas.

@@ -47,7 +47,13 @@ class SihsApp extends StatelessWidget {
         debugShowCheckedModeBanner: false,
         theme: AppTheme.claro,
         darkTheme: AppTheme.oscuro,
-        themeMode: ThemeMode.system,
+        // Los diseños entregados (mobile/diseños movil/) solo definen el
+        // esquema claro; el oscuro de AppTheme es una derivación nuestra
+        // que nadie validó contra la marca. Hasta que exista un diseño
+        // oscuro aprobado, la app se ve como el diseño. Volver a seguir la
+        // preferencia del sistema es cambiar esta línea por
+        // ThemeMode.system.
+        themeMode: ThemeMode.light,
         home: const PuertaDeEntrada(),
       ),
     );
