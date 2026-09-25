@@ -399,7 +399,11 @@ export function AppShell({ activo, children }: AppShellProps) {
             * derecho en casi todas las vistas. */}
           <nav
             ref={dropdownRef}
-            className="hidden min-w-0 flex-1 items-center justify-center gap-1 overflow-hidden lg:flex"
+            /* Sin `overflow-hidden`: los desplegables de cada grupo son
+             * `absolute top-full`, o sea que salen POR DEBAJO de la barra —
+             * recortarlos al alto del nav los volvía invisibles. Pulsar
+             * "Mi trabajo" abría un menú que nadie podía ver. */
+            className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex"
           >
             <Link
               to={INICIO.ruta!}
