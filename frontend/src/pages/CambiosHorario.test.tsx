@@ -10,6 +10,7 @@ const INSTRUCTOR: Usuario = {
   nombre: 'Carlos López',
   email: 'carlos@mail.com',
   estado: 'activo',
+  debeCambiarClave: false,
   fechaRegistro: '2026-01-01',
   roles: [{ idRol: 3, nombre: 'Instructor' }],
   especialidades: [],

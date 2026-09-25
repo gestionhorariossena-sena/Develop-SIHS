@@ -32,6 +32,7 @@ from app.api.v1.anotaciones_horario import router as anotaciones_horario_router
 from app.api.v1.avisos import router as avisos_router
 from app.api.v1.solicitudes_acceso import router as solicitudes_acceso_router
 from app.api.v1.solicitudes_cambio_horario import router as solicitudes_cambio_horario_router
+from app.api.v1.solicitudes_acceso import router as solicitudes_acceso_router
 
 
 app = FastAPI(title=settings.app_name)

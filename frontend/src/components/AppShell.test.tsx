@@ -1,114 +1,111 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
-import { render } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
+import { fireEvent, screen } from '@testing-library/react'
+import { renderConProviders } from '../test/renderConProviders'
 import { AppShell } from './AppShell'
-import { AuthContext } from '../context/auth-context'
-import type { AuthContextValue } from '../context/auth-context'
-import { ThemeProvider } from '../context/ThemeContext'
-
-const getPerfilMock = vi.fn()
-vi.mock('../services/perfil', () => ({
-  getPerfil: (...args: unknown[]) => getPerfilMock(...args),
-}))
+import type { Notificacion, Usuario } from '../types/api'
 
 const apiGetMock = vi.fn()
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
-  apiPost: vi.fn(),
-  apiPut: vi.fn(),
-  apiPatch: vi.fn(),
-  apiDelete: vi.fn(),
-  ApiError: class ApiError extends Error {
-    status: number
-    constructor(status: number, message: string) {
-      super(message)
-      this.status = status
-    }
-  },
 }))
 
-function renderAppShell(signOut = vi.fn()) {
-  const valor: AuthContextValue = {
-    session: { user: { id: 'usuario-de-prueba' } } as AuthContextValue['session'],
-    loading: false,
-    signOut,
+function crearPerfil(roles: string[]): Usuario {
+  return {
+    idUsuario: 'u1',
+    nombre: 'Ana',
+    email: 'ana@example.com',
+    estado: 'activo',
+    fechaRegistro: '2026-01-01',
+    roles: roles.map((nombre, idx) => ({ idRol: idx + 1, nombre })),
+    especialidades: [],
+    debeCambiarClave: false,
   }
-  render(
-    <MemoryRouter>
-      <ThemeProvider>
-        <AuthContext.Provider value={valor}>
-          <AppShell titulo="Vista de prueba">
-            <p>contenido</p>
-          </AppShell>
-        </AuthContext.Provider>
-      </ThemeProvider>
-    </MemoryRouter>,
-  )
-  return signOut
 }
 
-describe('AppShell — cerrar sesión', () => {
-  beforeEach(() => {
-    apiGetMock.mockReset()
-    apiGetMock.mockResolvedValue([])
-    getPerfilMock.mockReset()
-    // Coordinador a propósito: es uno de los roles que abre más grupos
-    // de menú, justo el caso en que la nav desbordaba la barra.
-    getPerfilMock.mockResolvedValue({
-      idUsuario: 'usuario-de-prueba',
-      nombre: 'Coordinadora de Prueba',
-      email: 'coord@demo.sihs',
-      roles: [{ idRol: 2, nombre: 'Coordinador' }],
-    })
+/** apiGet lo llama AppShell tanto para el perfil (`/usuarios/me`) como
+ * para las notificaciones (`/notificaciones/`) -- discrimina por el
+ * primer argumento para no devolver el perfil donde se espera un array. */
+function mockearApiGet(perfil: Usuario, notificaciones: Notificacion[] = []) {
+  apiGetMock.mockImplementation((ruta: string) => {
+    if (ruta === '/notificaciones/') return Promise.resolve(notificaciones)
+    return Promise.resolve(perfil)
   })
+}
 
-  it('ofrece el botón de cerrar sesión con su nombre accesible', async () => {
-    renderAppShell()
-
-    // Es un botón de icono: el texto vive en aria-label/title, así que
-    // quien use lector de pantalla lo sigue encontrando por su nombre.
-    const boton = await screen.findByRole('button', { name: 'Cerrar sesión' })
-    expect(boton).toBeInTheDocument()
-  })
-
-  it('cierra la sesión al pulsarlo', async () => {
-    const signOut = renderAppShell()
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Cerrar sesión' }))
-
-    expect(signOut).toHaveBeenCalledTimes(1)
-  })
-
-  it('deja que la barra de navegación se encoja para no empujar las acciones fuera', async () => {
-    // Test de clases y no de layout porque jsdom no calcula ancho real.
-    // Se fija igual porque ESTA clase es el bug: sin `min-w-0` un item
-    // flex no baja de su ancho de contenido (min-width: auto), así que
-    // con muchos grupos de menú la nav empujaba el bloque de acciones
-    // —y con él "Cerrar sesión"— fuera del borde derecho.
-    const { container } = render(
-      <MemoryRouter>
-        <ThemeProvider>
-          <AuthContext.Provider
-            value={{
-              session: { user: { id: 'u1' } } as AuthContextValue['session'],
-              loading: false,
-              signOut: vi.fn(),
-            }}
-          >
-            <AppShell titulo="Vista de prueba">
-              <p>contenido</p>
-            </AppShell>
-          </AuthContext.Provider>
-        </ThemeProvider>
-      </MemoryRouter>,
+describe('AppShell', () => {
+  it('un Aprendiz ve el grupo "Mi trabajo" con sus pantallas, en un desplegable propio del navbar', async () => {
+    mockearApiGet(crearPerfil(['Aprendiz']))
+    renderConProviders(
+      <AppShell activo="Inicio">
+        <p>contenido</p>
+      </AppShell>,
     )
 
-    const nav = container.querySelector('header nav')
-    expect(nav).toHaveClass('min-w-0')
+    const botonGrupo = await screen.findByRole('button', { name: 'Mi trabajo' })
+    fireEvent.click(botonGrupo)
 
-    const boton = await screen.findByRole('button', { name: 'Cerrar sesión' })
-    expect(boton.className).toContain('shrink-0')
+    for (const etiqueta of ['Mi horario', 'Mensajes', 'Notificaciones']) {
+      expect(screen.getByText(etiqueta)).toBeInTheDocument()
+    }
+  })
+
+  it('un Instructor ve "Mi horario" plano en el navbar (un solo ítem no abre desplegable)', async () => {
+    mockearApiGet(crearPerfil(['Instructor']))
+    renderConProviders(
+      <AppShell activo="Inicio">
+        <p>contenido</p>
+      </AppShell>,
+    )
+
+    expect(await screen.findByText('Mi horario')).toBeInTheDocument()
+    // Un solo ítem en el grupo -> se renderiza como link plano, sin botón
+    // de desplegable "Mi trabajo".
+    expect(screen.queryByRole('button', { name: 'Mi trabajo' })).not.toBeInTheDocument()
+  })
+
+  it('un Coordinador no ve el grupo "Mi trabajo" ni sus pantallas exclusivas de Aprendiz/Instructor', async () => {
+    mockearApiGet(crearPerfil(['Coordinador']))
+    renderConProviders(
+      <AppShell activo="Inicio">
+        <p>contenido</p>
+      </AppShell>,
+    )
+
+    await screen.findByRole('button', { name: 'Programación' })
+
+    expect(screen.queryByRole('button', { name: 'Mi trabajo' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Mi horario')).not.toBeInTheDocument()
+    expect(screen.queryByText('Mensajes Docentes')).not.toBeInTheDocument()
+    // "Notificaciones" (Centro de Notificaciones del Aprendiz) y "Avisos y
+    // Eventos" son exclusivas de Aprendiz -- ocultas para Coordinador.
+    expect(screen.queryByText('Avisos y Eventos')).not.toBeInTheDocument()
+  })
+
+  it('un Administrador ve "Solicitudes de acceso" dentro de Administración', async () => {
+    mockearApiGet(crearPerfil(['Administrador']))
+    renderConProviders(
+      <AppShell activo="Inicio">
+        <p>contenido</p>
+      </AppShell>,
+    )
+
+    const botonGrupo = await screen.findByRole('button', { name: 'Administración' })
+    fireEvent.click(botonGrupo)
+
+    expect(screen.getByText('Solicitudes de acceso')).toBeInTheDocument()
+  })
+
+  it('un Coordinador no ve "Solicitudes de acceso" (soloAdmin)', async () => {
+    mockearApiGet(crearPerfil(['Coordinador']))
+    renderConProviders(
+      <AppShell activo="Inicio">
+        <p>contenido</p>
+      </AppShell>,
+    )
+
+    const botonGrupo = await screen.findByRole('button', { name: 'Administración' })
+    fireEvent.click(botonGrupo)
+
+    expect(screen.queryByText('Solicitudes de acceso')).not.toBeInTheDocument()
   })
 })

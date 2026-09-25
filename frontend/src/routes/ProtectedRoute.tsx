@@ -1,106 +1,86 @@
-import { useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
-import { Navigate } from 'react-router-dom'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { getPerfil } from '../services/perfil'
 import type { Usuario } from '../types/api'
 
+const RUTA_CAMBIO_CLAVE_OBLIGATORIO = '/cambiar-clave-obligatorio'
+
 interface ProtectedRouteProps {
   children: ReactNode
+  /** Si se especifica, además de exigir sesión, el usuario debe tener al
+   * menos uno de estos roles -- si no, se manda a /dashboard. */
   roles?: string[]
 }
 
 /**
- * Protege una página para usuarios autenticados.
- * Si se especifican roles, también verifica que el usuario tenga
- * al menos uno de los roles requeridos.
+ * Envuelve una página que exige sesión iniciada. Si no hay sesión, manda a
+ * /login. Si el perfil trae debeCambiarClave=true (credencial temporal sin
+ * cambiar, ver usuarios.debeCambiarClave), redirige a
+ * CambiarClaveObligatorio.tsx en vez de dejar entrar a cualquier otra ruta
+ * protegida -- es el único choque de gate para esto, así que no hace falta
+ * repetir el chequeo en cada página nueva. Si se especifican `roles`,
+ * también verifica que el usuario tenga al menos uno de los roles
+ * requeridos, mandando a /dashboard si no.
  *
- * Sin `roles` la pantalla queda abierta a cualquier sesión — reservarlo
- * para las que ya reparten por rol adentro (`/dashboard`). Toda ruta
- * privada nueva debería declarar los suyos: hasta H-5 ninguna lo hacía y
- * cualquiera llegaba escribiendo la URL a pantallas que no podía usar,
- * para toparse con un 403 del backend a mitad de un formulario.
- *
- * El perfil se pide por `getPerfil()` (cacheado por sesión) y no con un
- * apiGet suelto: esto corre en CADA navegación.
+ * El fetch de perfil falla "abierto" (no bloquea navegación) si
+ * GET /usuarios/me falla por algo que no sea el propio flag -- esto es una
+ * guía de UX, no el límite de seguridad real (ese lo sigue poniendo la
+ * sesión de Supabase).
  */
-export function ProtectedRoute({
-  children,
-  roles,
-}: ProtectedRouteProps) {
+export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   const { session, loading } = useAuth()
-
-  const requiereRol = Boolean(roles?.length)
-
+  const location = useLocation()
   const [perfil, setPerfil] = useState<Usuario | null>(null)
-  const [loadingPerfil, setLoadingPerfil] = useState(requiereRol)
-
-  const idUsuario = session?.user?.id ?? ''
+  const [cargandoPerfil, setCargandoPerfil] = useState(true)
 
   useEffect(() => {
-    if (!idUsuario || !requiereRol) {
-      return
-    }
+    // Sin sesión no hay perfil que pedir -- `cargandoPerfil` ni se
+    // consulta en ese caso (ver el `session &&` de más abajo), así que no
+    // hace falta tocarlo acá (evita un setState síncrono al inicio del
+    // efecto, que dispararía la regla react-hooks/set-state-in-effect).
+    if (!session) return
 
-    // `loadingPerfil` ya arranca en true cuando la ruta pide roles, y este
-    // componente se monta de nuevo en cada navegación: no hace falta
-    // volver a ponerlo acá.
     let cancelado = false
 
-    getPerfil(idUsuario)
-      .then((usuario) => {
-        if (!cancelado) {
-          setPerfil(usuario)
-        }
+    // Por `getPerfil` (cacheado por sesión) y no con un apiGet suelto:
+    // esto corre en CADA navegación, así que sin caché cada cambio de
+    // pantalla pagaba un /usuarios/me y su "Cargando…" a pantalla
+    // completa. AppShell usa el mismo caché, así que comparten request.
+    getPerfil(session.user.id)
+      .then((datos) => {
+        if (!cancelado) setPerfil(datos)
       })
       .catch(() => {
-        if (!cancelado) {
-          setPerfil(null)
-        }
+        if (!cancelado) setPerfil(null)
       })
       .finally(() => {
-        if (!cancelado) {
-          setLoadingPerfil(false)
-        }
+        if (!cancelado) setCargandoPerfil(false)
       })
 
     return () => {
       cancelado = true
     }
-  }, [idUsuario, requiereRol])
+  }, [session])
 
-  if (loading) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-        Cargando…
-      </div>
-    )
+  if (loading || (session && cargandoPerfil)) {
+    return <div className="grid min-h-screen place-items-center bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400">Cargando…</div>
   }
 
   if (!session) {
     return <Navigate to="/login" replace />
   }
 
-  if (!requiereRol) {
-    return <>{children}</>
+  const debeCambiarClave = perfil?.debeCambiarClave ?? false
+  if (debeCambiarClave && location.pathname !== RUTA_CAMBIO_CLAVE_OBLIGATORIO) {
+    return <Navigate to={RUTA_CAMBIO_CLAVE_OBLIGATORIO} replace />
   }
 
-  if (loadingPerfil) {
-    return (
-      <div className="grid min-h-screen place-items-center bg-slate-50 text-slate-500 dark:bg-slate-900 dark:text-slate-400">
-        Cargando…
-      </div>
-    )
-  }
-
-  const tieneRolRequerido =
-    perfil?.roles.some((rol) => roles?.includes(rol.nombre)) ?? false
-
-  if (!tieneRolRequerido) {
-    // A /dashboard, que ya reparte por rol (DashboardRouter.tsx) y manda a
-    // un Aprendiz a su propia pantalla. Es una puerta cerrada, no un error:
-    // la persona acaba donde sí puede trabajar.
-    return <Navigate to="/dashboard" replace />
+  if (roles?.length) {
+    const tieneRolRequerido = perfil?.roles.some((rol) => roles.includes(rol.nombre)) ?? false
+    if (!tieneRolRequerido) {
+      return <Navigate to="/dashboard" replace />
+    }
   }
 
   return <>{children}</>

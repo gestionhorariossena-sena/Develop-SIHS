@@ -7,10 +7,31 @@ import type { AuthContextValue } from '../context/auth-context'
 import { ThemeProvider } from '../context/ThemeContext'
 import { apiGet, ApiError } from '../services/api'
 
-vi.mock('../services/api', async () => {
-  const real = await vi.importActual<typeof import('../services/api')>('../services/api')
-  return { ...real, apiGet: vi.fn(), apiPost: vi.fn() }
-})
+// Sin `importActual`: eso carga services/api de verdad, que a su vez
+// construye el cliente de Supabase y necesita las variables de entorno.
+// Acá solo hace falta el contrato que usan las pantallas montadas.
+vi.mock('../services/supabaseClient', () => ({
+  supabase: { auth: { getSession: vi.fn().mockResolvedValue({ data: { session: null } }), onAuthStateChange: vi.fn(() => ({ data: { subscription: { unsubscribe: vi.fn() } } })) } },
+}))
+
+vi.mock('../services/api', () => ({
+  apiGet: vi.fn(),
+  apiPost: vi.fn(),
+  apiPut: vi.fn(),
+  apiPatch: vi.fn(),
+  apiPostForm: vi.fn(),
+  apiDelete: vi.fn(),
+  getUserFriendlyApiMessage: (_status: number, fallback?: string) => fallback ?? 'Error',
+  ApiError: class ApiError extends Error {
+    status: number
+    detail: unknown
+    constructor(status: number, message: string, detail?: unknown) {
+      super(message)
+      this.status = status
+      this.detail = detail
+    }
+  },
+}))
 
 const apiGetMock = vi.mocked(apiGet)
 
@@ -19,6 +40,7 @@ const PERFIL_APRENDIZ = {
   nombre: 'Juan',
   email: 'juan@mail.com',
   estado: 'activo' as const,
+  debeCambiarClave: false,
   fechaRegistro: '2026-09-24',
   roles: [{ idRol: 4, nombre: 'Aprendiz' }],
   especialidades: [],
@@ -65,14 +87,13 @@ describe('AppRouter · roles por ruta', () => {
     apiGetMock.mockImplementation((path: string) => {
       if (path === '/usuarios/me') return Promise.resolve(PERFIL_APRENDIZ)
       if (path === '/notificaciones/') return Promise.resolve([])
-      // Sin ficha vinculada: /dashboard manda al Aprendiz a su horario y
-      // esa pantalla responde 404 en mi-ficha.
+      // Sin ficha vinculada: su home responde 404 en mi-ficha.
       return Promise.reject(new ApiError(404, 'No encontrado', null))
     })
 
     renderRuta('/horarios/asistente-ia')
 
-    expect(await screen.findByText('Autoservicio del aprendiz')).toBeInTheDocument()
+    expect(await screen.findByText(/^Hola/)).toBeInTheDocument()
     expect(screen.queryByText('Asistente de Programación')).not.toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalledWith(expect.stringContaining('/asistente'))
   })
@@ -86,7 +107,7 @@ describe('AppRouter · roles por ruta', () => {
 
     renderRuta('/panel-administracion')
 
-    expect(await screen.findByText('Autoservicio del aprendiz')).toBeInTheDocument()
+    expect(await screen.findByText(/^Hola/)).toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalledWith('/solicitudes-acceso/')
   })
 

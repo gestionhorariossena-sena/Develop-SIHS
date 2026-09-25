@@ -1,5 +1,5 @@
 import { BLOQUES } from '../../pages/horario/tipos'
-import type { Horario } from '../../types/api'
+import type { CeldaAsistente } from './celdasAsistente'
 import { colorParaBloque } from '../../pages/horario/gridLogic'
 
 /**
@@ -62,23 +62,6 @@ const FONDO_JORNADA: Record<string, string> = {
   Mañana: 'bg-emerald-100 dark:bg-emerald-950/30',
   Tarde: 'bg-blue-100 dark:bg-blue-950/30',
   Noche: 'bg-indigo-100 dark:bg-indigo-950/30',
-}
-
-export interface CeldaAsistente {
-  /** Único dentro de todo el grid -- id real del horario si ya existe
-   * ("existente-42"), o un id sintético del bloque propuesto ("nuevo-3"). */
-  id: string
-  origen: 'existente' | 'nuevo'
-  fichaCodigo: string
-  instructorNombre: string
-  ambienteNombre: string
-  resultadoDescripcion: string | null
-  horaInicio: string
-  dias: number[]
-  /** Solo aplica a `origen: 'nuevo'` -- refleja el resultado de la
-   * revalidación en vivo (POST /horarios/validar) que ya corre el
-   * asistente antes de llegar aquí. */
-  estado?: 'validando' | 'sinCruces' | 'conflicto'
 }
 
 /** Lo que el Aprendiz anotó sobre uno de sus bloques — lo justo para
@@ -274,24 +257,4 @@ function CeldaBloque({
       )}
     </Contenedor>
   )
-}
-
-/** Convierte `Horario[]` reales (lo que devuelve GET /horarios/) a
- * `CeldaAsistente[]` de solo lectura -- para mostrarlos en este grid
- * desde cualquier pantalla que ya tenga `Horario[]` (HorariosCompletos,
- * futuros drawers de ficha/instructor/ambiente), sin importar si el
- * horario se creó a mano o con el asistente. Todos con `origen:
- * 'existente'`: ya están guardados, no hay nada que "quitar" acá (para
- * eso está Publicar/Despublicar). */
-export function celdasDesdeHorarios(horarios: Horario[]): CeldaAsistente[] {
-  return horarios.map((h) => ({
-    id: `existente-${h.idHorario}`,
-    origen: 'existente',
-    fichaCodigo: h.fichaCodigo ?? '—',
-    instructorNombre: h.instructorNombre ?? '—',
-    ambienteNombre: h.ambienteNombre ?? '—',
-    resultadoDescripcion: h.resultadoDescripcion,
-    horaInicio: h.horaInicio,
-    dias: h.dias,
-  }))
 }

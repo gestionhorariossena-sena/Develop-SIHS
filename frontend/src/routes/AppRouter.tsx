@@ -31,6 +31,8 @@ import { Programas } from '../pages/Programas'
 import { CambiosHorario } from '../pages/CambiosHorario'
 import { Avisos } from '../pages/Avisos'
 import { MensajesAprendiz } from '../pages/MensajesAprendiz'
+import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
+import { Notificaciones } from '../pages/Notificaciones'
 
 /**
  * Quién puede abrir cada pantalla. Mismo criterio que usa el navbar para
@@ -58,6 +60,17 @@ export function AppRouter() {
       <Route path="/registro" element={<Registro />} />
       <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
       <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
+      {/* Quien entra con una clave temporal (solicitud de acceso aprobada)
+          no puede navegar a otra cosa hasta cambiarla — lo impone
+          ProtectedRoute mirando `debeCambiarClave`. */}
+      <Route
+        path="/cambiar-clave-obligatorio"
+        element={
+          <ProtectedRoute>
+            <CambiarClaveObligatorio />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/dashboard"
         element={
@@ -143,6 +156,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={APRENDIZ}>
             <MensajesAprendiz />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/notificaciones"
+        element={
+          <ProtectedRoute>
+            <Notificaciones />
           </ProtectedRoute>
         }
       />

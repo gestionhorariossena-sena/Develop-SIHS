@@ -1,164 +1,199 @@
-"""Alta de personas que todavía NO tienen cuenta: alguien pide acceso
-desde el registro, un Administrador la aprueba y recién ahí se le crea la
-cuenta de Supabase Auth con su rol y una clave temporal.
-
-Es la otra mitad de SCRUM-109: la tabla (`models/solicitud_acceso.py`) y
-el servicio que crea la cuenta (`credencial_temporal_service.py`) ya
-existían y estaban probados, pero nunca se escribió el módulo que los
-conectara, así que las dos pantallas que lo consumen (Registro.tsx y
-PanelAdministracion.tsx) llamaban a un 404 — H-3.
-"""
-
+import csv
+import io
+import secrets
 from datetime import datetime, timezone
 
-from app.models.rol import Rol
 from app.models.solicitud_acceso import SolicitudAcceso
 from app.models.usuario import Usuario
+from app.repositories.rol_repository import RolRepository
 from app.repositories.solicitud_acceso_repository import SolicitudAccesoRepository
-from app.services.credencial_temporal_service import CredencialTemporalService
+from app.repositories.usuario_repository import UsuarioRepository
+from app.services.email_service import EmailService, SmtpNoConfiguradoError
+from app.services.supabase_admin_service import crear_o_recuperar_usuario_supabase
+from app.services.usuario_rol_service import UsuarioRolService
 
-# El formulario público del registro es "¿Eres coordinador? Solicita
-# acceso" y no tiene selector de rol: si no viene ninguno, es este.
-ROL_SOLICITADO_POR_DEFECTO = "Coordinador"
-
-
-class SolicitudAccesoError(Exception):
-    """Algo que el cliente puede corregir. `estado_http` es el código con
-    el que el router debe responder."""
-
-    def __init__(self, mensaje: str, estado_http: int = 422):
-        super().__init__(mensaje)
-        self.estado_http = estado_http
+ENCABEZADOS_CSV = [
+    "idSolicitud",
+    "nombre",
+    "email",
+    "numeroDocumento",
+    "rolSolicitado",
+    "motivo",
+    "estado",
+    "motivoRechazo",
+    "fechaSolicitud",
+    "fechaResolucion",
+    "idAdminResolvio",
+]
 
 
 class SolicitudAccesoService:
     @staticmethod
-    def crear(db, data) -> SolicitudAcceso:
-        email = str(data.email).strip().lower()
-
-        if db.query(Usuario).filter(Usuario.email == email).first():
-            raise SolicitudAccesoError(
-                "Ese correo ya tiene una cuenta. Inicia sesión o usa "
-                "«¿Olvidaste tu contraseña?» para recuperarla.",
-                409,
-            )
-
-        if SolicitudAccesoRepository.obtener_pendiente_por_email(db, email):
-            raise SolicitudAccesoError(
-                "Ya hay una solicitud pendiente con ese correo. Te avisaremos "
-                "cuando la coordinación la revise.",
-                409,
-            )
-
-        id_rol = data.idRolSolicitado or SolicitudAccesoService._id_rol_por_defecto(db)
-
-        if not db.get(Rol, id_rol):
-            raise SolicitudAccesoError("El rol solicitado no existe", 422)
-
-        solicitud = SolicitudAcceso(
-            nombre=data.nombre.strip(),
-            email=email,
-            numeroDocumento=(data.numeroDocumento or "").strip() or None,
-            idRolSolicitado=id_rol,
-            motivo=data.motivo.strip(),
-            estado="pendiente",
-        )
-        return SolicitudAccesoRepository.crear(db, solicitud)
-
-    @staticmethod
-    def _id_rol_por_defecto(db) -> int:
-        rol = db.query(Rol).filter(Rol.nombre == ROL_SOLICITADO_POR_DEFECTO).first()
-        if not rol:
-            raise SolicitudAccesoError(
-                f"El rol '{ROL_SOLICITADO_POR_DEFECTO}' no existe en la base de datos", 500
-            )
-        return rol.idRol
-
-    @staticmethod
-    def obtener_todas(db, estado: str | None = None) -> list[SolicitudAcceso]:
-        return SolicitudAccesoRepository.obtener_todas(db, estado)
-
-    @staticmethod
-    def aprobar(db, id_solicitud: int, id_admin, id_rol: int) -> dict:
-        """Crea la cuenta con clave temporal y deja la solicitud resuelta.
-
-        La cuenta se crea PRIMERO: si Supabase falla, la solicitud sigue
-        pendiente y se puede reintentar — al revés quedaría marcada como
-        aprobada sin que exista ninguna cuenta detrás.
-        """
-        solicitud = SolicitudAccesoService._pendiente(db, id_solicitud)
-
-        if not db.get(Rol, id_rol):
-            raise SolicitudAccesoError("El rol indicado no existe", 422)
-
-        try:
-            credencial = CredencialTemporalService.crear_cuenta_con_clave_temporal(
-                db, email=solicitud.email, nombre=solicitud.nombre, id_rol=id_rol
-            )
-        except SolicitudAccesoError:
-            raise
-        except Exception as exc:
-            raise SolicitudAccesoError(
-                "No se pudo crear la cuenta en Supabase. La solicitud sigue "
-                "pendiente: inténtalo de nuevo en unos minutos.",
-                503,
-            ) from exc
-
-        # El rol con el que se aprueba manda sobre el que se pidió: el
-        # panel deja cambiarlo (alguien pide Coordinador y se le da
-        # Instructor), y lo que quede registrado debe ser lo que de verdad
-        # se le otorgó.
-        solicitud.idRolSolicitado = id_rol
-
-        solicitud = SolicitudAccesoRepository.resolver(
-            db,
-            solicitud,
-            estado="aprobada",
-            id_admin=id_admin,
-            fecha_resolucion=datetime.now(timezone.utc),
-        )
-
+    def a_response(solicitud: SolicitudAcceso, rol) -> dict:
+        """Serializa una solicitud con el nombre del rol ya resuelto -- no
+        obliga al frontend a pedirlo aparte (mismo criterio que
+        HorarioService.a_response)."""
         return {
-            "solicitud": solicitud,
-            "email": credencial["email"],
-            "passwordTemporal": credencial["passwordTemporal"],
-            # Hoy siempre False: el correo depende del SMTP del proyecto de
-            # Supabase, que sigue sin configurar (H-15 / SCRUM-129). El
-            # campo existe para que el cliente no tenga que cambiar cuando
-            # eso se resuelva.
-            "correoEnviado": False,
+            "idSolicitud": solicitud.idSolicitud,
+            "nombre": solicitud.nombre,
+            "email": solicitud.email,
+            "numeroDocumento": solicitud.numeroDocumento,
+            "idRolSolicitado": solicitud.idRolSolicitado,
+            "rolSolicitado": rol.nombre if rol else None,
+            "motivo": solicitud.motivo,
+            "estado": solicitud.estado,
+            "motivoRechazo": solicitud.motivoRechazo,
+            "fechaSolicitud": solicitud.fechaSolicitud,
+            "fechaResolucion": solicitud.fechaResolucion,
+            "idAdminResolvio": solicitud.idAdminResolvio,
         }
 
     @staticmethod
-    def rechazar(db, id_solicitud: int, id_admin, motivo_rechazo: str) -> SolicitudAcceso:
-        solicitud = SolicitudAccesoService._pendiente(db, id_solicitud)
+    def crear(db, data):
+        rol = RolRepository.obtener_por_id(db, data.idRolSolicitado)
+        if not rol:
+            return "ROL_NO_EXISTE"
 
-        motivo = (motivo_rechazo or "").strip()
-        if not motivo:
-            raise SolicitudAccesoError("El rechazo necesita un motivo", 422)
+        if SolicitudAccesoRepository.obtener_pendiente_por_email(db, data.email):
+            return "YA_PENDIENTE"
 
-        return SolicitudAccesoRepository.resolver(
-            db,
-            solicitud,
-            estado="rechazada",
-            id_admin=id_admin,
-            fecha_resolucion=datetime.now(timezone.utc),
-            motivo_rechazo=motivo,
+        solicitud = SolicitudAcceso(
+            nombre=data.nombre,
+            email=data.email,
+            numeroDocumento=data.numeroDocumento,
+            idRolSolicitado=data.idRolSolicitado,
+            motivo=data.motivo,
         )
+        SolicitudAccesoRepository.crear(db, solicitud)
+
+        return SolicitudAccesoService.a_response(solicitud, rol)
 
     @staticmethod
-    def _pendiente(db, id_solicitud: int) -> SolicitudAcceso:
-        solicitud = SolicitudAccesoRepository.obtener_por_id(db, id_solicitud)
+    def listar(db, estado: str | None = None):
+        filas = SolicitudAccesoRepository.listar(db, estado)
+        return [SolicitudAccesoService.a_response(solicitud, rol) for solicitud, rol in filas]
 
-        if not solicitud:
-            raise SolicitudAccesoError("Solicitud no encontrada", 404)
+    @staticmethod
+    def exportar_csv(db, estado: str | None = None) -> str:
+        """Botón "Exportar Registro (CSV)" del Panel de Administración --
+        mismo filtro por estado que usa GET /solicitudes-acceso/."""
+        filas = SolicitudAccesoRepository.listar(db, estado)
 
-        if solicitud.estado != "pendiente":
-            # Dos administradores con el panel abierto a la vez: el segundo
-            # debe enterarse, no pisar la decisión del primero.
-            raise SolicitudAccesoError(
-                f"Esta solicitud ya fue {solicitud.estado}. Recarga el panel para ver su estado actual.",
-                409,
+        buffer = io.StringIO()
+        escritor = csv.writer(buffer)
+        escritor.writerow(ENCABEZADOS_CSV)
+
+        for solicitud, rol in filas:
+            escritor.writerow(
+                [
+                    solicitud.idSolicitud,
+                    solicitud.nombre,
+                    solicitud.email,
+                    solicitud.numeroDocumento,
+                    rol.nombre,
+                    solicitud.motivo,
+                    solicitud.estado,
+                    solicitud.motivoRechazo or "",
+                    solicitud.fechaSolicitud.isoformat() if solicitud.fechaSolicitud else "",
+                    solicitud.fechaResolucion.isoformat() if solicitud.fechaResolucion else "",
+                    str(solicitud.idAdminResolvio) if solicitud.idAdminResolvio else "",
+                ]
             )
 
-        return solicitud
+        return buffer.getvalue()
+
+    @staticmethod
+    def aprobar(db, id_solicitud: int, id_rol_otorgado: int, admin_usuario):
+        """Flujo literal del mockup, sección "Flujo al Aprobar":
+        1. Crear/reutilizar la cuenta de Supabase Auth (Admin API,
+           supabase_admin_service -- mismo código que scripts/crear_admin.py).
+        2. Crear la fila en "usuarios" si no existe.
+        3. Asignar el rol (UsuarioRolService.asignar, sin reimplementar
+           esa validación).
+        4. usuarios.debeCambiarClave = true.
+        5. Marcar la solicitud aprobada.
+        6. Enviar la credencial temporal (EmailService -- si SMTP no está
+           configurado todavía, no se bloquea la aprobación, ver
+           _Docs/Documentación general/DECISION_ENVIO_CREDENCIAL_TEMPORAL.md).
+        La auditoría (paso 7 del ticket) la deja el router, igual que
+        POST /usuario-rol/asignar."""
+        fila = SolicitudAccesoRepository.obtener_por_id(db, id_solicitud)
+        if not fila:
+            return "SOLICITUD_NO_EXISTE"
+
+        solicitud, rol_solicitado = fila
+
+        if solicitud.estado != "pendiente":
+            return "NO_PENDIENTE"
+
+        rol_otorgado = RolRepository.obtener_por_id(db, id_rol_otorgado)
+        if not rol_otorgado:
+            return "ROL_NO_EXISTE"
+
+        password_temporal = secrets.token_urlsafe(9)
+        usuario_supabase, _creado = crear_o_recuperar_usuario_supabase(solicitud.email, password_temporal)
+        id_usuario = usuario_supabase["id"]
+
+        usuario = UsuarioRepository.obtener_por_id(db, id_usuario)
+        if not usuario:
+            usuario = Usuario(idUsuario=id_usuario, nombre=solicitud.nombre, email=solicitud.email)
+            db.add(usuario)
+            db.commit()
+            db.refresh(usuario)
+
+        UsuarioRolService.asignar(db, id_usuario, id_rol_otorgado)
+
+        usuario.debeCambiarClave = True
+        db.commit()
+
+        solicitud.estado = "aprobada"
+        solicitud.fechaResolucion = datetime.now(timezone.utc)
+        solicitud.idAdminResolvio = admin_usuario.idUsuario
+        db.commit()
+        db.refresh(solicitud)
+
+        try:
+            EmailService.enviar_credencial_temporal(
+                destinatario_email=solicitud.email,
+                destinatario_nombre=solicitud.nombre,
+                password_temporal=password_temporal,
+            )
+        except SmtpNoConfiguradoError:
+            # Ver DECISION_ENVIO_CREDENCIAL_TEMPORAL.md: la cuenta y el rol
+            # ya quedaron creados igual, el envío del correo es lo único
+            # pendiente de que exista la configuración SMTP.
+            pass
+
+        # `rolSolicitado` en la respuesta refleja el rol que se pidió
+        # originalmente (idRolSolicitado no cambia) -- el rol realmente
+        # otorgado es el que ya envió el caller en `data.idRol`.
+        return SolicitudAccesoService.a_response(solicitud, rol_solicitado)
+
+    @staticmethod
+    def rechazar(db, id_solicitud: int, motivo_rechazo: str, admin_usuario):
+        fila = SolicitudAccesoRepository.obtener_por_id(db, id_solicitud)
+        if not fila:
+            return "SOLICITUD_NO_EXISTE"
+
+        solicitud, rol = fila
+
+        if solicitud.estado != "pendiente":
+            return "NO_PENDIENTE"
+
+        solicitud.estado = "rechazada"
+        solicitud.motivoRechazo = motivo_rechazo
+        solicitud.fechaResolucion = datetime.now(timezone.utc)
+        solicitud.idAdminResolvio = admin_usuario.idUsuario
+        db.commit()
+        db.refresh(solicitud)
+
+        try:
+            EmailService.enviar_rechazo_solicitud(
+                destinatario_email=solicitud.email,
+                destinatario_nombre=solicitud.nombre,
+                motivo_rechazo=motivo_rechazo,
+            )
+        except SmtpNoConfiguradoError:
+            pass
+
+        return SolicitudAccesoService.a_response(solicitud, rol)

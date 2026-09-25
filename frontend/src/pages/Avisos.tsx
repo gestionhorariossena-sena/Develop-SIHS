@@ -249,7 +249,7 @@ function TarjetaAviso({ aviso, destacado = false }: { aviso: Aviso; destacado?: 
       <p className="mt-1 whitespace-pre-line text-sm text-on-surface-variant dark:text-slate-300">{aviso.cuerpo}</p>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-on-surface-variant dark:text-slate-400">
-        {aviso.publicadoPor && <span>Publicado por {aviso.publicadoPor}</span>}
+        {aviso.publicadorNombre && <span>Publicado por {aviso.publicadorNombre}</span>}
 
         {aviso.vigenteHasta && <span>Vigente hasta el {formatFechaLarga(aviso.vigenteHasta)}</span>}
 

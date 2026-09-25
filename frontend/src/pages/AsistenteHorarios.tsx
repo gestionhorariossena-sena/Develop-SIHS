@@ -1,8 +1,9 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import { celdasDesdeHorarios, GridAsistente } from '../components/horario/GridAsistente'
-import type { CeldaAsistente } from '../components/horario/GridAsistente'
+import { GridAsistente } from '../components/horario/GridAsistente'
+import { celdasDesdeHorarios } from '../components/horario/celdasAsistente'
+import type { CeldaAsistente } from '../components/horario/celdasAsistente'
 import { apiGet, apiPatch, apiPost, apiPostForm, ApiError } from '../services/api'
 import { mapearConLimite } from '../utils/concurrencia'
 import type {

@@ -61,6 +61,9 @@ const NAV: GrupoNav[] = [
       // que por ahora el ítem es suyo; la bandeja del Instructor es otra
       // pantalla pendiente de diseño.
       { etiqueta: 'Mensajes', ruta: '/mensajes', soloAprendiz: true },
+      // Centro de notificaciones del Aprendiz (pantalla propia, distinta
+      // de la campana del navbar: ahí caben el historial y el detalle).
+      { etiqueta: 'Notificaciones', ruta: '/notificaciones', soloAprendiz: true },
     ],
   },
   {

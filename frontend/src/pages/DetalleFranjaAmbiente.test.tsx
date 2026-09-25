@@ -16,6 +16,7 @@ const HORARIO: Horario = {
 const PERFIL: Usuario = {
   idUsuario: 'u1', nombre: 'Carlos Morales', email: 'carlos@example.com', estado: 'activo',
   fechaRegistro: '2026-01-01', tipoContrato: 'planta', roles: [{ idRol: 1, nombre: 'Instructor' }], especialidades: [],
+  debeCambiarClave: false,
 }
 
 const FICHA: Ficha = {

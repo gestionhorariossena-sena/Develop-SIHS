@@ -1,147 +1,151 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import type { Session } from '@supabase/supabase-js'
+import { AuthContext } from '../context/auth-context'
+import type { AuthContextValue } from '../context/auth-context'
 import { ProtectedRoute } from './ProtectedRoute'
-import { apiGet } from '../services/api'
-import { useAuth } from '../hooks/useAuth'
+import type { Usuario } from '../types/api'
 
+import { olvidarPerfil } from '../services/perfil'
+
+const apiGetMock = vi.fn()
 vi.mock('../services/api', () => ({
-  apiGet: vi.fn(),
+  apiGet: (...args: unknown[]) => apiGetMock(...args),
+  ApiError: class ApiError extends Error {},
 }))
 
-vi.mock('../hooks/useAuth', () => ({
-  useAuth: vi.fn(),
-}))
+const SESION_FALSA = { access_token: 'token', user: { id: 'u1' } } as unknown as Session
 
-const apiGetMock = vi.mocked(apiGet)
-const useAuthMock = vi.mocked(useAuth)
-
-const usuarioAprendiz = {
-  idUsuario: '1',
-  nombre: 'Ana',
-  email: 'ana@example.com',
-  estado: 'activo' as const,
-  fechaRegistro: '2026-09-07',
-  roles: [
-    {
-      idRol: 1,
-      nombre: 'Aprendiz',
-    },
-  ],
-  especialidades: [],
+function crearPerfil(overrides: Partial<Usuario> = {}): Usuario {
+  return {
+    idUsuario: 'u1',
+    nombre: 'Ana',
+    email: 'ana@example.com',
+    estado: 'activo',
+    fechaRegistro: '2026-01-01',
+    roles: [],
+    especialidades: [],
+    debeCambiarClave: false,
+    ...overrides,
+  }
 }
 
-const usuarioInstructor = {
-  idUsuario: '2',
-  nombre: 'Carlos',
-  email: 'carlos@example.com',
-  estado: 'activo' as const,
-  fechaRegistro: '2026-09-07',
-  roles: [
-    {
-      idRol: 2,
-      nombre: 'Instructor',
-    },
-  ],
-  especialidades: [],
-}
-
-function renderProtectedRoute(roles?: string[]) {
+function renderConRuta(pathname: string, contextValue: AuthContextValue, roles?: string[]) {
   return render(
-    <MemoryRouter initialEntries={['/protegida']}>
-      <Routes>
-        <Route
-          path="/protegida"
-          element={
-            <ProtectedRoute roles={roles}>
-              <div>Contenido protegido</div>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/login"
-          element={<div>Página de login</div>}
-        />
-
-        <Route
-          path="/dashboard"
-          element={<div>Dashboard</div>}
-        />
-      </Routes>
+    <MemoryRouter initialEntries={[pathname]}>
+      <AuthContext.Provider value={contextValue}>
+        <Routes>
+          <Route path="/login" element={<p>Pantalla login</p>} />
+          {/* /dashboard es el destino real del redirect por rol
+           * (ProtectedRoute.tsx: `<Navigate to="/dashboard" />`) -- texto
+           * plano, sin volver a envolver en <ProtectedRoute>, para poder
+           * distinguirlo de "Contenido protegido" en los tests de rol. */}
+          <Route path="/dashboard" element={<p>Dashboard</p>} />
+          <Route
+            path="/pagina-protegida"
+            element={
+              <ProtectedRoute>
+                <p>Contenido protegido</p>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/cambiar-clave-obligatorio"
+            element={
+              <ProtectedRoute>
+                <p>Pantalla cambiar clave</p>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/protegida"
+            element={
+              <ProtectedRoute roles={roles}>
+                <p>Contenido de ruta con rol</p>
+              </ProtectedRoute>
+            }
+          />
+        </Routes>
+      </AuthContext.Provider>
     </MemoryRouter>,
   )
 }
 
-let sesionesCreadas = 0
-
 describe('ProtectedRoute', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-
-    // Con `user.id`: el perfil se pide por ese id (services/perfil.ts lo
-    // usa como clave de su caché), no con un apiGet suelto. Distinto en
-    // cada caso para que ninguno herede el perfil que mockeó el anterior.
-    sesionesCreadas += 1
-    useAuthMock.mockReturnValue({
-      session: { user: { id: `usuario-${sesionesCreadas}` } } as ReturnType<typeof useAuth>['session'],
-      loading: false,
-      signOut: vi.fn(),
-    })
+    apiGetMock.mockReset()
+    olvidarPerfil()
   })
 
-  it('redirige a /login cuando no hay sesión', () => {
-    useAuthMock.mockReturnValue({
-      session: null,
-      loading: false,
-      signOut: vi.fn(),
-    } as ReturnType<typeof useAuth>)
+  it('sin sesión redirige a /login', async () => {
+    renderConRuta('/pagina-protegida', { session: null, loading: false, signOut: async () => {} })
 
-    renderProtectedRoute(['Aprendiz'])
+    expect(await screen.findByText('Pantalla login')).toBeInTheDocument()
+    expect(apiGetMock).not.toHaveBeenCalled()
+  })
 
-    expect(screen.getByText('Página de login')).toBeInTheDocument()
+  it('con sesión y debeCambiarClave=false deja pasar al contenido protegido', async () => {
+    apiGetMock.mockResolvedValue(crearPerfil({ debeCambiarClave: false }))
+    renderConRuta('/pagina-protegida', { session: SESION_FALSA, loading: false, signOut: async () => {} })
+
+    expect(await screen.findByText('Contenido protegido')).toBeInTheDocument()
+  })
+
+  it('con sesión y debeCambiarClave=true redirige a la pantalla de cambio de contraseña obligatorio', async () => {
+    apiGetMock.mockResolvedValue(crearPerfil({ debeCambiarClave: true }))
+    renderConRuta('/pagina-protegida', { session: SESION_FALSA, loading: false, signOut: async () => {} })
+
+    expect(await screen.findByText('Pantalla cambiar clave')).toBeInTheDocument()
+  })
+
+  it('no genera un bucle de redirección si ya está en la pantalla de cambio de contraseña', async () => {
+    apiGetMock.mockResolvedValue(crearPerfil({ debeCambiarClave: true }))
+    renderConRuta('/cambiar-clave-obligatorio', { session: SESION_FALSA, loading: false, signOut: async () => {} })
+
+    expect(await screen.findByText('Pantalla cambiar clave')).toBeInTheDocument()
+  })
+
+  it('si falla la carga del perfil, no bloquea la navegación (falla abierto)', async () => {
+    apiGetMock.mockRejectedValue(new Error('falló'))
+    renderConRuta('/pagina-protegida', { session: SESION_FALSA, loading: false, signOut: async () => {} })
+
+    expect(await screen.findByText('Contenido protegido')).toBeInTheDocument()
+  })
+
+  it('redirige a /login cuando no hay sesión aunque se pidan roles', async () => {
+    renderConRuta('/protegida', { session: null, loading: false, signOut: async () => {} }, ['Aprendiz'])
+
+    expect(await screen.findByText('Pantalla login')).toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalled()
   })
 
   it('permite el contenido cuando el usuario tiene el rol requerido', async () => {
-    apiGetMock.mockResolvedValue(usuarioAprendiz)
+    apiGetMock.mockResolvedValue(
+      crearPerfil({ roles: [{ idRol: 1, nombre: 'Aprendiz' }] }),
+    )
 
-    renderProtectedRoute(['Aprendiz'])
+    renderConRuta('/protegida', { session: SESION_FALSA, loading: false, signOut: async () => {} }, ['Aprendiz'])
 
-    await waitFor(() => {
-      expect(apiGetMock).toHaveBeenCalledWith('/usuarios/me')
-    })
-
-    expect(
-      await screen.findByText('Contenido protegido'),
-    ).toBeInTheDocument()
-
-    expect(
-      screen.queryByText('Dashboard'),
-    ).not.toBeInTheDocument()
+    expect(await screen.findByText('Contenido de ruta con rol')).toBeInTheDocument()
   })
 
   it('redirige a /dashboard cuando el usuario no tiene el rol requerido', async () => {
-    apiGetMock.mockResolvedValue(usuarioInstructor)
+    apiGetMock.mockResolvedValue(
+      crearPerfil({ roles: [{ idRol: 2, nombre: 'Instructor' }] }),
+    )
 
-    renderProtectedRoute(['Aprendiz'])
+    renderConRuta('/protegida', { session: SESION_FALSA, loading: false, signOut: async () => {} }, ['Aprendiz'])
 
-    expect(
-      await screen.findByText('Dashboard'),
-    ).toBeInTheDocument()
-
-    expect(
-      screen.queryByText('Contenido protegido'),
-    ).not.toBeInTheDocument()
+    expect(await screen.findByText('Dashboard')).toBeInTheDocument()
+    expect(screen.queryByText('Contenido de ruta con rol')).not.toBeInTheDocument()
   })
 
-  it('permite cualquier usuario autenticado cuando no se especifican roles', () => {
-    renderProtectedRoute()
+  it('permite cualquier usuario autenticado cuando no se especifican roles', async () => {
+    apiGetMock.mockResolvedValue(crearPerfil())
 
-    expect(
-      screen.getByText('Contenido protegido'),
-    ).toBeInTheDocument()
+    renderConRuta('/protegida', { session: SESION_FALSA, loading: false, signOut: async () => {} })
 
-    expect(apiGetMock).not.toHaveBeenCalled()
+    expect(await screen.findByText('Contenido de ruta con rol')).toBeInTheDocument()
   })
 })

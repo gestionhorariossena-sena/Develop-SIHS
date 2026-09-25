@@ -29,6 +29,10 @@ export interface Usuario {
   sigla?: string | null
   roles: Rol[]
   especialidades: Especialidad[]
+  /** true tras aprobar una solicitud de acceso con credencial temporal —
+   * ProtectedRoute.tsx fuerza CambiarClaveObligatorio.tsx hasta que se
+   * limpie con PATCH /usuarios/me/confirmar-cambio-clave. */
+  debeCambiarClave: boolean
 }
 
 // Espejo de CargaSemanalResponse (backend/app/schemas/usuario.py) —
@@ -243,6 +247,30 @@ export interface AuditoriaCrucesResponse {
 // texto libre — no la tabla relacional `horarios` real (con FKs y
 // detección de cruces), que todavía no existe en el backend. Ver
 // `_Docs/Documentación general/SECCION_ESTUDIANTES.md`.
+// Espejo de AvisoResponse (backend/app/schemas/aviso.py) — GET /avisos/.
+// "extraordinario" es la categoría del destacado tipo "COMUNICADO
+// EXTRAORDINARIO" del mockup; reprog/eventos/sede son las 3 categorías
+// del filtro de píldoras.
+export type CategoriaAviso = 'reprog' | 'eventos' | 'sede' | 'extraordinario'
+
+export interface Aviso {
+  idAviso: number
+  idUsuarioPublicador: string | null
+  publicadorNombre: string | null
+  titulo: string
+  cuerpo: string
+  categoria: CategoriaAviso
+  idFicha: number | null
+  idSede: number | null
+  adjuntoUrl: string | null
+  fechaPublicacion: string
+  vigenteHasta: string | null
+  // Resueltos por el backend: un Aprendiz no tiene permiso sobre /fichas/
+  // ni /sedes/ para traducir esos ids, y el aviso va dirigido a él.
+  fichaCodigo: string | null
+  sedeNombre: string | null
+}
+
 export interface HorarioGuardado {
   idHorarioGuardado: number
   idUsuario: string
@@ -262,10 +290,14 @@ export interface HorarioGuardado {
   fechaCreacion: string
 }
 
+// `tipo` es texto libre en el backend (String(30), sin CHECK constraint) --
+// no un enum cerrado. El único productor real hoy (HorarioService, al
+// reprogramar) usa el literal "Cambios de Aula & Horario", que coincide
+// con el nombre de la primera pestaña del Centro de Notificaciones.
 export interface Notificacion {
   idNotificacion: number
   idUsuario: string
-  tipo: 'cruce' | 'horario' | 'ambiente' | 'sistema'
+  tipo: string
   mensaje: string
   leida: boolean
   fechaCreacion: string
@@ -273,10 +305,30 @@ export interface Notificacion {
   idEntidadRelacionada: string | null
 }
 
+// Espejo de `EtiquetaAnotacion` (Pydantic Literal) en
+// backend/app/schemas/anotacion_horario.py -- acotado a nivel de schema,
+// no un Enum de Postgres.
+export type EtiquetaAnotacion = 'Examen' | 'Entrega' | 'Importante' | 'Normal'
+
+export interface AnotacionHorario {
+  idAnotacion: number
+  idUsuario: string
+  idHorario: number | null
+  nota: string
+  etiqueta: EtiquetaAnotacion
+  recordatorioActivo: boolean
+  fechaCreacion: string
+}
+
+export interface AnotacionHorarioInput {
+  idHorario: number | null
+  nota: string
+  etiqueta: EtiquetaAnotacion
+  recordatorioActivo: boolean
+}
+
 // Espejo de `app/schemas/solicitud_acceso.py#SolicitudAccesoResponse`
-// (Epic SCRUM-96). El contrato se escribió acá primero, mientras el
-// backend no existía; desde H-3 (2026-09-24) esos endpoints están vivos y
-// devuelven exactamente esta forma.
+// (Epic SCRUM-96). Endpoints vivos desde H-3.
 export interface SolicitudAcceso {
   idSolicitud: number
   nombre: string
@@ -313,46 +365,6 @@ export interface Mensaje {
   adjuntoUrl: string | null
   leido: boolean
   fechaEnvio: string
-}
-
-/** Espejo de `app/schemas/anotacion_horario.py`. Nota privada del Aprendiz
- * sobre un bloque de SU horario — solo él las ve y solo él las escribe.
- *
- * `recordatorioActivo` guarda la preferencia y nada más: no hay envío de
- * recordatorios (push ni correo) en el backend, así lo dice el modelo. La
- * pantalla no puede prometer una alarma. */
-export type EtiquetaAnotacion = 'Examen' | 'Entrega' | 'Importante' | 'Normal'
-
-export interface AnotacionHorario {
-  idAnotacion: number
-  idUsuario: string
-  idHorario: number
-  nota: string
-  etiqueta: EtiquetaAnotacion
-  recordatorioActivo: boolean
-  fechaCreacion: string
-}
-
-/** Espejo de `app/schemas/aviso.py`. Comunicado publicado por coordinación,
- * general del centro o dirigido a una ficha/sede. `fichaCodigo`,
- * `sedeNombre` y `publicadoPor` los resuelve el backend: un Aprendiz no
- * tiene permiso sobre /fichas/ ni /sedes/ para hacerlo por su cuenta. */
-export type CategoriaAviso = 'reprog' | 'eventos' | 'sede' | 'extraordinario'
-
-export interface Aviso {
-  idAviso: number
-  idUsuarioPublicador: string
-  titulo: string
-  cuerpo: string
-  categoria: CategoriaAviso
-  idFicha: number | null
-  idSede: number | null
-  adjuntoUrl: string | null
-  fechaPublicacion: string
-  vigenteHasta: string | null
-  fichaCodigo: string | null
-  sedeNombre: string | null
-  publicadoPor: string | null
 }
 
 /** Espejo de `app/schemas/solicitud_cambio_horario.py`. Un instructor

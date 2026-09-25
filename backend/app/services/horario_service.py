@@ -44,7 +44,10 @@ class HorarioService:
         con los nombres/códigos de instructor/ficha/ambiente/resultado —
         movido acá desde api/v1/horarios.py (`_a_response`) para
         reutilizarlo también en los GET por instructor/ficha/ambiente que
-        alimentan el drawer de relacionados (SCRUM-46/47/48).
+        alimentan el drawer de relacionados (SCRUM-46/47/48), y por GET
+        /ficha-usuario/mi-horario (mismo shape para Coordinador/
+        Administrador viendo todos los horarios y para el Aprendiz viendo
+        los de su propia ficha).
 
         `dias`: si el llamador ya los trajo en bloque para MUCHOS horarios
         a la vez (ver HorarioRepository.obtener_dias_por_horarios), se
@@ -315,13 +318,17 @@ class HorarioService:
         return guardado
 
     @staticmethod
-    def obtener_publicados_por_instructor(db, id_instructor) -> list[dict]:
+    def obtener_publicados_por_instructor(
+        db, id_instructor, fecha_inicio=None, fecha_fin=None
+    ) -> list[dict]:
         """GET /usuarios/me/horarios — autoservicio del instructor ("Mi
         horario"): solo lo activo y publicado, nunca un borrador que el
         coordinador todavía está armando."""
         return [
             HorarioService.a_response(db, h)
-            for h in HorarioRepository.obtener_por_instructor(db, id_instructor)
+            for h in HorarioRepository.obtener_por_instructor(
+                db, id_instructor, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+            )
             if h.publicado
         ]
 

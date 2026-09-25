@@ -1,60 +1,52 @@
 from datetime import datetime
+from enum import Enum
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
-from app.schemas.rol import RolResponse
+
+class EstadoSolicitudAcceso(str, Enum):
+    PENDIENTE = "pendiente"
+    APROBADA = "aprobada"
+    RECHAZADA = "rechazada"
 
 
 class SolicitudAccesoCreate(BaseModel):
-    """Lo que manda "¿Eres coordinador? Solicita acceso" del registro
-    (Registro.tsx) — público, sin sesión. `idRolSolicitado` es opcional
-    porque ese formulario es específicamente para pedir Coordinador y no
-    tiene selector de rol; el servicio resuelve el default."""
+    """POST /solicitudes-acceso/ -- público, la persona todavía no tiene
+    cuenta en Supabase Auth en este punto (por eso texto libre, no un
+    idUsuario)."""
 
-    nombre: str
+    nombre: str = Field(min_length=1, max_length=150)
     email: EmailStr
-    numeroDocumento: str | None = None
-    motivo: str
-    idRolSolicitado: int | None = None
-
-
-class SolicitudAccesoAprobar(BaseModel):
-    """El Administrador confirma con qué rol entra la persona: el panel
-    muestra el solicitado pero deja cambiarlo antes de aprobar."""
-
-    idRol: int
-
-
-class SolicitudAccesoRechazar(BaseModel):
-    motivoRechazo: str
+    numeroDocumento: str = Field(min_length=1, max_length=30)
+    idRolSolicitado: int
+    motivo: str = Field(min_length=1)
 
 
 class SolicitudAccesoResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     idSolicitud: int
     nombre: str
     email: str
-    numeroDocumento: str | None = None
+    numeroDocumento: str
     idRolSolicitado: int
-    rolSolicitado: RolResponse
+    # Resuelto en el servicio (join con roles) -- igual criterio que
+    # HorarioService.a_response con instructorNombre/ambienteNombre, para
+    # no obligar al frontend a pedirlo aparte.
+    rolSolicitado: str | None = None
     motivo: str
-    estado: str
+    estado: EstadoSolicitudAcceso
     motivoRechazo: str | None = None
     fechaSolicitud: datetime
     fechaResolucion: datetime | None = None
     idAdminResolvio: UUID | None = None
 
 
-class SolicitudAccesoAprobada(BaseModel):
-    """Respuesta de aprobar. `passwordTemporal` viaja en la respuesta
-    porque hoy el correo no sale: el SMTP del proyecto de Supabase sigue
-    sin configurar (H-15 / SCRUM-129). Hasta entonces el Administrador
-    necesita poder leerla para pasársela a la persona por otro medio —
-    cuando ese correo funcione, este campo deja de tener razón de ser."""
+class SolicitudAccesoAprobar(BaseModel):
+    """El admin puede otorgar un rol distinto al solicitado -- el mockup
+    lo permite vía un selector precargado con el rol solicitado."""
 
-    solicitud: SolicitudAccesoResponse
-    email: str
-    passwordTemporal: str | None = None
-    correoEnviado: bool
+    idRol: int
+
+
+class SolicitudAccesoRechazar(BaseModel):
+    motivoRechazo: str = Field(min_length=1)

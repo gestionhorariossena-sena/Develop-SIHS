@@ -1,7 +1,8 @@
 from uuid import UUID
+from datetime import date
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -37,6 +38,19 @@ def obtener_mi_perfil(usuario: Usuario = Depends(get_current_user)):
     """Perfil del usuario autenticado — confirma que Supabase Auth + la
     base de datos están conectados end-to-end."""
     return usuario
+
+
+@router.patch("/me/confirmar-cambio-clave", response_model=UsuarioResponse)
+def confirmar_cambio_clave(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """El frontend llama esto justo después de un
+    supabase.auth.updateUser({ password }) exitoso en la pantalla de
+    cambio de contraseña obligatorio (primer login con credencial
+    temporal) — limpia debeCambiarClave para que ProtectedRoute deje
+    de redirigir ahí."""
+    return UsuarioService.confirmar_cambio_clave(db, usuario)
 
 
 @router.post("/login-documento", response_model=UsuarioLoginDocumentoResponse)
@@ -75,6 +89,8 @@ def iniciar_sesion_por_documento(data: UsuarioLoginDocumentoRequest, db: Session
 
 @router.get("/me/horarios", response_model=list[HorarioResponse])
 def obtener_mis_horarios(
+    fecha_inicio: date | None = Query(default=None, alias="fechaInicio"),
+    fecha_fin: date | None = Query(default=None, alias="fechaFin"),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
@@ -85,7 +101,14 @@ def obtener_mis_horarios(
     ya está limitado a `usuario.idUsuario` (nunca a un id que venga del
     request). Solo devuelve lo publicado — un instructor no debe ver un
     borrador que el coordinador todavía está armando."""
-    return HorarioService.obtener_publicados_por_instructor(db, usuario.idUsuario)
+    if (fecha_inicio is None) != (fecha_fin is None):
+        raise HTTPException(status_code=422, detail="fechaInicio y fechaFin deben enviarse juntas.")
+    if fecha_inicio is not None and fecha_inicio > fecha_fin:
+        raise HTTPException(status_code=422, detail="fechaInicio no puede ser posterior a fechaFin.")
+
+    return HorarioService.obtener_publicados_por_instructor(
+        db, usuario.idUsuario, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+    )
 
 
 @router.get("/me/horarios/pdf")

@@ -29,6 +29,10 @@ class AvisoResponse(BaseModel):
 
     idAviso: int
     idUsuarioPublicador: UUID
+    # Enriquecido por AvisoService/_a_response (mismo criterio que
+    # HorarioService.a_response) para no obligar al frontend a resolver
+    # el nombre del publicador con una llamada aparte.
+    publicadorNombre: str | None = None
     titulo: str
     cuerpo: str
     categoria: str
@@ -45,4 +49,3 @@ class AvisoResponse(BaseModel):
     # su cuenta, y el aviso va dirigido justamente a él.
     fichaCodigo: str | None = None
     sedeNombre: str | None = None
-    publicadoPor: str | None = None

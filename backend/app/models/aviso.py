@@ -48,6 +48,3 @@ class Aviso(Base):
     def sedeNombre(self) -> str | None:
         return self.sede.nombre if self.sede else None
 
-    @property
-    def publicadoPor(self) -> str | None:
-        return self.publicador.nombre if self.publicador else None

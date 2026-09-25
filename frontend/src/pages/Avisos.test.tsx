@@ -10,6 +10,7 @@ const APRENDIZ: Usuario = {
   nombre: 'Sara Rodríguez',
   email: 'sara@mail.com',
   estado: 'activo',
+  debeCambiarClave: false,
   fechaRegistro: '2026-01-01',
   roles: [{ idRol: 4, nombre: 'Aprendiz' }],
   especialidades: [],
@@ -29,7 +30,7 @@ function aviso(parcial: Partial<Aviso> = {}): Aviso {
     vigenteHasta: null,
     fichaCodigo: null,
     sedeNombre: null,
-    publicadoPor: 'Ana Martínez',
+    publicadorNombre: 'Ana Martínez',
     ...parcial,
   }
 }

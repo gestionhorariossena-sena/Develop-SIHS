@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.ambiente import Ambiente
+from app.models.dia_semana import DiaSemana
 from app.models.horario import Horario, horario_dia
+from app.models.trimestre import Trimestre
 
 def _relaciones_para_respuesta():
     """Relaciones que HorarioService.a_response necesita leer para CADA
@@ -68,6 +70,14 @@ class HorarioRepository:
         for fila in filas:
             dias_por_horario.setdefault(fila.idHorario, []).append(fila.idDia)
         return dias_por_horario
+
+    @staticmethod
+    def obtener_nombres_dias(db: Session, id_horario: int) -> str:
+        """'Lunes y Miércoles' — para el PDF de PdfService, que necesita
+        texto legible en vez de ids de "diasDeLaSemana"."""
+        ids_dias = HorarioRepository.obtener_dias(db, id_horario)
+        dias = db.query(DiaSemana).filter(DiaSemana.idDia.in_(ids_dias)).order_by(DiaSemana.idDia).all()
+        return " y ".join(d.nombreDia for d in dias) if dias else "días sin especificar"
 
     @staticmethod
     def crear(db: Session, horario: Horario, dias: list[int]):
@@ -137,7 +147,11 @@ class HorarioRepository:
 
     @staticmethod
     def obtener_por_instructor(
-        db: Session, id_instructor, excluir_id: int | None = None
+        db: Session,
+        id_instructor,
+        excluir_id: int | None = None,
+        fecha_inicio=None,
+        fecha_fin=None,
     ) -> list[Horario]:
         """Todos los horarios ya asignados a un instructor, sin filtrar por
         día/hora — HorarioService los usa para sumar horas semanales y
@@ -145,14 +159,20 @@ class HorarioRepository:
         los activos: uno desactivado no debería sumar a la carga semanal
         ni aparecer como vigente en el drawer de relacionados."""
         query = db.query(Horario).filter(Horario.idInstructor == id_instructor, Horario.activo.is_(True))
+        if fecha_inicio is not None and fecha_fin is not None:
+            query = query.join(Trimestre, Horario.idTrimestre == Trimestre.idTrimestre).filter(
+                Trimestre.fechaInicio <= fecha_fin,
+                Trimestre.fechaFin >= fecha_inicio,
+            )
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)
         return query.all()
 
     @staticmethod
     def obtener_por_ficha(db: Session, id_ficha: int) -> list[Horario]:
-        """GET /fichas/{id}/horarios (SCRUM-47) y /ficha-usuario/mi-horario
-        del Aprendiz — grid/relacionados de una ficha. Con eager loading
+        """GET /fichas/{id}/horarios (SCRUM-47), /ficha-usuario/mi-horario
+        del Aprendiz y la grilla semanal de GET /fichas/{id}/pdf
+        (PdfService) — grid/relacionados de una ficha. Con eager loading
         (ver _relaciones_para_respuesta): sin esto, una ficha con ~15
         horarios tardaba ~10s en /ficha-usuario/mi-horario (medido en vivo
         el 2026-09-14) por el mismo N+1 que ya se resolvió en obtener_todos."""
