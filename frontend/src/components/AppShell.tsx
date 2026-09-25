@@ -377,7 +377,7 @@ export function AppShell({ activo, children }: AppShellProps) {
             * derecho en casi todas las vistas. */}
           <nav
             ref={dropdownRef}
-            className="hidden min-w-0 flex-1 items-center justify-center gap-1 overflow-hidden lg:flex"
+            className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex"
           >
             <Link
               to={INICIO.ruta!}
