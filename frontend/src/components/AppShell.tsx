@@ -56,10 +56,13 @@ const NAV: GrupoNav[] = [
     grupo: 'Mi trabajo',
     items: [
       { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
+      // Pasar lista: solo el instructor, y solo de sus propias clases.
+      { etiqueta: 'Asistencia', ruta: '/asistencia', soloInstructor: true },
       { etiqueta: 'Mi horario', ruta: '/mi-horario-aprendiz', soloAprendiz: true },
       // Solo el Aprendiz abre conversaciones (lo valida el backend), así
       // que por ahora el ítem es suyo; la bandeja del Instructor es otra
       // pantalla pendiente de diseño.
+      { etiqueta: 'Mi asistencia', ruta: '/mi-asistencia', soloAprendiz: true },
       { etiqueta: 'Mensajes', ruta: '/mensajes', soloAprendiz: true },
       // Centro de notificaciones del Aprendiz (pantalla propia, distinta
       // de la campana del navbar: ahí caben el historial y el detalle).
