@@ -31,6 +31,8 @@ import { Programas } from '../pages/Programas'
 import { CambiosHorario } from '../pages/CambiosHorario'
 import { Avisos } from '../pages/Avisos'
 import { MensajesAprendiz } from '../pages/MensajesAprendiz'
+import { AsistenciaInstructor } from '../pages/AsistenciaInstructor'
+import { MiAsistencia } from '../pages/MiAsistencia'
 import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
 import { Notificaciones } from '../pages/Notificaciones'
 
@@ -148,6 +150,23 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={GESTION}>
             <AuditoriaCruces />
+          </ProtectedRoute>
+        }
+      />
+      {/* Pasar lista es del Instructor; el Aprendiz solo lee la suya. */}
+      <Route
+        path="/asistencia"
+        element={
+          <ProtectedRoute roles={INSTRUCTOR}>
+            <AsistenciaInstructor />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mi-asistencia"
+        element={
+          <ProtectedRoute roles={APRENDIZ}>
+            <MiAsistencia />
           </ProtectedRoute>
         }
       />

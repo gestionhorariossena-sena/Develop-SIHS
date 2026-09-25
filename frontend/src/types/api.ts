@@ -558,3 +558,66 @@ export interface PreguntaHorarioRequest {
 export interface RespuestaPreguntaHorario {
   respuesta: string
 }
+
+/** Espejo de `app/schemas/asistencia.py`. La asistencia la certifica el
+ * instructor que dicta ESA clase; el aprendiz solo lee la suya. */
+export type EstadoAsistencia = 'presente' | 'tardanza' | 'excusa' | 'ausente'
+
+export interface AprendizDeSesion {
+  idUsuario: string
+  nombre: string
+  numeroDocumento: string | null
+  rolEnFicha: string | null
+  /** null = todavía no se le pasó lista ese día. No es "ausente". */
+  estado: EstadoAsistencia | null
+  horaMarcacion: string | null
+  referenciaExcusa: string | null
+}
+
+export interface SesionAsistencia {
+  idHorario: number
+  fechaSesion: string
+  fichaCodigo: string | null
+  resultadoDescripcion: string | null
+  ambienteNombre: string | null
+  horaInicio: string
+  horaFin: string
+  aprendices: AprendizDeSesion[]
+  registradaEn: string | null
+  registradaPor: string | null
+}
+
+export interface MarcaAsistencia {
+  idUsuarioAprendiz: string
+  estado: EstadoAsistencia
+  referenciaExcusa?: string | null
+}
+
+export interface AsistenciaDeAprendiz {
+  idAsistencia: number
+  idHorario: number
+  fechaSesion: string
+  estado: EstadoAsistencia
+  referenciaExcusa: string | null
+  resultadoDescripcion: string | null
+  instructorNombre: string | null
+  ambienteNombre: string | null
+  horaInicio: string
+  horaFin: string
+}
+
+export interface ResumenAsistencia {
+  registradas: number
+  presente: number
+  tardanza: number
+  excusa: number
+  ausente: number
+  /** Sobre sesiones REGISTRADAS, no sobre las programadas del trimestre:
+   * el sistema solo sabe de las clases a las que se les pasó lista. */
+  porcentaje: number
+}
+
+export interface MiAsistencia {
+  resumen: ResumenAsistencia
+  sesiones: AsistenciaDeAprendiz[]
+}

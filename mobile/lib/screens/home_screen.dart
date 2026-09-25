@@ -9,6 +9,7 @@ import '../providers/horario_provider.dart';
 import '../widgets/estados_horario.dart';
 import '../widgets/horario_card.dart';
 import '../widgets/sesion_card.dart';
+import 'asistencia_screen.dart';
 import 'perfil_screen.dart';
 
 /// "Mi horario" — implementa los diseños "Vista movil Aprendiz" y "Vista
@@ -50,32 +51,44 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = context.watch<AuthProvider>();
     final horarios = context.watch<HorarioProvider>();
     final usuario = auth.usuarioActual;
+    final muestraAsistencia = usuario?.esAprendiz ?? false;
 
     if (usuario == null && auth.cargandoPerfil) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
-      body: _pestana == 0
-          ? _VistaHorario(
-              usuario: usuario,
-              diaElegido: _diaElegido,
-              jornadaElegida: _jornadaElegida,
-              onElegirDia: (d) => setState(() => _diaElegido = d),
-              onElegirJornada: (j) => setState(() => _jornadaElegida = j),
-              onRecargar: _cargar,
-            )
-          : const PerfilScreen(),
+      body: switch (_pestana) {
+        0 => _VistaHorario(
+            usuario: usuario,
+            diaElegido: _diaElegido,
+            jornadaElegida: _jornadaElegida,
+            onElegirDia: (d) => setState(() => _diaElegido = d),
+            onElegirJornada: (j) => setState(() => _jornadaElegida = j),
+            onRecargar: _cargar,
+          ),
+        // Solo el Aprendiz tiene pestaña de asistencia: el instructor la
+        // registra desde la web (el móvil es read-only, ver
+        // ARQUITECTURA_MOBILE.md).
+        1 when muestraAsistencia => const AsistenciaScreen(),
+        _ => const PerfilScreen(),
+      },
       bottomNavigationBar: NavigationBar(
         selectedIndex: _pestana,
         onDestinationSelected: (i) => setState(() => _pestana = i),
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month_rounded),
             label: 'Mi horario',
           ),
-          NavigationDestination(
+          if (muestraAsistencia)
+            const NavigationDestination(
+              icon: Icon(Icons.fact_check_outlined),
+              selectedIcon: Icon(Icons.fact_check_rounded),
+              label: 'Asistencia',
+            ),
+          const NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(Icons.person_rounded),
             label: 'Perfil',
