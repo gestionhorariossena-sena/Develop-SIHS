@@ -165,6 +165,10 @@ export function AppShell({ activo, children }: AppShellProps) {
   const [errorPerfil, setErrorPerfil] = useState<string | null>(null)
 
   const [grupoAbierto, setGrupoAbierto] = useState<string | null>(null)
+  // El nav central es `lg:flex`: por debajo de 1024px desaparecía entero y
+  // no había nada que lo reemplazara, así que en una ventana reducida o en
+  // tablet no quedaba forma de navegar — solo logo y avatar.
+  const [menuCompactoAbierto, setMenuCompactoAbierto] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const [notifAbiertas, setNotifAbiertas] = useState(false)
@@ -351,9 +355,21 @@ export function AppShell({ activo, children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-surface">
-      <header className="fixed top-0 z-50 w-full bg-surface-container-lowest/90 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl print:hidden dark:bg-inverse-surface/90">
+      <header className="fixed top-0 z-50 w-full border-b border-outline-variant/60 bg-surface-container-lowest/90 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl print:hidden">
         <div className="flex h-16 w-full items-center justify-between gap-3 px-4 md:px-6">
           <div className="flex shrink-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMenuCompactoAbierto((abierto) => !abierto)}
+              aria-label="Menú de navegación"
+              aria-expanded={menuCompactoAbierto}
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-outline text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface lg:hidden dark:border-slate-700"
+            >
+              <span className="material-symbols-outlined text-[20px]">
+                {menuCompactoAbierto ? 'close' : 'menu'}
+              </span>
+            </button>
+
             <Link to="/dashboard" className="flex items-center gap-2">
               <img src={senaLogo} alt="SENA" className="h-9 w-9 rounded-xl object-cover shadow-sm" />
               <div className="hidden flex-col sm:flex">
@@ -498,6 +514,36 @@ export function AppShell({ activo, children }: AppShellProps) {
             </button>
           </div>
         </div>
+
+        {menuCompactoAbierto && (
+          <nav
+            aria-label="Navegación principal"
+            className="max-h-[70vh] overflow-y-auto border-t border-outline-variant bg-surface-container-lowest px-4 py-3 lg:hidden"
+          >
+            <Link
+              to={INICIO.ruta!}
+              onClick={() => setMenuCompactoAbierto(false)}
+              className={`block rounded-lg px-3 py-2 text-sm font-semibold ${
+                activo === INICIO.etiqueta
+                  ? 'bg-primary-container text-on-primary-container'
+                  : 'text-on-surface-variant hover:bg-surface-container-high'
+              }`}
+            >
+              {INICIO.etiqueta}
+            </Link>
+
+            {nav.map((grupo) => (
+              <div key={grupo.grupo} className="mt-3">
+                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                  {grupo.grupo}
+                </p>
+                <div onClick={() => setMenuCompactoAbierto(false)}>
+                  {grupo.items.map((item) => renderItemNavDropdown(item))}
+                </div>
+              </div>
+            ))}
+          </nav>
+        )}
       </header>
 
       {errorPerfil && (

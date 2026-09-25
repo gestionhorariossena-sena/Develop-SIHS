@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import senaLogo from '../assets/sena-logo.jpeg'
+import { ThemeSelector } from '../components/ThemeSelector'
 
 /**
  * Página pública de presentación (pre-login) — primera pantalla en "/".
@@ -65,6 +66,10 @@ export function Presentacion() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* El selector vivía solo dentro de AppShell: quien todavía no
+            * ha entrado no podía cambiar el tema, justo en la primera
+            * pantalla que ve. */}
+          <ThemeSelector />
           <Link to="/login" className="text-sm font-semibold text-on-surface-variant hover:text-on-surface">
             Iniciar sesión
           </Link>
@@ -78,7 +83,7 @@ export function Presentacion() {
         </div>
       </header>
 
-      <section className="bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_55%,_#ffffff_100%)] px-6 py-16">
+      <section className="bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_55%,_#ffffff_100%)] px-6 py-16 dark:bg-[radial-gradient(ellipse_at_top,_#14532d_0%,_#0f172a_55%)]">
         <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
           <div>
             <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-surface-container-lowest px-3 py-1 text-xs font-semibold text-on-surface-variant shadow-sm">
