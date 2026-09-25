@@ -49,7 +49,10 @@ describe('AppShell', () => {
     }
   })
 
-  it('un Instructor ve "Mi horario" plano en el navbar (un solo ítem no abre desplegable)', async () => {
+  // Desde que pasar lista es suyo, el Instructor tiene dos pantallas en
+  // "Mi trabajo" (horario y asistencia), así que el grupo ya no se
+  // renderiza como link plano sino como desplegable.
+  it('un Instructor ve su horario y su asistencia en el grupo "Mi trabajo"', async () => {
     mockearApiGet(crearPerfil(['Instructor']))
     renderConProviders(
       <AppShell activo="Inicio">
@@ -57,10 +60,11 @@ describe('AppShell', () => {
       </AppShell>,
     )
 
-    expect(await screen.findByText('Mi horario')).toBeInTheDocument()
-    // Un solo ítem en el grupo -> se renderiza como link plano, sin botón
-    // de desplegable "Mi trabajo".
-    expect(screen.queryByRole('button', { name: 'Mi trabajo' })).not.toBeInTheDocument()
+    const botonGrupo = await screen.findByRole('button', { name: 'Mi trabajo' })
+    fireEvent.click(botonGrupo)
+
+    expect(screen.getByText('Mi horario')).toBeInTheDocument()
+    expect(screen.getByText('Asistencia')).toBeInTheDocument()
   })
 
   it('un Coordinador no ve el grupo "Mi trabajo" ni sus pantallas exclusivas de Aprendiz/Instructor', async () => {
