@@ -120,10 +120,10 @@ export function AsistenciaInstructor() {
   const cargarSesion = useCallback(() => {
     if (!idHorario || !fecha) return
 
-    setError(null)
     apiGet<SesionAsistencia>(`/asistencias/sesion?idHorario=${idHorario}&fecha=${fecha}`)
       .then((datos) => {
         setSesion(datos)
+        setError(null)
         // Lo ya registrado entra como estado inicial: pasar lista otra vez
         // es corregir, no empezar de cero.
         const previas: Record<string, EstadoAsistencia> = {}
