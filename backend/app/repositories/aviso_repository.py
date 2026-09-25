@@ -1,6 +1,14 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.models.aviso import Aviso
+
+# El tablón muestra el código de ficha, el nombre de sede y quién publicó,
+# no los ids: sin eager loading eso serían 3 queries por aviso.
+_RELACIONES = (
+    joinedload(Aviso.ficha),
+    joinedload(Aviso.sede),
+    joinedload(Aviso.publicador),
+)
 
 
 class AvisoRepository:
@@ -13,7 +21,7 @@ class AvisoRepository:
 
     @staticmethod
     def obtener_todos(db: Session, *, categoria: str | None = None, id_ficha: int | None = None) -> list[Aviso]:
-        query = db.query(Aviso)
+        query = db.query(Aviso).options(*_RELACIONES)
 
         if categoria is not None:
             query = query.filter(Aviso.categoria == categoria)

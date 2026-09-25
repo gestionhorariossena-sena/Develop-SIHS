@@ -1,128 +1,134 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { Avisos } from './Avisos'
-import type { Aviso } from '../types/api'
+import type { Aviso, Usuario } from '../types/api'
 
-const AVISOS: Aviso[] = [
-  {
+const APRENDIZ: Usuario = {
+  idUsuario: 'a-1',
+  nombre: 'Sara Rodríguez',
+  email: 'sara@mail.com',
+  estado: 'activo',
+  debeCambiarClave: false,
+  fechaRegistro: '2026-01-01',
+  roles: [{ idRol: 4, nombre: 'Aprendiz' }],
+  especialidades: [],
+}
+
+function aviso(parcial: Partial<Aviso> = {}): Aviso {
+  return {
     idAviso: 1,
-    idUsuarioPublicador: 'u1',
-    publicadorNombre: 'Ing. Maritza Benítez',
-    titulo: 'Reprogramación jornada del viernes',
-    cuerpo: 'Las sesiones presenciales del viernes pasan a modalidad virtual.',
-    categoria: 'extraordinario',
-    idFicha: null,
-    idSede: null,
-    adjuntoUrl: 'https://example.com/circular.pdf',
-    fechaPublicacion: '2026-05-27T08:30:00Z',
-    vigenteHasta: null,
-  },
-  {
-    idAviso: 2,
-    idUsuarioPublicador: 'u2',
-    publicadorNombre: 'Coord. Mónica Peláez',
-    titulo: 'Sesión de Metodologías Ágiles cancelada',
-    cuerpo: 'La clase del jueves con la Instructora Diana López queda suspendida.',
+    idUsuarioPublicador: 'c-1',
+    titulo: 'Reprogramación de la jornada del viernes',
+    cuerpo: 'La jornada presencial del viernes se traslada al lunes por encuentro pedagógico.',
     categoria: 'reprog',
-    idFicha: 10,
-    idSede: null,
-    adjuntoUrl: null,
-    fechaPublicacion: '2026-05-26T16:40:00Z',
-    vigenteHasta: null,
-  },
-  {
-    idAviso: 3,
-    idUsuarioPublicador: 'u2',
-    publicadorNombre: 'Coord. Mónica Peláez',
-    titulo: 'Feria de Empleabilidad SENA Tech 2025',
-    cuerpo: 'Convocatoria abierta para stands de exhibición de proyectos formativos.',
-    categoria: 'eventos',
     idFicha: null,
     idSede: null,
     adjuntoUrl: null,
-    fechaPublicacion: '2026-05-24T09:00:00Z',
+    fechaPublicacion: new Date(Date.now() - 3 * 3600_000).toISOString(),
     vigenteHasta: null,
-  },
-]
+    fichaCodigo: null,
+    sedeNombre: null,
+    publicadorNombre: 'Ana Martínez',
+    ...parcial,
+  }
+}
 
 const apiGetMock = vi.fn()
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
-  ApiError: class ApiError extends Error {},
+  ApiError: class ApiError extends Error {
+    status: number
+    constructor(status: number, message: string) {
+      super(message)
+      this.status = status
+    }
+  },
 }))
 
-/** AppShell también llama a apiGet('/usuarios/me') al montar. */
-function mockeaAvisosYPerfil(avisos: unknown) {
+function mockear(avisos: Aviso[]) {
   apiGetMock.mockImplementation((path: string) => {
-    if (path === '/avisos/') return typeof avisos === 'function' ? avisos() : Promise.resolve(avisos)
-    return Promise.reject(new Error('no mockeado en este test'))
+    if (path === '/avisos/') return Promise.resolve(avisos)
+    if (path === '/usuarios/me') return Promise.resolve(APRENDIZ)
+    if (path === '/notificaciones/') return Promise.resolve([])
+    return Promise.resolve([])
   })
 }
 
 describe('Avisos', () => {
-  it('carga los avisos desde el backend y destaca el extraordinario como hero', async () => {
-    mockeaAvisosYPerfil(AVISOS)
+  it('muestra el comunicado con su categoría, destinatario y quién lo publicó', async () => {
+    mockear([aviso()])
     renderConProviders(<Avisos />)
 
-    expect(await screen.findByText('Reprogramación jornada del viernes')).toBeInTheDocument()
-    expect(apiGetMock).toHaveBeenCalledWith('/avisos/')
-    // El hero no se repite en el tablón de abajo.
-    expect(screen.getAllByText('Reprogramación jornada del viernes')).toHaveLength(1)
-    expect(screen.getByText('Sesión de Metodologías Ágiles cancelada')).toBeInTheDocument()
-    expect(screen.getByText('Feria de Empleabilidad SENA Tech 2025')).toBeInTheDocument()
+    expect(await screen.findByText('Reprogramación de la jornada del viernes')).toBeInTheDocument()
+    expect(screen.getByText('Reprogramación')).toBeInTheDocument()
+    // Sin ficha ni sede, el aviso es del centro entero.
+    expect(screen.getByText('Todo el centro')).toBeInTheDocument()
+    expect(screen.getByText('Publicado por Ana Martínez')).toBeInTheDocument()
+    expect(screen.getByText('hace 3 horas')).toBeInTheDocument()
   })
 
-  it('el filtro por categoría muestra solo los avisos de esa categoría', async () => {
-    mockeaAvisosYPerfil(AVISOS)
+  // El backend resuelve el código de ficha porque un Aprendiz no tiene
+  // permiso sobre /fichas/ para hacerlo por su cuenta.
+  it('un aviso dirigido a una ficha muestra su código, no el id', async () => {
+    mockear([aviso({ idFicha: 21, fichaCodigo: '3171618' })])
+    renderConProviders(<Avisos />)
+
+    expect(await screen.findByText('Ficha 3171618')).toBeInTheDocument()
+    expect(screen.queryByText('Ficha 21')).not.toBeInTheDocument()
+  })
+
+  it('filtra por categoría sin volver a pedirle nada al backend', async () => {
+    mockear([
+      aviso({ idAviso: 1, titulo: 'Se reprograma el viernes', categoria: 'reprog' }),
+      aviso({ idAviso: 2, titulo: 'Semana de la innovación', categoria: 'eventos' }),
+    ])
     const usuario = userEvent.setup()
     renderConProviders(<Avisos />)
-    await screen.findByText('Sesión de Metodologías Ágiles cancelada')
 
-    await usuario.click(screen.getByRole('button', { name: 'Cancelaciones & Reprogramaciones' }))
+    await screen.findByText('Se reprograma el viernes')
+    apiGetMock.mockClear()
 
-    expect(screen.getByText('Sesión de Metodologías Ágiles cancelada')).toBeInTheDocument()
-    expect(screen.queryByText('Feria de Empleabilidad SENA Tech 2025')).not.toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: /Eventos y convocatorias/ }))
+
+    expect(screen.getByText('Semana de la innovación')).toBeInTheDocument()
+    expect(screen.queryByText('Se reprograma el viernes')).not.toBeInTheDocument()
+    expect(apiGetMock).not.toHaveBeenCalledWith('/avisos/')
   })
 
-  it('el buscador filtra por título o cuerpo', async () => {
-    mockeaAvisosYPerfil(AVISOS)
-    const usuario = userEvent.setup()
+  it('un aviso con la vigencia pasada se marca como vencido, no se esconde', async () => {
+    mockear([aviso({ vigenteHasta: '2026-01-31' })])
     renderConProviders(<Avisos />)
-    await screen.findByText('Sesión de Metodologías Ágiles cancelada')
 
-    await usuario.type(screen.getByLabelText('Buscar por tema, ficha o ambiente'), 'Feria')
-
-    expect(screen.queryByText('Sesión de Metodologías Ágiles cancelada')).not.toBeInTheDocument()
-    expect(screen.getByText('Feria de Empleabilidad SENA Tech 2025')).toBeInTheDocument()
+    expect(await screen.findByText('Vencido')).toBeInTheDocument()
+    expect(screen.getByText('Reprogramación de la jornada del viernes')).toBeInTheDocument()
   })
 
-  it('muestra el link real a Mesa de Ayuda', async () => {
-    mockeaAvisosYPerfil(AVISOS)
+  it('el adjunto se ofrece como enlace, porque el backend solo guarda una URL', async () => {
+    mockear([aviso({ adjuntoUrl: 'https://sena.edu.co/circular-089.pdf' })])
     renderConProviders(<Avisos />)
-    await screen.findByText('Reprogramación jornada del viernes')
 
-    const link = screen.getByRole('link', { name: 'Crear Radicado en Mesa de Ayuda' })
-    expect(link).toHaveAttribute('href', 'https://mesadeayuda.sena.edu.co')
+    const enlace = await screen.findByRole('link', { name: /Ver documento adjunto/ })
+    expect(enlace).toHaveAttribute('href', 'https://sena.edu.co/circular-089.pdf')
   })
 
-  it('el botón "Ver cómo afecta mi horario" está deshabilitado', async () => {
-    mockeaAvisosYPerfil(AVISOS)
+  it('sin comunicados explica qué va a aparecer, en vez de dejar la pantalla en blanco', async () => {
+    mockear([])
     renderConProviders(<Avisos />)
-    await screen.findByText('Reprogramación jornada del viernes')
 
-    expect(screen.getByRole('button', { name: 'Ver cómo afecta mi horario' })).toBeDisabled()
+    expect(await screen.findByText('Todavía no hay comunicados publicados')).toBeInTheDocument()
   })
 
-  it('muestra el error del backend si la carga falla', async () => {
-    apiGetMock.mockImplementation((path: string) =>
-      path === '/avisos/' ? Promise.reject(new Error('falló')) : Promise.reject(new Error('no mockeado')),
-    )
+  it('el más reciente va destacado arriba y el resto en la lista', async () => {
+    mockear([
+      aviso({ idAviso: 9, titulo: 'El más reciente' }),
+      aviso({ idAviso: 8, titulo: 'Uno anterior' }),
+    ])
     renderConProviders(<Avisos />)
 
-    await waitFor(() => {
-      expect(screen.getByText('No se pudo cargar los avisos.')).toBeInTheDocument()
-    })
+    const destacado = (await screen.findByText('El más reciente')).closest('article')!
+    expect(within(destacado).getByText('El más reciente')).toBeInTheDocument()
+    expect(screen.getByText('Uno anterior').closest('li')).not.toBeNull()
   })
 })

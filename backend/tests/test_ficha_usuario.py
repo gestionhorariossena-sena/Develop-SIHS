@@ -271,7 +271,10 @@ def test_actualizar_horario_notifica_al_aprendiz_si_cambia_ambiente_o_instructor
     assert notificaciones.status_code == 200
     assert len(notificaciones.json()) == 1
     notificacion = notificaciones.json()[0]
-    assert notificacion["tipo"] == "Cambios de Aula & Horario"
+    # H-8: el tipo tiene que ser uno de los cuatro que el panel de la
+    # campana sabe pintar. Antes era "Cambios de Aula & Horario", que no
+    # es ninguno, así que la notificación llegaba sin icono ni color.
+    assert notificacion["tipo"] == "ambiente"
     assert notificacion["entidadRelacionada"] == "horarios"
     assert notificacion["idEntidadRelacionada"] == "1"
     assert "Ambiente" in notificacion["mensaje"]

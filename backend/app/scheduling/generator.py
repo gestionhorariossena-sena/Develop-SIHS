@@ -122,17 +122,80 @@ def _opciones_validas(
     ]
 
 
+def _asignacion_greedy(
+    necesidades: list[NecesidadHorario],
+    opciones_por_necesidad: list[list[_Opcion]],
+) -> list[BloqueAsignado]:
+    """Red de seguridad para el modo parcial: recorre las necesidades en
+    orden y le da a cada una la primera opción que no pise nada de lo ya
+    asignado en esta misma pasada.
+
+    Las opciones ya vienen filtradas contra los `ocupados_*` externos
+    (ver _opciones_validas), así que acá solo hay que evitar choques
+    dentro del lote. Determinista como el solver: mismo orden de entrada,
+    misma salida."""
+    usados_instructor: set = set()
+    usados_ambiente: set = set()
+    usados_ficha: set = set()
+    resultado: list[BloqueAsignado] = []
+
+    for i, necesidad in enumerate(necesidades):
+        for franja, patron, instructor, ambiente in opciones_por_necesidad[i]:
+            if any((instructor, franja, dia) in usados_instructor for dia in patron):
+                continue
+            if any((ambiente, franja, dia) in usados_ambiente for dia in patron):
+                continue
+            if any((necesidad.id_ficha, franja, dia) in usados_ficha for dia in patron):
+                continue
+
+            for dia in patron:
+                usados_instructor.add((instructor, franja, dia))
+                usados_ambiente.add((ambiente, franja, dia))
+                usados_ficha.add((necesidad.id_ficha, franja, dia))
+            resultado.append(
+                BloqueAsignado(
+                    id_ficha=necesidad.id_ficha,
+                    id_resultado=necesidad.id_resultado,
+                    id_instructor=instructor,
+                    id_ambiente=ambiente,
+                    dias=patron,
+                    hora_inicio=franja[0],
+                    hora_fin=franja[1],
+                )
+            )
+            break
+
+    return resultado
+
+
 def generar_horario(
     necesidades: list[NecesidadHorario],
     tiempo_limite_seg: float = 10.0,
     ocupados_instructor: set[_SlotOcupado] | None = None,
     ocupados_ambiente: set[_SlotOcupado] | None = None,
     ocupados_ficha: set[_SlotOcupado] | None = None,
+    permitir_parcial: bool = False,
 ) -> list[BloqueAsignado] | None:
     """Devuelve una asignación sin choques de instructor/ficha/ambiente
     para todas las necesidades, o None si el modelo es infactible (ej. no
     hay suficientes instructores o ambientes candidatos para cubrir todo
     sin que se pisen).
+
+    `permitir_parcial=True` cambia la pregunta que se le hace al solver:
+    en vez de "¿caben TODAS?" (y nada si no), pasa a ser "¿cuántas caben?"
+    -- programa el máximo posible y deja el resto fuera, sin relajar
+    ninguna restricción de choque. Los bloques que devuelve son tan
+    válidos como los del modo completo.
+
+    Por qué existe: con 3 franjas × 5 días, una ficha tiene 15 slots
+    propios por semana como techo duro (`ocupados_ficha` impide que esté
+    en dos sitios a la vez). Los currículos reales traen fases de 13, 14
+    y 16 resultados, así que una sola ficha con 16 pendientes volvía
+    infactible el modelo entero y la ficha caía COMPLETA -- con 10 fichas
+    seleccionadas, el coordinador recibía cero bloques y un mensaje que
+    lo mandaba a buscar más instructores y ambientes que no habrían
+    cambiado nada. 15 de 16 resultados programados es una propuesta útil
+    que se puede revisar y guardar; cero no lo es.
 
     `ocupados_instructor`/`ocupados_ambiente`/`ocupados_ficha` son slots
     ya comprometidos por FUERA de este `necesidades` -- de un lote
@@ -162,17 +225,28 @@ def generar_horario(
             )
         # Candidatos válidos hay, pero un lote anterior ya ocupó todos los
         # slots posibles para ellos -- infactible para ESTE lote, no un
-        # error de datos.
-        return None
+        # error de datos. En modo parcial esa necesidad simplemente no se
+        # programa y las demás siguen su curso.
+        if not permitir_parcial:
+            return None
 
     x = [
         [modelo.NewBoolVar(f"n{i}_o{o}") for o in range(len(opciones))]
         for i, opciones in enumerate(opciones_por_necesidad)
     ]
 
-    # Cada necesidad se resuelve con exactamente una opción.
+    # Cada necesidad se resuelve con exactamente una opción -- o con a lo
+    # sumo una, si se aceptan propuestas parciales (ver docstring), en
+    # cuyo caso se maximiza cuántas quedan programadas.
     for variables in x:
-        modelo.AddExactlyOne(variables)
+        if permitir_parcial:
+            if variables:
+                modelo.AddAtMostOne(variables)
+        else:
+            modelo.AddExactlyOne(variables)
+
+    if permitir_parcial:
+        modelo.Maximize(sum(variable for variables in x for variable in variables))
 
     # Ninguna pareja de necesidades puede chocar: mismo instructor, mismo
     # ambiente, o misma ficha, coincidiendo en franja y en al menos un día.
@@ -219,6 +293,18 @@ def generar_horario(
     estado = solver.Solve(modelo)
 
     if estado not in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        # En modo parcial el modelo nunca es infactible de verdad (no
+        # asignar nada siempre es solución válida), así que llegar acá
+        # significa que el solver se quedó sin tiempo antes de encontrar
+        # aunque fuera una: maximizar es caro y con cientos de
+        # necesidades no alcanza. Devolver None ahí perdía la ficha
+        # entera por reloj, no por imposibilidad -- encontrado en vivo el
+        # 2026-09-24 con fichas sin faseActual (276 resultados cada una),
+        # donde un lote de 10 daba 0 bloques. El greedy no es óptimo,
+        # pero respeta exactamente las mismas restricciones de choque y
+        # siempre devuelve algo revisable.
+        if permitir_parcial:
+            return _asignacion_greedy(necesidades, opciones_por_necesidad)
         return None
 
     resultado: list[BloqueAsignado] = []

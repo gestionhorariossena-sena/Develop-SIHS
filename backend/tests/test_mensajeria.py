@@ -162,3 +162,32 @@ def test_usuario_ajeno_no_puede_ver_ni_escribir_en_conversacion_de_otros(client,
         headers=headers_ajeno,
     )
     assert respuesta_post.status_code == 404
+
+
+def test_la_conversacion_trae_los_nombres_y_no_solo_los_uuid(client, db_session, autenticar_como, crear_usuario):
+    """Ni el Aprendiz ni el Instructor tienen permiso sobre `GET /usuarios/`
+    (es `require_lectura_catalogo`), así que si la conversación no trae los
+    nombres, la bandeja solo puede mostrar UUID. Son los dos únicos roles
+    que ven esa pantalla."""
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar_catalogos_basicos(db_session)
+
+    aprendiz, headers_aprendiz = autenticar_como("Aprendiz")
+    instructor = crear_usuario(nombre="Erick Granados")
+
+    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario))
+    db_session.commit()
+    _crear_horario(db_session, catalogos, instructor.idUsuario)
+
+    creada = client.post(
+        "/api/v1/mensajeria/conversaciones",
+        json={"idInstructor": str(instructor.idUsuario)},
+        headers=headers_aprendiz,
+    )
+
+    assert creada.status_code == 201
+    assert creada.json()["instructorNombre"] == "Erick Granados"
+    assert creada.json()["aprendizNombre"] == aprendiz.nombre
+
+    listado = client.get("/api/v1/mensajeria/conversaciones", headers=headers_aprendiz)
+    assert listado.json()[0]["instructorNombre"] == "Erick Granados"

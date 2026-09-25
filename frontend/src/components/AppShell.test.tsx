@@ -33,7 +33,7 @@ function mockearApiGet(perfil: Usuario, notificaciones: Notificacion[] = []) {
 }
 
 describe('AppShell', () => {
-  it('un Aprendiz ve el grupo "Mi trabajo" con sus 4 pantallas, en un desplegable propio del navbar', async () => {
+  it('un Aprendiz ve el grupo "Mi trabajo" con sus pantallas, en un desplegable propio del navbar', async () => {
     mockearApiGet(crearPerfil(['Aprendiz']))
     renderConProviders(
       <AppShell activo="Inicio">
@@ -44,7 +44,7 @@ describe('AppShell', () => {
     const botonGrupo = await screen.findByRole('button', { name: 'Mi trabajo' })
     fireEvent.click(botonGrupo)
 
-    for (const etiqueta of ['Mi horario', 'Mensajes Docentes', 'Notificaciones', 'Avisos y Eventos']) {
+    for (const etiqueta of ['Mi horario', 'Mensajes', 'Notificaciones']) {
       expect(screen.getByText(etiqueta)).toBeInTheDocument()
     }
   })

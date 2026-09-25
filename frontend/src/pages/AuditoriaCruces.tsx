@@ -4,7 +4,7 @@ import { AppShell } from '../components/AppShell'
 import { apiGet, ApiError } from '../services/api'
 import type { AuditoriaConflicto, AuditoriaCrucesResponse, Sede, Trimestre, TipoConflictoHorario } from '../types/api'
 
-// Mismas 5 etiquetas oficiales que ModalCruce.tsx (no se exportan desde ahí,
+// Mismas 6 etiquetas oficiales que ModalCruce.tsx (no se exportan desde ahí,
 // así que se replican acá tal cual — ver GUIA_DE_MARCA.md, "no inventar
 // paleta o texto distinto al ya establecido").
 const TITULO_POR_TIPO: Record<TipoConflictoHorario, string> = {
@@ -13,10 +13,11 @@ const TITULO_POR_TIPO: Record<TipoConflictoHorario, string> = {
   cruce_ambiente: 'Ambiente ocupado',
   resultado_repetido: 'Resultado repetido',
   regla_instructor: 'Regla institucional (RF-011)',
+  fortaleza_instructor: 'Fortaleza del instructor',
 }
 
 // Mismo texto explicativo real de cada regla — panel "Tipología de
-// Conflictos" del mockup, con las 5 categorías reales (no una taxonomía
+// Conflictos" del mockup, con las 6 categorías reales (no una taxonomía
 // nueva) y su conteo de activos.
 const DESCRIPCION_POR_TIPO: Record<TipoConflictoHorario, string> = {
   cruce_ambiente: 'Dos o más fichas programadas en el mismo ambiente en franja idéntica.',
@@ -24,8 +25,9 @@ const DESCRIPCION_POR_TIPO: Record<TipoConflictoHorario, string> = {
   cruce_ficha: 'El mismo grupo de aprendices tiene doble franja lectiva solapada.',
   resultado_repetido: 'Resultado de aprendizaje ya evaluado o duplicado en el mismo trimestre.',
   regla_instructor: 'Exceso del tope de horas lectivas semanales (32-40 hrs según contrato).',
+  fortaleza_instructor: 'El instructor no tiene la especialidad que exige la competencia del resultado.',
 }
-const ORDEN_TIPOS: TipoConflictoHorario[] = ['cruce_ambiente', 'cruce_instructor', 'cruce_ficha', 'resultado_repetido', 'regla_instructor']
+const ORDEN_TIPOS: TipoConflictoHorario[] = ['cruce_ambiente', 'cruce_instructor', 'cruce_ficha', 'resultado_repetido', 'regla_instructor', 'fortaleza_instructor']
 
 function construirQuery(idTrimestre: string, idSede: string) {
   const params = new URLSearchParams()

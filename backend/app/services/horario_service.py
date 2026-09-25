@@ -1,10 +1,15 @@
 from app.models.dia_semana import DiaSemana
+from app.models.competencia_formacion import CompetenciaFormacion
+from app.models.especialidad import Especialidad, especialidad_competencia
+from app.models.ficha import Ficha
 from app.models.horario import Horario
 from app.models.jornada import Jornada
+from app.models.resultado_aprendizaje import ResultadoAprendizaje
+from app.models.trimestre import Trimestre
 from app.models.usuario import Usuario
 from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
 from app.repositories.horario_repository import HorarioRepository
-from app.services.notificacion_service import NotificacionService
+from app.services.notificacion_service import NotificacionService, TIPO_AMBIENTE, TIPO_HORARIO
 
 # RF-011 (Requisitos Funcionales V4.pdf, pág. 15-16): "Los instructores de
 # planta podrán estar asignados máximo 32 horas a la semana, mientras que
@@ -133,6 +138,14 @@ class HorarioService:
             idResultado=data.idResultado,
         )
         horario = HorarioRepository.crear(db, nuevo_horario, data.dias)
+
+        # Un horario nace publicado (`publicado` tiene server_default true),
+        # así que el momento en que la gente puede verlo es este, no un
+        # PATCH posterior: si el aviso solo colgara de "despublicado ->
+        # publicado", el camino normal —crear y listo— no avisaría nunca.
+        if horario.publicado:
+            HorarioService._notificar_publicacion(db, horario)
+
         return horario, errores if forzar else []
 
     @staticmethod
@@ -146,6 +159,9 @@ class HorarioService:
 
         cambio_ambiente = horario.idAmbiente != data.idAmbiente
         cambio_instructor = horario.idInstructor != data.idInstructor
+        # Se guarda ANTES de sobrescribirlo: a quien le quitan un bloque le
+        # interesa tanto como a quien se lo dan.
+        instructor_anterior = horario.idInstructor
 
         errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
         if errores and not forzar:
@@ -162,34 +178,100 @@ class HorarioService:
 
         actualizado = HorarioRepository.actualizar(db, horario, data.dias)
         HorarioService._notificar_cambio_asignacion(
-            db, actualizado, cambio_ambiente, cambio_instructor
+            db, actualizado, cambio_ambiente, cambio_instructor, instructor_anterior
         )
         return actualizado, errores if forzar else []
 
     @staticmethod
+    def _datos_para_mensaje(horario) -> tuple[str, str, str]:
+        """(código de ficha, nombre del ambiente, franja) para armar
+        mensajes — los tres salen de relaciones que pueden venir vacías."""
+        ficha_codigo = horario.ficha.codigoFicha if horario.ficha else horario.idFicha
+        ambiente_nombre = horario.ambiente.nombre if horario.ambiente else "sin ambiente"
+        franja = f"{horario.horaInicio:%H:%M} a {horario.horaFin:%H:%M}"
+        return str(ficha_codigo), ambiente_nombre, franja
+
+    @staticmethod
     def _notificar_cambio_asignacion(
-        db, horario, cambio_ambiente: bool, cambio_instructor: bool
+        db, horario, cambio_ambiente: bool, cambio_instructor: bool, instructor_anterior=None
     ) -> None:
+        """H-8: antes esto solo avisaba a los aprendices de la ficha, así
+        que a un instructor le podían mover el ambiente de una clase y se
+        enteraba al llegar al salón equivocado. Ahora el aviso alcanza a
+        los tres lados del cambio: la ficha, quien la dicta y —si el bloque
+        cambió de manos— quien la dictaba antes."""
         if not (cambio_ambiente or cambio_instructor):
             return
 
-        ficha_codigo = horario.ficha.codigoFicha if horario.ficha else horario.idFicha
-        ambiente_nombre = horario.ambiente.nombre if horario.ambiente else "Sin ambiente"
-        instructor_nombre = horario.instructor.nombre if horario.instructor else "Sin instructor"
-        mensaje = (
-            f"Se actualizó el horario de tu ficha {ficha_codigo}: "
-            f"ambiente {ambiente_nombre} e instructor {instructor_nombre}."
-        )
+        ficha_codigo, ambiente_nombre, franja = HorarioService._datos_para_mensaje(horario)
+        instructor_nombre = horario.instructor.nombre if horario.instructor else "sin instructor"
+        tipo = TIPO_AMBIENTE if cambio_ambiente else TIPO_HORARIO
 
-        for vinculo in FichaUsuarioRepository.obtener_aprendices_por_ficha(db, horario.idFicha):
+        def avisar(id_usuario, mensaje: str) -> None:
+            if not id_usuario:
+                return
             NotificacionService.crear(
                 db,
-                id_usuario=vinculo.idUsuario,
-                tipo="Cambios de Aula & Horario",
+                id_usuario=id_usuario,
+                tipo=tipo,
                 mensaje=mensaje,
                 entidad_relacionada="horarios",
                 id_entidad_relacionada=horario.idHorario,
             )
+
+        for vinculo in FichaUsuarioRepository.obtener_aprendices_por_ficha(db, horario.idFicha):
+            avisar(
+                vinculo.idUsuario,
+                f"Cambió tu clase de {franja} en la ficha {ficha_codigo}: "
+                f"ahora es en {ambiente_nombre} con {instructor_nombre}.",
+            )
+
+        avisar(
+            horario.idInstructor,
+            f"Cambió tu bloque de {franja} con la ficha {ficha_codigo}: "
+            f"ahora es en {ambiente_nombre}.",
+        )
+
+        if cambio_instructor and instructor_anterior and instructor_anterior != horario.idInstructor:
+            avisar(
+                instructor_anterior,
+                f"Ya no tienes el bloque de {franja} con la ficha {ficha_codigo}: "
+                f"pasó a {instructor_nombre}.",
+            )
+
+    @staticmethod
+    def _notificar_publicacion(db, horario) -> None:
+        """H-9: publicar era un cambio invisible — el horario quedaba ahí
+        esperando a que alguien entrara a mirarlo. Se avisa al instructor y
+        a los aprendices de la ficha, que son quienes recién en ese momento
+        pueden verlo ("Mi horario" solo muestra lo publicado).
+
+        El aviso es por FICHA y no por bloque, y se agrupa: publicar el
+        horario de una ficha son decenas de llamadas sueltas (el asistente
+        guarda bloque por bloque), y a nadie le sirve recibir treinta
+        campanazos diciendo lo mismo. El mensaje no nombra una franja
+        concreta justamente para que valga igual si fue uno o treinta.
+        """
+        ficha_codigo, _, _ = HorarioService._datos_para_mensaje(horario)
+
+        for vinculo in FichaUsuarioRepository.obtener_aprendices_por_ficha(db, horario.idFicha):
+            NotificacionService.crear_agrupada(
+                db,
+                id_usuario=vinculo.idUsuario,
+                tipo=TIPO_HORARIO,
+                mensaje=f"Ya está publicado el horario de tu ficha {ficha_codigo}. Míralo en «Mi horario».",
+                entidad_relacionada="fichas",
+                id_entidad_relacionada=horario.idFicha,
+            )
+
+        NotificacionService.crear_agrupada(
+            db,
+            id_usuario=horario.idInstructor,
+            tipo=TIPO_HORARIO,
+            mensaje=f"Se publicó tu horario con la ficha {ficha_codigo}. Ya aparece en «Mi horario».",
+            entidad_relacionada="fichas",
+            id_entidad_relacionada=horario.idFicha,
+        )
 
     @staticmethod
     def eliminar(db, id_horario):
@@ -218,11 +300,22 @@ class HorarioService:
         if not horario:
             return None
 
+        # Solo el paso de borrador a publicado avisa: despublicar y volver
+        # a publicar el mismo bloque no debe repetir el aviso, y
+        # activar/desactivar no cambia lo que la gente ve en "Mi horario".
+        recien_publicado = publicado is True and not horario.publicado
+
         if activo is not None:
             horario.activo = activo
         if publicado is not None:
             horario.publicado = publicado
-        return HorarioRepository.guardar(db, horario)
+
+        guardado = HorarioRepository.guardar(db, horario)
+
+        if recien_publicado:
+            HorarioService._notificar_publicacion(db, guardado)
+
+        return guardado
 
     @staticmethod
     def obtener_publicados_por_instructor(
@@ -290,6 +383,7 @@ class HorarioService:
             )
 
         errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
+        errores.extend(HorarioService._validar_fortaleza_instructor(db, data))
         return errores
 
     @staticmethod
@@ -357,6 +451,14 @@ class HorarioService:
             conflictos.append({
                 "tipo": "regla_instructor",
                 "mensaje": error,
+            })
+
+        for error in HorarioService._validar_fortaleza_instructor(db, data):
+            conflictos.append({
+                "tipo": "fortaleza_instructor",
+                "mensaje": error,
+                "idInstructor": data.idInstructor,
+                "idResultado": data.idResultado,
             })
 
         return conflictos
@@ -463,6 +565,200 @@ class HorarioService:
             "horasAsignadas": horas_asignadas,
             "horasMaximas": horas_maximas,
         }
+
+    @staticmethod
+    def _semanas_de_trimestre(db, id_trimestre) -> int | None:
+        """Cuántas semanas dura el trimestre. Hace falta porque las dos
+        magnitudes que hay que comparar están en unidades distintas: un
+        horario es SEMANAL (se repite cada semana del trimestre) y la
+        intensidad de la planeación (`resultados_aprendizaje.horasAsignadas`)
+        es del TRIMESTRE COMPLETO. None si el trimestre no existe o no
+        tiene fechas — sin eso no se puede convertir y no se valida nada."""
+        trimestre = db.get(Trimestre, id_trimestre)
+        if not trimestre or not trimestre.fechaInicio or not trimestre.fechaFin:
+            return None
+
+        dias = (trimestre.fechaFin - trimestre.fechaInicio).days
+        if dias <= 0:
+            return None
+
+        return max(1, round(dias / 7))
+
+    @staticmethod
+    def horas_semanales_de(db, horario) -> float:
+        """Horas de clase que ese bloque ocupa por semana: su duración por
+        la cantidad de días en que se repite."""
+        return HorarioService._duracion_horas(horario.horaInicio, horario.horaFin) * len(
+            HorarioRepository.obtener_dias(db, horario.idHorario)
+        )
+
+    @staticmethod
+    def resumen_intensidad_ficha(db, id_ficha: int) -> dict | None:
+        """Cuadre de horas de UNA ficha, resultado por resultado — para el
+        panel de seguimiento de Fichas.tsx y para responder "¿esta ficha ya
+        tiene programado todo lo que debe?".
+
+        Compara, para cada resultado de aprendizaje del programa de la
+        ficha que corresponde a su fase actual, las horas que la planeación
+        le asigna contra las que están efectivamente programadas.
+        `estado` por resultado: 'ok' | 'faltan' | 'exceso' | 'sin-planeacion'
+        (este último cuando el RA no trae `horasAsignadas` y no hay contra
+        qué comparar).
+
+        None si la ficha no existe."""
+        ficha = db.get(Ficha, id_ficha)
+        if not ficha:
+            return None
+
+        semanas = HorarioService._semanas_de_trimestre(db, ficha.idTrimestre)
+        horarios = [h for h in HorarioRepository.obtener_por_ficha(db, id_ficha) if h.activo]
+
+        programadas_por_resultado: dict[int, float] = {}
+        for horario in horarios:
+            if horario.idResultado is None:
+                continue
+            programadas_por_resultado[horario.idResultado] = programadas_por_resultado.get(
+                horario.idResultado, 0.0
+            ) + HorarioService.horas_semanales_de(db, horario)
+
+        # Los resultados del pénsum de ESTA ficha: los de su programa y, si
+        # la ficha tiene fase declarada, los de esa fase. Sin fase declarada
+        # se toman todos los del programa (igual criterio que usa
+        # generar_propuesta, ver models/ficha.py faseActual).
+        query = (
+            db.query(ResultadoAprendizaje)
+            .join(
+                CompetenciaFormacion,
+                CompetenciaFormacion.idCompetencia == ResultadoAprendizaje.idCompetencia,
+            )
+            .filter(CompetenciaFormacion.idPrograma == ficha.idPrograma)
+        )
+        if ficha.faseActual:
+            query = query.filter(ResultadoAprendizaje.numeroFase == ficha.faseActual)
+        resultados = query.all()
+
+        detalle = []
+        total_planeadas = 0
+        total_programadas = 0.0
+        for resultado in resultados:
+            semanales = programadas_por_resultado.pop(resultado.idResultado, 0.0)
+            programadas = semanales * semanas if semanas else None
+            planeadas = resultado.horasAsignadas
+
+            if not planeadas:
+                estado = "sin-planeacion"
+            elif programadas is None:
+                estado = "sin-planeacion"
+            elif programadas > planeadas:
+                estado = "exceso"
+            elif programadas < planeadas:
+                estado = "faltan"
+            else:
+                estado = "ok"
+
+            if planeadas:
+                total_planeadas += planeadas
+            if programadas:
+                total_programadas += programadas
+
+            detalle.append({
+                "idResultado": resultado.idResultado,
+                "codigo": resultado.codigo,
+                "descripcion": resultado.descripcion,
+                "horasPlaneadas": planeadas,
+                "horasSemanales": semanales,
+                "horasProgramadas": programadas,
+                "estado": estado,
+            })
+
+        # Lo que quedó en programadas_por_resultado son bloques de
+        # resultados que NO pertenecen a la fase/programa esperado: se
+        # reportan igual, si no el total programado mentiría.
+        for id_resultado, semanales in programadas_por_resultado.items():
+            resultado = db.get(ResultadoAprendizaje, id_resultado)
+            programadas = semanales * semanas if semanas else None
+            if programadas:
+                total_programadas += programadas
+            detalle.append({
+                "idResultado": id_resultado,
+                "codigo": resultado.codigo if resultado else None,
+                "descripcion": resultado.descripcion if resultado else None,
+                "horasPlaneadas": None,
+                "horasSemanales": semanales,
+                "horasProgramadas": programadas,
+                "estado": "fuera-de-fase",
+            })
+
+        return {
+            "idFicha": ficha.idFicha,
+            "codigoFicha": ficha.codigoFicha,
+            "faseActual": ficha.faseActual,
+            "semanasTrimestre": semanas,
+            "horasPlaneadas": total_planeadas,
+            "horasProgramadas": total_programadas,
+            "resultados": detalle,
+        }
+
+    @staticmethod
+    def _validar_fortaleza_instructor(db, data) -> list[str]:
+        """¿El instructor tiene alguna de las fortalezas que pide el
+        resultado de aprendizaje que va a dictar?
+
+        Corrección pedida en la evaluación del V Trimestre (hoja GRUPO 1,
+        2026-09-04): "el instructor no se puede asignar a cualquier RA, se
+        deben revisar sus fortalezas para dicha asignación". La fortaleza
+        se modela a nivel de COMPETENCIA, no de resultado suelto: un
+        instructor que domina una competencia puede dictar cualquiera de
+        sus resultados, y clasificar competencia por competencia es
+        trabajo que coordinación puede sostener (clasificar los cientos de
+        RA uno por uno, no).
+
+        Silencio cuando no hay dato, a propósito y por partida doble:
+
+        - la competencia no tiene NINGUNA especialidad asociada -> no se
+          ha clasificado, no hay nada contra qué comparar;
+        - el resultado no existe o no tiene competencia -> igual.
+
+        Con la tabla recién creada eso significa que todo sigue exactamente
+        como antes hasta que alguien empiece a mapear especialidades; y lo
+        que sale de acá es un conflicto FORZABLE (mismo trato que RF-011),
+        no un bloqueo: el coordinador que sabe por qué lo está haciendo
+        programa igual y queda auditado."""
+        resultado = db.get(ResultadoAprendizaje, data.idResultado)
+        if not resultado or not resultado.idCompetencia:
+            return []
+
+        habilitantes = (
+            db.query(Especialidad)
+            .join(
+                especialidad_competencia,
+                especialidad_competencia.c.idEspecialidad == Especialidad.idEspecialidad,
+            )
+            .filter(especialidad_competencia.c.idCompetencia == resultado.idCompetencia)
+            .all()
+        )
+        if not habilitantes:
+            return []
+
+        instructor = db.get(Usuario, data.idInstructor)
+        if not instructor:
+            return []
+
+        ids_instructor = {e.idEspecialidad for e in instructor.especialidades}
+        if ids_instructor & {e.idEspecialidad for e in habilitantes}:
+            return []
+
+        nombres = ", ".join(sorted(e.nombre for e in habilitantes))
+        tiene = (
+            ", ".join(sorted(e.nombre for e in instructor.especialidades))
+            if instructor.especialidades
+            else "ninguna fortaleza registrada"
+        )
+        codigo = resultado.codigo or f"resultado {resultado.idResultado}"
+        return [
+            f"El instructor {instructor.nombre} no tiene la fortaleza que pide {codigo}: "
+            f"se requiere {nombres} y tiene {tiene}."
+        ]
 
     @staticmethod
     def _validar_reglas_instructor(db, data, excluir_id: int | None) -> list[str]:

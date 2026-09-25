@@ -485,10 +485,14 @@ def test_generar_propuesta_filtra_por_fase_actual_de_la_ficha(db_session):
     assert resultado.bloques[0].idResultado == 1
 
 
-def test_generar_propuesta_infactible_da_mensaje_con_diagnostico(db_session):
-    # Volumen real que hacía fallar el solver: varios resultados
-    # pendientes compitiendo por muy pocos instructores/ambientes. El
-    # mensaje debe explicar la capacidad, no solo decir "no se encontró".
+def test_generar_propuesta_llena_la_semana_y_reporta_lo_que_no_cupo(db_session):
+    # Volumen real que hacía fallar el solver: más resultados pendientes
+    # que slots tiene la semana. Hasta el 2026-09-24 esto devolvía CERO
+    # bloques (el modelo exigía programarlos todos o ninguno) y mandaba
+    # al coordinador a conseguir más instructores y ambientes, que no
+    # habrían cambiado nada: el techo es la ficha, que no puede estar en
+    # dos sitios a la vez. Ahora se programa lo que cabe y se reporta el
+    # resto -- ver `permitir_parcial` en app/scheduling/generator.py.
     _crear_tablas_extra(db_session)
     db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
     db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="ADSO", activo=True, idCoordinacion=1))
@@ -507,10 +511,22 @@ def test_generar_propuesta_infactible_da_mensaje_con_diagnostico(db_session):
 
     resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
 
-    assert resultado.factible is False
-    assert "20 resultado" in resultado.mensaje
-    assert "capacidad" in resultado.mensaje
-    assert "Reduce cuántas fichas" in resultado.mensaje
+    # 3 franjas × 5 días = 15 slots en la semana para esta ficha.
+    assert resultado.factible is True
+    assert len(resultado.bloques) == 15
+    assert resultado.fichasSinProgramar == []
+    # Los 5 que no cupieron se dicen, no se callan.
+    assert "5 resultado(s)" in resultado.mensaje
+    assert "sin programar" in resultado.mensaje
+
+    # Y lo que se propone sigue sin chocar: ningún par de bloques comparte
+    # franja y día (la ficha, el instructor y el ambiente son los mismos).
+    ocupados = [
+        (b.horaInicio, b.horaFin, dia)
+        for b in resultado.bloques
+        for dia in b.dias
+    ]
+    assert len(ocupados) == len(set(ocupados))
 
 
 def test_generar_propuesta_jornada_invalida_lanza_value_error(db_session):
@@ -614,3 +630,50 @@ def test_previsualizar_excel_cruza_con_archivo_complementario(db_session, monkey
     # del programa), coincide con el número al inicio del nombre de la
     # ficha (ej. "4_TRM_...").
     assert fila.faseActual == 4
+
+
+def test_generar_propuesta_diez_fichas_pesadas_no_devuelve_cero_bloques(db_session):
+    """El caso que reportó el coordinador el 2026-09-24: 10 fichas
+    seleccionadas juntas, cada una con más resultados pendientes que
+    slots hay en la semana, devolvían CERO bloques y el mensaje "no se
+    pudo programar ninguna de las 10 ficha(s) ... probablemente no hay
+    suficientes instructores o ambientes" -- que era engañoso: agregar
+    instructores no habría cambiado nada, porque cada ficha ya no podía
+    estar en dos sitios a la vez. Con propuestas parciales, cada ficha
+    aporta lo que le cabe."""
+    _crear_tablas_extra(db_session)
+    db_session.add(Coordinacion(idCoordinacion=1, nombreCoordinacion="Demo"))
+    db_session.add(Programa(idPrograma=1, codigoPrograma="P1", nombrePrograma="ADSO", activo=True, idCoordinacion=1))
+    db_session.add(Trimestre(idTrimestre=1, nombre="2026-3", fechaInicio=date(2026, 7, 1), fechaFin=date(2026, 9, 30), estado="activo"))
+    db_session.add(Sede(id=1, nombre="Sede Demo", direccion="Calle 1", tipo="principal"))
+    db_session.add(CompetenciaFormacion(idCompetencia=1, codigo="C1", descripcion="Competencia demo", idPrograma=1))
+    # Catálogo holgado: el cuello de botella es la semana de cada ficha,
+    # no los recursos -- que es justo lo que el mensaje viejo no distinguía.
+    for i in range(1, 11):
+        # nombre fijo "Ambiente": lo exige el CHECK nombreAmbienteRegular
+        # para los de tipo regular -- el número es numeroAmbiente.
+        db_session.add(Ambiente(id=i, numero_ambiente=100 + i, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1))
+        db_session.add(Ficha(idFicha=100 + i, codigoFicha=str(2800000 + i), idPrograma=1, idTrimestre=1, idSede=1))
+        db_session.add(Usuario(idUsuario=uuid.uuid4(), nombre=f"Instructor {i}", email=f"i{i}@demo.sihs", tipoContrato="contrato", estado="activo"))
+    for i in range(1, 19):
+        db_session.add(ResultadoAprendizaje(idResultado=i, codigo=f"RA-{i}", descripcion=f"Resultado {i}", idCompetencia=1))
+    db_session.commit()
+
+    ids_ficha = list(range(101, 111))
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=ids_ficha, jornada="MAÑANA")
+
+    assert resultado.factible is True
+    assert resultado.bloques, "el lote completo no puede quedar sin ni un bloque"
+    # Cada ficha seleccionada tiene que aparecer en la propuesta.
+    fichas_con_bloques = {b.idFicha for b in resultado.bloques}
+    assert fichas_con_bloques == set(ids_ficha)
+
+    # Y la propuesta sigue sin choques reales: ni un instructor ni un
+    # ambiente ni una ficha ocupan el mismo (franja, día) dos veces.
+    for clave in ("idInstructor", "idAmbiente", "idFicha"):
+        ocupados = [
+            (getattr(b, clave), b.horaInicio, b.horaFin, dia)
+            for b in resultado.bloques
+            for dia in b.dias
+        ]
+        assert len(ocupados) == len(set(ocupados)), f"choque de {clave} en la propuesta"

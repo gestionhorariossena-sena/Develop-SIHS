@@ -5,6 +5,7 @@ import { GridAsistente } from '../components/horario/GridAsistente'
 import { celdasDesdeHorarios } from '../components/horario/celdasAsistente'
 import type { CeldaAsistente } from '../components/horario/celdasAsistente'
 import { apiGet, apiPatch, apiPost, apiPostForm, ApiError } from '../services/api'
+import { mapearConLimite } from '../utils/concurrencia'
 import type {
   BloquePropuesto,
   Coordinacion,
@@ -66,13 +67,35 @@ type Paso = 1 | 2 | 3 | 4
 // para estos 3 pasos: parsean un Excel + llaman a Gemini, o corren el
 // optimizador -- de verdad pueden tardar más, sobre todo en la primera
 // llamada "fría" de la sesión.
-const TIMEOUT_ASISTENTE_MS = 45000
+//
+// 120s y no 45s: medido en vivo el 2026-09-24, clasificar los 52
+// encabezados de la hoja PE-04 real (PROGRAMACIÓN CGMLTI) le toma a
+// Gemini ~29s, porque emite una entrada JSON por columna. Sumado al
+// parseo del Excel (~3s en ese archivo de 1.2MB) y a que el backend
+// ahora espera hasta 90s antes de rendirse, 45s cortaba del lado del
+// navegador llamadas que el servidor todavía iba a contestar bien.
+const TIMEOUT_ASISTENTE_MS = 120000
 // generar-propuesta resuelve el solver ficha por ficha (ver
 // _generar_bloques_por_ficha en el backend) con un presupuesto propio de
-// hasta 30s antes de devolver una propuesta parcial -- 45s no deja
+// hasta 50s antes de devolver una propuesta parcial -- 45s no deja
 // margen para eso más la ida y vuelta HTTP real, así que este paso usa
 // un timeout más largo que los otros dos del asistente.
-const TIMEOUT_GENERAR_PROPUESTA_MS = 60000
+const TIMEOUT_GENERAR_PROPUESTA_MS = 90000
+
+// Cuántos bloques se validan a la vez contra POST /horarios/validar.
+// Medido el 2026-09-24 contra la base real: UNA validación son 9
+// consultas × ~170ms de ida y vuelta a Supabase = ~1.6s. Los 90 bloques
+// de un lote de 10 fichas en serie son casi 3 minutos; todos de golpe
+// (el `Promise.all` que había acá) saturan un backend de un solo proceso
+// y encolan peticiones en el navegador hasta que se abortan solas. Con 6
+// en paralelo el lote completo baja a ~30s y el pool del backend (5 + 10
+// de overflow) queda holgado.
+const VALIDACIONES_EN_PARALELO = 6
+
+// Cada validación individual es corta, pero puede quedar esperando su
+// turno detrás de las otras 5 en vuelo -- el default de 15s de api.ts se
+// queda corto justo para las últimas del lote.
+const TIMEOUT_VALIDACION_MS = 60000
 
 const NOMBRES_DIA: Record<number, string> = { 1: 'Lunes', 2: 'Martes', 3: 'Miércoles', 4: 'Jueves', 5: 'Viernes' }
 
@@ -429,8 +452,10 @@ export function AsistenteHorarios() {
       // "Prueba completa" antes de dejar confirmar: cada bloque propuesto
       // pasa por el mismo dry-run real que usa el Constructor manual
       // (POST /horarios/validar), no una simulación aparte.
-      const validados = await Promise.all(
-        resultado.bloques.map(async (b) => {
+      const validados = await mapearConLimite(
+        resultado.bloques,
+        VALIDACIONES_EN_PARALELO,
+        async (b) => {
           const dryRun: HorarioDryRunRequest = {
             horaInicio: b.horaInicio,
             horaFin: b.horaFin,
@@ -443,13 +468,17 @@ export function AsistenteHorarios() {
             dias: b.dias,
           }
           try {
-            const respuesta = await apiPost<HorarioDryRunResponse>('/horarios/validar', dryRun)
+            const respuesta = await apiPost<HorarioDryRunResponse>(
+              '/horarios/validar',
+              dryRun,
+              TIMEOUT_VALIDACION_MS,
+            )
             return { ...b, estado: 'sinCruces' as const, mensajeConflicto: respuesta.conflictos[0]?.mensaje }
           } catch (error) {
             const mensaje = error instanceof ApiError ? error.message : 'No se pudo validar este bloque.'
             return { ...b, estado: 'conflicto' as const, mensajeConflicto: mensaje }
           }
-        })
+        },
       )
       setBloques(validados)
     } catch (error) {
