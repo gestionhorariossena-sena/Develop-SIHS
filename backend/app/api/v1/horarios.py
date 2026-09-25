@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse, Response
@@ -32,6 +34,26 @@ from app.services.horario_service import CruceHorarioError, HorarioService
 from app.services.pdf_service import PdfService, SeccionTexto
 
 router = APIRouter(prefix="/horarios", tags=["horarios"])
+
+logger = logging.getLogger(__name__)
+
+
+def _error_ia(exc: AIServiceError) -> HTTPException:
+    """Traduce un fallo de la capa de IA a la respuesta HTTP que le
+    corresponde, y lo deja en el log del servidor.
+
+    Antes los tres endpoints del asistente hacían `detail=str(exc)` sin
+    loguear nada: cuando el asistente fallaba en vivo, el log solo
+    mostraba "503 Service Unavailable" y la causa real (¿falta la key?,
+    ¿Gemini tardó?) no quedaba registrada en ninguna parte. El motivo va
+    en el detail porque es lo que el frontend necesita para decidir qué
+    mensaje mostrar -- ver getUserFriendlyApiMessage en api.ts."""
+    logger.warning("Asistente IA no disponible (motivo=%s): %s", exc.motivo, exc)
+    return HTTPException(
+        status_code=503,
+        detail={"motivo": exc.motivo, "mensaje": str(exc)},
+    )
+
 
 # Igual que la sección de estudiantes documentó: escribir horarios es de
 # Coordinador/Administrador, no de Instructor/Aprendiz.
@@ -126,7 +148,7 @@ def resumir_auditoria_con_ia(
     try:
         return resumir_auditoria(conflictos)
     except AIServiceError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise _error_ia(exc) from exc
 
 
 @router.post("/asistente/importar", response_model=ImportarExcelPreviewResponse)
@@ -157,7 +179,7 @@ async def importar_excel_vista_previa(
             archivo_complementario.filename if archivo_complementario else None,
         )
     except AIServiceError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise _error_ia(exc) from exc
     except Exception as exc:  # noqa: BLE001 -- archivo corrupto, hoja vacía, etc.
         raise HTTPException(status_code=422, detail=f"No se pudo leer el archivo: {exc}") from exc
 
@@ -189,7 +211,7 @@ def preguntar_sobre_horario(
     try:
         return responder_pregunta(data.pregunta, data.contexto)
     except AIServiceError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+        raise _error_ia(exc) from exc
 
 
 @router.post("/", response_model=HorarioResponse, status_code=201)

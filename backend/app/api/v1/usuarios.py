@@ -18,6 +18,7 @@ from app.models.usuario import Usuario
 from app.schemas.horario import HorarioResponse
 from app.schemas.usuario import (
     CargaSemanalResponse,
+    UsuarioEspecialidadesUpdate,
     UsuarioCodigoInstructorRequest,
     UsuarioCodigoInstructorValidacionRequest,
     UsuarioLoginDocumentoRequest,
@@ -203,6 +204,33 @@ def obtener_horarios_instructor(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     return HorarioService.obtener_por_instructor(db, id_usuario)
+
+
+@router.put("/{id_usuario}/especialidades", response_model=UsuarioResponse)
+def actualizar_especialidades_instructor(
+    id_usuario: UUID,
+    data: UsuarioEspecialidadesUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_admin_o_coordinador),
+):
+    """Fortalezas del instructor. Es coordinación quien las conoce y las
+    mantiene, así que no se restringe a Administrador como el resto de la
+    parametrización de catálogos."""
+    actualizado = UsuarioService.reemplazar_especialidades(db, id_usuario, data.idsEspecialidades)
+
+    if not actualizado:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    AuditoriaService.registrar(
+        db,
+        usuario=usuario,
+        accion="ACTUALIZAR_ESPECIALIDADES",
+        entidad="usuarios",
+        id_entidad=id_usuario,
+        detalle=", ".join(e.nombre for e in actualizado.especialidades) or "sin especialidades",
+    )
+
+    return actualizado
 
 
 @router.post("/instructor/codigo/generar")

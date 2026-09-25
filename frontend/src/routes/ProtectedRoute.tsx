@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { apiGet } from '../services/api'
+import { getPerfil } from '../services/perfil'
 import type { Usuario } from '../types/api'
 
 const RUTA_CAMBIO_CLAVE_OBLIGATORIO = '/cambiar-clave-obligatorio'
@@ -43,7 +43,11 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
 
     let cancelado = false
 
-    apiGet<Usuario>('/usuarios/me')
+    // Por `getPerfil` (cacheado por sesión) y no con un apiGet suelto:
+    // esto corre en CADA navegación, así que sin caché cada cambio de
+    // pantalla pagaba un /usuarios/me y su "Cargando…" a pantalla
+    // completa. AppShell usa el mismo caché, así que comparten request.
+    getPerfil(session.user.id)
       .then((datos) => {
         if (!cancelado) setPerfil(datos)
       })

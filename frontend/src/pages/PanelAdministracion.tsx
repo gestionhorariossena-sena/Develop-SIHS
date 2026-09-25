@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
 import { apiGet, apiPost, ApiError } from '../services/api'
-import type { Rol, SolicitudAcceso } from '../types/api'
+import type { Rol, SolicitudAcceso, SolicitudAccesoAprobada } from '../types/api'
 
 type Tab = 'pendiente' | 'aprobada' | 'rechazada' | 'todas'
 
@@ -39,22 +39,12 @@ function esDelMesActual(iso: string, ahora: Date) {
  * la VISTA de AprobarlicitarSolicitudes.tsx (que sigue existiendo, ver
  * abajo). Mockup: _Docs/Diseño/mockups-stitch/panel_de_administracion_sihs_sena.
  *
- * Depende de los endpoints `/solicitudes-acceso` (ticket "[Backend]
- * Endpoints /solicitudes-acceso", Epic SCRUM-96) que TODAVÍA NO EXISTEN en
- * el backend — mismo patrón que Registro.tsx (SCRUM-124), que ya llama a
- * `POST /solicitudes-acceso/` desde el flujo público. El contrato de
- * campos que usa esta pantalla (`types/api.ts#SolicitudAcceso`) es el que
- * quedó documentado en los tickets de Jira SCRUM-103 (tabla) y SCRUM-109
- * (endpoints), no una adivinanza — cuando el backend exista, esta pantalla
- * debería funcionar sin cambios de contrato.
- *
- * AprobarlicitarSolicitudes.tsx (SCRUM-10, ya Finalizado) NO se borra ni se
- * modifica — trabaja sobre un concepto distinto (usuarios YA registrados
- * sin rol, vía `GET /usuarios/` filtrando `roles.length === 0`) y su lógica
- * de `POST /usuario-rol/asignar` se sigue reutilizando acá mismo al
- * aprobar. Solo se retira su entrada de navegación (ver AppShell.tsx),
- * pero su ruta `/aprobar-solicitudes` sigue viva (decisión explícita:
- * se conserva como referencia/lógica reutilizable).
+ * Consume los endpoints `/solicitudes-acceso` (Epic SCRUM-96), escritos
+ * en H-3 el 2026-09-24 con el contrato que esta pantalla y Registro.tsx
+ * ya usaban. Aprobar crea la cuenta de Supabase Auth con su rol y una
+ * clave temporal; como el correo automático todavía no sale (H-15, falta
+ * el SMTP del proyecto), la respuesta trae esa clave y acá se muestra
+ * para que el Administrador la entregue — ver `credencial`.
  *
  * Todas las solicitudes se piden UNA vez sin filtro (`GET
  * /solicitudes-acceso/`, sin query `estado`) porque el ribbon de métricas y
@@ -84,6 +74,7 @@ export function PanelAdministracion() {
 
   const [rolOtorgado, setRolOtorgado] = useState<Record<number, number>>({})
   const [procesandoId, setProcesandoId] = useState<number | null>(null)
+  const [credencial, setCredencial] = useState<{ nombre: string; email: string; password: string } | null>(null)
 
   const [solicitudRechazando, setSolicitudRechazando] = useState<SolicitudAcceso | null>(null)
   const [motivoSeleccionado, setMotivoSeleccionado] = useState(MOTIVOS_RECHAZO[0])
@@ -176,9 +167,23 @@ export function PanelAdministracion() {
     setError(null)
 
     try {
-      await apiPost(`/solicitudes-acceso/${solicitud.idSolicitud}/aprobar`, { idRol })
-      setMensajeExito(`Solicitud de ${solicitud.nombre} aprobada. Se despachó una credencial temporal a ${solicitud.email}.`)
-      setTimeout(() => setMensajeExito(null), 6000)
+      const resultado = await apiPost<SolicitudAccesoAprobada>(
+        `/solicitudes-acceso/${solicitud.idSolicitud}/aprobar`,
+        { idRol },
+      )
+
+      if (resultado.correoEnviado) {
+        setMensajeExito(`Solicitud de ${solicitud.nombre} aprobada. Se despachó una credencial temporal a ${solicitud.email}.`)
+        setTimeout(() => setMensajeExito(null), 6000)
+      } else {
+        // El correo automático todavía no existe (falta configurar el SMTP
+        // del proyecto de Supabase). Decir "se despachó" acá dejaba a la
+        // persona esperando un correo que nunca llegaba: mientras tanto el
+        // Administrador es el canal, así que la clave se muestra y el
+        // aviso NO se autocierra.
+        setCredencial({ nombre: solicitud.nombre, email: resultado.email, password: resultado.passwordTemporal ?? '' })
+      }
+
       await cargarSolicitudes()
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo aprobar la solicitud.')
@@ -272,6 +277,38 @@ export function PanelAdministracion() {
         <div className="mb-4 flex items-center gap-2 rounded-xl border border-primary/20 bg-primary-container px-4 py-3 text-sm font-medium text-on-primary-container">
           <span aria-hidden="true" className="material-symbols-outlined text-[18px]">check_circle</span>
           {mensajeExito}
+        </div>
+      )}
+
+      {credencial && (
+        <div
+          role="status"
+          className="mb-4 rounded-xl border border-primary/20 bg-primary-container px-4 py-3 text-sm text-on-primary-container"
+        >
+          <p className="font-semibold">
+            Cuenta creada para {credencial.nombre}. Entrégale estos datos: el correo automático todavía no
+            está activo.
+          </p>
+          <dl className="mt-2 grid gap-1 font-mono text-[0.8rem]">
+            <div className="flex gap-2">
+              <dt className="font-sans font-medium">Correo:</dt>
+              <dd>{credencial.email}</dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="font-sans font-medium">Clave temporal:</dt>
+              <dd>{credencial.password}</dd>
+            </div>
+          </dl>
+          <p className="mt-2 text-xs">
+            Deberá cambiarla al entrar. Esta clave no se vuelve a mostrar.
+          </p>
+          <button
+            type="button"
+            onClick={() => setCredencial(null)}
+            className="mt-2 text-xs font-semibold underline"
+          >
+            Ya la entregué, ocultar
+          </button>
         </div>
       )}
 

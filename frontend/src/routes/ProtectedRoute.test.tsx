@@ -7,6 +7,8 @@ import type { AuthContextValue } from '../context/auth-context'
 import { ProtectedRoute } from './ProtectedRoute'
 import type { Usuario } from '../types/api'
 
+import { olvidarPerfil } from '../services/perfil'
+
 const apiGetMock = vi.fn()
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
@@ -73,6 +75,7 @@ function renderConRuta(pathname: string, contextValue: AuthContextValue, roles?:
 describe('ProtectedRoute', () => {
   beforeEach(() => {
     apiGetMock.mockReset()
+    olvidarPerfil()
   })
 
   it('sin sesión redirige a /login', async () => {

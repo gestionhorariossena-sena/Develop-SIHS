@@ -1,4 +1,16 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Ruta absoluta a backend/.env, calculada desde este archivo y NO desde el
+# directorio de trabajo. Con `env_file=".env"` a secas, arrancar el servidor
+# desde la raíz del monorepo (`uvicorn app.main:app` en vez de hacerlo dentro
+# de backend/) levantaba la API igual pero sin leer ninguna variable: como
+# todos los campos de abajo tienen un valor por defecto vacío, no fallaba
+# nada al arrancar y el problema solo aparecía mucho después, en forma de
+# "GEMINI_API_KEY no está configurada" al usar el asistente, o de una
+# conexión a una base de datos local inexistente.
+_ARCHIVO_ENV = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
@@ -35,7 +47,7 @@ class Settings(BaseSettings):
     # defecto: el sistema funciona completo sin esto configurado.
     gemini_api_key: str = ""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ARCHIVO_ENV, env_file_encoding="utf-8", extra="ignore")
 
 
 settings = Settings()

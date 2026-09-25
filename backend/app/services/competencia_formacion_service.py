@@ -1,4 +1,5 @@
 from app.models.competencia_formacion import CompetenciaFormacion
+from app.models.especialidad import Especialidad
 from app.repositories.competencia_formacion_repository import CompetenciaFormacionRepository
 
 
@@ -42,3 +43,24 @@ class CompetenciaFormacionService:
 
         CompetenciaFormacionRepository.eliminar(db, competencia)
         return True
+
+    @staticmethod
+    def reemplazar_especialidades(db, id_competencia: int, ids_especialidades: list[int]):
+        """Deja la competencia con exactamente esas fortalezas (las que
+        no vengan en la lista se quitan). Ids inexistentes se ignoran en
+        silencio en vez de reventar la operación entera: la UI manda lo
+        que tiene en pantalla y una especialidad borrada por otro usuario
+        mientras tanto no debería impedir guardar el resto.
+
+        Devuelve la competencia, o None si no existe."""
+        competencia = CompetenciaFormacionRepository.obtener_por_id(db, id_competencia)
+
+        if not competencia:
+            return None
+
+        competencia.especialidades = (
+            db.query(Especialidad).filter(Especialidad.idEspecialidad.in_(ids_especialidades)).all()
+            if ids_especialidades
+            else []
+        )
+        return CompetenciaFormacionRepository.actualizar(db, competencia)

@@ -1,9 +1,30 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { ModalReportarNovedad } from '../components/ModalReportarNovedad'
 import { apiGet, ApiError } from '../services/api'
-import type { Ambiente, CompetenciaFormacion, Ficha, Horario, ResultadoAprendizaje, Usuario } from '../types/api'
+import type {
+  Ambiente,
+  CompetenciaFormacion,
+  Ficha,
+  Horario,
+  ResultadoAprendizaje,
+  SolicitudCambioHorario,
+  Usuario,
+} from '../types/api'
 import type { Jornada } from './horario/tipos'
+
+const ETIQUETA_ESTADO_SOLICITUD: Record<SolicitudCambioHorario['estado'], string> = {
+  pendiente: 'En revisión de coordinación',
+  aprobada: 'Aprobada por coordinación',
+  rechazada: 'Rechazada por coordinación',
+}
+
+const ESTILO_ESTADO_SOLICITUD: Record<SolicitudCambioHorario['estado'], string> = {
+  pendiente: 'bg-amber-50 text-amber-800 border-amber-200',
+  aprobada: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+  rechazada: 'bg-red-50 text-red-700 border-red-200',
+}
 
 const ETIQUETA_CONTRATO: Record<string, string> = {
   planta: 'Instructor de Planta',
@@ -70,10 +91,14 @@ function formatoHora(hora: string) {
  * el mockup (a propósito, así lo pide el ticket): contenido conceptual /
  * en evaluación, claramente marcado como tal — no es un dato real.
  *
- * Acciones (Descargar Ficha / Reportar Novedad / Radicar Solicitud de
- * Cambio / Cerrar Sesión de Formación): ninguna tiene backend todavía
- * (solicitudes de cambio, exportación PDF, ni un concepto de "sesión"
- * para cerrar) — quedan deshabilitadas con tooltip, no fingen funcionar.
+ * Acciones: "Reportar Novedad" y "Radicar Solicitud de Cambio o Novedad"
+ * abren el mismo modal (ModalReportarNovedad) y llaman a
+ * `POST /solicitudes-cambio-horario/` — es la única voz que el instructor
+ * tiene en el sistema, conectada en H-4 el 2026-09-24 sobre un backend
+ * que ya existía entero y no tenía ninguna pantalla que lo llamara.
+ * "Descargar Ficha" y "Cerrar Sesión de Formación" siguen deshabilitadas
+ * con tooltip: no hay exportación de ficha ni concepto de "sesión" que
+ * cerrar en el backend, y no fingen funcionar.
  */
 export function DetalleFranjaAmbiente() {
   const [searchParams] = useSearchParams()
@@ -93,6 +118,9 @@ export function DetalleFranjaAmbiente() {
   const [competencia, setCompetencia] = useState<CompetenciaFormacion | null>(null)
   const [errorCompetencia, setErrorCompetencia] = useState(false)
 
+  const [solicitudes, setSolicitudes] = useState<SolicitudCambioHorario[]>([])
+  const [modalAbierto, setModalAbierto] = useState(false)
+
   useEffect(() => {
     apiGet<Horario[]>('/usuarios/me/horarios')
       .then(setHorarios)
@@ -101,11 +129,22 @@ export function DetalleFranjaAmbiente() {
     apiGet<Usuario>('/usuarios/me')
       .then(setPerfil)
       .catch(() => {})
+
+    // Las propias, para que el instructor vea lo que ya reportó de esta
+    // franja y no lo mande dos veces creyendo que se perdió.
+    apiGet<SolicitudCambioHorario[]>('/solicitudes-cambio-horario/mias')
+      .then(setSolicitudes)
+      .catch(() => setSolicitudes([]))
   }, [])
 
   const horario = useMemo(
     () => (idHorario != null ? (horarios?.find((h) => h.idHorario === idHorario) ?? null) : null),
     [horarios, idHorario],
+  )
+
+  const solicitudesDeEstaFranja = useMemo(
+    () => solicitudes.filter((s) => s.idHorarioOrigen === idHorario),
+    [solicitudes, idHorario],
   )
 
   useEffect(() => {
@@ -208,9 +247,9 @@ export function DetalleFranjaAmbiente() {
                 </button>
                 <button
                   type="button"
-                  disabled
-                  title="Aún no implementado en el backend"
-                  className="inline-flex h-10 cursor-not-allowed items-center gap-1.5 rounded-xl bg-error/60 px-4 text-sm font-semibold text-on-error opacity-80"
+                  onClick={() => setModalAbierto(true)}
+                  title="Avisar a coordinación sobre esta franja"
+                  className="inline-flex h-10 items-center gap-1.5 rounded-xl bg-error px-4 text-sm font-semibold text-on-error transition hover:opacity-90"
                 >
                   <span className="material-symbols-outlined text-[18px]">report_problem</span>
                   Reportar Novedad
@@ -443,9 +482,9 @@ export function DetalleFranjaAmbiente() {
             <div className="flex flex-wrap items-center justify-end gap-2">
               <button
                 type="button"
-                disabled
-                title="Aún no implementado en el backend"
-                className="inline-flex h-11 cursor-not-allowed items-center gap-1.5 rounded-xl bg-surface-container-low px-5 text-sm font-semibold text-on-surface-variant opacity-70"
+                onClick={() => setModalAbierto(true)}
+                title="Avisar a coordinación sobre esta franja"
+                className="inline-flex h-11 items-center gap-1.5 rounded-xl bg-surface-container-low px-5 text-sm font-semibold text-on-surface-variant transition hover:bg-surface-container"
               >
                 <span className="material-symbols-outlined text-[18px]">edit_calendar</span>
                 Radicar Solicitud de Cambio o Novedad
@@ -461,7 +500,53 @@ export function DetalleFranjaAmbiente() {
               </button>
             </div>
           </div>
+
+          {solicitudesDeEstaFranja.length > 0 && (
+            <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 shadow-sm">
+              <h2 className="mb-3 text-base font-semibold text-on-surface">Lo que ya reportaste de esta franja</h2>
+
+              <ul className="flex flex-col gap-3">
+                {solicitudesDeEstaFranja.map((solicitud) => (
+                  <li
+                    key={solicitud.idSolicitud}
+                    className="rounded-xl border border-outline-variant p-3 dark:border-slate-700"
+                  >
+                    <div className="mb-1 flex flex-wrap items-center gap-2">
+                      <span className="text-sm font-semibold capitalize text-on-surface">
+                        {solicitud.tipo.replace('-', ' ')}
+                      </span>
+                      <span
+                        className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${ESTILO_ESTADO_SOLICITUD[solicitud.estado]}`}
+                      >
+                        {ETIQUETA_ESTADO_SOLICITUD[solicitud.estado]}
+                      </span>
+                      <span className="text-xs text-on-surface-variant">
+                        {new Date(solicitud.fechaSolicitud).toLocaleDateString('es-CO', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-on-surface-variant">{solicitud.motivo}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
+      )}
+
+      {modalAbierto && horario && (
+        <ModalReportarNovedad
+          idHorario={horario.idHorario}
+          descripcionFranja={`${dia} · ${formatoHora(horario.horaInicio)} a ${formatoHora(horario.horaFin)} · ficha ${horario.fichaCodigo ?? horario.idFicha}`}
+          onCerrar={() => setModalAbierto(false)}
+          onEnviada={(solicitud) => {
+            setSolicitudes((previas) => [solicitud, ...previas])
+            setModalAbierto(false)
+          }}
+        />
       )}
     </AppShell>
   )

@@ -204,6 +204,11 @@ export type TipoConflictoHorario =
   | 'cruce_ambiente'
   | 'resultado_repetido'
   | 'regla_instructor'
+  // El instructor no tiene la fortaleza (especialidad) que pide la
+  // competencia del resultado — ver
+  // HorarioService._validar_fortaleza_instructor. Forzable, igual que
+  // regla_instructor.
+  | 'fortaleza_instructor'
 
 export interface HorarioDryRunConflict {
   tipo: TipoConflictoHorario
@@ -260,6 +265,10 @@ export interface Aviso {
   adjuntoUrl: string | null
   fechaPublicacion: string
   vigenteHasta: string | null
+  // Resueltos por el backend: un Aprendiz no tiene permiso sobre /fichas/
+  // ni /sedes/ para traducir esos ids, y el aviso va dirigido a él.
+  fichaCodigo: string | null
+  sedeNombre: string | null
 }
 
 export interface HorarioGuardado {
@@ -318,37 +327,8 @@ export interface AnotacionHorarioInput {
   recordatorioActivo: boolean
 }
 
-// Espejo de ConversacionResponse/MensajeResponse (backend/app/schemas/mensajeria.py)
-// — SCRUM-119, mensajería 1 a 1 Aprendiz ↔ Instructor. Sin canal grupal de
-// ficha ni presencia en tiempo real en esta v1 (ver comentario del modelo
-// `Conversacion` en backend/app/models/mensajeria.py).
-export interface Conversacion {
-  idConversacion: number
-  idAprendiz: string
-  idInstructor: string
-  fechaCreacion: string
-}
-
-export interface Mensaje {
-  idMensaje: number
-  idConversacion: number
-  idRemitente: string
-  contenido: string
-  // v1 solo guarda un link de referencia, no sube archivos de verdad.
-  adjuntoUrl: string | null
-  leido: boolean
-  fechaEnvio: string
-}
-
-// Espejo de la tabla `solicitudes_acceso` (ticket "[DB/Arquitectura] Tabla
-// solicitudes_acceso...", Epic SCRUM-96) y de `SolicitudAccesoResponse` del
-// endpoint `GET /solicitudes-acceso/` (ticket "[Backend] Endpoints
-// /solicitudes-acceso", mismo Epic). El backend real (SolicitudAccesoResponse
-// en app/schemas/solicitud_acceso.py) ya existe y devuelve
-// `rolSolicitado` como el NOMBRE del rol resuelto (string | null), no un
-// objeto Rol completo -- PanelAdministracion.tsx todavía no está conectado
-// a él (sigue en modo "vitrina" con datos de ejemplo), así que si se
-// conecta hay que ajustar este campo.
+// Espejo de `app/schemas/solicitud_acceso.py#SolicitudAccesoResponse`
+// (Epic SCRUM-96). Endpoints vivos desde H-3.
 export interface SolicitudAcceso {
   idSolicitud: number
   nombre: string
@@ -362,6 +342,58 @@ export interface SolicitudAcceso {
   fechaSolicitud: string
   fechaResolucion: string | null
   idAdminResolvio: string | null
+}
+
+/** Espejo de `app/schemas/mensajeria.py`. Hilo 1 a 1 entre un Aprendiz y
+ * un Instructor que sí le dicta clase. Solo el Aprendiz puede abrirlo
+ * (`POST /mensajeria/conversaciones` exige su rol y valida el vínculo), y
+ * no hay tiempo real: se refresca al entrar. */
+export interface Conversacion {
+  idConversacion: number
+  idAprendiz: string
+  idInstructor: string
+  fechaCreacion: string
+  aprendizNombre: string | null
+  instructorNombre: string | null
+}
+
+export interface Mensaje {
+  idMensaje: number
+  idConversacion: number
+  idRemitente: string
+  contenido: string
+  adjuntoUrl: string | null
+  leido: boolean
+  fechaEnvio: string
+}
+
+/** Espejo de `app/schemas/solicitud_cambio_horario.py`. Un instructor
+ * reporta algo sobre un bloque SUYO ya programado y coordinación lo
+ * resuelve. Ojo: aprobar registra la decisión, no mueve el horario real
+ * (ver el docstring de `SolicitudCambioHorarioService.resolver`). */
+export type TipoSolicitudCambio = 'novedad' | 'permuta' | 'cambio-ambiente'
+
+export interface SolicitudCambioHorario {
+  idSolicitud: number
+  idInstructor: string
+  idHorarioOrigen: number
+  tipo: TipoSolicitudCambio
+  motivo: string
+  estado: 'pendiente' | 'aprobada' | 'rechazada'
+  fechaSolicitud: string
+  fechaResolucion: string | null
+  idAdminResolvio: string | null
+}
+
+/** Respuesta de `POST /solicitudes-acceso/{id}/aprobar`. Mientras el SMTP
+ * del proyecto de Supabase siga sin configurar (H-15), `correoEnviado` es
+ * false y la clave viaja acá para que el Administrador se la entregue a
+ * mano — cuando ese correo funcione, `passwordTemporal` deja de venir. */
+export interface SolicitudAccesoAprobada {
+  solicitud: SolicitudAcceso
+  email: string
+  passwordTemporal: string | null
+  correoEnviado: boolean
 }
 
 // Espejo de app/schemas/asistente_horario.py -- el wizard de 4 pasos

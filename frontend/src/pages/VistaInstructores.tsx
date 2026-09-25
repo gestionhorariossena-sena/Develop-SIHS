@@ -12,7 +12,7 @@ function iniciales(nombre: string) {
 }
 
 /**
- * "Vista por instructores" (backlog sidebar.png, grupo Programación) —
+ * "Vista por instructores" (backlog del navbar, grupo Programación) —
  * filtra por UN instructor y muestra su horario semanal completo, para
  * que el coordinador no tenga que buscarlo a mano en cada ficha/ambiente.
  * El detalle (tipo de contrato, especialidades, carga semanal) sigue

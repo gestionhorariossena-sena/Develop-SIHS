@@ -42,6 +42,22 @@ const COLOR_ETIQUETA: Record<EtiquetaAnotacion, { dot: string; badge: string; ba
   },
 }
 
+/** El backend responde "No existe una ficha con ese código" y "Ya tienes
+ * una ficha vinculada": correcto como contrato, inútil como instrucción. */
+function mensajeDeVinculo(err: unknown, codigo: string): string {
+  if (err instanceof ApiError) {
+    if (err.status === 404) {
+      return `No encontramos la ficha ${codigo}. Revisa que esté completa (son 7 dígitos) y, si el código es el correcto, pídele a tu coordinador que registre la ficha.`
+    }
+    if (err.status === 400) {
+      return 'Ya tienes una ficha vinculada. Si no es la tuya, tu coordinador puede corregirla.'
+    }
+    return err.message
+  }
+
+  return 'No se pudo vincular tu ficha. Inténtalo de nuevo en unos segundos.'
+}
+
 function idHorarioDeBloqueId(bloqueId: string): number {
   return Number(bloqueId.replace('horario-', ''))
 }
@@ -70,6 +86,13 @@ export function MiHorarioAprendiz() {
   const [cargando, setCargando] = useState(true)
   const [ahora, setAhora] = useState(() => new Date())
 
+  // H-1: vincular la ficha desde acá. El endpoint existía desde siempre
+  // sin ninguna pantalla que lo llamara, así que un aprendiz recién
+  // registrado leía "vincúlala desde tu perfil" y allá tampoco había nada.
+  const [codigoFicha, setCodigoFicha] = useState('')
+  const [vinculando, setVinculando] = useState(false)
+  const [errorVinculo, setErrorVinculo] = useState<string | null>(null)
+
   const [anotaciones, setAnotaciones] = useState<AnotacionHorario[]>([])
   const [errorAnotaciones, setErrorAnotaciones] = useState<string | null>(null)
   const [idHorarioSeleccionado, setIdHorarioSeleccionado] = useState<number | null>(null)
@@ -95,6 +118,30 @@ export function MiHorarioAprendiz() {
       })
       .finally(() => setCargando(false))
   }, [])
+
+  async function vincularFicha(evento: React.FormEvent) {
+    evento.preventDefault()
+
+    const codigo = codigoFicha.trim()
+    if (!codigo || vinculando) return
+
+    setVinculando(true)
+    setErrorVinculo(null)
+
+    try {
+      const fichaVinculada = await apiPost<Ficha>('/ficha-usuario/vincular', { codigoFicha: codigo })
+      setFicha(fichaVinculada)
+      setSinFicha(false)
+      setCodigoFicha('')
+      // Se recarga el horario en la misma pantalla: aparece abajo sin
+      // navegar ni recargar el navegador.
+      setHorarios(await apiGet<Horario[]>('/ficha-usuario/mi-horario'))
+    } catch (err: unknown) {
+      setErrorVinculo(mensajeDeVinculo(err, codigo))
+    } finally {
+      setVinculando(false)
+    }
+  }
 
   useEffect(() => {
     apiGet<AnotacionHorario[]>('/anotaciones-horario/mias')
@@ -276,9 +323,49 @@ export function MiHorarioAprendiz() {
       {cargando ? (
         <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando tu horario...</p>
       ) : sinFicha ? (
-        <p className="rounded-xl border border-slate-200 bg-white px-4 py-12 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-          Todavía no tienes una ficha vinculada — vincúlala desde tu perfil para ver tu horario.
-        </p>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+          <h2 className="text-base font-semibold text-on-surface dark:text-slate-100">
+            Vincula tu ficha para ver tu horario
+          </h2>
+          <p className="mb-4 mt-1 text-sm text-on-surface-variant dark:text-slate-400">
+            Escribe el código de la ficha en la que estás matriculado. Lo encuentras en tu carta de
+            aceptación o se lo puedes pedir a tu coordinador.
+          </p>
+
+          <form onSubmit={vincularFicha} className="flex flex-wrap items-start gap-3">
+            <div className="min-w-[14rem] flex-1">
+              <label
+                htmlFor="codigo-ficha"
+                className="mb-1 block text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400"
+              >
+                Código de ficha
+              </label>
+              <input
+                id="codigo-ficha"
+                name="codigoFicha"
+                value={codigoFicha}
+                onChange={(e) => setCodigoFicha(e.target.value)}
+                placeholder="Ej. 3171618"
+                autoComplete="off"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-on-surface outline-none focus:border-primary dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={!codigoFicha.trim() || vinculando}
+              className="mt-[1.4rem] rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {vinculando ? 'Vinculando…' : 'Vincular ficha'}
+            </button>
+          </form>
+
+          {errorVinculo && (
+            <p role="alert" className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {errorVinculo}
+            </p>
+          )}
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="flex flex-col gap-4 lg:col-span-8">

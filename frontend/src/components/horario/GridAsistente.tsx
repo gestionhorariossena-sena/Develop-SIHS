@@ -64,6 +64,14 @@ const FONDO_JORNADA: Record<string, string> = {
   Noche: 'bg-indigo-100 dark:bg-indigo-950/30',
 }
 
+/** Lo que el Aprendiz anotó sobre uno de sus bloques — lo justo para
+ * pintarlo en la celda, no el registro entero. */
+export interface MarcaDeCelda {
+  etiqueta: string
+  nota: string
+  recordatorioActivo: boolean
+}
+
 interface GridAsistenteProps {
   celdas: CeldaAsistente[]
   /** Si viene, cada celda "nueva" muestra un botón "Quitar" -- para
@@ -71,12 +79,19 @@ interface GridAsistenteProps {
    * que regenerar toda la propuesta. Las celdas "existentes" (ya
    * guardadas) nunca lo muestran: para eso está Historial de horarios. */
   onQuitarNuevo?: (id: string) => void
+  /** Anotación personal por `CeldaAsistente.id`. Solo la usa "Mi horario"
+   * del Aprendiz; el resto de pantallas que comparten este grid no la
+   * pasan y no cambian en nada. */
+  marcas?: Record<string, MarcaDeCelda>
+  /** Hace las celdas pulsables. Con esto, el grid deja de ser solo
+   * lectura para quien lo necesite (el Aprendiz abre su organizador). */
+  onElegirCelda?: (celda: CeldaAsistente) => void
 }
 
 /** Grid semanal de solo lectura (con opción de quitar bloques nuevos) que
  * combina lo que ya estaba guardado para estas fichas con lo que el
  * asistente propone -- para verlo todo junto antes de confirmar. */
-export function GridAsistente({ celdas, onQuitarNuevo }: GridAsistenteProps) {
+export function GridAsistente({ celdas, onQuitarNuevo, marcas, onElegirCelda }: GridAsistenteProps) {
   const porCelda = new Map<string, CeldaAsistente[]>()
   for (const celda of celdas) {
     const idxFranja = FRANJAS.findIndex((f) => f.horaInicio24 === celda.horaInicio)
@@ -107,7 +122,15 @@ export function GridAsistente({ celdas, onQuitarNuevo }: GridAsistenteProps) {
         ))}
 
         {FRANJAS.map((franja, idxFranja) => (
-          <FragmentoFila key={idxFranja} franja={franja} idxFranja={idxFranja} porCelda={porCelda} onQuitarNuevo={onQuitarNuevo} />
+          <FragmentoFila
+            key={idxFranja}
+            franja={franja}
+            idxFranja={idxFranja}
+            porCelda={porCelda}
+            onQuitarNuevo={onQuitarNuevo}
+            marcas={marcas}
+            onElegirCelda={onElegirCelda}
+          />
         ))}
       </div>
     </div>
@@ -119,11 +142,15 @@ function FragmentoFila({
   idxFranja,
   porCelda,
   onQuitarNuevo,
+  marcas,
+  onElegirCelda,
 }: {
   franja: (typeof FRANJAS)[number]
   idxFranja: number
   porCelda: Map<string, CeldaAsistente[]>
   onQuitarNuevo?: (id: string) => void
+  marcas?: Record<string, MarcaDeCelda>
+  onElegirCelda?: (celda: CeldaAsistente) => void
 }) {
   const mostrarEncabezadoJornada = idxFranja === 0 || FRANJAS[idxFranja - 1].jornada !== franja.jornada
 
@@ -148,7 +175,13 @@ function FragmentoFila({
             }`}
           >
             {ocupantes.map((celda) => (
-              <CeldaBloque key={celda.id} celda={celda} onQuitarNuevo={onQuitarNuevo} />
+              <CeldaBloque
+                key={celda.id}
+                celda={celda}
+                onQuitarNuevo={onQuitarNuevo}
+                marca={marcas?.[celda.id]}
+                onElegirCelda={onElegirCelda}
+              />
             ))}
           </div>
         )
@@ -157,16 +190,37 @@ function FragmentoFila({
   )
 }
 
-function CeldaBloque({ celda, onQuitarNuevo }: { celda: CeldaAsistente; onQuitarNuevo?: (id: string) => void }) {
+function CeldaBloque({
+  celda,
+  onQuitarNuevo,
+  marca,
+  onElegirCelda,
+}: {
+  celda: CeldaAsistente
+  onQuitarNuevo?: (id: string) => void
+  marca?: MarcaDeCelda
+  onElegirCelda?: (celda: CeldaAsistente) => void
+}) {
   const color = colorParaBloque(celda.id)
   const esConflicto = celda.estado === 'conflicto'
 
+  // Con `onElegirCelda` la celda pasa a ser un <button>: si se puede
+  // pulsar, tiene que poder pulsarse también con el teclado y anunciarse
+  // como control, no como un div con un onClick colgado.
+  const Contenedor = onElegirCelda ? 'button' : 'div'
+
   return (
-    <div
-      className={`group relative space-y-0.5 rounded-md border-l-2 px-2 py-1.5 text-left text-[11px] leading-tight ${color.fondo} ${
+    <Contenedor
+      type={onElegirCelda ? 'button' : undefined}
+      onClick={onElegirCelda ? () => onElegirCelda(celda) : undefined}
+      className={`group relative w-full space-y-0.5 rounded-md border-l-2 px-2 py-1.5 text-left text-[11px] leading-tight ${color.fondo} ${
         esConflicto ? 'border-red-600' : color.borde
-      } ${color.texto}`}
-      title={`${celda.resultadoDescripcion ?? 'Sin tema'} · ${celda.instructorNombre} · ${celda.ambienteNombre}`}
+      } ${color.texto} ${onElegirCelda ? 'cursor-pointer hover:brightness-95' : ''}`}
+      title={
+        onElegirCelda
+          ? `${celda.resultadoDescripcion ?? 'Sin tema'} — pulsa para anotar algo sobre esta clase`
+          : `${celda.resultadoDescripcion ?? 'Sin tema'} · ${celda.instructorNombre} · ${celda.ambienteNombre}`
+      }
     >
       <p className="flex items-center gap-1 truncate font-semibold">
         {celda.origen === 'nuevo' && (
@@ -177,6 +231,18 @@ function CeldaBloque({ celda, onQuitarNuevo }: { celda: CeldaAsistente; onQuitar
       <p className="truncate">Ficha {celda.fichaCodigo} · {celda.instructorNombre}</p>
       <p className="truncate opacity-80">{celda.ambienteNombre}</p>
       {esConflicto && <p className="truncate font-semibold text-red-700 dark:text-red-400">⚠ Cruce -- no se guardará</p>}
+
+      {marca && (
+        <p className="mt-1 flex items-start gap-1 truncate rounded bg-white/70 px-1 py-0.5 font-medium dark:bg-slate-900/50">
+          <span aria-hidden="true" className="material-symbols-outlined text-[12px]">
+            {marca.recordatorioActivo ? 'notifications_active' : 'sticky_note_2'}
+          </span>
+          <span className="truncate">
+            <span className="font-bold uppercase">{marca.etiqueta}</span>
+            {marca.nota ? ` · ${marca.nota}` : ''}
+          </span>
+        </p>
+      )}
 
       {celda.origen === 'nuevo' && onQuitarNuevo && (
         <button
@@ -189,6 +255,6 @@ function CeldaBloque({ celda, onQuitarNuevo }: { celda: CeldaAsistente; onQuitar
           ✕
         </button>
       )}
-    </div>
+    </Contenedor>
   )
 }

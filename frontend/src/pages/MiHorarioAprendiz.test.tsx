@@ -122,11 +122,14 @@ describe('MiHorarioAprendiz', () => {
     vi.useRealTimers()
   })
 
-  it('muestra un mensaje si el aprendiz no tiene ficha vinculada', async () => {
+  // H-1: antes este estado solo informaba ("vincúlala desde tu perfil"),
+  // y en el perfil tampoco había nada. Ahora se resuelve desde acá.
+  it('sin ficha vinculada ofrece el formulario para vincularla', async () => {
     mockearRespuestas({ fichaError: new ApiErrorMock(404, 'No tienes una ficha vinculada') })
     renderConProviders(<MiHorarioAprendiz />)
 
-    expect(await screen.findByText(/todavía no tienes una ficha vinculada/i)).toBeInTheDocument()
+    expect(await screen.findByText('Vincula tu ficha para ver tu horario')).toBeInTheDocument()
+    expect(screen.getByLabelText('Código de ficha')).toBeInTheDocument()
   })
 
   it('carga la ficha y el horario reales y pinta el encabezado', async () => {

@@ -3,256 +3,270 @@ import { AppShell } from '../components/AppShell'
 import { apiGet, ApiError } from '../services/api'
 import type { Aviso, CategoriaAviso } from '../types/api'
 
-type FiltroCategoria = 'all' | 'reprog' | 'eventos' | 'sede'
+type Filtro = CategoriaAviso | 'todas'
 
-const PILLS: { id: FiltroCategoria; etiqueta: string }[] = [
-  { id: 'all', etiqueta: 'Todos los comunicados' },
-  { id: 'reprog', etiqueta: 'Cancelaciones & Reprogramaciones' },
-  { id: 'eventos', etiqueta: 'Eventos & Convocatorias' },
-  { id: 'sede', etiqueta: 'Circulares de Sede' },
+const CATEGORIAS: { valor: Filtro; etiqueta: string }[] = [
+  { valor: 'todas', etiqueta: 'Todos los comunicados' },
+  { valor: 'reprog', etiqueta: 'Cancelaciones y reprogramaciones' },
+  { valor: 'eventos', etiqueta: 'Eventos y convocatorias' },
+  { valor: 'sede', etiqueta: 'Sede' },
+  { valor: 'extraordinario', etiqueta: 'Extraordinarios' },
 ]
 
+/** Cada categoría con su color, siguiendo la regla de la guía de marca:
+ * fondo "container" claro + texto oscuro del mismo matiz, nunca saturado. */
+const ESTILO_CATEGORIA: Record<CategoriaAviso, string> = {
+  reprog: 'bg-tertiary-container text-on-tertiary-container',
+  eventos: 'bg-primary-container text-on-primary-container',
+  sede: 'bg-surface-container text-on-surface-variant',
+  extraordinario: 'bg-error-container text-on-error-container',
+}
+
 const ETIQUETA_CATEGORIA: Record<CategoriaAviso, string> = {
-  reprog: 'Cancelación / Reprogramación',
-  eventos: 'Evento / Convocatoria',
-  sede: 'Circular de Sede',
-  extraordinario: 'Comunicado Extraordinario',
+  reprog: 'Reprogramación',
+  eventos: 'Evento',
+  sede: 'Sede',
+  extraordinario: 'Comunicado extraordinario',
 }
 
-const CLASE_BADGE_CATEGORIA: Record<CategoriaAviso, string> = {
-  reprog: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
-  eventos: 'bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300',
-  sede: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
-  extraordinario: 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300',
+const ICONO_CATEGORIA: Record<CategoriaAviso, string> = {
+  reprog: 'event_repeat',
+  eventos: 'celebration',
+  sede: 'domain',
+  extraordinario: 'campaign',
 }
 
-function formatearFecha(iso: string) {
-  return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+function formatFechaLarga(iso: string) {
+  return new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 
-/** Insignia reutilizable para marcar contenido de vitrina (sin backend
- * real todavía) — mismo criterio que el botón deshabilitado de
- * Dashboard.tsx, aplicado a una tarjeta completa en vez de a un botón. */
-function InsigniaVitrina() {
-  return (
-    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-      Vitrina · sin datos reales aún
-    </span>
-  )
+/** "hace 3 horas" / "hace 2 días" — el mockup lo muestra así, y para un
+ * comunicado importa más lo reciente que la fecha exacta. */
+function hace(iso: string): string {
+  const minutos = Math.round((Date.now() - new Date(iso).getTime()) / 60000)
+
+  if (minutos < 1) return 'recién publicado'
+  if (minutos < 60) return `hace ${minutos} min`
+
+  const horas = Math.round(minutos / 60)
+  if (horas < 24) return `hace ${horas} ${horas === 1 ? 'hora' : 'horas'}`
+
+  const dias = Math.round(horas / 24)
+  if (dias < 31) return `hace ${dias} ${dias === 1 ? 'día' : 'días'}`
+
+  return `el ${formatFechaLarga(iso)}`
 }
 
+/** Un aviso está vencido cuando su vigencia ya pasó. El backend guarda
+ * `vigenteHasta` pero no filtra por él: los vencidos siguen llegando y acá
+ * se atenúan en vez de esconderse — que algo haya vencido es información. */
+function estaVencido(aviso: Aviso): boolean {
+  if (!aviso.vigenteHasta) return false
+  const hoy = new Date().toISOString().slice(0, 10)
+  return aviso.vigenteHasta < hoy
+}
+
+function destinatario(aviso: Aviso): string {
+  if (aviso.fichaCodigo) return `Ficha ${aviso.fichaCodigo}`
+  if (aviso.sedeNombre) return aviso.sedeNombre
+  if (aviso.idFicha) return 'Una ficha'
+  if (aviso.idSede) return 'Una sede'
+  return 'Todo el centro'
+}
+
+/**
+ * Tablón de comunicados de coordinación — `GET /avisos/`, que cualquier
+ * sesión puede leer (aprendiz, instructor y coordinación ven lo mismo).
+ *
+ * Mockup: `_Docs/Diseño/mockups-stitch/avisos_oficiales_y_eventos_rol_aprendiz_sihs_sena`.
+ * Se respeta su estructura (destacado arriba + lista filtrable por
+ * categoría), con una diferencia deliberada: el mockup muestra cosas que
+ * el backend no tiene y que no se inventan acá — "ambientes cerrados",
+ * "cómo afecta mi horario", ID de circular y descarga de PDF propio. Un
+ * aviso es titulo + cuerpo + categoría + destinatario + vigencia + un
+ * enlace opcional, y eso es lo que se pinta.
+ *
+ * Publicar/editar//eliminar (Administrador y Coordinador) todavía no tiene
+ * pantalla: es el Prompt 1 de `_Docs/Diseño/PROMPTS_STITCH_VISTAS_PENDIENTES.md`.
+ */
 export function Avisos() {
-  const [avisos, setAvisos] = useState<Aviso[]>([])
+  const [avisos, setAvisos] = useState<Aviso[] | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [categoriaFiltro, setCategoriaFiltro] = useState<FiltroCategoria>('all')
-  const [busqueda, setBusqueda] = useState('')
+  const [filtro, setFiltro] = useState<Filtro>('todas')
 
   useEffect(() => {
     apiGet<Aviso[]>('/avisos/')
-      .then(setAvisos)
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar los avisos.'))
+      .then((lista) => {
+        setAvisos(lista)
+        setError(null)
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof ApiError ? err.message : 'No se pudieron cargar los comunicados.')
+      })
       .finally(() => setCargando(false))
   }, [])
 
-  // El aviso extraordinario más reciente se destaca como hero; si no hay
-  // ninguno, se destaca el aviso más reciente en general (GET /avisos/ ya
-  // llega ordenado por fechaPublicacion desc).
-  const destacado = useMemo(() => {
-    const extraordinarios = avisos.filter((aviso) => aviso.categoria === 'extraordinario')
-    return extraordinarios[0] ?? avisos[0] ?? null
-  }, [avisos])
+  // El filtro se aplica en el cliente aunque el endpoint acepte
+  // `?categoria=`: los contadores de cada píldora necesitan la lista
+  // completa, y son pocos avisos por definición.
+  const visibles = useMemo(
+    () => (avisos ?? []).filter((a) => filtro === 'todas' || a.categoria === filtro),
+    [avisos, filtro],
+  )
 
-  // Filtro por categoría (píldoras) y buscador: ambos client-side sobre el
-  // resultado ya traído por GET /avisos/, igual que hace el mockup.
-  const texto = busqueda.trim().toLocaleLowerCase('es-CO')
-  const feed = avisos
-    .filter((aviso) => aviso.idAviso !== destacado?.idAviso)
-    .filter((aviso) => categoriaFiltro === 'all' || aviso.categoria === categoriaFiltro)
-    .filter((aviso) => !texto || `${aviso.titulo} ${aviso.cuerpo}`.toLocaleLowerCase('es-CO').includes(texto))
+  const vigentesHoy = useMemo(() => (avisos ?? []).filter((a) => !estaVencido(a)).length, [avisos])
 
-  const vigentesHoy = avisos.filter((aviso) => !aviso.vigenteHasta || new Date(aviso.vigenteHasta) >= new Date()).length
+  const [destacado, ...resto] = visibles
 
   return (
-    <AppShell activo="Avisos y Eventos">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Avisos & Eventos</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Comunicados y novedades oficiales de Coordinación: cancelaciones, reprogramaciones, eventos y circulares de sede.
-          </p>
-        </div>
-        <p className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-          {vigentesHoy} vigente{vigentesHoy === 1 ? '' : 's'} de {avisos.length}
-        </p>
-      </div>
+    <AppShell activo="Avisos">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Boletín oficial</p>
+            <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">
+              Comunicados y novedades
+            </h1>
+            <p className="text-sm text-on-surface-variant dark:text-slate-400">
+              Lo que publica la coordinación del centro: reprogramaciones, eventos y avisos de sede.
+            </p>
+          </div>
 
-      <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de avisos">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {PILLS.map((pill) => (
+          {avisos && avisos.length > 0 && (
+            <div className="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-2 text-right dark:border-slate-700 dark:bg-slate-800">
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">Vigentes hoy</p>
+              <p className="text-lg font-bold text-primary">
+                {vigentesHoy} {vigentesHoy === 1 ? 'aviso' : 'avisos'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="mb-5 flex flex-wrap gap-2">
+          {CATEGORIAS.map((categoria) => {
+            const cantidad =
+              categoria.valor === 'todas'
+                ? (avisos ?? []).length
+                : (avisos ?? []).filter((a) => a.categoria === categoria.valor).length
+
+            return (
               <button
-                key={pill.id}
+                key={categoria.valor}
                 type="button"
-                onClick={() => setCategoriaFiltro(pill.id)}
-                className={`rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
-                  categoriaFiltro === pill.id
-                    ? 'bg-sena-600 text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600'
+                onClick={() => setFiltro(categoria.valor)}
+                className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
+                  filtro === categoria.valor
+                    ? 'bg-primary text-on-primary'
+                    : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
                 }`}
               >
-                {pill.etiqueta}
+                {categoria.etiqueta}
+                {cantidad > 0 && <span className="ml-1.5 opacity-70">{cantidad}</span>}
               </button>
+            )
+          })}
+        </div>
+
+        {cargando && <p className="text-sm text-on-surface-variant dark:text-slate-400">Cargando comunicados…</p>}
+
+        {error && (
+          <p className="rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm text-on-error-container">
+            {error}
+          </p>
+        )}
+
+        {!cargando && !error && visibles.length === 0 && (
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-10 text-center dark:border-slate-700 dark:bg-slate-800">
+            <span aria-hidden="true" className="material-symbols-outlined text-[32px] text-on-surface-variant">
+              campaign
+            </span>
+            <p className="mt-2 text-sm font-semibold text-on-surface dark:text-slate-100">
+              {filtro === 'todas'
+                ? 'Todavía no hay comunicados publicados'
+                : 'No hay comunicados en esta categoría'}
+            </p>
+            <p className="mt-1 text-sm text-on-surface-variant dark:text-slate-400">
+              Cuando la coordinación publique uno, aparecerá acá.
+            </p>
+          </div>
+        )}
+
+        {destacado && <TarjetaAviso aviso={destacado} destacado />}
+
+        {resto.length > 0 && (
+          <ul className="mt-4 flex flex-col gap-3">
+            {resto.map((aviso) => (
+              <li key={aviso.idAviso}>
+                <TarjetaAviso aviso={aviso} />
+              </li>
             ))}
-          </div>
-          <div className="lg:w-64">
-            <label htmlFor="buscar-aviso" className="sr-only">
-              Buscar por tema, ficha o ambiente
-            </label>
-            <input
-              id="buscar-aviso"
-              value={busqueda}
-              onChange={(evento) => setBusqueda(evento.target.value)}
-              placeholder="Buscar por tema, ficha o ambiente..."
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-sena-600 focus:ring-1 focus:ring-sena-600 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            />
-          </div>
-        </div>
-      </section>
-
-      {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-
-      {cargando ? (
-        <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando avisos...</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-          <div className="flex flex-col gap-6 lg:col-span-8">
-            {destacado && (
-              <article className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${CLASE_BADGE_CATEGORIA[destacado.categoria]}`}>
-                    {destacado.categoria === 'extraordinario' ? 'COMUNICADO EXTRAORDINARIO' : ETIQUETA_CATEGORIA[destacado.categoria]}
-                  </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400">Publicado {formatearFecha(destacado.fechaPublicacion)}</span>
-                </div>
-                <h2 className="mb-2 text-lg font-semibold text-slate-900 dark:text-slate-100">{destacado.titulo}</h2>
-                <p className="mb-4 whitespace-pre-line text-sm text-slate-700 dark:text-slate-300">{destacado.cuerpo}</p>
-                {destacado.publicadorNombre && (
-                  <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">Publicado por {destacado.publicadorNombre}</p>
-                )}
-                <div className="flex flex-wrap items-center gap-3">
-                  {destacado.adjuntoUrl && (
-                    <a
-                      href={destacado.adjuntoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700"
-                    >
-                      Descargar adjunto
-                    </a>
-                  )}
-                  <button
-                    disabled
-                    title="Aún no implementado en el backend: requiere relacionar el aviso con un bloque de horarios."
-                    className="cursor-not-allowed rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-300"
-                  >
-                    Ver cómo afecta mi horario
-                  </button>
-                </div>
-              </article>
-            )}
-
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Tablón de comunicados</h3>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
-                Mostrando {feed.length} aviso{feed.length === 1 ? '' : 's'}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-4">
-              {feed.map((aviso) => (
-                <article key={aviso.idAviso} className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${CLASE_BADGE_CATEGORIA[aviso.categoria]}`}>
-                      {ETIQUETA_CATEGORIA[aviso.categoria]}
-                    </span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{formatearFecha(aviso.fechaPublicacion)}</span>
-                  </div>
-                  <h4 className="mb-1 text-base font-semibold text-slate-900 dark:text-slate-100">{aviso.titulo}</h4>
-                  <p className="mb-2 text-sm text-slate-600 dark:text-slate-300">{aviso.cuerpo}</p>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
-                    {aviso.publicadorNombre && <span>{aviso.publicadorNombre}</span>}
-                    {aviso.adjuntoUrl && (
-                      <a href={aviso.adjuntoUrl} target="_blank" rel="noopener noreferrer" className="font-medium text-sena-700 hover:underline dark:text-sena-400">
-                        Ver adjunto
-                      </a>
-                    )}
-                  </div>
-                </article>
-              ))}
-
-              {feed.length === 0 && (
-                <p className="rounded-xl border border-slate-200 bg-white px-4 py-12 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-                  No hay avisos que coincidan con los filtros.
-                </p>
-              )}
-            </div>
-          </div>
-
-          <aside className="flex flex-col gap-6 lg:col-span-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Estado de Sede Calle 52</p>
-                <InsigniaVitrina />
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                El aforo y la disponibilidad de ambientes en tiempo real no tienen tabla propia en el backend todavía —
-                fuera de alcance de este ticket (ver descripción). Cuando exista ese módulo, esta tarjeta se conecta a
-                un fetch real igual que el resto de la página.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Hitos del trimestre</p>
-                <InsigniaVitrina />
-              </div>
-              <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
-                El calendario institucional de hitos no tiene tabla propia en el backend todavía — fuera de alcance de
-                este ticket (ver descripción).
-              </p>
-              <button
-                disabled
-                title="Aún no implementado en el backend"
-                className="w-full cursor-not-allowed rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:text-slate-300"
-              >
-                Descargar calendario completo (PDF)
-              </button>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Directorio de Coordinación</p>
-                <InsigniaVitrina />
-              </div>
-              <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
-                Se revisó si GET /coordinaciones/ o GET /usuarios/ ya exponían nombre/correo/rol para armar esta
-                tarjeta con datos reales: ambos endpoints exigen rol Coordinador o Administrador
-                (require_admin/require_lectura_catalogo), así que un Aprendiz autenticado no puede consultarlos —
-                queda como vitrina hasta que exista un endpoint de solo lectura accesible para Aprendiz.
-              </p>
-              <a
-                href="https://mesadeayuda.sena.edu.co"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700"
-              >
-                Crear Radicado en Mesa de Ayuda
-              </a>
-            </div>
-          </aside>
-        </div>
-      )}
+          </ul>
+        )}
+      </div>
     </AppShell>
+  )
+}
+
+function TarjetaAviso({ aviso, destacado = false }: { aviso: Aviso; destacado?: boolean }) {
+  const vencido = estaVencido(aviso)
+
+  return (
+    <article
+      className={`rounded-xl border bg-surface-container-lowest shadow-sm dark:bg-slate-800 ${
+        destacado ? 'border-primary/30 p-6' : 'border-outline-variant p-5 dark:border-slate-700'
+      } ${vencido ? 'opacity-60' : ''}`}
+    >
+      <div className="mb-2 flex flex-wrap items-center gap-2">
+        <span
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${ESTILO_CATEGORIA[aviso.categoria]}`}
+        >
+          <span aria-hidden="true" className="material-symbols-outlined text-[14px]">
+            {ICONO_CATEGORIA[aviso.categoria]}
+          </span>
+          {ETIQUETA_CATEGORIA[aviso.categoria]}
+        </span>
+
+        <span className="rounded-full bg-surface-container-low px-2.5 py-0.5 text-xs font-semibold text-on-surface-variant">
+          {destinatario(aviso)}
+        </span>
+
+        {vencido && (
+          <span className="rounded-full bg-surface-container px-2.5 py-0.5 text-xs font-semibold text-on-surface-variant">
+            Vencido
+          </span>
+        )}
+
+        <span className="ml-auto text-xs text-on-surface-variant dark:text-slate-400">{hace(aviso.fechaPublicacion)}</span>
+      </div>
+
+      <h2
+        className={`font-bold text-on-surface dark:text-slate-100 ${destacado ? 'text-lg' : 'text-base'}`}
+      >
+        {aviso.titulo}
+      </h2>
+
+      <p className="mt-1 whitespace-pre-line text-sm text-on-surface-variant dark:text-slate-300">{aviso.cuerpo}</p>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-on-surface-variant dark:text-slate-400">
+        {aviso.publicadorNombre && <span>Publicado por {aviso.publicadorNombre}</span>}
+
+        {aviso.vigenteHasta && <span>Vigente hasta el {formatFechaLarga(aviso.vigenteHasta)}</span>}
+
+        {aviso.adjuntoUrl && (
+          <a
+            href={aviso.adjuntoUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-[16px]">
+              description
+            </span>
+            Ver documento adjunto
+          </a>
+        )}
+      </div>
+    </article>
   )
 }

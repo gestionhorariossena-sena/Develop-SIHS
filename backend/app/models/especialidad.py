@@ -24,8 +24,30 @@ usuario_especialidad = Table(
         primary_key=True,
     ),
 )
- 
- 
+
+# Tabla puente especialidad_competencia: qué especialidades habilitan a un
+# instructor para dictar una competencia (y por lo tanto los resultados de
+# aprendizaje que cuelgan de ella). Misma forma que usuario_especialidad —
+# asociación pura, sin columnas propias. Ver la migración
+# a7c31f5b9e02 para el porqué.
+especialidad_competencia = Table(
+    "especialidad_competencia",
+    Base.metadata,
+    Column(
+        "idEspecialidad",
+        Integer,
+        ForeignKey("especialidades.idEspecialidad", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "idCompetencia",
+        Integer,
+        ForeignKey("competencias_formacion.idCompetencia", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+
 class Especialidad(Base):
     __tablename__ = "especialidades"
  
@@ -37,6 +59,12 @@ class Especialidad(Base):
     usuarios = relationship(
         "Usuario",
         secondary=usuario_especialidad,
+        back_populates="especialidades",
+    )
+
+    competencias = relationship(
+        "CompetenciaFormacion",
+        secondary=especialidad_competencia,
         back_populates="especialidades",
     )
  

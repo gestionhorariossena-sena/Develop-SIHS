@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.competencia_formacion import CompetenciaFormacion
 
@@ -6,7 +6,13 @@ from app.models.competencia_formacion import CompetenciaFormacion
 class CompetenciaFormacionRepository:
     @staticmethod
     def obtener_todos(db: Session):
-        return db.query(CompetenciaFormacion).all()
+        # selectinload porque la respuesta incluye las especialidades de
+        # cada competencia: sin esto son N queries extra en un listado.
+        return (
+            db.query(CompetenciaFormacion)
+            .options(selectinload(CompetenciaFormacion.especialidades))
+            .all()
+        )
 
     @staticmethod
     def obtener_por_id(db: Session, id_competencia: int):

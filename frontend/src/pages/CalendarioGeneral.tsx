@@ -73,7 +73,7 @@ function construirCeldasMes(mes: Date): { fecha: Date; delMes: boolean }[] {
 const HOY = new Date()
 
 /**
- * "Calendario general" (backlog sidebar.png, grupo Programación) — vista
+ * "Calendario general" (backlog del navbar, grupo Programación) — vista
  * panorámica de TODAS las clases de la institución mes a mes, derivada de
  * `GET /horarios/` (igual que Vista por instructores/fichas/ambientes): un
  * horario es una plantilla semanal recurrente, así que una clase aparece en

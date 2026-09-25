@@ -3,14 +3,28 @@ import { supabase } from './supabaseClient'
 const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8001/api/v1'
 const TIMEOUT_MS = 15000
 
+/**
+ * Estados donde el `detail` del backend NO se muestra: describe la causa
+ * técnica, no lo que la persona puede hacer.
+ *
+ * Hasta H-14 (2026-09-24) el detail crudo ganaba SIEMPRE, así que un
+ * coordinador leía en pantalla «GEMINI_API_KEY no está configurada -- la
+ * capa de IA está apagada» o un escueto «No autorizado». En el resto de
+ * estados (400/404/409/422) el detail sí está escrito para quien lo lee
+ * («No existe una ficha con ese código») y se respeta.
+ */
+const ESTADOS_CON_MENSAJE_PROPIO = new Set([401, 403, 500, 502, 503, 504])
+
 export function getUserFriendlyApiMessage(status: number, fallback?: string, detail?: unknown): string {
-  if (typeof detail === 'string' && detail.trim()) return detail
+  if (typeof detail === 'string' && detail.trim() && !ESTADOS_CON_MENSAJE_PROPIO.has(status)) {
+    return detail
+  }
 
   switch (status) {
     case 401:
       return 'Tu sesión expiró. Inicia sesión nuevamente.'
     case 403:
-      return 'No tienes permisos para realizar esta acción.'
+      return 'No tienes permisos para realizar esta acción. Si crees que deberías tenerlos, pídeselos al administrador del sistema.'
     case 404:
       return 'No se encontró la información solicitada.'
     case 409:
@@ -22,8 +36,42 @@ export function getUserFriendlyApiMessage(status: number, fallback?: string, det
       return fallback || 'Los datos enviados no son válidos. Revisa la información antes de guardar.'
     case 500:
       return 'El servidor tuvo un problema. Inténtalo de nuevo en unos segundos.'
-    case 502:
     case 503:
+      // El 503 más común de esta app no es "el servidor está caído" sino
+      // una pieza externa apagada: la IA sin su clave configurada, o
+      // Supabase Auth sin responder. Ninguna de las dos la arregla quien
+      // está usando la pantalla.
+      //
+      // El backend manda `{motivo, mensaje}` (ver _error_ia en
+      // horarios.py). Hasta el 2026-09-24 acá se miraba si el texto crudo
+      // decía "GEMINI" y se respondía SIEMPRE "falta configurarlo en el
+      // servidor" — así que un coordinador con la clave bien puesta, cuyo
+      // Excel simplemente tardó más que el timeout, leía que el asistente
+      // no estaba instalado y avisaba al administrador de un problema que
+      // no existía. El motivo distingue quién puede arreglar qué.
+      if (typeof detail === 'object' && detail !== null && 'motivo' in detail) {
+        const motivo = (detail as { motivo?: string }).motivo
+        switch (motivo) {
+          case 'no_configurada':
+            return 'El asistente con IA no está disponible: falta configurarlo en el servidor. El resto de la programación funciona igual — avisa al administrador del sistema.'
+          case 'credenciales':
+            return 'El asistente con IA rechazó las credenciales del servidor. El resto de la programación funciona igual — avisa al administrador del sistema.'
+          case 'timeout':
+            return 'El asistente con IA tardó demasiado en responder. Vuelve a intentarlo; si el archivo es muy grande, prueba con menos columnas o divídelo en partes.'
+          case 'conexion':
+            return 'No se pudo contactar al asistente con IA. Verifica la conexión del servidor e inténtalo otra vez en unos minutos.'
+          case 'respuesta_invalida':
+          case 'respuesta_http':
+            return 'El asistente con IA devolvió una respuesta que no se pudo procesar. Inténtalo otra vez; si sigue igual, avisa al administrador del sistema.'
+        }
+      }
+      // Formato viejo (detail como texto plano): se conserva para no
+      // perder el mensaje si algún endpoint todavía no usa _error_ia.
+      if (typeof detail === 'string' && /GEMINI|IA|inteligencia artificial/i.test(detail)) {
+        return 'El asistente con IA no está disponible en este momento. El resto de la programación funciona igual — inténtalo otra vez y, si sigue igual, avisa al administrador del sistema.'
+      }
+      return 'Un servicio del que depende esta acción no está disponible en este momento. Inténtalo otra vez en unos minutos y, si sigue igual, avisa al administrador del sistema.'
+    case 502:
     case 504:
       return 'La respuesta del servidor tardó demasiado o no está disponible en este momento. Verifica tu conexión e inténtalo otra vez.'
     default:
@@ -119,7 +167,14 @@ async function request<T>(path: string, options: RequestInit = {}, timeoutMs: nu
     }
 
     if (error instanceof TypeError) {
-      throw new ApiError(503, getUserFriendlyApiMessage(503), null)
+      // Un TypeError acá es el fetch que nunca salió: servidor apagado, sin
+      // red, CORS. Mensaje propio y no el 503 genérico, que habla de un
+      // servicio del backend — acá el backend ni se enteró del intento.
+      throw new ApiError(
+        503,
+        'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo otra vez.',
+        null,
+      )
     }
 
     throw error

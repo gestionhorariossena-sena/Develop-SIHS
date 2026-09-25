@@ -16,6 +16,11 @@ class ConversacionResponse(BaseModel):
     idInstructor: UUID
     fechaCreacion: datetime
 
+    # Los resuelve el modelo: quienes usan esta pantalla (Aprendiz e
+    # Instructor) no tienen permiso para mirar /usuarios/.
+    aprendizNombre: str | None = None
+    instructorNombre: str | None = None
+
 
 class MensajeCrear(BaseModel):
     contenido: str
