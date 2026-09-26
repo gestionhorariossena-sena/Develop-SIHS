@@ -127,6 +127,29 @@ void main() {
     expect(servicio.llamadas.where((l) => l == 'ficha').length, 2);
   });
 
+  testWidgets('cuando el perfil llega después del primer render, se dispara la carga del horario',
+      (tester) async {
+    final auth = AuthFalso(autenticado: true, perfil: null);
+    addTearDown(auth.cerrar);
+    final authProvider = AuthProvider(auth: auth);
+    final servicio = HorariosFalsos(deFicha: [horarioDePrueba()]);
+    final horariosProvider = HorarioProvider(servicio: servicio);
+
+    await tester.pumpWidget(envolver(
+      const HomeScreen(),
+      auth: authProvider,
+      horarios: horariosProvider,
+    ));
+    await tester.pump();
+
+    auth.perfil = usuarioDePrueba();
+    await authProvider.cargarPerfil();
+    await tester.pumpAndSettle();
+
+    expect(servicio.llamadas, contains('ficha'));
+    expect(find.textContaining('Hola, Ana'), findsOneWidget);
+  });
+
   testWidgets('el botón de actualizar vuelve a pedir el horario', (tester) async {
     final servicio = await montar(
       tester,

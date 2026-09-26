@@ -50,6 +50,20 @@ describe('Registro', () => {
     expect(screen.queryByRole('radio', { name: /Coordinador/ })).not.toBeInTheDocument()
   })
 
+  it('muestra solo los campos del rol elegido y permite volver a cambiarlo', async () => {
+    const usuario = userEvent.setup()
+    renderPagina()
+
+    expect(screen.queryByLabelText('Nombres')).not.toBeInTheDocument()
+    await usuario.click(screen.getByRole('radio', { name: /Aprendiz/ }))
+    await usuario.click(screen.getByRole('button', { name: 'Continuar como aprendiz' }))
+    expect(screen.getByLabelText('Código de ficha')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Código de instructor')).not.toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Cambiar rol' }))
+    expect(screen.getByRole('radio', { name: /Aprendiz/ })).toHaveAttribute('aria-checked', 'true')
+  })
+
   it('"¿Eres coordinador? Solicita acceso" abre el formulario corto y, al enviarlo, llama a POST /solicitudes-acceso/ y muestra confirmación', async () => {
     vi.mocked(apiPost).mockResolvedValue({})
     const usuario = userEvent.setup()

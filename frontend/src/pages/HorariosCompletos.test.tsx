@@ -107,6 +107,7 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
 
     await usuario.selectOptions(screen.getByLabelText('Jornada'), 'Todas')
+    await usuario.click(screen.getByRole('button', { name: 'Más filtros' }))
     await usuario.selectOptions(screen.getByLabelText('Trimestre'), 'Trimestre 1')
 
     expect(screen.getByText('Erick Granados')).toBeInTheDocument()
@@ -139,6 +140,19 @@ describe('HorariosCompletos', () => {
 
     // No debe abrirse ningún panel/drawer lateral — todo pasa dentro de la tabla.
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('permite expandir un horario con el teclado y anuncia su estado', async () => {
+    mockeaBase()
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+    const boton = await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' })
+
+    boton.focus()
+    await usuario.keyboard('{Enter}')
+
+    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
+    expect(boton).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('cada tarjeta tiene links "Más info" y "Ver horario por..." hacia su vista completa y su vista agregada', async () => {

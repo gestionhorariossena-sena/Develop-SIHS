@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -39,16 +41,42 @@ class _HomeScreenState extends State<HomeScreen> {
   late int _diaElegido = DateTime.now().weekday.clamp(1, 6);
   Jornada? _jornadaElegida;
   int _pestana = 0;
+  String? _ultimoUsuarioIdCargado;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _cargar());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _sincronizarCarga());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sincronizarCarga();
+  }
+
+  void _sincronizarCarga() {
+    if (!mounted) return;
+
+    final usuario = context.read<AuthProvider>().usuarioActual;
+    if (usuario == null) {
+      _ultimoUsuarioIdCargado = null;
+      return;
+    }
+
+    if (_ultimoUsuarioIdCargado == usuario.idUsuario) return;
+
+    _ultimoUsuarioIdCargado = usuario.idUsuario;
+    unawaited(_cargar());
   }
 
   Future<void> _cargar() async {
     if (!mounted) return;
     final usuario = context.read<AuthProvider>().usuarioActual;
+    if (usuario == null) {
+      _ultimoUsuarioIdCargado = null;
+      return;
+    }
     await context.read<HorarioProvider>().cargar(usuario);
   }
 

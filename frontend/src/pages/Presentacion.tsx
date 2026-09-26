@@ -275,8 +275,7 @@ export function Presentacion() {
           </span>
           <h2 className="mb-3 text-2xl font-bold text-on-surface">¿Listo para ingresar a tu programación académica?</h2>
           <p className="mb-6 text-on-surface-variant">
-            Si eres coordinador académico o instructor del CGMLTI Calle 52, inicia sesión con tus credenciales asignadas o
-            radica tu registro para validación de especialidad.
+            Si eres administrador, coordinador, instructor o aprendiz del CGMLTI Calle 52, inicia sesión con tus credenciales o solicita tu registro.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
@@ -284,14 +283,14 @@ export function Presentacion() {
               className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
             >
               <span className="material-symbols-outlined text-[18px]">login</span>
-              Iniciar Sesión (Coordinación / Instructor)
+              Iniciar sesión
             </Link>
             <Link
               to="/registro"
               className="flex items-center gap-2 rounded-xl border border-outline px-5 py-3 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high"
             >
               <span className="material-symbols-outlined text-[18px]">assignment_ind</span>
-              Solicitar Registro Docente
+              Solicitar registro
             </Link>
           </div>
         </div>
@@ -303,8 +302,8 @@ export function Presentacion() {
           CGMLTI Calle 52 · Regional Distrito Capital · Servicio Nacional de Aprendizaje SENA
         </span>
         <span className="flex items-center gap-4">
-          <a href="#" className="hover:text-on-surface">Mesa de Ayuda Académica</a>
-          <a href="#" className="hover:text-on-surface">Términos y Normativa</a>
+          <a href="https://historico.sena.edu.co/es-co/transparencia/Paginas/mecanismosContacto.aspx" target="_blank" rel="noopener noreferrer" className="hover:text-on-surface">Canales de atención del SENA</a>
+          <a href="https://www.sena.edu.co/es-co/transparencia/FURAG2/FURAG%202021/Gobierno%20Digital/Pregunta%20126-GDI19/DO-POL-006Politicadeprotecciondedatospersonales.pdf" target="_blank" rel="noopener noreferrer" className="hover:text-on-surface">Política de datos personales</a>
         </span>
       </footer>
     </div>

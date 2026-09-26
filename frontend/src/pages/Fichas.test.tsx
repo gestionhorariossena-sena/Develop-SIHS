@@ -143,6 +143,18 @@ describe('Fichas', () => {
     expect(within(panel).getByText('30')).toBeInTheDocument()
   })
 
+  it('permite abrir el detalle de una ficha con el teclado', async () => {
+    mockeaFichasYPerfil(FICHAS)
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    const boton = await screen.findByRole('button', { name: 'Ver detalle de la ficha 3228973 B' })
+
+    boton.focus()
+    await usuario.keyboard('{Enter}')
+
+    expect(await screen.findByRole('dialog', { name: '3228973 B' })).toBeInTheDocument()
+  })
+
   it('botón "Cerrar" del drawer oculta el panel de detalle', async () => {
     mockeaFichasYPerfil(FICHAS)
     const usuario = userEvent.setup()
@@ -271,6 +283,7 @@ describe('Fichas', () => {
     await screen.findByText('3228973 B')
     expect(screen.getByText('2758431')).toBeInTheDocument()
 
+    await usuario.click(screen.getByRole('button', { name: 'Más filtros' }))
     await usuario.selectOptions(screen.getByLabelText('Instructor'), 'Erick Granados')
 
     expect(screen.getByText('3228973 B')).toBeInTheDocument()

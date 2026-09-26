@@ -56,6 +56,11 @@ class AuthFalso implements AuthGateway {
   @override
   Future<Usuario?> obtenerUsuarioActual() async => perfil;
 
+  Usuario? perfilCacheado;
+
+  @override
+  Future<Usuario?> perfilEnCache() async => perfilCacheado;
+
   bool? mantenerSesionPedido;
   String? correoDeRecuperacion;
   Object? errorAlRecuperar;
@@ -108,6 +113,14 @@ class HorariosFalsos implements HorarioGateway {
     llamadas.add('mi-ficha');
     return ficha;
   }
+
+  List<Horario>? horariosCacheados;
+
+  @override
+  Future<List<Horario>?> horariosEnCache() async => horariosCacheados;
+
+  @override
+  Future<Ficha?> fichaEnCache() async => null;
 }
 
 Usuario usuarioDePrueba({

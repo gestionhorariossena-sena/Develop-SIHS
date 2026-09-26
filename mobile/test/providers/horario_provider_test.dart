@@ -99,4 +99,32 @@ void main() {
     expect(servicio.llamadas, isEmpty);
     expect(provider.estado, EstadoHorario.sinRol);
   });
+
+  test('muestra el horario cacheado antes de que responda la red', () async {
+    final servicio = HorariosFalsos(deFicha: [horarioDePrueba(idHorario: 9)])
+      ..horariosCacheados = [horarioDePrueba(idHorario: 1)];
+    final provider = HorarioProvider(servicio: servicio);
+
+    final estados = <EstadoHorario>[];
+    provider.addListener(() => estados.add(provider.estado));
+
+    await provider.cargar(usuarioDePrueba());
+
+    // Nunca pasó por "cargando": había algo que mostrar desde el primer
+    // instante.
+    expect(estados, isNot(contains(EstadoHorario.cargando)));
+    expect(provider.estado, EstadoHorario.listo);
+  });
+
+  test('un fallo de red no borra el horario que ya está en pantalla', () async {
+    final servicio = HorariosFalsos(
+      error: ApiException('El servidor tuvo un problema', statusCode: 500),
+    )..horariosCacheados = [horarioDePrueba(idHorario: 1)];
+    final provider = HorarioProvider(servicio: servicio);
+
+    await provider.cargar(usuarioDePrueba());
+
+    expect(provider.estado, EstadoHorario.listo);
+    expect(provider.sesiones, isNotEmpty);
+  });
 }

@@ -43,7 +43,7 @@ const fechaHoy = (() => {
   return capitalizar(texto)
 })()
 
-export function Dashboard() {
+export function Dashboard({ esAdministrador = false }: { esAdministrador?: boolean }) {
   const [horarios, setHorarios] = useState<Horario[] | null>(null)
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [fichas, setFichas] = useState<Ficha[]>([])
@@ -147,13 +147,6 @@ export function Dashboard() {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            disabled
-            title="Aún no implementado en el backend"
-            className="cursor-not-allowed rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant dark:border-slate-700 dark:text-slate-300"
-          >
-            Exportar horarios
-          </button>
           <Link
             to="/horarios/nuevo"
             className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
@@ -170,7 +163,7 @@ export function Dashboard() {
       )}
 
       <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div className="min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs font-medium tracking-wide text-on-surface-variant uppercase dark:text-slate-400">
               Horarios activos
@@ -220,7 +213,7 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div className="min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="flex items-center gap-2 text-lg font-semibold text-on-surface dark:text-slate-100">
@@ -327,14 +320,7 @@ export function Dashboard() {
             <p className="mb-3 text-sm font-semibold text-on-surface dark:text-slate-100">
               Semana · {diasDeLaSemana[0]?.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
             </p>
-            <div className="flex items-center justify-between">
-              <button
-                disabled
-                title="Aún no implementado en el backend"
-                className="flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-lg text-on-surface-variant/50"
-              >
-                <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-              </button>
+            <div className="flex justify-center">
               <div className="flex gap-1">
                 {diasDeLaSemana.map((dia) => (
                   <div
@@ -349,13 +335,6 @@ export function Dashboard() {
                   </div>
                 ))}
               </div>
-              <button
-                disabled
-                title="Aún no implementado en el backend"
-                className="flex h-7 w-7 cursor-not-allowed items-center justify-center rounded-lg text-on-surface-variant/50"
-              >
-                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-              </button>
             </div>
           </div>
 
@@ -369,13 +348,13 @@ export function Dashboard() {
                 Vista por ambientes
                 <span className="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward</span>
               </Link>
-              <Link to="/aprobar-solicitudes" className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-on-surface hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
+              {esAdministrador && <Link to="/aprobar-solicitudes" className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-on-surface hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
                 <span>
                   Aprobar solicitudes
                   {pendientesDeRol > 0 && <span className="ml-1.5 rounded-full bg-error-container px-1.5 py-0.5 text-xs font-semibold text-on-error-container">{pendientesDeRol}</span>}
                 </span>
                 <span className="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward</span>
-              </Link>
+              </Link>}
               <Link to="/horarios/nuevo" className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-on-surface hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
                 Constructor de horarios
                 <span className="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward</span>

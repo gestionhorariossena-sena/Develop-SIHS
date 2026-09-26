@@ -44,6 +44,18 @@ class AuthProvider extends ChangeNotifier {
   /// roles. Un fallo acá no cierra la sesión: se muestra el error y el botón
   /// de reintentar del Home sigue sirviendo.
   Future<void> cargarPerfil() async {
+    if (_cargandoPerfil) return;
+
+    // Lo último conocido primero: la pantalla ya puede decidir qué horario
+    // pedir mientras /usuarios/me viaja (~2,4s contra la base real).
+    if (_usuarioActual == null) {
+      final enCache = await _auth.perfilEnCache();
+      if (enCache != null) {
+        _usuarioActual = enCache;
+        notifyListeners();
+      }
+    }
+
     _cargandoPerfil = true;
     notifyListeners();
     try {

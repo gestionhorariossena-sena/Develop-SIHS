@@ -34,6 +34,8 @@ class HorarioProvider extends ChangeNotifier {
   bool get isLoading => _estado == EstadoHorario.cargando;
 
   Future<void> cargar(Usuario? usuario) async {
+    if (_estado == EstadoHorario.cargando) return;
+
     if (usuario == null) {
       _sesiones = const [];
       _estado = EstadoHorario.inicial;
@@ -54,7 +56,24 @@ class HorarioProvider extends ChangeNotifier {
       return;
     }
 
-    _estado = EstadoHorario.cargando;
+    // Lo último conocido, ya: el horario cambia como mucho una vez por
+    // trimestre y la red tarda ~1,7s. Si hay caché, la pantalla arranca con
+    // contenido y el refresco pasa desapercibido; si no, se ve el skeleton.
+    if (_sesiones.isEmpty) {
+      final enCache = await _horarios.horariosEnCache();
+      if (enCache != null && enCache.isNotEmpty) {
+        _sesiones = SesionHorario.desdeHorarios(
+          enCache.where((h) => h.publicado && h.activo).toList(),
+        );
+        _estado = EstadoHorario.listo;
+        _ficha ??= await _horarios.fichaEnCache();
+        notifyListeners();
+      }
+    }
+
+    if (_sesiones.isEmpty) {
+      _estado = EstadoHorario.cargando;
+    }
     _error = null;
     notifyListeners();
 
@@ -80,11 +99,13 @@ class HorarioProvider extends ChangeNotifier {
         _estado = EstadoHorario.sinFicha;
       } else {
         _error = e.mensaje;
-        _estado = EstadoHorario.error;
+        // Con horario en pantalla desde la caché, un fallo del refresco no
+        // puede dejar a la persona sin nada: se conserva lo que ya ve.
+        _estado = _sesiones.isEmpty ? EstadoHorario.error : EstadoHorario.listo;
       }
     } catch (e) {
       _error = 'No se pudo cargar tu horario. Inténtalo de nuevo.';
-      _estado = EstadoHorario.error;
+      _estado = _sesiones.isEmpty ? EstadoHorario.error : EstadoHorario.listo;
     }
     notifyListeners();
   }

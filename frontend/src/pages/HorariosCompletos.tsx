@@ -265,6 +265,7 @@ export function HorariosCompletos() {
   const [filtroJornada, setFiltroJornada] = useState<FiltroJornada>('todas')
   const [filtroTrimestre, setFiltroTrimestre] = useState('todos')
   const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos')
+  const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false)
   const [paginaActual, setPaginaActual] = useState(1)
   const [idExpandido, setIdExpandido] = useState<number | null>(null)
   const [cargando, setCargando] = useState(true)
@@ -374,7 +375,8 @@ export function HorariosCompletos() {
       {/* Selector de perspectiva — mismos 4 modos del mockup, como links
        * reales a las vistas que ya existen (evita duplicar Vista por
        * fichas/instructores/ambientes dentro de esta pantalla). */}
-      <nav aria-label="Cambiar vista de horarios" className="mb-4 inline-flex items-center gap-1 rounded-full bg-surface-container-low p-1 dark:bg-slate-900">
+      <div className="mb-4 max-w-full overflow-x-auto">
+      <nav aria-label="Cambiar vista de horarios" className="inline-flex w-max items-center gap-1 rounded-full bg-surface-container-low p-1 dark:bg-slate-900">
         {MODOS_VISTA.map((modo) => (
           <Link
             key={modo.ruta}
@@ -390,6 +392,7 @@ export function HorariosCompletos() {
           </Link>
         ))}
       </nav>
+      </div>
 
       <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
       <div className="min-w-0">
@@ -410,7 +413,7 @@ export function HorariosCompletos() {
             <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Instructores</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{new Set(horarios.map((h) => h.idInstructor)).size}</p></div>
           </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-3">
           <div className="md:col-span-2">
             <label htmlFor="buscar-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Buscar</label>
             <input id="buscar-horario" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Ficha, programa, instructor o ambiente" className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
@@ -424,6 +427,19 @@ export function HorariosCompletos() {
               <option value="Noche">Noche</option>
             </select>
           </div>
+        </div>
+        <button type="button" aria-expanded={mostrarFiltrosAvanzados} onClick={() => setMostrarFiltrosAvanzados((abiertos) => !abiertos)} className="mt-3 text-sm font-semibold text-primary hover:text-on-primary-container">
+          {mostrarFiltrosAvanzados ? 'Ocultar filtros avanzados' : 'Más filtros'}
+        </button>
+        {!mostrarFiltrosAvanzados && (filtroTrimestre !== 'todos' || filtroEstado !== 'todos') && (
+          <p className="mt-1 text-xs text-on-surface-variant" role="status">
+            Filtros avanzados activos: {[
+              filtroTrimestre !== 'todos' ? trimestres.find((item) => String(item.idTrimestre) === filtroTrimestre)?.nombre ?? `Trimestre ${filtroTrimestre}` : null,
+              filtroEstado !== 'todos' ? `Estado ${filtroEstado}` : null,
+            ].filter(Boolean).join(' · ')}
+          </p>
+        )}
+        {mostrarFiltrosAvanzados && <div className="mt-3 grid gap-3 md:grid-cols-2">
           <div>
             <label htmlFor="filtro-trimestre-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Trimestre</label>
             <select id="filtro-trimestre-horario" value={filtroTrimestre} onChange={(evento) => setFiltroTrimestre(evento.target.value)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
@@ -439,7 +455,7 @@ export function HorariosCompletos() {
               <option value="borrador">Borrador</option>
             </select>
           </div>
-        </div>
+        </div>}
       </section>
 
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
@@ -451,7 +467,11 @@ export function HorariosCompletos() {
         return (
           <Fragment key={horario.idHorario}>
             <tr onClick={() => setIdExpandido(expandido ? null : horario.idHorario)} className="cursor-pointer hover:bg-surface-container-low dark:hover:bg-slate-700/60">
-              <td className={`border-l-4 px-4 py-3 font-semibold text-on-surface dark:text-slate-100 ${color.borde}`}>{horario.fichaCodigo}</td>
+              <td className={`border-l-4 px-4 py-3 font-semibold text-on-surface dark:text-slate-100 ${color.borde}`}>
+                <button type="button" aria-expanded={expandido} aria-controls={`detalle-horario-${horario.idHorario}`} aria-label={`${expandido ? 'Ocultar' : 'Ver'} detalle del horario de la ficha ${horario.fichaCodigo}`} onClick={(evento) => { evento.stopPropagation(); setIdExpandido(expandido ? null : horario.idHorario) }} className="rounded text-left font-semibold text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-primary">
+                  {horario.fichaCodigo}
+                </button>
+              </td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.instructorNombre ?? 'Sin definir'}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.ambienteNombre ?? 'Sin definir'}</td>
               <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{jornada}</span></td>
@@ -465,7 +485,7 @@ export function HorariosCompletos() {
               </td>
             </tr>
             {expandido && (
-              <tr>
+              <tr id={`detalle-horario-${horario.idHorario}`}>
                 <td colSpan={8} className="bg-surface dark:bg-slate-900/40">
                   <DetalleHorario
                     horario={horario}

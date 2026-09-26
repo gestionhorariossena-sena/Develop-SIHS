@@ -122,9 +122,45 @@ remite a la web en vez de dejarlo buscando un botón.
 - Se quitaron `flutter_spinkit` y `lottie` del pubspec (no se usaban) y se
   subió `google_fonts` a ^8.2.1, la primera versión que trae **Geist**.
 
+## Rendimiento (medido, no supuesto)
+
+Medición del 2026-09-24 contra la base real, con el backend en localhost:
+
+| Paso | Tiempo |
+|---|---|
+| Login contra Supabase Auth | ~1,0s |
+| `GET /usuarios/me` | ~2,4s |
+| `GET /usuarios/me/horarios` | ~1,7s |
+| `GET /usuarios/me` (segunda vez) | ~1,9s |
+
+`/api/v1/health` responde en **2ms**, así que no es FastAPI ni la red local:
+es la latencia contra Supabase. Que la segunda llamada al mismo endpoint
+siga tardando ~1,9s descarta también la validación del token (el backend ya
+la cachea 30s en `supabase_auth.py`) — queda la consulta a la base.
+
+Lo que se hizo del lado del cliente, que es donde alcanzaba:
+
+1. **Caché en disco del perfil y del horario** (`cache_local.dart`). La app
+   pinta lo último conocido y refresca por detrás: el arranque deja de
+   depender de esos ~4s. Un fallo de red ya no borra lo que está en
+   pantalla.
+2. **CanvasKit local** en la build web: `flutter build web --release
+   --no-web-resources-cdn`. Sin ese flag el bundle lo descarga de
+   `gstatic.com` en cada arranque, aunque la copia local ya está ahí.
+3. **Splash en `web/index.html`**, que se borra con el evento
+   `flutter-first-frame`. Antes el arranque era una pantalla en blanco.
+
+Lo que **no** se tocó y es la causa de fondo: la latencia backend↔Supabase.
+Atacarla de verdad es del lado del servidor (índices, eager loading de
+roles/especialidades en `/usuarios/me`, o región de la base).
+
+Para servir la build con gzip en local hay un script en el scratchpad de la
+sesión; `python -m http.server` a secas manda los 2,8 MB de `main.dart.js`
+sin comprimir.
+
 ## Tests
 
-`flutter test` — 40 casos. `test/ayudas.dart` tiene los dobles
+`flutter test` — 42 casos. `test/ayudas.dart` tiene los dobles
 (`AuthFalso`, `HorariosFalsos`), los constructores de datos de prueba y
 `envolver()` para montar un widget con tema y providers.
 

@@ -165,9 +165,9 @@ export function AppShell({ activo, children }: AppShellProps) {
   const [errorPerfil, setErrorPerfil] = useState<string | null>(null)
 
   const [grupoAbierto, setGrupoAbierto] = useState<string | null>(null)
-  // El nav central es `lg:flex`: por debajo de 1024px desaparecía entero y
-  // no había nada que lo reemplazara, así que en una ventana reducida o en
-  // tablet no quedaba forma de navegar — solo logo y avatar.
+  // En ventanas estrechas, los grupos pasan al menú compacto para que no
+  // se superpongan con el logo ni con las acciones de la derecha. El menú
+  // central aparece a partir de xl para dejar espacio suficiente a los grupos.
   const [menuCompactoAbierto, setMenuCompactoAbierto] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
@@ -363,7 +363,7 @@ export function AppShell({ activo, children }: AppShellProps) {
               onClick={() => setMenuCompactoAbierto((abierto) => !abierto)}
               aria-label="Menú de navegación"
               aria-expanded={menuCompactoAbierto}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-outline text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface lg:hidden dark:border-slate-700"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-outline text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface xl:hidden dark:border-slate-700"
             >
               <span className="material-symbols-outlined text-[20px]">
                 {menuCompactoAbierto ? 'close' : 'menu'}
@@ -381,13 +381,6 @@ export function AppShell({ activo, children }: AppShellProps) {
               </div>
             </Link>
 
-            <span
-              title="Programación abierta hasta el 12 de septiembre."
-              className="hidden items-center gap-1.5 rounded-full bg-secondary-container px-2.5 py-1 text-[11px] font-medium text-on-secondary-container xl:flex"
-            >
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
-              Trimestre 3 · Sincronizado
-            </span>
           </div>
 
           {/* `min-w-0` es lo que mantiene visible el bloque de la derecha:
@@ -397,13 +390,10 @@ export function AppShell({ activo, children }: AppShellProps) {
             * Con los roles que abren más grupos de menú — Coordinador,
             * Administrador — eso dejaba "Cerrar sesión" cortado al borde
             * derecho en casi todas las vistas. */}
+          {/* Sin `overflow-hidden`: los desplegables se abren debajo de la barra. */}
           <nav
             ref={dropdownRef}
-            /* Sin `overflow-hidden`: los desplegables de cada grupo son
-             * `absolute top-full`, o sea que salen POR DEBAJO de la barra —
-             * recortarlos al alto del nav los volvía invisibles. Pulsar
-             * "Mi trabajo" abría un menú que nadie podía ver. */
-            className="hidden min-w-0 flex-1 items-center justify-center gap-1 lg:flex"
+            className="hidden min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap xl:flex"
           >
             <Link
               to={INICIO.ruta!}
@@ -451,19 +441,6 @@ export function AppShell({ activo, children }: AppShellProps) {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2">
-            <div className="relative hidden md:flex">
-              <span className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">
-                search
-              </span>
-              <input
-                type="search"
-                aria-label="Buscar ficha, instructor o ambiente"
-                placeholder="Buscar ficha, instructor o ambiente…"
-                disabled
-                className="h-9 w-48 rounded-xl bg-surface pl-8 pr-3 text-sm text-on-surface placeholder:text-on-surface-variant focus:bg-surface-container-lowest focus:outline-none dark:bg-slate-700 xl:w-56"
-              />
-            </div>
-
             <ThemeSelector />
 
             <div className="relative" ref={notifRef}>
@@ -491,7 +468,7 @@ export function AppShell({ activo, children }: AppShellProps) {
               )}
             </div>
 
-            <div className="hidden items-center gap-2 pl-1 xl:flex">
+            <div className="hidden items-center gap-2 pl-1 2xl:flex">
               <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-on-primary">
                 {miPerfil ? letraInicial(miPerfil.nombre) : '·'}
               </span>
@@ -522,7 +499,7 @@ export function AppShell({ activo, children }: AppShellProps) {
         {menuCompactoAbierto && (
           <nav
             aria-label="Navegación principal"
-            className="max-h-[70vh] overflow-y-auto border-t border-outline-variant bg-surface-container-lowest px-4 py-3 lg:hidden"
+            className="max-h-[70vh] overflow-y-auto border-t border-outline-variant bg-surface-container-lowest px-4 py-3 xl:hidden"
           >
             <Link
               to={INICIO.ruta!}

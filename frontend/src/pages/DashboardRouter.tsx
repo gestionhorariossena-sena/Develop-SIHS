@@ -62,5 +62,5 @@ export function DashboardRouter() {
   if (esAprendiz && !puedeGestionar && !esInstructor) return <DashboardAprendiz />
   if (esInstructor && !puedeGestionar) return <DashboardInstructor />
 
-  return <Dashboard />
+  return <Dashboard esAdministrador={perfil.roles.some((rol) => rol.nombre === 'Administrador')} />
 }

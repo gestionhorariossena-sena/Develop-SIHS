@@ -4,6 +4,7 @@ import { AuthLayout } from '../components/AuthLayout'
 import { FormField } from '../components/FormField'
 import { apiGet, apiPost } from '../services/api'
 import { supabase } from '../services/supabaseClient'
+import { configurarRecordarme } from '../services/authStorage'
 import type { EstadoLogin } from '../types/api'
 
 function formatearTiempoRestante(segundos: number): string {
@@ -30,6 +31,7 @@ export function Login() {
   const navigate = useNavigate()
   const [identificador, setIdentificador] = useState('')
   const [password, setPassword] = useState('')
+  const [recordarme, setRecordarme] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [bloqueado, setBloqueado] = useState(false)
@@ -79,6 +81,7 @@ export function Login() {
       return
     }
 
+    configurarRecordarme(recordarme)
     const authError = await (async (): Promise<{ message: string } | null> => {
       if (identificador.includes('@')) {
         const resultado = await supabase.auth.signInWithPassword({ email: identificador.trim(), password })
@@ -128,8 +131,7 @@ export function Login() {
     <AuthLayout>
       <h1 className="mb-2 text-2xl font-bold text-on-surface dark:text-slate-100">Iniciar sesión</h1>
       <p className="mb-6 text-sm text-on-surface-variant dark:text-slate-400">
-        Acceso exclusivo para coordinadores e instructores del Centro de Gestión de Mercados,
-        Logística y TI.
+        Acceso para administradores, coordinadores, instructores y aprendices del Centro de Gestión de Mercados, Logística y TI.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -160,13 +162,16 @@ export function Login() {
 
         <div className="mb-5 flex items-center justify-between text-sm">
           <label className="flex items-center gap-2 text-on-surface-variant dark:text-slate-300">
-            <input type="checkbox" className="h-4 w-4 rounded border-outline bg-surface-container-lowest text-primary dark:border-slate-700 dark:bg-slate-900" />
+            <input type="checkbox" checked={recordarme} onChange={(evento) => setRecordarme(evento.target.checked)} className="h-4 w-4 rounded border-outline bg-surface-container-lowest text-primary dark:border-slate-700 dark:bg-slate-900" />
             Recordarme
           </label>
           <Link to="/recuperar-contrasena" className="font-medium text-primary hover:underline">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
+        <p className="-mt-3 mb-5 text-xs text-on-surface-variant dark:text-slate-400">
+          Si marcas «Recordarme», la sesión seguirá disponible al reabrir el navegador. Por seguridad, se cerrará tras 15 minutos de inactividad mientras uses la aplicación.
+        </p>
 
         {error && (
           <p role="alert" className="mb-4 text-sm text-error">

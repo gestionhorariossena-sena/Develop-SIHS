@@ -38,12 +38,16 @@ export function Registro() {
   const [password, setPassword] = useState('')
   const [confirmarPassword, setConfirmarPassword] = useState('')
   const [rol, setRol] = useState<RolSolicitado>('Instructor')
+  const [pasoRegistro, setPasoRegistro] = useState<'rol' | 'datos'>('rol')
   const [codigoInstructor, setCodigoInstructor] = useState('')
   const [especialidad, setEspecialidad] = useState('')
   const [codigoFicha, setCodigoFicha] = useState('')
   const [programaFormacion, setProgramaFormacion] = useState('')
   const [aceptaPolitica, setAceptaPolitica] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [errorConfirmacion, setErrorConfirmacion] = useState(false)
+  const [errorPolitica, setErrorPolitica] = useState(false)
+  const [errorCodigoInstructor, setErrorCodigoInstructor] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const [mostrarSolicitudCoordinador, setMostrarSolicitudCoordinador] = useState(false)
@@ -51,9 +55,11 @@ export function Registro() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
+    setErrorPolitica(false)
+    setErrorCodigoInstructor(null)
 
     if (password !== confirmarPassword) {
-      setError('Las contraseñas no coinciden.')
+      setErrorConfirmacion(true)
       return
     }
     if (!numeroDocumento.trim()) {
@@ -69,7 +75,7 @@ export function Registro() {
       return
     }
     if (!aceptaPolitica) {
-      setError('Debes aceptar el tratamiento de datos personales.')
+      setErrorPolitica(true)
       return
     }
 
@@ -83,12 +89,12 @@ export function Registro() {
 
         if (!validacion.valido || !validacion.idUsuario) {
           setLoading(false)
-          setError('El código de instructor no es válido o no existe.')
+          setErrorCodigoInstructor('El código de instructor no es válido o no existe.')
           return
         }
       } catch {
         setLoading(false)
-        setError('No se pudo validar el código de instructor en este momento.')
+        setErrorCodigoInstructor('No se pudo validar el código de instructor en este momento.')
         return
       }
     }
@@ -135,6 +141,42 @@ export function Registro() {
       </p>
 
       <form onSubmit={handleSubmit}>
+        {pasoRegistro === 'rol' ? <>
+        <div className="mb-5">
+          <p id="rol-label" className="mb-2 text-sm font-medium text-on-surface-variant dark:text-slate-300">
+            Paso 1 de 2 · Selecciona tu rol
+          </p>
+          <div role="radiogroup" aria-labelledby="rol-label" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {(['Instructor', 'Aprendiz'] as const).map((opcion) => (
+              <button
+                key={opcion}
+                type="button"
+                role="radio"
+                aria-checked={rol === opcion}
+                onClick={() => setRol(opcion)}
+                className={`rounded-xl border px-4 py-3 text-left transition-all ${
+                  rol === opcion
+                    ? 'border-primary bg-primary-container shadow-sm ring-1 ring-primary dark:bg-sena-950/50'
+                    : 'border-outline bg-surface-container-lowest hover:border-outline-variant hover:bg-surface-container-low dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'
+                }`}
+              >
+                <span className="block text-base font-semibold text-on-surface dark:text-slate-100">{opcion}</span>
+                <span className="mt-1 block text-xs text-on-surface-variant dark:text-slate-400">
+                  {opcion === 'Instructor' ? 'Consulta su carga' : 'Consulta su ficha'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <button type="button" onClick={() => setPasoRegistro('datos')} className="w-full rounded-xl bg-primary py-3 font-semibold text-on-primary transition hover:bg-on-primary-container">
+          Continuar como {rol.toLowerCase()}
+        </button>
+        </> : <>
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Paso 2 de 2 · Datos de {rol.toLowerCase()}</p>
+          <button type="button" onClick={() => setPasoRegistro('rol')} className="text-sm font-semibold text-primary hover:underline">Cambiar rol</button>
+        </div>
+
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <FormField
             id="nombres"
@@ -199,7 +241,7 @@ export function Registro() {
           required
         />
 
-        <div className="mb-4 grid grid-cols-2 gap-3">
+        <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <FormField
             id="password"
             label="Contraseña"
@@ -214,37 +256,13 @@ export function Registro() {
             label="Confirmar contraseña"
             type="password"
             value={confirmarPassword}
-            onChange={(e) => setConfirmarPassword(e.target.value)}
+            onChange={(e) => { setConfirmarPassword(e.target.value); setErrorConfirmacion(false) }}
+            aria-invalid={errorConfirmacion}
+            aria-describedby={errorConfirmacion ? 'error-confirmacion' : undefined}
             required
           />
         </div>
-
-        <div className="mb-4">
-          <p id="rol-label" className="mb-2 text-sm font-medium text-on-surface-variant dark:text-slate-300">
-            Selecciona tu rol
-          </p>
-          <div role="radiogroup" aria-labelledby="rol-label" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {(['Instructor', 'Aprendiz'] as const).map((opcion) => (
-              <button
-                key={opcion}
-                type="button"
-                role="radio"
-                aria-checked={rol === opcion}
-                onClick={() => setRol(opcion)}
-                className={`rounded-xl border px-4 py-3 text-left transition-all ${
-                  rol === opcion
-                    ? 'border-primary bg-primary-container shadow-sm ring-1 ring-primary dark:bg-sena-950/50'
-                    : 'border-outline bg-surface-container-lowest hover:border-outline-variant hover:bg-surface-container-low dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'
-                }`}
-              >
-                <span className="block text-base font-semibold text-on-surface dark:text-slate-100">{opcion}</span>
-                <span className="mt-1 block text-xs text-on-surface-variant dark:text-slate-400">
-                  {opcion === 'Instructor' ? 'Consulta su carga' : 'Consulta su ficha'}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
+        {errorConfirmacion && <p id="error-confirmacion" role="alert" className="mb-4 text-sm text-error">Las contraseñas no coinciden. Revisa la confirmación.</p>}
 
         {rol === 'Instructor' && (
           <div className="space-y-3">
@@ -254,14 +272,19 @@ export function Registro() {
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
               <FormField
                 id="codigoInstructor"
                 label="Código de instructor"
                 placeholder="Ej. INS-7Q3F8R"
                 value={codigoInstructor}
-                onChange={(e) => setCodigoInstructor(e.target.value)}
+                onChange={(e) => { setCodigoInstructor(e.target.value); setErrorCodigoInstructor(null) }}
+                aria-invalid={Boolean(errorCodigoInstructor)}
+                aria-describedby={errorCodigoInstructor ? 'error-codigo-instructor' : undefined}
                 required
               />
+              {errorCodigoInstructor && <p id="error-codigo-instructor" role="alert" className="mb-3 text-sm text-error">{errorCodigoInstructor}</p>}
+              </div>
               <FormField
                 id="especialidad"
                 label="Especialidad"
@@ -298,12 +321,19 @@ export function Registro() {
           <input
             type="checkbox"
             checked={aceptaPolitica}
-            onChange={(e) => setAceptaPolitica(e.target.checked)}
+            onChange={(e) => { setAceptaPolitica(e.target.checked); setErrorPolitica(false) }}
+            aria-invalid={errorPolitica}
+            aria-describedby={errorPolitica ? 'error-politica' : undefined}
             className="mt-0.5 h-4 w-4 rounded border-outline text-primary"
           />
-          Acepto el tratamiento de mis datos personales conforme a la política institucional del
-          SENA.
+          <span>
+            Acepto el tratamiento de mis datos personales conforme a la{' '}
+            <a href="https://www.sena.edu.co/es-co/transparencia/FURAG2/FURAG%202021/Gobierno%20Digital/Pregunta%20126-GDI19/DO-POL-006Politicadeprotecciondedatospersonales.pdf" target="_blank" rel="noopener noreferrer" className="font-semibold text-primary underline">
+              política de protección de datos del SENA
+            </a>.
+          </span>
         </label>
+        {errorPolitica && <p id="error-politica" role="alert" className="mb-4 text-sm text-error">Acepta la política de protección de datos para continuar.</p>}
 
         {error && (
           <p role="alert" className="mb-4 text-sm text-error">
@@ -318,6 +348,7 @@ export function Registro() {
         >
           {loading ? 'Enviando…' : 'Registrarme'}
         </button>
+        </>}
       </form>
 
       <p className="mt-4 text-center text-sm text-on-surface-variant">

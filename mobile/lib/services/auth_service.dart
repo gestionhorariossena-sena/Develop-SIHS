@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models/usuario.dart';
 import 'api_client.dart';
+import 'cache_local.dart';
 
 /// Lo que [AuthProvider] necesita de la autenticación. Existe como interfaz
 /// para que los tests de widget puedan inyectar una implementación falsa:
@@ -14,6 +15,9 @@ abstract class AuthGateway {
   Future<void> signInWithEmail(String email, String password);
   Future<void> signOut();
   Future<Usuario?> obtenerUsuarioActual();
+
+  /// Último perfil conocido, de disco. Null si es el primer arranque.
+  Future<Usuario?> perfilEnCache();
   Future<void> recordarSesion(bool mantener);
   Future<void> enviarCorreoDeRecuperacion(String email);
 }
@@ -21,7 +25,11 @@ abstract class AuthGateway {
 class AuthService implements AuthGateway {
   final ApiClient _apiClient;
 
-  AuthService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+  final CacheLocal _cache;
+
+  AuthService({ApiClient? apiClient, CacheLocal? cache})
+      : _apiClient = apiClient ?? ApiClient(),
+        _cache = cache ?? CacheLocal();
 
   // Lazy y no un campo: `Supabase.instance` revienta si se toca antes de
   // `Supabase.initialize`, y esta clase se construye al armar los providers.
@@ -33,7 +41,17 @@ class AuthService implements AuthGateway {
   }
 
   @override
-  Future<void> signOut() => _supabase.auth.signOut();
+  Future<void> signOut() async {
+    await _cache.limpiar();
+    await _supabase.auth.signOut();
+  }
+
+  @override
+  Future<Usuario?> perfilEnCache() async {
+    if (!isAuthenticated) return null;
+    final crudo = await _cache.leerPerfil();
+    return crudo == null ? null : Usuario.fromJson(crudo);
+  }
 
   /// Clave del "Mantener sesión iniciada" del login.
   static const _claveMantenerSesion = 'sihs.mantener_sesion';
@@ -77,6 +95,7 @@ class AuthService implements AuthGateway {
   Future<Usuario?> obtenerUsuarioActual() async {
     if (!isAuthenticated) return null;
     final respuesta = await _apiClient.get<Map<String, dynamic>>('/usuarios/me');
+    await _cache.guardarPerfil(respuesta);
     return Usuario.fromJson(respuesta);
   }
 }

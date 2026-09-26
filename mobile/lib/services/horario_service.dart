@@ -1,6 +1,7 @@
 import '../models/ficha.dart';
 import '../models/horario.dart';
 import 'api_client.dart';
+import 'cache_local.dart';
 
 /// Lo que [HorarioProvider] consume. Interfaz por el mismo motivo que
 /// [AuthGateway]: permitir un doble en los tests sin red ni Supabase.
@@ -11,12 +12,21 @@ abstract class HorarioGateway {
   /// Solo para Aprendiz (GET /ficha-usuario/mi-ficha). Alimenta el
   /// encabezado del diseño: programa, código de ficha y nº de aprendices.
   Future<Ficha?> obtenerMiFicha();
+
+  /// Último horario y ficha conocidos, de disco. Se muestran de inmediato
+  /// mientras la red responde.
+  Future<List<Horario>?> horariosEnCache();
+  Future<Ficha?> fichaEnCache();
 }
 
 class HorarioService implements HorarioGateway {
   final ApiClient _apiClient;
 
-  HorarioService({ApiClient? apiClient}) : _apiClient = apiClient ?? ApiClient();
+  final CacheLocal _cache;
+
+  HorarioService({ApiClient? apiClient, CacheLocal? cache})
+      : _apiClient = apiClient ?? ApiClient(),
+        _cache = cache ?? CacheLocal();
 
   /// Aprendiz: el horario de la ficha a la que está vinculado. Responde 404
   /// si todavía no tiene ficha — [ApiException.esNoEncontrado].
@@ -35,11 +45,27 @@ class HorarioService implements HorarioGateway {
   Future<Ficha?> obtenerMiFicha() async {
     final respuesta =
         await _apiClient.get<Map<String, dynamic>>('/ficha-usuario/mi-ficha');
+    await _cache.guardarFicha(respuesta);
     return Ficha.fromJson(respuesta);
+  }
+
+  @override
+  Future<List<Horario>?> horariosEnCache() async {
+    final crudo = await _cache.leerHorarios();
+    return crudo
+        ?.map((h) => Horario.fromJson(h as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<Ficha?> fichaEnCache() async {
+    final crudo = await _cache.leerFicha();
+    return crudo == null ? null : Ficha.fromJson(crudo);
   }
 
   Future<List<Horario>> _pedirLista(String ruta) async {
     final respuesta = await _apiClient.get<List<dynamic>>(ruta);
+    await _cache.guardarHorarios(respuesta);
     return respuesta
         .map((h) => Horario.fromJson(h as Map<String, dynamic>))
         .toList();
