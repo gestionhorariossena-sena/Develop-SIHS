@@ -1,15 +1,25 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.supabase_auth import get_current_user, require_admin, require_lectura_catalogo, require_lectura_catalogo_o_instructor
-from app.schemas.ficha import FichaCreate, FichaResponse, FichaUpdate
+from app.core.supabase_auth import (
+    get_current_user,
+    require_admin,
+    require_admin_o_coordinador,
+    require_lectura_catalogo,
+    require_lectura_catalogo_o_instructor,
+)
+from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
+from app.repositories.horario_repository import HorarioRepository
+from app.schemas.ficha import FichaCreate, FichaFaseActualUpdate, FichaResponse, FichaUpdate
 from app.schemas.ficha_usuario import VoceroResponse
 from app.schemas.horario import HorarioResponse
 from app.services.auditoria_service import AuditoriaService
 from app.services.ficha_service import FichaService
 from app.services.ficha_usuario_service import FichaUsuarioService
 from app.services.horario_service import HorarioService
+from app.services.pdf_service import PdfService, SeccionTabla, SeccionTexto
 
 router = APIRouter(prefix="/fichas", tags=["fichas"])
 
@@ -68,14 +78,108 @@ def obtener_vocero_ficha(
     usuario=Depends(get_current_user),
 ):
     """SCRUM-108: vocero/subvocero de una ficha (nombre + correo), para el
-    "Vocero de Ficha" del drawer de instructor y el botón "Contactar" en Mi
-    Horario del aprendiz. Abierto a cualquier usuario autenticado — no es
-    dato sensible, y tanto instructor como aprendiz necesitan verlo sin
-    tener rol de gestión (require_lectura_catalogo los excluiría a ambos)."""
+    "Vocero de Ficha" del drawer de instructor y "Vocera: ..."/el botón
+    "Contactar" en Mi Horario del aprendiz. Abierto a cualquier usuario
+    autenticado -- no es dato sensible, y tanto instructor como aprendiz
+    necesitan verlo sin tener rol de gestión (require_lectura_catalogo los
+    excluiría a ambos). No cubre el botón "Contactar" en sí (mensajería,
+    otro Epic), solo expone quién es."""
     if not FichaService.obtener_por_id(db, id_ficha):
         raise HTTPException(status_code=404, detail="Ficha no encontrada")
 
     return FichaUsuarioService.obtener_voceros(db, id_ficha)
+
+
+@router.patch("/{id_ficha}/fase-actual", response_model=FichaResponse)
+def actualizar_fase_actual_ficha(
+    id_ficha: int,
+    data: FichaFaseActualUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_admin_o_coordinador),
+):
+    """Botón "Actualizar fase" del asistente de programación (paso 2):
+    una ficha que ya existe en el catálogo no recibe faseActual de un
+    re-import (solo se escribe al CREARLA) -- este endpoint deja que el
+    coordinador la sincronice con lo que trae el Excel sin tener que
+    editar la ficha completa en Fichas. Mismos roles que el resto del
+    asistente (Coordinador/Administrador), no solo Administrador como el
+    PUT completo de abajo -- corregir esto es parte normal de armar el
+    horario, no de administrar el catálogo."""
+    ficha = FichaService.actualizar_fase_actual(db, id_ficha, data.faseActual)
+
+    if not ficha:
+        raise HTTPException(status_code=404, detail="Ficha no encontrada")
+
+    AuditoriaService.registrar(db, usuario=usuario, accion="ACTUALIZAR", entidad="fichas", id_entidad=id_ficha)
+
+    return ficha
+
+
+@router.get("/{id_ficha}/pdf")
+def descargar_ficha_pdf(
+    id_ficha: int,
+    db: Session = Depends(get_db),
+    usuario=Depends(get_current_user),
+):
+    """"Horario Oficial" + "nómina" de una ficha en un solo PDF (épica
+    transversal de exportación a PDF, ver PdfService): datos de la ficha,
+    la grilla de todos sus horarios asignados y el listado de aprendices
+    matriculados. Abierto a cualquier usuario autenticado, mismo criterio
+    que GET /{id_ficha}/vocero: ni instructor ni aprendiz tienen rol de
+    gestión, y ambos necesitan poder descargar esto."""
+    ficha = FichaService.obtener_por_id(db, id_ficha)
+
+    if not ficha:
+        raise HTTPException(status_code=404, detail="Ficha no encontrada")
+
+    horarios = HorarioRepository.obtener_por_ficha(db, id_ficha)
+    filas_horario = [
+        [
+            HorarioRepository.obtener_nombres_dias(db, h.idHorario),
+            f"{h.horaInicio.strftime('%H:%M')} - {h.horaFin.strftime('%H:%M')}",
+            h.instructor.nombre if h.instructor else "—",
+            h.ambiente.nombre if h.ambiente else "—",
+            h.resultado.codigo if h.resultado and h.resultado.codigo else "—",
+        ]
+        for h in horarios
+    ]
+
+    aprendices = FichaUsuarioRepository.obtener_por_ficha(db, id_ficha)
+    filas_aprendices = [
+        [usuario_aprendiz.nombre, usuario_aprendiz.email, vinculo.rolEnFicha or "Aprendiz"]
+        for vinculo, usuario_aprendiz in aprendices
+    ]
+
+    contenido = PdfService.generar(
+        titulo=f"Ficha {ficha.codigoFicha}",
+        subtitulo=f"{ficha.programa.nombrePrograma if ficha.programa else '—'} · Trimestre {ficha.trimestre.nombre if ficha.trimestre else '—'}",
+        secciones=[
+            SeccionTexto(
+                titulo="Datos generales",
+                lineas=[
+                    f"Programa: {ficha.programa.nombrePrograma if ficha.programa else '—'}",
+                    f"Trimestre: {ficha.trimestre.nombre if ficha.trimestre else '—'}",
+                    f"Sede: {ficha.sede.nombre if ficha.sede else '—'}",
+                ],
+            ),
+            SeccionTabla(
+                titulo="Horario oficial",
+                encabezados=["Día(s)", "Hora", "Instructor", "Ambiente", "Resultado"],
+                filas=filas_horario,
+            ),
+            SeccionTabla(
+                titulo="Nómina de aprendices",
+                encabezados=["Nombre", "Correo", "Rol en la ficha"],
+                filas=filas_aprendices,
+            ),
+        ],
+    )
+
+    return Response(
+        content=contenido,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="ficha-{ficha.codigoFicha}.pdf"'},
+    )
 
 
 @router.put("/{id_ficha}", response_model=FichaResponse)

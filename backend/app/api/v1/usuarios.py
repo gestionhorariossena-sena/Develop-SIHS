@@ -1,7 +1,8 @@
 from uuid import UUID
+from datetime import date
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -17,6 +18,7 @@ from app.models.usuario import Usuario
 from app.schemas.horario import HorarioResponse
 from app.schemas.usuario import (
     CargaSemanalResponse,
+    UsuarioEspecialidadesUpdate,
     UsuarioCodigoInstructorRequest,
     UsuarioCodigoInstructorValidacionRequest,
     UsuarioLoginDocumentoRequest,
@@ -36,6 +38,19 @@ def obtener_mi_perfil(usuario: Usuario = Depends(get_current_user)):
     """Perfil del usuario autenticado — confirma que Supabase Auth + la
     base de datos están conectados end-to-end."""
     return usuario
+
+
+@router.patch("/me/confirmar-cambio-clave", response_model=UsuarioResponse)
+def confirmar_cambio_clave(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """El frontend llama esto justo después de un
+    supabase.auth.updateUser({ password }) exitoso en la pantalla de
+    cambio de contraseña obligatorio (primer login con credencial
+    temporal) — limpia debeCambiarClave para que ProtectedRoute deje
+    de redirigir ahí."""
+    return UsuarioService.confirmar_cambio_clave(db, usuario)
 
 
 @router.post("/login-documento", response_model=UsuarioLoginDocumentoResponse)
@@ -74,6 +89,8 @@ def iniciar_sesion_por_documento(data: UsuarioLoginDocumentoRequest, db: Session
 
 @router.get("/me/horarios", response_model=list[HorarioResponse])
 def obtener_mis_horarios(
+    fecha_inicio: date | None = Query(default=None, alias="fechaInicio"),
+    fecha_fin: date | None = Query(default=None, alias="fechaFin"),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
@@ -84,7 +101,14 @@ def obtener_mis_horarios(
     ya está limitado a `usuario.idUsuario` (nunca a un id que venga del
     request). Solo devuelve lo publicado — un instructor no debe ver un
     borrador que el coordinador todavía está armando."""
-    return HorarioService.obtener_publicados_por_instructor(db, usuario.idUsuario)
+    if (fecha_inicio is None) != (fecha_fin is None):
+        raise HTTPException(status_code=422, detail="fechaInicio y fechaFin deben enviarse juntas.")
+    if fecha_inicio is not None and fecha_inicio > fecha_fin:
+        raise HTTPException(status_code=422, detail="fechaInicio no puede ser posterior a fechaFin.")
+
+    return HorarioService.obtener_publicados_por_instructor(
+        db, usuario.idUsuario, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+    )
 
 
 @router.get("/me/horarios/pdf")
@@ -180,6 +204,33 @@ def obtener_horarios_instructor(
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
 
     return HorarioService.obtener_por_instructor(db, id_usuario)
+
+
+@router.put("/{id_usuario}/especialidades", response_model=UsuarioResponse)
+def actualizar_especialidades_instructor(
+    id_usuario: UUID,
+    data: UsuarioEspecialidadesUpdate,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_admin_o_coordinador),
+):
+    """Fortalezas del instructor. Es coordinación quien las conoce y las
+    mantiene, así que no se restringe a Administrador como el resto de la
+    parametrización de catálogos."""
+    actualizado = UsuarioService.reemplazar_especialidades(db, id_usuario, data.idsEspecialidades)
+
+    if not actualizado:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+
+    AuditoriaService.registrar(
+        db,
+        usuario=usuario,
+        accion="ACTUALIZAR_ESPECIALIDADES",
+        entidad="usuarios",
+        id_entidad=id_usuario,
+        detalle=", ".join(e.nombre for e in actualizado.especialidades) or "sin especialidades",
+    )
+
+    return actualizado
 
 
 @router.post("/instructor/codigo/generar")

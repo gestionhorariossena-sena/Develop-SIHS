@@ -29,6 +29,10 @@ export interface Usuario {
   sigla?: string | null
   roles: Rol[]
   especialidades: Especialidad[]
+  /** true tras aprobar una solicitud de acceso con credencial temporal —
+   * ProtectedRoute.tsx fuerza CambiarClaveObligatorio.tsx hasta que se
+   * limpie con PATCH /usuarios/me/confirmar-cambio-clave. */
+  debeCambiarClave: boolean
 }
 
 // Espejo de CargaSemanalResponse (backend/app/schemas/usuario.py) —
@@ -77,6 +81,7 @@ export interface Ficha {
   fechaFinLectiva?: string | null
   fechaInicioProductiva?: string | null
   fechaFinProductiva?: string | null
+  faseActual?: number | null
   programa: Programa
   trimestre: Trimestre
   sede: Sede | null
@@ -199,6 +204,11 @@ export type TipoConflictoHorario =
   | 'cruce_ambiente'
   | 'resultado_repetido'
   | 'regla_instructor'
+  // El instructor no tiene la fortaleza (especialidad) que pide la
+  // competencia del resultado — ver
+  // HorarioService._validar_fortaleza_instructor. Forzable, igual que
+  // regla_instructor.
+  | 'fortaleza_instructor'
 
 export interface HorarioDryRunConflict {
   tipo: TipoConflictoHorario
@@ -237,6 +247,30 @@ export interface AuditoriaCrucesResponse {
 // texto libre — no la tabla relacional `horarios` real (con FKs y
 // detección de cruces), que todavía no existe en el backend. Ver
 // `_Docs/Documentación general/SECCION_ESTUDIANTES.md`.
+// Espejo de AvisoResponse (backend/app/schemas/aviso.py) — GET /avisos/.
+// "extraordinario" es la categoría del destacado tipo "COMUNICADO
+// EXTRAORDINARIO" del mockup; reprog/eventos/sede son las 3 categorías
+// del filtro de píldoras.
+export type CategoriaAviso = 'reprog' | 'eventos' | 'sede' | 'extraordinario'
+
+export interface Aviso {
+  idAviso: number
+  idUsuarioPublicador: string | null
+  publicadorNombre: string | null
+  titulo: string
+  cuerpo: string
+  categoria: CategoriaAviso
+  idFicha: number | null
+  idSede: number | null
+  adjuntoUrl: string | null
+  fechaPublicacion: string
+  vigenteHasta: string | null
+  // Resueltos por el backend: un Aprendiz no tiene permiso sobre /fichas/
+  // ni /sedes/ para traducir esos ids, y el aviso va dirigido a él.
+  fichaCodigo: string | null
+  sedeNombre: string | null
+}
+
 export interface HorarioGuardado {
   idHorarioGuardado: number
   idUsuario: string
@@ -256,10 +290,14 @@ export interface HorarioGuardado {
   fechaCreacion: string
 }
 
+// `tipo` es texto libre en el backend (String(30), sin CHECK constraint) --
+// no un enum cerrado. El único productor real hoy (HorarioService, al
+// reprogramar) usa el literal "Cambios de Aula & Horario", que coincide
+// con el nombre de la primera pestaña del Centro de Notificaciones.
 export interface Notificacion {
   idNotificacion: number
   idUsuario: string
-  tipo: 'cruce' | 'horario' | 'ambiente' | 'sistema'
+  tipo: string
   mensaje: string
   leida: boolean
   fechaCreacion: string
@@ -267,13 +305,30 @@ export interface Notificacion {
   idEntidadRelacionada: string | null
 }
 
-// Espejo de la tabla `solicitudes_acceso` (ticket "[DB/Arquitectura] Tabla
-// solicitudes_acceso...", Epic SCRUM-96) y de `SolicitudAccesoResponse` del
-// endpoint `GET /solicitudes-acceso/` (ticket "[Backend] Endpoints
-// /solicitudes-acceso", mismo Epic) — ninguno de los dos existe en el
-// backend todavía. Los nombres de campo acá son el contrato documentado en
-// esos tickets de Jira (SCRUM-103/SCRUM-109), no una adivinanza: cuando el
-// backend exista debería devolver exactamente esta forma.
+// Espejo de `EtiquetaAnotacion` (Pydantic Literal) en
+// backend/app/schemas/anotacion_horario.py -- acotado a nivel de schema,
+// no un Enum de Postgres.
+export type EtiquetaAnotacion = 'Examen' | 'Entrega' | 'Importante' | 'Normal'
+
+export interface AnotacionHorario {
+  idAnotacion: number
+  idUsuario: string
+  idHorario: number | null
+  nota: string
+  etiqueta: EtiquetaAnotacion
+  recordatorioActivo: boolean
+  fechaCreacion: string
+}
+
+export interface AnotacionHorarioInput {
+  idHorario: number | null
+  nota: string
+  etiqueta: EtiquetaAnotacion
+  recordatorioActivo: boolean
+}
+
+// Espejo de `app/schemas/solicitud_acceso.py#SolicitudAccesoResponse`
+// (Epic SCRUM-96). Endpoints vivos desde H-3.
 export interface SolicitudAcceso {
   idSolicitud: number
   nombre: string
@@ -287,4 +342,282 @@ export interface SolicitudAcceso {
   fechaSolicitud: string
   fechaResolucion: string | null
   idAdminResolvio: string | null
+}
+
+/** Espejo de `app/schemas/mensajeria.py`. Hilo 1 a 1 entre un Aprendiz y
+ * un Instructor que sí le dicta clase. Solo el Aprendiz puede abrirlo
+ * (`POST /mensajeria/conversaciones` exige su rol y valida el vínculo), y
+ * no hay tiempo real: se refresca al entrar. */
+export interface Conversacion {
+  idConversacion: number
+  idAprendiz: string
+  idInstructor: string
+  fechaCreacion: string
+  aprendizNombre: string | null
+  instructorNombre: string | null
+}
+
+export interface Mensaje {
+  idMensaje: number
+  idConversacion: number
+  idRemitente: string
+  contenido: string
+  adjuntoUrl: string | null
+  leido: boolean
+  fechaEnvio: string
+}
+
+/** Espejo de `app/schemas/solicitud_cambio_horario.py`. Un instructor
+ * reporta algo sobre un bloque SUYO ya programado y coordinación lo
+ * resuelve. Ojo: aprobar registra la decisión, no mueve el horario real
+ * (ver el docstring de `SolicitudCambioHorarioService.resolver`). */
+export type TipoSolicitudCambio = 'novedad' | 'permuta' | 'cambio-ambiente'
+
+export interface SolicitudCambioHorario {
+  idSolicitud: number
+  idInstructor: string
+  idHorarioOrigen: number
+  tipo: TipoSolicitudCambio
+  motivo: string
+  estado: 'pendiente' | 'aprobada' | 'rechazada'
+  fechaSolicitud: string
+  fechaResolucion: string | null
+  idAdminResolvio: string | null
+}
+
+/** Respuesta de `POST /solicitudes-acceso/{id}/aprobar`. Mientras el SMTP
+ * del proyecto de Supabase siga sin configurar (H-15), `correoEnviado` es
+ * false y la clave viaja acá para que el Administrador se la entregue a
+ * mano — cuando ese correo funcione, `passwordTemporal` deja de venir. */
+export interface SolicitudAccesoAprobada {
+  solicitud: SolicitudAcceso
+  email: string
+  passwordTemporal: string | null
+  correoEnviado: boolean
+}
+
+// Espejo de app/schemas/asistente_horario.py -- el wizard de 4 pasos
+// (AsistenteHorarios.tsx): subir archivo -> revisar -> generar
+// propuesta -> confirmar. Ninguno de estos 3 endpoints persiste nada;
+// confirmar sigue siendo POST /horarios/ (HorarioCreate, más arriba).
+export interface ColumnaClasificada {
+  columnaOriginal: string
+  campo: string | null
+  confianza: number
+}
+
+export interface FilaImportada {
+  fila: number
+  // El número de ficha del Excel (codigoFicha, texto) -- NO el idFicha
+  // interno de la BD (autoincremental, sin relación con el número real).
+  codigoFicha: string | null
+  fichaExiste: boolean
+  // Solo viene lleno cuando fichaExiste=true.
+  idFicha: number | null
+  programa: string | null
+  jornada: string | null
+  instructorNombre: string | null
+  advertencia: string | null
+  // Solo vienen si se subió un archivo complementario y traía estos datos
+  // para la misma ficha (cruce por codigoFicha).
+  nivelFormacion: string | null
+  coordinacion: string | null
+  codigoPrograma: string | null
+  fechaInicioLectiva: string | null
+  fechaFinLectiva: string | null
+  fechaFinProductiva: string | null
+  faseActual: number | null
+  // Solo viene lleno cuando fichaExiste=true -- lo que la ficha YA TIENE
+  // guardado en la BD. El import solo escribe faseActual al CREAR una
+  // ficha nueva, así que una que ya existe no se sincroniza sola con un
+  // re-import; si difiere de `faseActual` (lo que trae el Excel), el
+  // wizard ofrece el botón "Actualizar fase".
+  faseActualEnBD: number | null
+}
+
+// Espejo de FichaFaseActualUpdate -- payload mínimo del botón
+// "Actualizar fase" (PATCH /fichas/{id}/fase-actual).
+export interface FichaFaseActualUpdate {
+  faseActual: number
+}
+
+// Espejo de ProgramaCreate/CoordinacionCreate -- usados por "Crear
+// programa nuevo" dentro del formulario "Crear ficha" del asistente.
+export interface ProgramaCreate {
+  codigoPrograma: string
+  nombrePrograma: string
+  nivelFormacion?: string | null
+  activo?: boolean
+  idCoordinacion: number
+}
+
+export interface CoordinacionCreate {
+  nombreCoordinacion: string
+}
+
+// Espejo de FichaCreate (backend/app/schemas/ficha.py) -- usado por el
+// botón "Crear ficha" del asistente (paso 2), que reusa POST /fichas/ ya
+// existente en vez de un endpoint nuevo.
+export interface FichaCreate {
+  codigoFicha: string
+  idPrograma: number
+  idTrimestre: number
+  idSede?: number | null
+  faseActual?: number | null
+}
+
+// Espejo de app/schemas/curriculo.py -- importar competencias/resultados
+// desde el Formato de Planeación Pedagógica real de SENA (Programas.tsx,
+// drawer de un programa). Sin IA: el formato tiene encabezados fijos.
+export interface ResultadoExtraido {
+  descripcion: string
+  horasAsignadas: number | null
+  numeroFase: number | null
+}
+
+export interface CompetenciaExtraida {
+  descripcion: string
+  resultados: ResultadoExtraido[]
+}
+
+export interface PreviewCurriculoResponse {
+  nombreArchivo: string
+  hoja: string
+  competencias: CompetenciaExtraida[]
+  totalCompetencias: number
+  totalResultados: number
+}
+
+export interface CompetenciaFormacionCreate {
+  codigo?: string | null
+  descripcion: string
+  idPrograma: number
+}
+
+export interface CompetenciaFormacionResponse extends CompetenciaFormacionCreate {
+  idCompetencia: number
+}
+
+export interface ResultadoAprendizajeCreate {
+  codigo?: string | null
+  descripcion: string
+  idCompetencia: number
+  idGuia?: number | null
+  horasAsignadas?: number | null
+  numeroFase?: number | null
+}
+
+export interface ImportarExcelPreviewResponse {
+  nombreArchivo: string
+  hoja: string
+  filaEncabezado: number
+  columnas: ColumnaClasificada[]
+  filas: FilaImportada[]
+  totalFilas: number
+  filasConAdvertencia: number
+  advertenciaGeneral: string | null
+  archivoComplementario: string | null
+  hojaComplementaria: string | null
+}
+
+export type JornadaAsistente = 'MAÑANA' | 'TARDE' | 'NOCHE'
+
+export interface GenerarPropuestaRequest {
+  idTrimestre: number
+  idsFicha: number[]
+  jornada: JornadaAsistente
+}
+
+export interface BloquePropuesto {
+  idFicha: number
+  fichaCodigo: string
+  idResultado: number
+  resultadoDescripcion: string
+  idInstructor: string
+  instructorNombre: string
+  idAmbiente: number
+  ambienteNombre: string
+  idJornada: number
+  dias: number[]
+  horaInicio: string
+  horaFin: string
+}
+
+export interface GenerarPropuestaResponse {
+  bloques: BloquePropuesto[]
+  factible: boolean
+  mensaje: string
+  fichasSinProgramar: string[]
+}
+
+export interface PreguntaHorarioRequest {
+  pregunta: string
+  contexto: string
+}
+
+export interface RespuestaPreguntaHorario {
+  respuesta: string
+}
+
+/** Espejo de `app/schemas/asistencia.py`. La asistencia la certifica el
+ * instructor que dicta ESA clase; el aprendiz solo lee la suya. */
+export type EstadoAsistencia = 'presente' | 'tardanza' | 'excusa' | 'ausente'
+
+export interface AprendizDeSesion {
+  idUsuario: string
+  nombre: string
+  numeroDocumento: string | null
+  rolEnFicha: string | null
+  /** null = todavía no se le pasó lista ese día. No es "ausente". */
+  estado: EstadoAsistencia | null
+  horaMarcacion: string | null
+  referenciaExcusa: string | null
+}
+
+export interface SesionAsistencia {
+  idHorario: number
+  fechaSesion: string
+  fichaCodigo: string | null
+  resultadoDescripcion: string | null
+  ambienteNombre: string | null
+  horaInicio: string
+  horaFin: string
+  aprendices: AprendizDeSesion[]
+  registradaEn: string | null
+  registradaPor: string | null
+}
+
+export interface MarcaAsistencia {
+  idUsuarioAprendiz: string
+  estado: EstadoAsistencia
+  referenciaExcusa?: string | null
+}
+
+export interface AsistenciaDeAprendiz {
+  idAsistencia: number
+  idHorario: number
+  fechaSesion: string
+  estado: EstadoAsistencia
+  referenciaExcusa: string | null
+  resultadoDescripcion: string | null
+  instructorNombre: string | null
+  ambienteNombre: string | null
+  horaInicio: string
+  horaFin: string
+}
+
+export interface ResumenAsistencia {
+  registradas: number
+  presente: number
+  tardanza: number
+  excusa: number
+  ausente: number
+  /** Sobre sesiones REGISTRADAS, no sobre las programadas del trimestre:
+   * el sistema solo sabe de las clases a las que se les pasó lista. */
+  porcentaje: number
+}
+
+export interface MiAsistencia {
+  resumen: ResumenAsistencia
+  sesiones: AsistenciaDeAprendiz[]
 }

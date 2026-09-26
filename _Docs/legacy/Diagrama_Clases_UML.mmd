@@ -1,0 +1,117 @@
+classDiagram
+    class User {
+        +String id
+        +String names
+        +String document
+        +String email
+        +String phone
+        +String password
+        +boolean login(pass: String)
+        +void logout()
+        +boolean updateData(name: String, email: String, phone: String)
+    }
+
+    class Coordinator {
+        +boolean createSchedule(groupId: String, instructorId: String, roomId: String, day: String, startTime: Time, endTime: Time)
+        +boolean modifySchedule(scheduleId: String, day: String, startTime: Time, endTime: Time)
+        +boolean registerGroup(groupNumber: String, programId: String, trimesterId: String)
+        +boolean registerRoom(roomId: String, number: String, type: String)
+    }
+
+    class Administrator {
+        +boolean manageUsers()
+        +boolean assignRoles()
+    }
+
+    class Instructor {
+        +String specialty
+        +String contractType
+        +List~Schedule~ checkSchedule()
+    }
+
+    class Learner {
+        +String groupId
+        +List~Schedule~ checkSchedule()
+    }
+
+    class Room {
+        +String roomId
+        +String number
+        +String type
+        +boolean registerRoom(roomId: String, number: String, type: String)
+        +boolean modifyRoom(roomId: String, number: String, type: String)
+    }
+
+    class Schedule {
+        +String id
+        +String groupId
+        +String instructorId
+        +String roomId
+        +String day
+        +Time startTime
+        +Time endTime
+        +boolean createSchedule(groupId: String, instructorId: String, roomId: String, day: String, startTime: Time, endTime: Time)
+        +boolean modifySchedule(id: String, day: String, startTime: Time, endTime: Time)
+        +void assignInstructor(instructorId: String)
+        +void assignRoom(roomId: String)
+    }
+
+    class Group {
+        +String groupNumber
+        +String programId
+        +String trimesterId
+        +boolean registerGroup(groupNumber: String, programId: String, trimesterId: String)
+        +boolean updateGroup(groupNumber: String)
+    }
+
+    class TrainingProgram {
+        +String programId
+        +String name
+        +ProgramType type
+        +Status status
+        +boolean registerProgram()
+        +boolean updateProgram(programId: String)
+        +TrainingProgram getProgram(programId: String)
+        +List~TrainingProgram~ getPrograms()
+    }
+
+    class Trimester {
+        +String trimesterId
+        +String number
+        +Date startDate
+        +Date endDate
+        +Enum status
+        +boolean registerTrimester()
+        +boolean updateTrimester(trimesterId: String)
+        +Trimester getTrimester(trimesterId: String)
+        +List~Trimester~ listTrimesters()
+    }
+
+    class LearningOutcome {
+        +String code
+        +String programId
+        +String trimesterId
+        +boolean registerOutcome(code: String, programId: String, trimesterId: String)
+        +boolean updateOutcome(code: String)
+    }
+
+    User <|-- Coordinator
+    User <|-- Administrator
+    User <|-- Instructor
+    User <|-- Learner
+
+    Coordinator --> Schedule
+    Coordinator --> Group
+    Coordinator --> Room
+    Administrator --> User
+    Instructor --> Schedule
+    Learner --> Schedule
+
+    TrainingProgram "1" --> "0..*" LearningOutcome
+    Trimester "1" --> "0..*" LearningOutcome
+    TrainingProgram "1" --> "0..*" Group
+    Trimester "1" --> "0..*" Group
+    Group "1" --> "0..*" Learner
+    Group "1" --> "0..*" Schedule
+    Room "1" --> "0..*" Schedule
+    Instructor "1" --> "0..*" Schedule

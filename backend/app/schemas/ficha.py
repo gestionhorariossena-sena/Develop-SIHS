@@ -16,6 +16,7 @@ class FichaBase(BaseModel):
     fechaFinLectiva: date | None = None
     fechaInicioProductiva: date | None = None
     fechaFinProductiva: date | None = None
+    faseActual: int | None = None
 
 
 class FichaCreate(FichaBase):
@@ -24,6 +25,16 @@ class FichaCreate(FichaBase):
 
 class FichaUpdate(FichaBase):
     pass
+
+
+class FichaFaseActualUpdate(BaseModel):
+    """Payload mínimo para el botón "Actualizar fase" del asistente de
+    programación (paso 2) -- a diferencia de FichaUpdate, no exige mandar
+    codigoFicha/idPrograma/idTrimestre/etc. porque el wizard solo tiene
+    a mano lo que vino del Excel, no la ficha completa como la carga la
+    página Fichas."""
+
+    faseActual: int
 
 
 class FichaResponse(FichaBase):

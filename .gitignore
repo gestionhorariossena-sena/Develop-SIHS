@@ -2,7 +2,9 @@
 .env
 
 # Backend
+backend/venv
 backend/venv/
+backend/.venv
 backend/.venv/
 backend/**/__pycache__/
 backend/**/*.pyc
@@ -18,7 +20,19 @@ frontend/dist/
 frontend/.env
 frontend/.env.local
 
+# Móvil (Flutter)
+mobile/.env
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins-dependencies
+
 # Editores / Sistema
 .vscode/
 .idea/
 .DS_Store
+
+# Archivos de trabajo local (datos reales, mockups, capturas)
+*.xlsx
+*.xls
+*.jpeg
+*.jpg

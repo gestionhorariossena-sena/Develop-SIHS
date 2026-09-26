@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 from sqlalchemy.orm import Session
 
 from app.models.notificacion import Notificacion
@@ -10,6 +12,35 @@ class NotificacionRepository:
         db.commit()
         db.refresh(notificacion)
         return notificacion
+
+    @staticmethod
+    def existe_reciente(
+        db: Session,
+        *,
+        id_usuario,
+        tipo: str,
+        entidad_relacionada: str,
+        id_entidad_relacionada,
+        minutos: int,
+    ) -> bool:
+        """¿Ya se le avisó de esto mismo hace poco? Publicar el horario de
+        una ficha son decenas de bloques sueltos, uno por llamada: sin
+        esto, a cada aprendiz le entrarían decenas de campanazos idénticos
+        en el mismo minuto."""
+        desde = datetime.now(timezone.utc) - timedelta(minutes=minutos)
+
+        return (
+            db.query(Notificacion)
+            .filter(
+                Notificacion.idUsuario == id_usuario,
+                Notificacion.tipo == tipo,
+                Notificacion.entidadRelacionada == entidad_relacionada,
+                Notificacion.idEntidadRelacionada == str(id_entidad_relacionada),
+                Notificacion.fechaCreacion >= desde,
+            )
+            .first()
+            is not None
+        )
 
     @staticmethod
     def obtener_por_usuario(

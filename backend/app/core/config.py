@@ -1,4 +1,16 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Ruta absoluta a backend/.env, calculada desde este archivo y NO desde el
+# directorio de trabajo. Con `env_file=".env"` a secas, arrancar el servidor
+# desde la raíz del monorepo (`uvicorn app.main:app` en vez de hacerlo dentro
+# de backend/) levantaba la API igual pero sin leer ninguna variable: como
+# todos los campos de abajo tienen un valor por defecto vacío, no fallaba
+# nada al arrancar y el problema solo aparecía mucho después, en forma de
+# "GEMINI_API_KEY no está configurada" al usar el asistente, o de una
+# conexión a una base de datos local inexistente.
+_ARCHIVO_ENV = Path(__file__).resolve().parents[2] / ".env"
 
 
 class Settings(BaseSettings):
@@ -19,12 +31,23 @@ class Settings(BaseSettings):
     # llamar al backend por CORS además de localhost. Vacía en desarrollo local.
     frontend_url: str = ""
 
+    # SMTP de la cuenta de Gmail de gestión — mismas credenciales que el
+    # ticket de recuperación de contraseña (Epic SCRUM-96). Vacío hasta que
+    # ese ticket configure la cuenta; EmailService falla explícito mientras
+    # tanto en vez de fallar en silencio. smtp_password es la "contraseña de
+    # aplicación" de Gmail, no la contraseña normal de la cuenta.
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_nombre: str = "SIHS SENA — Gestión de Horarios"
+
     # Gemini API (Google AI Studio) — capa de IA opcional, ver
     # _Docs/Arquitectura/Arquitectura_IA_Motor_Horarios.md. Vacía por
     # defecto: el sistema funciona completo sin esto configurado.
     gemini_api_key: str = ""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=_ARCHIVO_ENV, env_file_encoding="utf-8", extra="ignore")
 
 
 settings = Settings()

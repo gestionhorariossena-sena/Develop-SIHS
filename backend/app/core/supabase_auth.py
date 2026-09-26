@@ -1,3 +1,6 @@
+import threading
+import time
+
 import httpx
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -9,28 +12,62 @@ from app.models.usuario import Usuario
 
 security = HTTPBearer()
 
+# Cachea la validación de cada token por unos segundos para no golpear el
+# endpoint de Supabase Auth en cada request (dos páginas piden varios
+# recursos en paralelo con Promise.all, y cada uno revalida el mismo token).
+# El lock solo protege el dict en memoria (lectura/escritura), NO la llamada
+# de red -- probado en vivo que mantenerlo tomado durante la llamada a
+# Supabase serializa TODOS los requests autenticados de la app entre sí
+# (una request pasó de ~400ms a ~10s por quedar en fila detrás de otras).
+_TTL_CACHE_SEG = 30
+_cache_tokens: dict[str, tuple[float, dict]] = {}
+_cache_lock = threading.Lock()
+
+# La llamada a Supabase Auth es sobre la red real (no localhost) y a veces
+# falla de forma transitoria (timeout, conexión reiniciada) sin que el token
+# ni Supabase tengan ningún problema real -- reproducido en vivo el
+# 2026-09-14 como un 503 intermitente en /ficha-usuario/mi-horario. Un
+# reintento corto absorbe eso sin esconder errores persistentes.
+_REINTENTOS = 2
+
 
 def _verificar_token_supabase(token: str) -> dict:
     """Valida el token contra Supabase Auth y devuelve los datos del usuario.
 
     No necesitamos el JWT secret del proyecto para esto: le preguntamos
     directamente a Supabase si el token es válido, igual que haría el
-    frontend con supabase-js.
+    frontend con supabase-js. El resultado se cachea brevemente (ver
+    _TTL_CACHE_SEG) para tolerar ráfagas de requests con el mismo token.
     """
-    try:
-        respuesta = httpx.get(
-            f"{settings.supabase_url}/auth/v1/user",
-            headers={
-                "Authorization": f"Bearer {token}",
-                "apikey": settings.supabase_anon_key,
-            },
-            timeout=10,
-        )
-    except httpx.HTTPError as exc:
+    ahora = time.monotonic()
+
+    with _cache_lock:
+        entrada = _cache_tokens.get(token)
+        if entrada and entrada[0] > ahora:
+            return entrada[1]
+
+    ultimo_error: httpx.HTTPError | None = None
+    respuesta = None
+    for intento in range(_REINTENTOS + 1):
+        try:
+            respuesta = httpx.get(
+                f"{settings.supabase_url}/auth/v1/user",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "apikey": settings.supabase_anon_key,
+                },
+                timeout=10,
+            )
+            break
+        except httpx.HTTPError as exc:
+            ultimo_error = exc
+            respuesta = None
+
+    if respuesta is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="No se pudo validar el token con Supabase",
-        ) from exc
+        ) from ultimo_error
 
     if respuesta.status_code != 200:
         raise HTTPException(
@@ -38,7 +75,14 @@ def _verificar_token_supabase(token: str) -> dict:
             detail="Token inválido o expirado",
         )
 
-    return respuesta.json()
+    datos = respuesta.json()
+
+    with _cache_lock:
+        _cache_tokens[token] = (ahora + _TTL_CACHE_SEG, datos)
+        if len(_cache_tokens) > 500:
+            _cache_tokens.clear()
+
+    return datos
 
 
 def get_current_user(
@@ -62,17 +106,49 @@ def get_current_user(
         # Primer request autenticado de este usuario: Supabase Auth ya lo
         # validó, pero todavía no tiene fila de perfil en "usuarios". La
         # creamos aquí para no obligar a un paso manual de registro aparte.
+        metadata = datos_supabase.get("user_metadata") or {}
+
         usuario = Usuario(
             idUsuario=supabase_user_id,
             nombre=(email or "usuario").split("@")[0],
             email=email,
-            numeroDocumento=(datos_supabase.get("user_metadata") or {}).get("numero_documento") or None,
+            numeroDocumento=metadata.get("numero_documento") or None,
         )
         db.add(usuario)
         db.commit()
         db.refresh(usuario)
 
+        _vincular_ficha_del_registro(db, usuario, metadata)
+
     return usuario
+
+
+def _vincular_ficha_del_registro(db: Session, usuario: Usuario, metadata: dict) -> None:
+    """H-2: el registro ya le pide el código de ficha al aprendiz y lo
+    guarda en la metadata de Supabase, pero hasta el 2026-09-24 nadie lo
+    leía nunca — se le pedía el dato y después se le volvía a pedir. Si el
+    código existe, el vínculo queda hecho antes de que llegue a su primera
+    pantalla.
+
+    Si el código no corresponde a ninguna ficha (un dígito de más, una
+    ficha que el centro todavía no cargó) no se interrumpe el login: el
+    formulario de "Mi horario" (H-1) queda como camino de rescate, y para
+    eso sirve — también para quien se registró antes de que esto existiera.
+    """
+    codigo_ficha = (metadata.get("codigo_ficha") or "").strip()
+    if not codigo_ficha:
+        return
+
+    # Import local: este módulo es una dependencia de casi todos los
+    # routers, y los servicios importan modelos que a su vez lo importan.
+    from app.services.ficha_usuario_service import FichaUsuarioService
+
+    try:
+        FichaUsuarioService.vincular(db, usuario.idUsuario, codigo_ficha)
+    except Exception:
+        # Nada de lo que pase acá debe tumbar la autenticación: el perfil
+        # ya quedó creado y la persona puede vincularse a mano.
+        db.rollback()
 
 
 def require_role(role_name: str):

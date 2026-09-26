@@ -13,11 +13,14 @@ from app.core.database import Base, get_db
 from app.main import app
 from app.models.auditoria import Auditoria
 from app.models.coordinacion import Coordinacion
-from app.models.especialidad import Especialidad, usuario_especialidad
+from app.models.competencia_formacion import CompetenciaFormacion
+from app.models.especialidad import Especialidad, especialidad_competencia, usuario_especialidad
 from app.models.ficha import Ficha
 from app.models.ficha_usuario import FichaUsuario
+from app.models.notificacion import Notificacion
 from app.models.programa import Programa
 from app.models.rol import Rol
+from app.models.solicitud_acceso import SolicitudAcceso
 from app.models.trimestre import Trimestre
 from app.models.usuario import Usuario
 from app.models.usuario_rol import UsuarioRol
@@ -71,8 +74,18 @@ def db_session():
             Trimestre.__table__,
             Ficha.__table__,
             FichaUsuario.__table__,
+            # Desde H-8 crear, publicar o reasignar un horario genera
+            # notificaciones, así que esta tabla dejó de ser opcional para
+            # los tests de horarios: sin ella, el flujo normal revienta.
+            Notificacion.__table__,
             Especialidad.__table__,
             usuario_especialidad,
+            SolicitudAcceso.__table__,
+            # La validación de fortalezas (¿el instructor tiene la
+            # especialidad que pide el resultado?) consulta estas dos en
+            # cada creación de horario, así que tampoco son opcionales.
+            CompetenciaFormacion.__table__,
+            especialidad_competencia,
         ],
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -104,6 +117,16 @@ def fake_supabase(monkeypatch):
     debe responder Supabase para ese token; cualquier otro token no
     registrado se comporta como un token inválido/expirado (401).
     """
+    # _verificar_token_supabase cachea su resultado por token (ver su
+    # docstring) para no golpear a Supabase en cada request -- ese cache es
+    # un dict a nivel de módulo que sobrevive entre tests, así que si dos
+    # tests reusaran el mismo string de token con datos distintos, el
+    # segundo vería (falsamente) los datos cacheados del primero. Se limpia
+    # acá, al principio de cada test que use este fixture.
+    from app.core import supabase_auth
+
+    supabase_auth._cache_tokens.clear()
+
     usuarios_por_token: dict[str, dict] = {}
 
     class FakeResponse:
@@ -125,8 +148,11 @@ def fake_supabase(monkeypatch):
 
     monkeypatch.setattr("app.core.supabase_auth.httpx.get", fake_get)
 
-    def registrar(token: str, *, id: str, email: str) -> None:
-        usuarios_por_token[token] = {"id": id, "email": email}
+    def registrar(token: str, *, id: str, email: str, user_metadata: dict | None = None) -> None:
+        # `user_metadata` es lo que el formulario de registro guarda en
+        # Supabase Auth (nombre, documento, rol solicitado, código de
+        # ficha); get_current_user lo lee al crear la fila de perfil.
+        usuarios_por_token[token] = {"id": id, "email": email, "user_metadata": user_metadata or {}}
 
     return registrar
 

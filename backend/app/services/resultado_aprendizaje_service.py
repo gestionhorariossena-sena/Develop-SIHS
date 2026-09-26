@@ -19,6 +19,7 @@ class ResultadoAprendizajeService:
             idCompetencia=data.idCompetencia,
             idGuia=data.idGuia,
             horasAsignadas=data.horasAsignadas,
+            numeroFase=data.numeroFase,
         )
         return ResultadoAprendizajeRepository.crear(db, nuevo_resultado)
 
@@ -34,6 +35,7 @@ class ResultadoAprendizajeService:
         resultado.idCompetencia = data.idCompetencia
         resultado.idGuia = data.idGuia
         resultado.horasAsignadas = data.horasAsignadas
+        resultado.numeroFase = data.numeroFase
 
         return ResultadoAprendizajeRepository.actualizar(db, resultado)
 

@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr
+from pydantic import BaseModel, ConfigDict
 
 from app.schemas.especialidad import EspecialidadResponse
 from app.schemas.rol import RolResponse
@@ -28,11 +28,23 @@ class UsuarioLoginDocumentoResponse(BaseModel):
 
 
 class UsuarioResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)
 
     idUsuario: UUID
     nombre: str
-    email: EmailStr
+    # `str`, no `EmailStr` -- este es un modelo de RESPUESTA (lectura de lo
+    # que ya existe en BD), no de entrada, así que validar formato acá no
+    # protege nada. Instructores/ambientes importados sin cuenta real usan
+    # un placeholder deliberado con dominio ".local" (ej.
+    # "juan@instructores.sihs.sin-cuenta.local") para dejar claro que no
+    # tienen login -- pydantic-email-validator rechaza ".local" por ser un
+    # TLD de uso especial/reservado (RFC 6761), no por ser inválido como
+    # identificador. Con EmailStr, CUALQUIER endpoint que liste usuarios
+    # (GET /usuarios/, y todo lo que dependa de él: Vista por Instructor,
+    # el buscador de instructores del asistente, etc.) tronaba con 500 en
+    # cuanto la lista incluía uno de estos usuarios -- encontrado en vivo
+    # el 2026-09-14, bloqueaba "Vista por Instructor" por completo.
+    email: str
     estado: str
     fechaRegistro: datetime
     # Solo aplica a instructores — nullable, ver
@@ -42,9 +54,20 @@ class UsuarioResponse(BaseModel):
     codigoInstructor: str | None = None
     idTrimestre: int | None = None
     sigla: str | None = None
+    # Fuerza la pantalla de cambio de contraseña obligatorio en el primer
+    # login con credencial temporal — ver app/models/usuario.py y
+    # ProtectedRoute.tsx (frontend), que es quien la consume.
     debeCambiarClave: bool = False
     roles: list[RolResponse] = []
     especialidades: list[EspecialidadResponse] = []
+
+
+class UsuarioEspecialidadesUpdate(BaseModel):
+    """PUT /usuarios/{id}/especialidades — fortalezas del instructor.
+    Mismo criterio que CompetenciaEspecialidadesUpdate: se manda el
+    conjunto completo, no altas/bajas sueltas."""
+
+    idsEspecialidades: list[int]
 
 
 class CargaSemanalResponse(BaseModel):

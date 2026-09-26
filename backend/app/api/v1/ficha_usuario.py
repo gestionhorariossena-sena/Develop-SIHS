@@ -48,9 +48,14 @@ def obtener_mi_horario(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(require_aprendiz),
 ):
-    ficha = FichaUsuarioService.obtener_mi_ficha(db, usuario.idUsuario)
+    """Grilla semanal real de MiHorarioAprendiz.tsx: todos los horarios de
+    la ficha vinculada del Aprendiz, con el mismo shape enriquecido
+    (instructorNombre/fichaCodigo/ambienteNombre/resultado...) que ya usa
+    GET /horarios/ para Coordinador/Administrador -- ver
+    HorarioService.a_response."""
+    horarios = FichaUsuarioService.obtener_mi_horario(db, usuario.idUsuario)
 
-    if not ficha:
+    if horarios is None:
         raise HTTPException(status_code=404, detail="No tienes una ficha vinculada")
 
-    return HorarioService.obtener_por_ficha(db, ficha.idFicha)
+    return [HorarioService.a_response(db, h) for h in horarios]

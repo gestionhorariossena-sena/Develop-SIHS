@@ -1,21 +1,21 @@
-from app.models.ambiente import Ambiente
 from app.models.dia_semana import DiaSemana
+from app.models.competencia_formacion import CompetenciaFormacion
+from app.models.especialidad import Especialidad, especialidad_competencia
+from app.models.ficha import Ficha
 from app.models.horario import Horario
 from app.models.jornada import Jornada
+from app.models.resultado_aprendizaje import ResultadoAprendizaje
+from app.models.trimestre import Trimestre
 from app.models.usuario import Usuario
 from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
 from app.repositories.horario_repository import HorarioRepository
-from app.services.notificacion_service import NotificacionService
+from app.services.notificacion_service import NotificacionService, TIPO_AMBIENTE, TIPO_HORARIO
 
 # RF-011 (Requisitos Funcionales V4.pdf, pág. 15-16): "Los instructores de
 # planta podrán estar asignados máximo 32 horas a la semana, mientras que
 # para los de contrato serán un máximo de 40."
 HORAS_MAX_PLANTA = 32
 HORAS_MAX_CONTRATO = 40
-
-# Orden de las jornadas en un mismo día, para decidir si dos son
-# "continuas" (adyacentes) — ver _validar_reglas_instructor.
-ORDEN_JORNADA = {"Mañana": 1, "Tarde": 2, "Noche": 3}
 
 
 class CruceHorarioError(Exception):
@@ -39,12 +39,22 @@ class HorarioService:
         return HorarioRepository.obtener_por_id(db, id_horario)
 
     @staticmethod
-    def a_response(db, horario) -> dict:
+    def a_response(db, horario, dias: list[int] | None = None) -> dict:
         """Serializa un Horario a la forma de HorarioResponse, enriquecido
         con los nombres/códigos de instructor/ficha/ambiente/resultado —
         movido acá desde api/v1/horarios.py (`_a_response`) para
         reutilizarlo también en los GET por instructor/ficha/ambiente que
-        alimentan el drawer de relacionados (SCRUM-46/47/48)."""
+        alimentan el drawer de relacionados (SCRUM-46/47/48), y por GET
+        /ficha-usuario/mi-horario (mismo shape para Coordinador/
+        Administrador viendo todos los horarios y para el Aprendiz viendo
+        los de su propia ficha).
+
+        `dias`: si el llamador ya los trajo en bloque para MUCHOS horarios
+        a la vez (ver HorarioRepository.obtener_dias_por_horarios), se
+        pasan acá para no repetir un query por horario. Si se omite (el
+        caso normal de crear/actualizar/obtener UN horario suelto), cae al
+        query individual de siempre -- un query extra no importa cuando
+        es uno solo, sí importa multiplicado por cientos en un listado."""
         return {
             "idHorario": horario.idHorario,
             "horaInicio": horario.horaInicio,
@@ -59,13 +69,29 @@ class HorarioService:
             "fechaModificacion": horario.fechaModificacion,
             "activo": horario.activo,
             "publicado": horario.publicado,
-            "dias": HorarioRepository.obtener_dias(db, horario.idHorario),
+            "dias": dias if dias is not None else HorarioRepository.obtener_dias(db, horario.idHorario),
             "instructorNombre": horario.instructor.nombre if horario.instructor else None,
             "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
             "ambienteNombre": horario.ambiente.nombre if horario.ambiente else None,
             "resultadoCodigo": horario.resultado.codigo if horario.resultado else None,
             "resultadoDescripcion": horario.resultado.descripcion if horario.resultado else None,
         }
+
+    @staticmethod
+    def obtener_todos_con_respuesta(db) -> list[dict]:
+        """Versión bulk de `obtener_todos` + `a_response` -- ver
+        HorarioRepository._RELACIONES_PARA_RESPUESTA y
+        obtener_dias_por_horarios. Antes, GET /horarios/ hacía
+        obtener_todos() (1 query) y luego a_response(db, h) POR CADA
+        horario (5 queries más: días + 4 relaciones lazy-load), sin
+        límite de cuántos horarios hay -- con el catálogo real (130+
+        horarios) eso tardaba 47s medido en vivo el 2026-09-14, muy por
+        encima del timeout del frontend. Con eager loading + bulk-days el
+        costo pasa a ser ~3 queries totales sin importar cuántos horarios
+        haya."""
+        horarios = HorarioRepository.obtener_todos(db)
+        dias_por_horario = HorarioRepository.obtener_dias_por_horarios(db, [h.idHorario for h in horarios])
+        return [HorarioService.a_response(db, h, dias=dias_por_horario.get(h.idHorario, [])) for h in horarios]
 
     @staticmethod
     def obtener_por_instructor(db, id_instructor) -> list[dict]:
@@ -78,8 +104,12 @@ class HorarioService:
 
     @staticmethod
     def obtener_por_ficha(db, id_ficha) -> list[dict]:
-        """GET /fichas/{id}/horarios (SCRUM-47) — horarios de una ficha."""
-        return [HorarioService.a_response(db, h) for h in HorarioRepository.obtener_por_ficha(db, id_ficha)]
+        """GET /fichas/{id}/horarios (SCRUM-47) y /ficha-usuario/mi-horario
+        del Aprendiz — horarios de una ficha. Bulk-days igual que
+        obtener_todos_con_respuesta, ver su docstring."""
+        horarios = HorarioRepository.obtener_por_ficha(db, id_ficha)
+        dias_por_horario = HorarioRepository.obtener_dias_por_horarios(db, [h.idHorario for h in horarios])
+        return [HorarioService.a_response(db, h, dias=dias_por_horario.get(h.idHorario, [])) for h in horarios]
 
     @staticmethod
     def obtener_por_ambiente(db, id_ambiente) -> list[dict]:
@@ -108,6 +138,14 @@ class HorarioService:
             idResultado=data.idResultado,
         )
         horario = HorarioRepository.crear(db, nuevo_horario, data.dias)
+
+        # Un horario nace publicado (`publicado` tiene server_default true),
+        # así que el momento en que la gente puede verlo es este, no un
+        # PATCH posterior: si el aviso solo colgara de "despublicado ->
+        # publicado", el camino normal —crear y listo— no avisaría nunca.
+        if horario.publicado:
+            HorarioService._notificar_publicacion(db, horario)
+
         return horario, errores if forzar else []
 
     @staticmethod
@@ -121,6 +159,9 @@ class HorarioService:
 
         cambio_ambiente = horario.idAmbiente != data.idAmbiente
         cambio_instructor = horario.idInstructor != data.idInstructor
+        # Se guarda ANTES de sobrescribirlo: a quien le quitan un bloque le
+        # interesa tanto como a quien se lo dan.
+        instructor_anterior = horario.idInstructor
 
         errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
         if errores and not forzar:
@@ -137,34 +178,100 @@ class HorarioService:
 
         actualizado = HorarioRepository.actualizar(db, horario, data.dias)
         HorarioService._notificar_cambio_asignacion(
-            db, actualizado, cambio_ambiente, cambio_instructor
+            db, actualizado, cambio_ambiente, cambio_instructor, instructor_anterior
         )
         return actualizado, errores if forzar else []
 
     @staticmethod
+    def _datos_para_mensaje(horario) -> tuple[str, str, str]:
+        """(código de ficha, nombre del ambiente, franja) para armar
+        mensajes — los tres salen de relaciones que pueden venir vacías."""
+        ficha_codigo = horario.ficha.codigoFicha if horario.ficha else horario.idFicha
+        ambiente_nombre = horario.ambiente.nombre if horario.ambiente else "sin ambiente"
+        franja = f"{horario.horaInicio:%H:%M} a {horario.horaFin:%H:%M}"
+        return str(ficha_codigo), ambiente_nombre, franja
+
+    @staticmethod
     def _notificar_cambio_asignacion(
-        db, horario, cambio_ambiente: bool, cambio_instructor: bool
+        db, horario, cambio_ambiente: bool, cambio_instructor: bool, instructor_anterior=None
     ) -> None:
+        """H-8: antes esto solo avisaba a los aprendices de la ficha, así
+        que a un instructor le podían mover el ambiente de una clase y se
+        enteraba al llegar al salón equivocado. Ahora el aviso alcanza a
+        los tres lados del cambio: la ficha, quien la dicta y —si el bloque
+        cambió de manos— quien la dictaba antes."""
         if not (cambio_ambiente or cambio_instructor):
             return
 
-        ficha_codigo = horario.ficha.codigoFicha if horario.ficha else horario.idFicha
-        ambiente_nombre = horario.ambiente.nombre if horario.ambiente else "Sin ambiente"
-        instructor_nombre = horario.instructor.nombre if horario.instructor else "Sin instructor"
-        mensaje = (
-            f"Se actualizó el horario de tu ficha {ficha_codigo}: "
-            f"ambiente {ambiente_nombre} e instructor {instructor_nombre}."
-        )
+        ficha_codigo, ambiente_nombre, franja = HorarioService._datos_para_mensaje(horario)
+        instructor_nombre = horario.instructor.nombre if horario.instructor else "sin instructor"
+        tipo = TIPO_AMBIENTE if cambio_ambiente else TIPO_HORARIO
 
-        for vinculo in FichaUsuarioRepository.obtener_aprendices_por_ficha(db, horario.idFicha):
+        def avisar(id_usuario, mensaje: str) -> None:
+            if not id_usuario:
+                return
             NotificacionService.crear(
                 db,
-                id_usuario=vinculo.idUsuario,
-                tipo="Cambios de Aula & Horario",
+                id_usuario=id_usuario,
+                tipo=tipo,
                 mensaje=mensaje,
                 entidad_relacionada="horarios",
                 id_entidad_relacionada=horario.idHorario,
             )
+
+        for vinculo in FichaUsuarioRepository.obtener_aprendices_por_ficha(db, horario.idFicha):
+            avisar(
+                vinculo.idUsuario,
+                f"Cambió tu clase de {franja} en la ficha {ficha_codigo}: "
+                f"ahora es en {ambiente_nombre} con {instructor_nombre}.",
+            )
+
+        avisar(
+            horario.idInstructor,
+            f"Cambió tu bloque de {franja} con la ficha {ficha_codigo}: "
+            f"ahora es en {ambiente_nombre}.",
+        )
+
+        if cambio_instructor and instructor_anterior and instructor_anterior != horario.idInstructor:
+            avisar(
+                instructor_anterior,
+                f"Ya no tienes el bloque de {franja} con la ficha {ficha_codigo}: "
+                f"pasó a {instructor_nombre}.",
+            )
+
+    @staticmethod
+    def _notificar_publicacion(db, horario) -> None:
+        """H-9: publicar era un cambio invisible — el horario quedaba ahí
+        esperando a que alguien entrara a mirarlo. Se avisa al instructor y
+        a los aprendices de la ficha, que son quienes recién en ese momento
+        pueden verlo ("Mi horario" solo muestra lo publicado).
+
+        El aviso es por FICHA y no por bloque, y se agrupa: publicar el
+        horario de una ficha son decenas de llamadas sueltas (el asistente
+        guarda bloque por bloque), y a nadie le sirve recibir treinta
+        campanazos diciendo lo mismo. El mensaje no nombra una franja
+        concreta justamente para que valga igual si fue uno o treinta.
+        """
+        ficha_codigo, _, _ = HorarioService._datos_para_mensaje(horario)
+
+        for vinculo in FichaUsuarioRepository.obtener_aprendices_por_ficha(db, horario.idFicha):
+            NotificacionService.crear_agrupada(
+                db,
+                id_usuario=vinculo.idUsuario,
+                tipo=TIPO_HORARIO,
+                mensaje=f"Ya está publicado el horario de tu ficha {ficha_codigo}. Míralo en «Mi horario».",
+                entidad_relacionada="fichas",
+                id_entidad_relacionada=horario.idFicha,
+            )
+
+        NotificacionService.crear_agrupada(
+            db,
+            id_usuario=horario.idInstructor,
+            tipo=TIPO_HORARIO,
+            mensaje=f"Se publicó tu horario con la ficha {ficha_codigo}. Ya aparece en «Mi horario».",
+            entidad_relacionada="fichas",
+            id_entidad_relacionada=horario.idFicha,
+        )
 
     @staticmethod
     def eliminar(db, id_horario):
@@ -193,20 +300,35 @@ class HorarioService:
         if not horario:
             return None
 
+        # Solo el paso de borrador a publicado avisa: despublicar y volver
+        # a publicar el mismo bloque no debe repetir el aviso, y
+        # activar/desactivar no cambia lo que la gente ve en "Mi horario".
+        recien_publicado = publicado is True and not horario.publicado
+
         if activo is not None:
             horario.activo = activo
         if publicado is not None:
             horario.publicado = publicado
-        return HorarioRepository.guardar(db, horario)
+
+        guardado = HorarioRepository.guardar(db, horario)
+
+        if recien_publicado:
+            HorarioService._notificar_publicacion(db, guardado)
+
+        return guardado
 
     @staticmethod
-    def obtener_publicados_por_instructor(db, id_instructor) -> list[dict]:
+    def obtener_publicados_por_instructor(
+        db, id_instructor, fecha_inicio=None, fecha_fin=None
+    ) -> list[dict]:
         """GET /usuarios/me/horarios — autoservicio del instructor ("Mi
         horario"): solo lo activo y publicado, nunca un borrador que el
         coordinador todavía está armando."""
         return [
             HorarioService.a_response(db, h)
-            for h in HorarioRepository.obtener_por_instructor(db, id_instructor)
+            for h in HorarioRepository.obtener_por_instructor(
+                db, id_instructor, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+            )
             if h.publicado
         ]
 
@@ -214,11 +336,14 @@ class HorarioService:
     def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
         """Cruces por solape de horario: misma ficha, mismo instructor o
         mismo ambiente ya ocupados en ese día/hora — ver
-        REGLAS_DE_NEGOCIO_CONOCIDAS.md. También valida que una misma ficha
-        no repita un resultado de aprendizaje. Cada mensaje describe CONTRA
-        QUÉ horario existente choca (día, hora, y quién/qué ya lo tiene) —
-        no solo la regla que se violó, para que se entienda de un vistazo
-        sin tener que ir a buscarlo a mano."""
+        REGLAS_DE_NEGOCIO_CONOCIDAS.md. También valida que el MISMO
+        instructor no repita un resultado de aprendizaje para la misma
+        ficha en un día no relacionado (dos instructores distintos sí
+        pueden repartirse el mismo resultado en días distintos -- eso es
+        reparto válido, no duplicado; corrección 2026-09-12). Cada
+        mensaje describe CONTRA QUÉ horario existente choca (día, hora, y
+        quién/qué ya lo tiene) — no solo la regla que se violó, para que
+        se entienda de un vistazo sin tener que ir a buscarlo a mano."""
         errores: list[str] = []
 
         ficha_existente = HorarioRepository.buscar_solape(
@@ -249,7 +374,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, data.dias, excluir_id
+            db, data.idFicha, data.idResultado, data.idInstructor, data.dias, excluir_id
         )
         if resultado_existente:
             errores.append(
@@ -258,6 +383,7 @@ class HorarioService:
             )
 
         errores.extend(HorarioService._validar_reglas_instructor(db, data, excluir_id))
+        errores.extend(HorarioService._validar_fortaleza_instructor(db, data))
         return errores
 
     @staticmethod
@@ -307,7 +433,7 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, data.dias, excluir_id
+            db, data.idFicha, data.idResultado, data.idInstructor, data.dias, excluir_id
         )
         if resultado_existente:
             conflictos.append(
@@ -325,6 +451,14 @@ class HorarioService:
             conflictos.append({
                 "tipo": "regla_instructor",
                 "mensaje": error,
+            })
+
+        for error in HorarioService._validar_fortaleza_instructor(db, data):
+            conflictos.append({
+                "tipo": "fortaleza_instructor",
+                "mensaje": error,
+                "idInstructor": data.idInstructor,
+                "idResultado": data.idResultado,
             })
 
         return conflictos
@@ -348,6 +482,13 @@ class HorarioService:
         from app.schemas.horario import HorarioDryRunRequest  # evita import circular a nivel de módulo
 
         horarios = HorarioRepository.obtener_activos(db, id_trimestre=id_trimestre, id_sede=id_sede)
+        # Bulk en vez de un `obtener_dias` por horario -- ver
+        # HorarioService.obtener_todos_con_respuesta, mismo problema N+1.
+        # No elimina el costo dominante de este barrido (validar_dry_run
+        # se sigue llamando una vez POR horario, con sus propias queries
+        # de buscar_solape), pero saca del camino el N+1 más barato de
+        # arreglar sin tocar la lógica de detección de cruces.
+        dias_por_horario = HorarioRepository.obtener_dias_por_horarios(db, [h.idHorario for h in horarios])
 
         pares_vistos: set[tuple[int, int, str]] = set()
         instructores_vistos: set = set()
@@ -363,7 +504,7 @@ class HorarioService:
                 idInstructor=horario.idInstructor,
                 idFicha=horario.idFicha,
                 idResultado=horario.idResultado,
-                dias=HorarioRepository.obtener_dias(db, horario.idHorario),
+                dias=dias_por_horario.get(horario.idHorario, []),
             )
 
             for conflicto in HorarioService.validar_dry_run(db, candidato, excluir_id=horario.idHorario):
@@ -426,16 +567,213 @@ class HorarioService:
         }
 
     @staticmethod
+    def _semanas_de_trimestre(db, id_trimestre) -> int | None:
+        """Cuántas semanas dura el trimestre. Hace falta porque las dos
+        magnitudes que hay que comparar están en unidades distintas: un
+        horario es SEMANAL (se repite cada semana del trimestre) y la
+        intensidad de la planeación (`resultados_aprendizaje.horasAsignadas`)
+        es del TRIMESTRE COMPLETO. None si el trimestre no existe o no
+        tiene fechas — sin eso no se puede convertir y no se valida nada."""
+        trimestre = db.get(Trimestre, id_trimestre)
+        if not trimestre or not trimestre.fechaInicio or not trimestre.fechaFin:
+            return None
+
+        dias = (trimestre.fechaFin - trimestre.fechaInicio).days
+        if dias <= 0:
+            return None
+
+        return max(1, round(dias / 7))
+
+    @staticmethod
+    def horas_semanales_de(db, horario) -> float:
+        """Horas de clase que ese bloque ocupa por semana: su duración por
+        la cantidad de días en que se repite."""
+        return HorarioService._duracion_horas(horario.horaInicio, horario.horaFin) * len(
+            HorarioRepository.obtener_dias(db, horario.idHorario)
+        )
+
+    @staticmethod
+    def resumen_intensidad_ficha(db, id_ficha: int) -> dict | None:
+        """Cuadre de horas de UNA ficha, resultado por resultado — para el
+        panel de seguimiento de Fichas.tsx y para responder "¿esta ficha ya
+        tiene programado todo lo que debe?".
+
+        Compara, para cada resultado de aprendizaje del programa de la
+        ficha que corresponde a su fase actual, las horas que la planeación
+        le asigna contra las que están efectivamente programadas.
+        `estado` por resultado: 'ok' | 'faltan' | 'exceso' | 'sin-planeacion'
+        (este último cuando el RA no trae `horasAsignadas` y no hay contra
+        qué comparar).
+
+        None si la ficha no existe."""
+        ficha = db.get(Ficha, id_ficha)
+        if not ficha:
+            return None
+
+        semanas = HorarioService._semanas_de_trimestre(db, ficha.idTrimestre)
+        horarios = [h for h in HorarioRepository.obtener_por_ficha(db, id_ficha) if h.activo]
+
+        programadas_por_resultado: dict[int, float] = {}
+        for horario in horarios:
+            if horario.idResultado is None:
+                continue
+            programadas_por_resultado[horario.idResultado] = programadas_por_resultado.get(
+                horario.idResultado, 0.0
+            ) + HorarioService.horas_semanales_de(db, horario)
+
+        # Los resultados del pénsum de ESTA ficha: los de su programa y, si
+        # la ficha tiene fase declarada, los de esa fase. Sin fase declarada
+        # se toman todos los del programa (igual criterio que usa
+        # generar_propuesta, ver models/ficha.py faseActual).
+        query = (
+            db.query(ResultadoAprendizaje)
+            .join(
+                CompetenciaFormacion,
+                CompetenciaFormacion.idCompetencia == ResultadoAprendizaje.idCompetencia,
+            )
+            .filter(CompetenciaFormacion.idPrograma == ficha.idPrograma)
+        )
+        if ficha.faseActual:
+            query = query.filter(ResultadoAprendizaje.numeroFase == ficha.faseActual)
+        resultados = query.all()
+
+        detalle = []
+        total_planeadas = 0
+        total_programadas = 0.0
+        for resultado in resultados:
+            semanales = programadas_por_resultado.pop(resultado.idResultado, 0.0)
+            programadas = semanales * semanas if semanas else None
+            planeadas = resultado.horasAsignadas
+
+            if not planeadas:
+                estado = "sin-planeacion"
+            elif programadas is None:
+                estado = "sin-planeacion"
+            elif programadas > planeadas:
+                estado = "exceso"
+            elif programadas < planeadas:
+                estado = "faltan"
+            else:
+                estado = "ok"
+
+            if planeadas:
+                total_planeadas += planeadas
+            if programadas:
+                total_programadas += programadas
+
+            detalle.append({
+                "idResultado": resultado.idResultado,
+                "codigo": resultado.codigo,
+                "descripcion": resultado.descripcion,
+                "horasPlaneadas": planeadas,
+                "horasSemanales": semanales,
+                "horasProgramadas": programadas,
+                "estado": estado,
+            })
+
+        # Lo que quedó en programadas_por_resultado son bloques de
+        # resultados que NO pertenecen a la fase/programa esperado: se
+        # reportan igual, si no el total programado mentiría.
+        for id_resultado, semanales in programadas_por_resultado.items():
+            resultado = db.get(ResultadoAprendizaje, id_resultado)
+            programadas = semanales * semanas if semanas else None
+            if programadas:
+                total_programadas += programadas
+            detalle.append({
+                "idResultado": id_resultado,
+                "codigo": resultado.codigo if resultado else None,
+                "descripcion": resultado.descripcion if resultado else None,
+                "horasPlaneadas": None,
+                "horasSemanales": semanales,
+                "horasProgramadas": programadas,
+                "estado": "fuera-de-fase",
+            })
+
+        return {
+            "idFicha": ficha.idFicha,
+            "codigoFicha": ficha.codigoFicha,
+            "faseActual": ficha.faseActual,
+            "semanasTrimestre": semanas,
+            "horasPlaneadas": total_planeadas,
+            "horasProgramadas": total_programadas,
+            "resultados": detalle,
+        }
+
+    @staticmethod
+    def _validar_fortaleza_instructor(db, data) -> list[str]:
+        """¿El instructor tiene alguna de las fortalezas que pide el
+        resultado de aprendizaje que va a dictar?
+
+        Corrección pedida en la evaluación del V Trimestre (hoja GRUPO 1,
+        2026-09-04): "el instructor no se puede asignar a cualquier RA, se
+        deben revisar sus fortalezas para dicha asignación". La fortaleza
+        se modela a nivel de COMPETENCIA, no de resultado suelto: un
+        instructor que domina una competencia puede dictar cualquiera de
+        sus resultados, y clasificar competencia por competencia es
+        trabajo que coordinación puede sostener (clasificar los cientos de
+        RA uno por uno, no).
+
+        Silencio cuando no hay dato, a propósito y por partida doble:
+
+        - la competencia no tiene NINGUNA especialidad asociada -> no se
+          ha clasificado, no hay nada contra qué comparar;
+        - el resultado no existe o no tiene competencia -> igual.
+
+        Con la tabla recién creada eso significa que todo sigue exactamente
+        como antes hasta que alguien empiece a mapear especialidades; y lo
+        que sale de acá es un conflicto FORZABLE (mismo trato que RF-011),
+        no un bloqueo: el coordinador que sabe por qué lo está haciendo
+        programa igual y queda auditado."""
+        resultado = db.get(ResultadoAprendizaje, data.idResultado)
+        if not resultado or not resultado.idCompetencia:
+            return []
+
+        habilitantes = (
+            db.query(Especialidad)
+            .join(
+                especialidad_competencia,
+                especialidad_competencia.c.idEspecialidad == Especialidad.idEspecialidad,
+            )
+            .filter(especialidad_competencia.c.idCompetencia == resultado.idCompetencia)
+            .all()
+        )
+        if not habilitantes:
+            return []
+
+        instructor = db.get(Usuario, data.idInstructor)
+        if not instructor:
+            return []
+
+        ids_instructor = {e.idEspecialidad for e in instructor.especialidades}
+        if ids_instructor & {e.idEspecialidad for e in habilitantes}:
+            return []
+
+        nombres = ", ".join(sorted(e.nombre for e in habilitantes))
+        tiene = (
+            ", ".join(sorted(e.nombre for e in instructor.especialidades))
+            if instructor.especialidades
+            else "ninguna fortaleza registrada"
+        )
+        codigo = resultado.codigo or f"resultado {resultado.idResultado}"
+        return [
+            f"El instructor {instructor.nombre} no tiene la fortaleza que pide {codigo}: "
+            f"se requiere {nombres} y tiene {tiene}."
+        ]
+
+    @staticmethod
     def _validar_reglas_instructor(db, data, excluir_id: int | None) -> list[str]:
-        """RF-011: tope de horas/semana según tipo de contrato, jornada
-        Noche vedada para instructores de planta, y no repetir centro de
-        formación (acá, `Sede`, que es lo único que el esquema tiene para
-        eso) en jornadas continuas del mismo día. La tercera regla choca
-        con un hallazgo de entrevista en REGLAS_DE_NEGOCIO_CONOCIDAS.md
-        (un instructor real programado mañana en una sede y tarde en
-        otra) — se implementa igual porque así quedó escrito en el
-        requisito formal (RF-011), no en la entrevista; si el equipo
-        confirma que la entrevista manda, hay que revisar/quitar esto."""
+        """RF-011: tope de horas/semana según tipo de contrato, y jornada
+        Noche vedada para instructores de planta.
+
+        Corrección 2026-09-12: se quitó la regla que bloqueaba al mismo
+        instructor en jornadas continuas de sedes distintas el mismo día
+        (RF-011 la exigía, pero un hallazgo real de entrevista en
+        REGLAS_DE_NEGOCIO_CONOCIDAS.md la contradice directamente: un
+        instructor real programado mañana en una sede y tarde en otra).
+        El margen de traslado entre sedes ya está documentado como
+        coordinación humana, no una restricción dura del sistema -- no
+        había ningún caso real donde la regla evitara un error genuino,
+        solo bloqueaba reasignaciones válidas."""
         errores: list[str] = []
 
         instructor = db.get(Usuario, data.idInstructor)
@@ -443,7 +781,6 @@ class HorarioService:
             return errores
 
         jornada_nueva = db.get(Jornada, data.idJornada)
-        ambiente_nuevo = db.get(Ambiente, data.idAmbiente)
         horarios_instructor = HorarioRepository.obtener_por_instructor(
             db, data.idInstructor, excluir_id
         )
@@ -469,35 +806,6 @@ class HorarioService:
             errores.append(
                 f"El instructor {instructor.nombre} es de planta y no puede programarse en jornada Noche."
             )
-
-        if ambiente_nuevo and jornada_nueva:
-            orden_nueva = ORDEN_JORNADA.get(jornada_nueva.nombreJornada)
-            dias_nuevos = set(data.dias)
-
-            for h in horarios_instructor:
-                if h.idAmbiente == data.idAmbiente:
-                    continue
-
-                if not (set(HorarioRepository.obtener_dias(db, h.idHorario)) & dias_nuevos):
-                    continue
-
-                jornada_h = db.get(Jornada, h.idJornada)
-                orden_h = ORDEN_JORNADA.get(jornada_h.nombreJornada) if jornada_h else None
-                # <= 1 (no == 1): dos bloques de la MISMA jornada (ej. dos
-                # sub-bloques de "Tarde") en sedes distintas el mismo día
-                # también son físicamente imposibles, no solo jornadas
-                # adyacentes — == 1 dejaba pasar ese caso sin detectarlo.
-                if orden_nueva is None or orden_h is None or abs(orden_nueva - orden_h) > 1:
-                    continue
-
-                if not h.ambiente or h.ambiente.sede_id == ambiente_nuevo.sede_id:
-                    continue
-
-                errores.append(
-                    f"El instructor {instructor.nombre} ya está asignado a otro centro de "
-                    f"formación en una jornada continua ese día: {HorarioService._describir(db, h)}."
-                )
-                break
 
         return errores
 

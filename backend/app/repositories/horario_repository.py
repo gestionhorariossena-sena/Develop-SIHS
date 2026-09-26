@@ -1,13 +1,49 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.models.ambiente import Ambiente
+from app.models.dia_semana import DiaSemana
 from app.models.horario import Horario, horario_dia
+from app.models.trimestre import Trimestre
+
+def _relaciones_para_respuesta():
+    """Relaciones que HorarioService.a_response necesita leer para CADA
+    horario (instructor.nombre, ficha.codigoFicha, ambiente.nombre,
+    resultado.codigo/descripcion) -- sin selectinload, acceder a cada una
+    es una query lazy-load POR HORARIO. Con listados grandes (el centro
+    real ya tiene 130+ horarios) eso es cientos de queries secuenciales
+    contra Supabase (no localhost: cada una paga la latencia de red
+    real), y `obtener_todos`/`obtener_activos` son justo los que
+    alimentan listados completos (GET /horarios/, auditoría de cruces)
+    -- no un horario suelto. Encontrado en vivo el 2026-09-14: con 131
+    horarios, construir las respuestas tardaba 47s (medido) en vez de
+    los ~3s que tarda la query base sola, dejando "Horarios completos"
+    con timeout permanente en el frontend. `selectinload` trae cada
+    relación en un query aparte con un solo `IN (...)`, así que el costo
+    total pasa a ser O(1) queries extra (una por relación), no O(n).
+
+    Función (no una constante a nivel de módulo) a propósito: las
+    relaciones de `Horario` están declaradas por STRING ("Ficha",
+    "Usuario", ...) y SQLAlchemy las resuelve perezosamente contra su
+    registro declarativo la primera vez que hacen falta de verdad (en la
+    práctica, cuando se ejecuta la primera query real, momento en el que
+    ya se importaron todos los modelos). Evaluar `selectinload(...)` en
+    tiempo de import de este módulo fuerza esa resolución ANTES de que
+    `app.models.ficha` (y los demás) se hayan cargado -- exactamente el
+    ImportError que describe el mensaje de SQLAlchemy ("expression
+    'Ficha' failed to locate a name"), reproducido en vivo al correr la
+    suite de tests."""
+    return (
+        selectinload(Horario.instructor),
+        selectinload(Horario.ficha),
+        selectinload(Horario.ambiente),
+        selectinload(Horario.resultado),
+    )
 
 
 class HorarioRepository:
     @staticmethod
     def obtener_todos(db: Session):
-        return db.query(Horario).all()
+        return db.query(Horario).options(*_relaciones_para_respuesta()).all()
 
     @staticmethod
     def obtener_por_id(db: Session, id_horario: int):
@@ -17,6 +53,31 @@ class HorarioRepository:
     def obtener_dias(db: Session, id_horario: int) -> list[int]:
         filas = db.execute(horario_dia.select().where(horario_dia.c.idHorario == id_horario)).all()
         return [fila.idDia for fila in filas]
+
+    @staticmethod
+    def obtener_dias_por_horarios(db: Session, ids_horario: list[int]) -> dict[int, list[int]]:
+        """Mismo dato que `obtener_dias`, pero para MUCHOS horarios en un
+        solo query (`idHorario IN (...)`) -- el bulk-equivalent que
+        `obtener_todos`/`obtener_activos` necesitan para no repetir el
+        problema N+1 que `_relaciones_para_respuesta` ya resuelve para las
+        demás relaciones. Devuelve {} para ids_horario vacío sin tocar la
+        BD -- evita un `IN ()` que en algunos dialectos es válido pero
+        inútil hacer viajar a la red."""
+        if not ids_horario:
+            return {}
+        filas = db.execute(horario_dia.select().where(horario_dia.c.idHorario.in_(ids_horario))).all()
+        dias_por_horario: dict[int, list[int]] = {}
+        for fila in filas:
+            dias_por_horario.setdefault(fila.idHorario, []).append(fila.idDia)
+        return dias_por_horario
+
+    @staticmethod
+    def obtener_nombres_dias(db: Session, id_horario: int) -> str:
+        """'Lunes y Miércoles' — para el PDF de PdfService, que necesita
+        texto legible en vez de ids de "diasDeLaSemana"."""
+        ids_dias = HorarioRepository.obtener_dias(db, id_horario)
+        dias = db.query(DiaSemana).filter(DiaSemana.idDia.in_(ids_dias)).order_by(DiaSemana.idDia).all()
+        return " y ".join(d.nombreDia for d in dias) if dias else "días sin especificar"
 
     @staticmethod
     def crear(db: Session, horario: Horario, dias: list[int]):
@@ -86,7 +147,11 @@ class HorarioRepository:
 
     @staticmethod
     def obtener_por_instructor(
-        db: Session, id_instructor, excluir_id: int | None = None
+        db: Session,
+        id_instructor,
+        excluir_id: int | None = None,
+        fecha_inicio=None,
+        fecha_fin=None,
     ) -> list[Horario]:
         """Todos los horarios ya asignados a un instructor, sin filtrar por
         día/hora — HorarioService los usa para sumar horas semanales y
@@ -94,14 +159,29 @@ class HorarioRepository:
         los activos: uno desactivado no debería sumar a la carga semanal
         ni aparecer como vigente en el drawer de relacionados."""
         query = db.query(Horario).filter(Horario.idInstructor == id_instructor, Horario.activo.is_(True))
+        if fecha_inicio is not None and fecha_fin is not None:
+            query = query.join(Trimestre, Horario.idTrimestre == Trimestre.idTrimestre).filter(
+                Trimestre.fechaInicio <= fecha_fin,
+                Trimestre.fechaFin >= fecha_inicio,
+            )
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)
         return query.all()
 
     @staticmethod
     def obtener_por_ficha(db: Session, id_ficha: int) -> list[Horario]:
-        """GET /fichas/{id}/horarios (SCRUM-47) — grid/relacionados de una ficha."""
-        return db.query(Horario).filter(Horario.idFicha == id_ficha).all()
+        """GET /fichas/{id}/horarios (SCRUM-47), /ficha-usuario/mi-horario
+        del Aprendiz y la grilla semanal de GET /fichas/{id}/pdf
+        (PdfService) — grid/relacionados de una ficha. Con eager loading
+        (ver _relaciones_para_respuesta): sin esto, una ficha con ~15
+        horarios tardaba ~10s en /ficha-usuario/mi-horario (medido en vivo
+        el 2026-09-14) por el mismo N+1 que ya se resolvió en obtener_todos."""
+        return (
+            db.query(Horario)
+            .options(*_relaciones_para_respuesta())
+            .filter(Horario.idFicha == id_ficha)
+            .all()
+        )
 
     @staticmethod
     def obtener_por_ambiente(db: Session, id_ambiente: int) -> list[Horario]:
@@ -118,7 +198,7 @@ class HorarioRepository:
         que compara UN candidato contra lo existente, acá se listan los
         horarios ya guardados sobre los que después se re-valida cada
         uno)."""
-        query = db.query(Horario).filter(Horario.activo.is_(True))
+        query = db.query(Horario).options(*_relaciones_para_respuesta()).filter(Horario.activo.is_(True))
         if id_trimestre is not None:
             query = query.filter(Horario.idTrimestre == id_trimestre)
         if id_sede is not None:
@@ -132,6 +212,7 @@ class HorarioRepository:
         db: Session,
         id_ficha: int,
         id_resultado: int,
+        id_instructor,
         dias: list[int],
         excluir_id: int | None = None,
     ) -> Horario | None:
@@ -143,9 +224,22 @@ class HorarioRepository:
         comparte al menos un día con el nuevo se trata como continuación de
         la misma clase (no se marca); solo se marca si NO comparte ningún
         día, que es el caso real de "este resultado ya se programó en otro
-        momento no relacionado". Devuelve el horario existente que choca, o
-        None."""
-        query = db.query(Horario).filter(Horario.idFicha == id_ficha, Horario.idResultado == id_resultado, Horario.activo.is_(True))
+        momento no relacionado".
+
+        Corrección 2026-09-12: además, solo cuenta como duplicado si es el
+        MISMO instructor repitiendo el resultado en un día no relacionado.
+        Dos instructores distintos programados para el mismo (ficha,
+        resultado) en días distintos es un reparto válido del contenido
+        (ej. dos instructores rotando el mismo tema), no un error de
+        programación -- la regla original no miraba el instructor y lo
+        bloqueaba igual, un falso positivo real reportado por el usuario.
+        Devuelve el horario existente que choca, o None."""
+        query = db.query(Horario).filter(
+            Horario.idFicha == id_ficha,
+            Horario.idResultado == id_resultado,
+            Horario.idInstructor == id_instructor,
+            Horario.activo.is_(True),
+        )
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)
 
