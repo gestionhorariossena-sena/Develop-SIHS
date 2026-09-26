@@ -294,6 +294,9 @@ export function AsistenciaInstructor() {
                 <span className="rounded-full bg-primary-container px-2.5 py-1 text-on-primary-container">
                   Presentes: {conteo.presente}
                 </span>
+                <span className="rounded-full bg-tertiary-container px-2.5 py-1 text-on-tertiary-container">
+                  Tarde: {conteo.tardanza}
+                </span>
                 <span className="rounded-full bg-error-container px-2.5 py-1 text-on-error-container">
                   Ausentes: {conteo.ausente}
                 </span>
