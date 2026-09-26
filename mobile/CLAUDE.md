@@ -53,6 +53,8 @@ daría 403. Los nombres de día se resuelven localmente en
 | Aprendiz | `GET /ficha-usuario/mi-horario` | 404 si no tiene ficha vinculada. Devuelve TODO (publicado o no): el filtro de `publicado` lo hace el cliente |
 | Instructor | `GET /usuarios/me/horarios` | el backend ya filtra a solo publicados |
 | Todos | `GET /usuarios/me` | **imprescindible**: el JWT solo trae id y email; los roles están en la BD |
+| Aprendiz | `GET /asistencias/mias` | su historial y el resumen. Solo lo propio: la asistencia de un compañero es dato de un tercero |
+| Instructor | `GET /asistencias/sesion?idHorario=&fecha=` | la nómina de UNA clase suya en UNA fecha; 404 si el bloque es de otro instructor. El `POST` hermano (pasar lista) **no se usa acá**: el móvil es de lectura |
 
 ## Pantallas (diseños de `mobile/diseños movil/*.zip`)
 
@@ -66,6 +68,8 @@ traen el claro.
 | Login Aprendices / Login Instructores | `login_screen.dart` — una sola pantalla; el chip de portal alterna el titular. El backend no distingue portales: el rol lo decide `/usuarios/me` |
 | Recuperación de contraseña | `recuperar_password_screen.dart` — `resetPasswordForEmail` de Supabase |
 | Vista movil Aprendiz / Vista Instructor Movil | `home_screen.dart` + `sesion_card.dart` — mismo layout para ambos roles |
+| Mi asistencia Aprendiz | `asistencia_screen.dart` — resumen con el umbral del 85% e historial por mes |
+| (sin diseño propio) Asistencia Instructor | `asistencia_instructor_screen.dart` — sus clases del día y la nómina de cada una, **solo consulta**. Contraparte de `AsistenciaInstructor.tsx`, sin los controles de marcar |
 
 **Del diseño se implementó**: encabezado verde con saludo y rol, ficha del
 aprendiz (`/ficha-usuario/mi-ficha`), selector de días de la semana con
@@ -74,12 +78,17 @@ de color y píldora de estado (En curso / Finalizado / Por iniciar, calculada
 contra el reloj), detalle en bottom sheet, pull-to-refresh, bottom nav
 (Mi horario / Perfil).
 
-**Del diseño se omitió, por no existir en el backend**: asistencias, nº de
-aprendices por sesión, "Ver lista" de aprendices, "Novedad", sincronización
-con SOFIA Plus, buscador global, tabs "Por ambientes"/"Fichas asignadas" y
-la campana de avisos. Se prefirió omitirlos a dibujarlos con datos
-inventados. `/avisos` y `/notificaciones` sí existen (`get_current_user`,
-sin exigir rol) y son el siguiente candidato natural.
+**Del diseño se omitió, por no existir en el backend**: nº de aprendices
+por sesión en la tarjeta de horario, "Novedad", sincronización con SOFIA
+Plus, buscador global, tabs "Por ambientes"/"Fichas asignadas" y la campana
+de avisos. Se prefirió omitirlos a dibujarlos con datos inventados.
+`/avisos` y `/notificaciones` sí existen (`get_current_user`, sin exigir
+rol) y son el siguiente candidato natural.
+
+La asistencia sí dejó de ser un hueco: existe `/asistencias` y los dos
+roles tienen su pestaña. Ninguno marca desde el móvil — pasar lista es un
+`POST` y el cliente es de lectura; la pantalla del instructor lo dice y
+remite a la web en vez de dejarlo buscando un botón.
 
 ## Decisiones tomadas (y por qué)
 

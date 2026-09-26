@@ -421,14 +421,12 @@ export function DashboardInstructor() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          disabled
-                          title="Disponible cuando exista el Módulo de Asistencia (mismo epic que MiHorario.tsx)"
-                          className="cursor-not-allowed rounded-lg border border-outline px-2.5 py-1 text-xs font-semibold text-on-surface-variant/50"
+                        <Link
+                          to={`/asistencia?horario=${horario.idHorario}`}
+                          className="rounded-lg border border-outline px-2.5 py-1 text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
                         >
                           Ver lista de asistencia
-                        </button>
+                        </Link>
                         <Link
                           to={`/mi-horario/detalle-franja?horario=${horario.idHorario}&dia=${encodeURIComponent(nombreDiaHoy)}`}
                           className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-on-primary hover:bg-on-primary-container"

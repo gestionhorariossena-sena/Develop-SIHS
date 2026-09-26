@@ -9,6 +9,7 @@ import '../providers/horario_provider.dart';
 import '../widgets/estados_horario.dart';
 import '../widgets/horario_card.dart';
 import '../widgets/sesion_card.dart';
+import 'asistencia_instructor_screen.dart';
 import 'asistencia_screen.dart';
 import 'perfil_screen.dart';
 
@@ -17,9 +18,14 @@ import 'perfil_screen.dart';
 /// el encabezado (el aprendiz ve su ficha, el instructor no) y de dónde
 /// salen los horarios, no la forma de leerlos.
 ///
-/// Lo que el diseño muestra y NO existe en el backend (asistencias,
-/// nº de aprendices por sesión, "Ver lista", sincronización con SOFIA) se
-/// omite en vez de dibujarse con datos inventados.
+/// Los dos roles tienen pestaña de Asistencia, pero no la misma: el
+/// aprendiz consulta su historial y el instructor la lista de sus clases.
+/// Ninguno marca desde acá — el móvil es read-only (ARQUITECTURA_MOBILE.md)
+/// y pasar lista se hace en la web.
+///
+/// Lo que el diseño muestra y NO existe en el backend (nº de aprendices por
+/// sesión en la tarjeta de horario, sincronización con SOFIA) se omite en
+/// vez de dibujarse con datos inventados.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -51,7 +57,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final auth = context.watch<AuthProvider>();
     final horarios = context.watch<HorarioProvider>();
     final usuario = auth.usuarioActual;
-    final muestraAsistencia = usuario?.esAprendiz ?? false;
+    // Los dos roles la tienen; lo que cambia es qué pantalla abre.
+    final esAprendiz = usuario?.esAprendiz ?? false;
+    final muestraAsistencia = esAprendiz || (usuario?.esInstructor ?? false);
 
     if (usuario == null && auth.cargandoPerfil) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
@@ -67,10 +75,11 @@ class _HomeScreenState extends State<HomeScreen> {
             onElegirJornada: (j) => setState(() => _jornadaElegida = j),
             onRecargar: _cargar,
           ),
-        // Solo el Aprendiz tiene pestaña de asistencia: el instructor la
-        // registra desde la web (el móvil es read-only, ver
-        // ARQUITECTURA_MOBILE.md).
-        1 when muestraAsistencia => const AsistenciaScreen(),
+        // Aprendiz: su historial. Instructor: la lista de sus clases,
+        // solo para consultarla — registrarla es de la web (el móvil es
+        // read-only, ver ARQUITECTURA_MOBILE.md).
+        1 when esAprendiz => const AsistenciaScreen(),
+        1 when muestraAsistencia => const AsistenciaInstructorScreen(),
         _ => const PerfilScreen(),
       },
       bottomNavigationBar: NavigationBar(

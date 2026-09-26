@@ -26,6 +26,15 @@ const HORARIO: Horario = {
   resultadoDescripcion: 'Arquitectura de software',
 }
 
+// Otra clase suya, para comprobar que `?horario=` abre ESA y no la primera.
+const OTRO_HORARIO: Horario = {
+  ...HORARIO,
+  idHorario: 200,
+  horaInicio: '14:00:00',
+  horaFin: '16:00:00',
+  fichaCodigo: '2891234',
+}
+
 function sesion(overrides: Partial<SesionAsistencia> = {}): SesionAsistencia {
   return {
     idHorario: 100,
@@ -65,9 +74,9 @@ vi.mock('../services/api', () => ({
   },
 }))
 
-function mockear(datosSesion: SesionAsistencia | Error = sesion()) {
+function mockear(datosSesion: SesionAsistencia | Error = sesion(), horarios: Horario[] = [HORARIO]) {
   apiGetMock.mockImplementation((path: string) => {
-    if (path === '/usuarios/me/horarios') return Promise.resolve([HORARIO])
+    if (path === '/usuarios/me/horarios') return Promise.resolve(horarios)
     if (path === '/usuarios/me') return Promise.resolve(INSTRUCTOR)
     if (path === '/notificaciones/') return Promise.resolve([])
     if (path.startsWith('/asistencias/sesion')) {
@@ -169,6 +178,28 @@ describe('AsistenciaInstructor', () => {
     expect(await screen.findByText(/Sesión con asistencia registrada/)).toBeInTheDocument()
     const fila = screen.getByText('Sara Rodríguez').closest('li')!
     expect(within(fila).getByRole('button', { name: 'Presente' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  // El dashboard enlaza acá con la clase ya elegida
+  // (`/asistencia?horario=<id>` en DashboardInstructor.tsx).
+  it('abre la clase que pide la URL y no la primera de la lista', async () => {
+    mockear(sesion({ idHorario: 200, fichaCodigo: '2891234' }), [HORARIO, OTRO_HORARIO])
+    renderConProviders(<AsistenciaInstructor />, ['/asistencia?horario=200'])
+
+    await screen.findByText('Sara Rodríguez')
+    expect(apiGetMock).toHaveBeenCalledWith(expect.stringContaining('idHorario=200'))
+    expect(apiGetMock).not.toHaveBeenCalledWith(expect.stringContaining('idHorario=100'))
+  })
+
+  // Un id de la clase de otro instructor solo daría un 404: mejor la
+  // primera suya que una pantalla de error.
+  it('un horario ajeno en la URL cae en la primera clase propia', async () => {
+    mockear(sesion(), [HORARIO])
+    renderConProviders(<AsistenciaInstructor />, ['/asistencia?horario=999'])
+
+    await screen.findByText('Sara Rodríguez')
+    expect(apiGetMock).toHaveBeenCalledWith(expect.stringContaining('idHorario=100'))
+    expect(apiGetMock).not.toHaveBeenCalledWith(expect.stringContaining('idHorario=999'))
   })
 
   // La nómina sale de ficha_usuario, que hoy está incompleta: la pantalla

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sihs_mobile/providers/auth_provider.dart';
 import 'package:sihs_mobile/providers/horario_provider.dart';
+import 'package:sihs_mobile/screens/asistencia_instructor_screen.dart';
+import 'package:sihs_mobile/screens/asistencia_screen.dart';
 import 'package:sihs_mobile/screens/home_screen.dart';
 import 'package:sihs_mobile/services/api_client.dart';
 import 'package:sihs_mobile/widgets/sesion_card.dart';
@@ -148,6 +150,39 @@ void main() {
 
     expect(servicio.llamadas, ['instructor']);
     expect(find.text('Carlos Ruiz'), findsNothing);
+  });
+
+  testWidgets('los dos roles tienen pestaña de Asistencia, pero no la misma',
+      (tester) async {
+    await montar(
+      tester,
+      roles: const ['Instructor'],
+      servicio: HorariosFalsos(deInstructor: [horarioDePrueba(dias: const [1])]),
+    );
+
+    await tester.tap(find.text('Asistencia'));
+    // pump y no pumpAndSettle: acá la pantalla usa el gateway real, que
+    // sin backend queda en su estado de error — settle esperaría a un
+    // indicador de carga que nunca termina.
+    await tester.pump();
+
+    expect(find.byType(AsistenciaInstructorScreen), findsOneWidget);
+    expect(find.byType(AsistenciaScreen), findsNothing);
+  });
+
+  testWidgets('el aprendiz sigue viendo SU historial en esa pestaña',
+      (tester) async {
+    await montar(
+      tester,
+      elegirLunes: false,
+      servicio: HorariosFalsos(deFicha: [horarioDePrueba()]),
+    );
+
+    await tester.tap(find.text('Asistencia'));
+    await tester.pump();
+
+    expect(find.byType(AsistenciaScreen), findsOneWidget);
+    expect(find.byType(AsistenciaInstructorScreen), findsNothing);
   });
 
   testWidgets('el perfil muestra los datos y ofrece cerrar sesión', (tester) async {

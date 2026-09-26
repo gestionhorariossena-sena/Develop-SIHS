@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { apiGet, apiPost, ApiError } from '../services/api'
 import type { EstadoAsistencia, Horario, MarcaAsistencia, SesionAsistencia } from '../types/api'
@@ -87,8 +88,13 @@ function fechaDeLaSesion(horario: Horario, semana: Date): string | null {
  * notificación"). Sí se conserva `rolEnFicha`, que sí existe.
  */
 export function AsistenciaInstructor() {
+  // `?horario=<id>` para llegar desde el dashboard con esa clase abierta;
+  // sin él se elige la primera, que es el caso de entrar por el navbar.
+  const [searchParams] = useSearchParams()
+  const idPedido = Number(searchParams.get('horario')) || null
+
   const [horarios, setHorarios] = useState<Horario[]>([])
-  const [idHorario, setIdHorario] = useState<number | null>(null)
+  const [idHorario, setIdHorario] = useState<number | null>(idPedido)
   const [semana, setSemana] = useState(() => inicioDeSemana(new Date()))
 
   const [sesion, setSesion] = useState<SesionAsistencia | null>(null)
@@ -108,14 +114,23 @@ export function AsistenciaInstructor() {
     apiGet<Horario[]>('/usuarios/me/horarios')
       .then((lista) => {
         setHorarios(lista)
-        setIdHorario((previo) => previo ?? lista[0]?.idHorario ?? null)
+        // El id de la URL solo vale si esa clase es suya; si no, se cae a
+        // la primera en vez de dejar la pantalla pidiendo un 404. Ojo con
+        // el `previo`: arranca con el id de la URL, así que conservarlo a
+        // ciegas dejaría fijado justamente el id ajeno que se descarta.
+        const esSuyo = (id: number | null) => id != null && lista.some((h) => h.idHorario === id)
+        setIdHorario((previo) => {
+          if (esSuyo(idPedido)) return idPedido
+          if (esSuyo(previo)) return previo
+          return lista[0]?.idHorario ?? null
+        })
         setError(null)
       })
       .catch((err: unknown) => {
         setError(err instanceof ApiError ? err.message : 'No se pudieron cargar tus clases.')
       })
       .finally(() => setCargando(false))
-  }, [])
+  }, [idPedido])
 
   const cargarSesion = useCallback(() => {
     if (!idHorario || !fecha) return

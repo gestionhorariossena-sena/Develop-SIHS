@@ -19,6 +19,13 @@ class AsistenciaFalsa implements AsistenciaGateway {
     llamadas++;
     return respuesta;
   }
+
+  @override
+  Future<SesionAsistencia> obtenerSesion({
+    required int idHorario,
+    required DateTime fecha,
+  }) async =>
+      throw UnimplementedError('es el endpoint del instructor, no el del aprendiz');
 }
 
 MiAsistencia _datos({
