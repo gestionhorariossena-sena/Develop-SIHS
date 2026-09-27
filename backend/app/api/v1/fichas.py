@@ -20,6 +20,7 @@ from app.services.ficha_service import FichaService
 from app.services.ficha_usuario_service import FichaUsuarioService
 from app.services.horario_service import HorarioService
 from app.services.pdf_service import PdfService, SeccionTabla, SeccionTexto
+from app.services.horario_acceso_service import HorarioAccesoService
 
 router = APIRouter(prefix="/fichas", tags=["fichas"])
 
@@ -121,18 +122,21 @@ def descargar_ficha_pdf(
     db: Session = Depends(get_db),
     usuario=Depends(get_current_user),
 ):
-    """"Horario Oficial" + "nómina" de una ficha en un solo PDF (épica
-    transversal de exportación a PDF, ver PdfService): datos de la ficha,
-    la grilla de todos sus horarios asignados y el listado de aprendices
-    matriculados. Abierto a cualquier usuario autenticado, mismo criterio
-    que GET /{id_ficha}/vocero: ni instructor ni aprendiz tienen rol de
-    gestión, y ambos necesitan poder descargar esto."""
+    """Exporta una ficha autorizada: vista personal sin nómina privada."""
     ficha = FichaService.obtener_por_id(db, id_ficha)
 
     if not ficha:
         raise HTTPException(status_code=404, detail="Ficha no encontrada")
 
-    horarios = HorarioRepository.obtener_por_ficha(db, id_ficha)
+    if not HorarioAccesoService.puede_ver_ficha(db, usuario, id_ficha):
+        raise HTTPException(status_code=403, detail="No tienes permiso para descargar esta ficha")
+
+    es_gestor = HorarioAccesoService.es_gestor(usuario)
+    horarios = (
+        HorarioRepository.obtener_por_ficha(db, id_ficha)
+        if es_gestor
+        else HorarioRepository.obtener_publicados_por_ficha(db, id_ficha)
+    )
     filas_horario = [
         [
             HorarioRepository.obtener_nombres_dias(db, h.idHorario),
@@ -144,35 +148,38 @@ def descargar_ficha_pdf(
         for h in horarios
     ]
 
-    aprendices = FichaUsuarioRepository.obtener_por_ficha(db, id_ficha)
-    filas_aprendices = [
-        [usuario_aprendiz.nombre, usuario_aprendiz.email, vinculo.rolEnFicha or "Aprendiz"]
-        for vinculo, usuario_aprendiz in aprendices
+    secciones = [
+        SeccionTexto(
+            titulo="Datos generales",
+            lineas=[
+                f"Programa: {ficha.programa.nombrePrograma if ficha.programa else '—'}",
+                f"Trimestre: {ficha.trimestre.nombre if ficha.trimestre else '—'}",
+                f"Sede: {ficha.sede.nombre if ficha.sede else '—'}",
+            ],
+        ),
+        SeccionTabla(
+            titulo="Horario de gestión" if es_gestor else "Horario oficial",
+            encabezados=["Día(s)", "Hora", "Instructor", "Ambiente", "Resultado"],
+            filas=filas_horario,
+        ),
     ]
+    if es_gestor:
+        aprendices = FichaUsuarioRepository.obtener_por_ficha(db, id_ficha)
+        secciones.append(
+            SeccionTabla(
+                titulo="Nómina de aprendices",
+                encabezados=["Nombre", "Correo", "Rol en la ficha"],
+                filas=[
+                    [alumno.nombre, alumno.email, vinculo.rolEnFicha or "Aprendiz"]
+                    for vinculo, alumno in aprendices
+                ],
+            )
+        )
 
     contenido = PdfService.generar(
         titulo=f"Ficha {ficha.codigoFicha}",
         subtitulo=f"{ficha.programa.nombrePrograma if ficha.programa else '—'} · Trimestre {ficha.trimestre.nombre if ficha.trimestre else '—'}",
-        secciones=[
-            SeccionTexto(
-                titulo="Datos generales",
-                lineas=[
-                    f"Programa: {ficha.programa.nombrePrograma if ficha.programa else '—'}",
-                    f"Trimestre: {ficha.trimestre.nombre if ficha.trimestre else '—'}",
-                    f"Sede: {ficha.sede.nombre if ficha.sede else '—'}",
-                ],
-            ),
-            SeccionTabla(
-                titulo="Horario oficial",
-                encabezados=["Día(s)", "Hora", "Instructor", "Ambiente", "Resultado"],
-                filas=filas_horario,
-            ),
-            SeccionTabla(
-                titulo="Nómina de aprendices",
-                encabezados=["Nombre", "Correo", "Rol en la ficha"],
-                filas=filas_aprendices,
-            ),
-        ],
+        secciones=secciones,
     )
 
     return Response(

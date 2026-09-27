@@ -311,3 +311,45 @@ def test_vocero_de_ficha_inexistente_da_404(client, autenticar_como):
     respuesta = client.get("/api/v1/fichas/9999/vocero", headers=headers)
 
     assert respuesta.status_code == 404
+
+
+def test_mi_horario_respeta_publicacion_y_activacion(
+    client, db_session, autenticar_como, crear_usuario, crear_ficha
+):
+    _crear_tablas_horario(db_session)
+    ficha = crear_ficha(codigo="2874521")
+    instructor = crear_usuario(nombre="Carlos")
+    sede = Sede(id=1, nombre="Sede Norte", direccion="Calle 1", tipo="principal")
+    ambiente = Ambiente(id=1, numero_ambiente=101, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1)
+    jornada = Jornada(idJornada=1, nombreJornada="Mañana")
+    dia = DiaSemana(idDia=1, nombreDia="Lunes")
+    resultado = ResultadoAprendizaje(idResultado=9, descripcion="Resultado A", codigo="RA-9", idCompetencia=1, horasAsignadas=10)
+    db_session.add_all([sede, ambiente, jornada, dia, resultado])
+    db_session.commit()
+    horario = Horario(
+        idHorario=100, horaInicio=time(8, 0), horaFin=time(10, 0), idJornada=1,
+        idTrimestre=ficha.idTrimestre, idAmbiente=1, idInstructor=instructor.idUsuario,
+        idFicha=ficha.idFicha, idResultado=9, publicado=False, activo=True,
+    )
+    db_session.add(horario)
+    db_session.execute(horario_dia.insert().values(idHorario=100, idDia=1))
+    db_session.commit()
+    _, headers = autenticar_como("Aprendiz")
+    client.post("/api/v1/ficha-usuario/vincular", json={"codigoFicha": ficha.codigoFicha}, headers=headers)
+
+    def ids_visibles():
+        respuesta = client.get("/api/v1/ficha-usuario/mi-horario", headers=headers)
+        assert respuesta.status_code == 200
+        return [fila["idHorario"] for fila in respuesta.json()]
+
+    assert ids_visibles() == []
+    horario.publicado = True
+    db_session.commit()
+    assert ids_visibles() == [100]
+    horario.publicado = False
+    db_session.commit()
+    assert ids_visibles() == []
+    horario.publicado = True
+    horario.activo = False
+    db_session.commit()
+    assert ids_visibles() == []

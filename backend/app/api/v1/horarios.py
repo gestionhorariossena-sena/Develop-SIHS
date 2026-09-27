@@ -31,6 +31,7 @@ from app.services.asistente_horario_service import generar_propuesta as generar_
 from app.services.asistente_horario_service import previsualizar_excel
 from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import CruceHorarioError, HorarioService
+from app.services.horario_acceso_service import HorarioAccesoService
 from app.services.pdf_service import PdfService, SeccionTexto
 
 router = APIRouter(prefix="/horarios", tags=["horarios"])
@@ -274,6 +275,9 @@ def descargar_horario_pdf(
 
     if not horario:
         raise HTTPException(status_code=404, detail="Horario no encontrado")
+
+    if not HorarioAccesoService.puede_ver_bloque(db, usuario, horario):
+        raise HTTPException(status_code=403, detail="No tienes permiso para descargar esta sesión")
 
     nombres_dias = HorarioRepository.obtener_nombres_dias(db, id_horario)
     contenido = PdfService.generar(

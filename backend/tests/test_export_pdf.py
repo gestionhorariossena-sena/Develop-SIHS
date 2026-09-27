@@ -53,7 +53,9 @@ def test_descargar_horario_pdf_caso_feliz(client, db_session, autenticar_como, c
     instructor = crear_usuario(nombre="Carlos")
     ficha = crear_ficha(codigo="2874521")
     horario = _armar_horario(db_session, instructor=instructor, ficha=ficha)
-    _, headers = autenticar_como("Aprendiz")
+    aprendiz, headers = autenticar_como("Aprendiz")
+    db_session.add(FichaUsuario(idFicha=ficha.idFicha, idUsuario=aprendiz.idUsuario))
+    db_session.commit()
 
     respuesta = client.get(f"/api/v1/horarios/{horario.idHorario}/pdf", headers=headers)
 
@@ -75,10 +77,9 @@ def test_descargar_horario_pdf_no_requiere_rol_de_gestion(client, db_session, au
     """Mismo criterio que GET /fichas/{id}/vocero: cualquier usuario
     autenticado puede descargar, no solo Coordinador/Administrador."""
     _crear_tablas_extra(db_session)
-    instructor = crear_usuario(nombre="Carlos")
+    instructor, headers = autenticar_como("Instructor")
     ficha = crear_ficha(codigo="2874521")
     horario = _armar_horario(db_session, instructor=instructor, ficha=ficha)
-    _, headers = autenticar_como("Instructor")
 
     respuesta = client.get(f"/api/v1/horarios/{horario.idHorario}/pdf", headers=headers)
 
@@ -95,7 +96,7 @@ def test_descargar_ficha_pdf_incluye_horario_y_nomina(client, db_session, autent
     db_session.add(FichaUsuario(idFicha=ficha.idFicha, idUsuario=aprendiz.idUsuario, rolEnFicha="vocero"))
     db_session.commit()
 
-    _, headers = autenticar_como("Aprendiz")
+    _, headers = autenticar_como("Administrador")
     respuesta = client.get(f"/api/v1/fichas/{ficha.idFicha}/pdf", headers=headers)
 
     assert respuesta.status_code == 200
@@ -110,3 +111,40 @@ def test_descargar_ficha_pdf_inexistente_da_404(client, db_session, autenticar_c
     respuesta = client.get("/api/v1/fichas/9999/pdf", headers=headers)
 
     assert respuesta.status_code == 404
+
+
+def test_pdf_ficha_ajena_prohibido(client, db_session, autenticar_como, crear_ficha):
+    ficha = crear_ficha(codigo="2874521")
+    _, headers = autenticar_como("Aprendiz")
+    respuesta = client.get(f"/api/v1/fichas/{ficha.idFicha}/pdf", headers=headers)
+    assert respuesta.status_code == 403
+
+
+def test_pdf_sesion_ajena_prohibido(client, db_session, autenticar_como, crear_usuario, crear_ficha):
+    _crear_tablas_extra(db_session)
+    instructor = crear_usuario(nombre="Carlos")
+    ficha = crear_ficha(codigo="2874521")
+    horario = _armar_horario(db_session, instructor=instructor, ficha=ficha)
+    _, headers = autenticar_como("Aprendiz")
+    respuesta = client.get(f"/api/v1/horarios/{horario.idHorario}/pdf", headers=headers)
+    assert respuesta.status_code == 403
+
+
+def test_pdf_personal_no_expone_nomina(client, db_session, autenticar_como, crear_usuario, crear_ficha, monkeypatch):
+    _crear_tablas_extra(db_session)
+    ficha = crear_ficha(codigo="2874521")
+    instructor = crear_usuario(nombre="Carlos")
+    _armar_horario(db_session, instructor=instructor, ficha=ficha)
+    aprendiz, headers = autenticar_como("Aprendiz")
+    db_session.add(FichaUsuario(idFicha=ficha.idFicha, idUsuario=aprendiz.idUsuario))
+    db_session.commit()
+
+    def generar_falso(*, titulo, subtitulo, secciones: list):
+        capturadas.extend(secciones)
+        return b"%PDF-test"
+
+    capturadas = []
+    monkeypatch.setattr("app.api.v1.fichas.PdfService.generar", generar_falso)
+    respuesta = client.get(f"/api/v1/fichas/{ficha.idFicha}/pdf", headers=headers)
+    assert respuesta.status_code == 200
+    assert all(seccion.titulo != "Nómina de aprendices" for seccion in capturadas)

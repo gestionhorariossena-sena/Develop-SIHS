@@ -184,6 +184,24 @@ class HorarioRepository:
         )
 
     @staticmethod
+    def obtener_publicados_por_ficha(db: Session, id_ficha: int) -> list[Horario]:
+        """Consulta personal: solo horarios activos y publicados.
+
+        No sustituye obtener_por_ficha: coordinación sigue necesitando
+        consultar los borradores en sus vistas de gestión.
+        """
+        return (
+            db.query(Horario)
+            .options(*_relaciones_para_respuesta())
+            .filter(
+                Horario.idFicha == id_ficha,
+                Horario.activo.is_(True),
+                Horario.publicado.is_(True),
+            )
+            .all()
+        )
+
+    @staticmethod
     def obtener_por_ambiente(db: Session, id_ambiente: int) -> list[Horario]:
         """GET /ambientes/{id}/horarios (SCRUM-48) — relacionados de un ambiente."""
         return db.query(Horario).filter(Horario.idAmbiente == id_ambiente).all()

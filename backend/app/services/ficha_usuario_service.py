@@ -39,7 +39,7 @@ class FichaUsuarioService:
         if not ficha:
             return None
 
-        return HorarioRepository.obtener_por_ficha(db, ficha.idFicha)
+        return HorarioRepository.obtener_publicados_por_ficha(db, ficha.idFicha)
 
     @staticmethod
     def obtener_voceros(db, id_ficha):
