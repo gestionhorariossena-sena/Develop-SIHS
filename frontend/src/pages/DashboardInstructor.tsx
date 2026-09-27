@@ -231,13 +231,22 @@ export function DashboardInstructor() {
           </div>
         </div>
 
-        <Link
-          to="/mi-horario"
-          className="flex items-center gap-1.5 rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high"
-        >
-          <span className="material-symbols-outlined text-[18px]">calendar_month</span>
-          Ver Horario Semanal
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/asistencia"
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
+          >
+            <span className="material-symbols-outlined text-[18px]">fact_check</span>
+            Pasar asistencia
+          </Link>
+          <Link
+            to="/mi-horario"
+            className="flex items-center gap-1.5 rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high"
+          >
+            <span className="material-symbols-outlined text-[18px]">calendar_month</span>
+            Ver Horario Semanal
+          </Link>
+        </div>
       </div>
 
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
