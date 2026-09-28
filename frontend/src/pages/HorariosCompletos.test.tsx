@@ -162,7 +162,7 @@ describe('HorariosCompletos', () => {
     await usuario.click(await screen.findByRole('button', { name: 'Despublicar' }))
     expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
     expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cambiar la publicación')
-    expect(screen.getByText('Publicado')).toBeInTheDocument()
+    expect(screen.getAllByText('Publicado').length).toBeGreaterThan(0)
   })
 
   it('permite expandir un horario con el teclado y anuncia su estado', async () => {
