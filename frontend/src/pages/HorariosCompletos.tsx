@@ -86,16 +86,16 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
   const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
   const [errorCarga, setErrorCarga] = useState(false)
   const [publicando, setPublicando] = useState(false)
+  const [errorPublicacion, setErrorPublicacion] = useState<string | null>(null)
 
   async function alternarPublicado() {
+    setErrorPublicacion(null)
     setPublicando(true)
     try {
       const actualizado = await apiPatch<Horario>(`/horarios/${horario.idHorario}/estado`, { publicado: !horario.publicado })
       onCambiarPublicado(actualizado)
-    } catch {
-      // Error no fatal — el botón simplemente no cambia de estado; el
-      // usuario puede reintentar. No hay un lugar de error dedicado acá
-      // (esta caja no tiene su propia zona de mensajes de error).
+    } catch (err) {
+      setErrorPublicacion(err instanceof ApiError ? err.message : 'No se pudo cambiar la publicación. Intenta de nuevo.')
     } finally {
       setPublicando(false)
     }
@@ -111,6 +111,7 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
 
   return (
     <div className="space-y-4 p-4">
+      {errorPublicacion && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">{errorPublicacion}</p>}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded px-2 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>Horario #{horario.idHorario}</span>
