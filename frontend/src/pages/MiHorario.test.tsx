@@ -60,6 +60,23 @@ describe('MiHorario', () => {
     await waitFor(() => expect(llamadasDeHorario()).toHaveLength(llamadasIniciales + 3))
   })
 
+  it('Actualiza el horario de la semana actual sin recargar la página', async () => {
+    let solicitudes = 0
+    apiGetMock.mockImplementation((path: string) => {
+      if (path.startsWith('/usuarios/me/horarios')) {
+        solicitudes += 1
+        return Promise.resolve(solicitudes === 1 ? [HORARIO] : [])
+      }
+      return Promise.reject(new Error('no mockeado'))
+    })
+    const usuario = userEvent.setup()
+    renderConProviders(<MiHorario />)
+    await screen.findByText('Gestión de inventarios')
+    await usuario.click(screen.getByRole('button', { name: 'Actualizar horario' }))
+    expect(await screen.findByText('Todavía no tenés clases publicadas en este trimestre.')).toBeInTheDocument()
+    expect(solicitudes).toBe(2)
+  })
+
   it('celdas sin clase muestran "Franja Libre" y el filtro de jornada oculta las otras filas', async () => {
     apiGetMock.mockImplementation((path: string) =>
       path.startsWith('/usuarios/me/horarios') ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
