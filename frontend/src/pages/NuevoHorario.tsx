@@ -114,12 +114,10 @@ export function NuevoHorario() {
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null)
   const [errorCatalogos, setErrorCatalogos] = useState<string | null>(null)
 
-  // Modo "Modificar" (?editar=<idHorarioGuardado>, desde Historial de
-  // horarios): precarga ficha/fechas/bloques/grid de ese horario guardado
-  // en vez de arrancar vacío. `datosEdicion` guarda también
-  // idHorarioGuardado/idsHorarios — al guardar, guardarHorario() borra
-  // esas filas viejas antes de crear las nuevas (ver más abajo), así el
-  // horario "editado" queda igual de nuevo que uno creado desde cero.
+  // Un snapshot histórico se puede consultar desde aquí, pero su edición
+  // queda temporalmente bloqueada: sustituirlo borrando primero las clases
+  // podía perder asignaciones ante un fallo. El reemplazo transaccional
+  // debe implementarse en backend antes de reactivar "Guardar cambios".
   const [datosEdicion, setDatosEdicion] = useState<HorarioGuardado | null>(null)
   const [cargandoEdicion, setCargandoEdicion] = useState(Boolean(idEditar))
   const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
