@@ -5,6 +5,7 @@ import { GridAsistente } from '../components/horario/GridAsistente'
 import { celdasDesdeHorarios } from '../components/horario/celdasAsistente'
 import type { CeldaAsistente } from '../components/horario/celdasAsistente'
 import { apiGet, apiPatch, apiPost, apiPostForm, ApiError } from '../services/api'
+import { avisoTrimestres, trimestreVigente } from '../utils/trimestreVigente'
 import { mapearConLimite } from '../utils/concurrencia'
 import type {
   BloquePropuesto,
@@ -151,6 +152,7 @@ export function AsistenteHorarios() {
 
   const [trimestres, setTrimestres] = useState<Trimestre[]>([])
   const [idTrimestre, setIdTrimestre] = useState<number | null>(null)
+  const [errorTrimestres, setErrorTrimestres] = useState(false)
   const [jornada, setJornada] = useState<JornadaAsistente>('MAÑANA')
 
   // Paso 2 -- botón "Crear ficha" por fila, para las que no existen
@@ -222,10 +224,10 @@ export function AsistenteHorarios() {
     apiGet<Trimestre[]>('/trimestres/')
       .then((lista) => {
         setTrimestres(lista)
-        const activo = lista.find((t) => t.estado === 'activo') ?? lista[0]
-        if (activo) setIdTrimestre(activo.idTrimestre)
+        setIdTrimestre(trimestreVigente(lista)?.idTrimestre ?? null)
+        setErrorTrimestres(false)
       })
-      .catch(() => {})
+      .catch(() => setErrorTrimestres(true))
     apiGet<Programa[]>('/programas/').then(setProgramas).catch(() => {})
     apiGet<Coordinacion[]>('/coordinaciones/').then(setCoordinaciones).catch(() => {})
   }, [])
@@ -601,6 +603,18 @@ export function AsistenteHorarios() {
         <p className="mb-6 text-sm text-on-surface-variant dark:text-slate-400">
           Estás viendo una propuesta en borrador. Nada se guardará en el sistema hasta que tú lo apruebes en el paso final.
         </p>
+        {(errorTrimestres || (!idTrimestre && avisoTrimestres(trimestres))) && (
+          <p role="alert" className="mb-4 rounded-xl border border-tertiary bg-tertiary-container px-4 py-3 text-sm text-on-tertiary-container">
+            {errorTrimestres
+              ? 'No se pudieron consultar los períodos académicos. Verifica la conexión antes de continuar.'
+              : avisoTrimestres(trimestres)}
+          </p>
+        )}
+        {idTrimestre !== null && trimestreVigente(trimestres)?.idTrimestre !== idTrimestre && (
+          <p role="status" className="mb-4 rounded-xl border border-tertiary bg-tertiary-container px-4 py-3 text-sm text-on-tertiary-container">
+            Estás trabajando con un período que no está vigente hoy. Comprueba el período y las fichas seleccionadas antes de guardar.
+          </p>
+        )}
 
         <ol className="mb-6 grid grid-cols-4 gap-2">
           {PASOS.map((p) => (
@@ -979,12 +993,13 @@ export function AsistenteHorarios() {
                 Trimestre
                 <select
                   value={idTrimestre ?? ''}
-                  onChange={(e) => setIdTrimestre(Number(e.target.value))}
+                  onChange={(e) => setIdTrimestre(e.target.value ? Number(e.target.value) : null)}
                   className="ml-2 rounded-lg border border-outline-variant bg-surface px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
                 >
+                  <option value="">Selecciona un período</option>
                   {trimestres.map((t) => (
                     <option key={t.idTrimestre} value={t.idTrimestre}>
-                      {t.nombre}
+                      {t.nombre} · {t.fechaInicio} a {t.fechaFin} ({t.estado})
                     </option>
                   ))}
                 </select>
