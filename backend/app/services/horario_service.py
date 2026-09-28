@@ -146,7 +146,7 @@ class HorarioService:
             idInstructor=data.idInstructor,
             idFicha=data.idFicha,
             idResultado=data.idResultado,
-            publicado=data.publicado,
+            publicado=getattr(data, "publicado", True),
         )
         horario = HorarioRepository.crear(db, nuevo_horario, data.dias)
 
