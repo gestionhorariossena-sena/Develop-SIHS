@@ -282,12 +282,18 @@ class HorarioGuardadoService:
         if not horario_guardado:
             return False
 
+        ids_horarios = list(horario_guardado.idsHorarios or [])
+        if HorarioService._publicaciones_programadas(db, ids_horarios, bloquear=True):
+            raise HorarioGuardadoNoReemplazableError(
+                "Cancela o reprograma las publicaciones pendientes antes de eliminar este horario guardado."
+            )
+
         # Borra también las clases reales de `horarios` que este snapshot
         # representa — sin esto quedaban huérfanas (bug reportado
         # 2026-09-02): el instructor seguía "ocupado" para cruces aunque
         # su "horario completo" ya no apareciera en el historial. Ignora
         # silenciosamente las que ya no existan (borradas a mano aparte).
-        for id_horario in horario_guardado.idsHorarios or []:
+        for id_horario in ids_horarios:
             horario = HorarioRepository.obtener_por_id(db, id_horario)
             if horario:
                 HorarioRepository.eliminar(db, horario)

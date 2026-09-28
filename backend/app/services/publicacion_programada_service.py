@@ -50,6 +50,7 @@ def _candidatos(db, id_trimestre: int, ids: list[int], *, excluir_publicacion=No
         raise PublicacionProgramadaError("Todos los horarios deben ser borradores activos del período seleccionado.")
     stmt = select(PublicacionProgramadaHorario.idHorario).join(PublicacionProgramada).where(
         PublicacionProgramadaHorario.idHorario.in_(ids),
+        PublicacionProgramadaHorario.revision == PublicacionProgramada.revision,
         PublicacionProgramada.estado.in_(ESTADOS_ACTIVOS),
     )
     if excluir_publicacion is not None:
@@ -104,6 +105,7 @@ def programar(db, *, id_trimestre, ids_horarios, fecha_local, responsable):
     for horario in horarios:
         db.add(PublicacionProgramadaHorario(
             idPublicacion=row.idPublicacion, idHorario=horario.idHorario,
+            idHorarioReferencia=horario.idHorario, revision=row.revision,
             huellaRevision=_huella(db, horario),
         ))
     AuditoriaService.registrar_transaccional(
@@ -130,15 +132,21 @@ def listar(db, id_trimestre=None, estado=None):
 
 
 def ids_de_horarios(db, id_publicacion):
-    return list(db.execute(select(PublicacionProgramadaHorario.idHorario).where(
-        PublicacionProgramadaHorario.idPublicacion == id_publicacion
-    ).order_by(PublicacionProgramadaHorario.idHorario)).scalars())
+    return list(db.execute(
+        select(PublicacionProgramadaHorario.idHorarioReferencia)
+        .join(PublicacionProgramada)
+        .where(
+            PublicacionProgramadaHorario.idPublicacion == id_publicacion,
+            PublicacionProgramadaHorario.revision == PublicacionProgramada.revision,
+        )
+        .order_by(PublicacionProgramadaHorario.idHorarioReferencia)
+    ).scalars())
 
 
 def cancelar(db, row, responsable):
     row = db.execute(select(PublicacionProgramada).where(
         PublicacionProgramada.idPublicacion == row.idPublicacion
-    ).with_for_update()).scalar_one()
+    ).with_for_update().execution_options(populate_existing=True)).scalar_one()
     if row.estado not in ESTADOS_ACTIVOS:
         raise PublicacionProgramadaError("Solo se pueden cancelar publicaciones pendientes o que requieren revisión.")
     row.estado = "cancelada"
@@ -155,7 +163,7 @@ def cancelar(db, row, responsable):
 def reprogramar(db, row, *, id_trimestre, ids_horarios, fecha_local, responsable):
     row = db.execute(select(PublicacionProgramada).where(
         PublicacionProgramada.idPublicacion == row.idPublicacion
-    ).with_for_update()).scalar_one()
+    ).with_for_update().execution_options(populate_existing=True)).scalar_one()
     if row.estado not in ESTADOS_ACTIVOS:
         raise PublicacionProgramadaError("Solo se pueden reprogramar publicaciones pendientes o que requieren revisión.")
     if fecha_local.tzinfo is not None:
@@ -165,7 +173,6 @@ def reprogramar(db, row, *, id_trimestre, ids_horarios, fecha_local, responsable
         raise PublicacionProgramadaError("La fecha de ejecución debe ser futura.")
     horarios = _candidatos(db, id_trimestre, ids_horarios, excluir_publicacion=row.idPublicacion)
     _validar_conjunto(db, horarios)
-    db.query(PublicacionProgramadaHorario).filter_by(idPublicacion=row.idPublicacion).delete(synchronize_session=False)
     row.idTrimestre = id_trimestre
     row.fechaEjecucion = instante
     row.estado = "pendiente"
@@ -176,6 +183,7 @@ def reprogramar(db, row, *, id_trimestre, ids_horarios, fecha_local, responsable
     for horario in horarios:
         db.add(PublicacionProgramadaHorario(
             idPublicacion=row.idPublicacion, idHorario=horario.idHorario,
+            idHorarioReferencia=horario.idHorario, revision=row.revision,
             huellaRevision=_huella(db, horario),
         ))
     AuditoriaService.registrar_transaccional(
@@ -200,8 +208,28 @@ def ejecutar(db, id_publicacion, ahora=None):
     try:
         row.estado = "ejecutando"
         relaciones = db.execute(select(PublicacionProgramadaHorario).where(
-            PublicacionProgramadaHorario.idPublicacion == row.idPublicacion
+            PublicacionProgramadaHorario.idPublicacion == row.idPublicacion,
+            PublicacionProgramadaHorario.revision == row.revision,
         ).order_by(PublicacionProgramadaHorario.idHorario).with_for_update()).scalars().all()
+        if not relaciones or any(
+            relation.idHorario is None or relation.idHorario != relation.idHorarioReferencia
+            for relation in relaciones
+        ):
+            row.estado = "revision_requerida"
+            row.fechaEjecucionReal = ahora
+            row.resultado = "Falta un horario de la revisión aprobada; coordinación debe revisar y programar de nuevo."
+            AuditoriaService.registrar_transaccional(
+                db, accion="PUBLICACION_PROGRAMADA_REQUIERE_REVISION",
+                entidad="publicaciones_programadas", identificador=str(row.idCoordinador),
+                id_entidad=row.idPublicacion, detalle=row.resultado,
+            )
+            NotificacionService.crear_transaccional(
+                db, id_usuario=row.idCoordinador, tipo=TIPO_SISTEMA,
+                mensaje=f"La publicación {row.idPublicacion} requiere revisión: falta un horario aprobado.",
+                entidad_relacionada="publicaciones_programadas", id_entidad_relacionada=row.idPublicacion,
+            )
+            db.commit()
+            return False
         ids = [r.idHorario for r in relaciones]
         horarios = _candidatos(db, row.idTrimestre, ids, excluir_publicacion=row.idPublicacion)
         for rel, horario in zip(relaciones, horarios):

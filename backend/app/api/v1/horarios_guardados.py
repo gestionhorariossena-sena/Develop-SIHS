@@ -114,7 +114,11 @@ def eliminar_horario_guardado(
     db: Session = Depends(get_db),
     usuario=Depends(require_puede_programar),
 ):
-    eliminado = HorarioGuardadoService.eliminar(db, id_horario_guardado)
+    try:
+        eliminado = HorarioGuardadoService.eliminar(db, id_horario_guardado)
+    except HorarioGuardadoNoReemplazableError as error:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
     if not eliminado:
         raise HTTPException(status_code=404, detail="Horario guardado no encontrado")

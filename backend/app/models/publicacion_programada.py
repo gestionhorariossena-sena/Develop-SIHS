@@ -1,6 +1,6 @@
 from sqlalchemy import (
     CheckConstraint, Column, DateTime, ForeignKey, Integer, String, Text,
-    func,
+    UniqueConstraint, func,
 )
 
 from app.core.database import Base
@@ -28,10 +28,20 @@ class PublicacionProgramada(Base):
 
 class PublicacionProgramadaHorario(Base):
     __tablename__ = "publicacion_programada_horarios"
+    __table_args__ = (
+        UniqueConstraint("idPublicacion", "revision", "idHorarioReferencia", name="uq_publicacion_revision_horario"),
+    )
+
+    idPublicacionHorario = Column(Integer, primary_key=True)
     idPublicacion = Column(
         Integer,
         ForeignKey("publicaciones_programadas.idPublicacion", ondelete="CASCADE"),
-        primary_key=True,
+        nullable=False,
     )
-    idHorario = Column(Integer, ForeignKey("horarios.idHorario", ondelete="RESTRICT"), primary_key=True)
+    # La FK solo bloquea el horario mientras su programación está activa
+    # (lo garantiza el servicio); al eliminar un horario histórico deja NULL.
+    idHorario = Column(Integer, ForeignKey("horarios.idHorario", ondelete="SET NULL"), nullable=True)
+    # Conserva el identificador histórico sin una FK restrictiva.
+    idHorarioReferencia = Column(Integer, nullable=False)
+    revision = Column(Integer, nullable=False)
     huellaRevision = Column(String(64), nullable=False)

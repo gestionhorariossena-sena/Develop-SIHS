@@ -31,8 +31,9 @@ def upgrade() -> None:
     estado_solicitud_acceso = sa.Enum(
         'pendiente', 'aprobada', 'rechazada', name='estado_solicitud_acceso'
     )
-    estado_solicitud_acceso.create(op.get_bind(), checkfirst=True)
-
+    # El Enum está asociado a la columna de la tabla y SQLAlchemy crea su
+    # tipo PostgreSQL durante create_table. Crear el tipo aquí también
+    # provoca un segundo CREATE TYPE al crear la tabla.
     op.create_table(
         'solicitudes_acceso',
         sa.Column('idSolicitud', sa.Integer(), primary_key=True),

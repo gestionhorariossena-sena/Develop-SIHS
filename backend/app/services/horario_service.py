@@ -345,6 +345,11 @@ class HorarioService:
         if not horario:
             return False
 
+        if HorarioService._publicaciones_programadas(db, [id_horario], bloquear=True):
+            raise PublicacionProgramadaPendienteError(
+                "Cancela o reprograma la publicación antes de eliminar este horario; así se conserva la revisión aprobada."
+            )
+
         HorarioRepository.eliminar(db, horario)
         return True
 
@@ -402,6 +407,7 @@ class HorarioService:
                   PublicacionProgramadaHorario.idPublicacion == PublicacionProgramada.idPublicacion)
             .filter(
                 PublicacionProgramadaHorario.idHorario.in_(ids_horarios),
+                PublicacionProgramadaHorario.revision == PublicacionProgramada.revision,
                 PublicacionProgramada.estado.in_(("pendiente", "revision_requerida")),
             )
             .order_by(PublicacionProgramada.idPublicacion)

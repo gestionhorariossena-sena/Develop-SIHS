@@ -40,14 +40,20 @@ def upgrade() -> None:
     )
     op.create_table(
         "publicacion_programada_horarios",
+        sa.Column("idPublicacionHorario", sa.Integer(), primary_key=True),
         sa.Column("idPublicacion", sa.Integer(), nullable=False),
-        sa.Column("idHorario", sa.Integer(), nullable=False),
+        sa.Column("idHorario", sa.Integer(), nullable=True),
+        sa.Column("idHorarioReferencia", sa.Integer(), nullable=False),
+        sa.Column("revision", sa.Integer(), nullable=False),
         sa.Column("huellaRevision", sa.String(length=64), nullable=False),
-        sa.PrimaryKeyConstraint("idPublicacion", "idHorario"),
+        sa.UniqueConstraint(
+            "idPublicacion", "revision", "idHorarioReferencia",
+            name="uq_publicacion_revision_horario",
+        ),
         sa.ForeignKeyConstraint(
             ["idPublicacion"], ["publicaciones_programadas.idPublicacion"], ondelete="CASCADE"
         ),
-        sa.ForeignKeyConstraint(["idHorario"], ["horarios.idHorario"], ondelete="RESTRICT"),
+        sa.ForeignKeyConstraint(["idHorario"], ["horarios.idHorario"], ondelete="SET NULL"),
     )
     op.create_index(
         "ix_publicacion_programada_horarios_horario",

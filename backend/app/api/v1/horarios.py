@@ -375,7 +375,10 @@ def eliminar_horario(
     db: Session = Depends(get_db),
     usuario=Depends(require_puede_programar),
 ):
-    eliminado = HorarioService.eliminar(db, id_horario)
+    try:
+        eliminado = HorarioService.eliminar(db, id_horario)
+    except PublicacionProgramadaPendienteError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
     if not eliminado:
         raise HTTPException(status_code=404, detail="Horario no encontrado")
