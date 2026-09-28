@@ -142,6 +142,8 @@ export function MiHorario() {
   const [error, setError] = useState<string | null>(null)
   const [filtroJornada, setFiltroJornada] = useState<Jornada | 'todas'>('todas')
   const [semanaInicio, setSemanaInicio] = useState(() => inicioSemana(new Date()))
+  const [revisionHorario, setRevisionHorario] = useState(0)
+  const [actualizandoHorario, setActualizandoHorario] = useState(false)
 
   const [fichas, setFichas] = useState<Ficha[]>([])
 
@@ -149,19 +151,28 @@ export function MiHorario() {
   const [errorCarga, setErrorCarga] = useState(false)
 
   useEffect(() => {
+    let vigente = true
     const semanaFin = new Date(semanaInicio)
     semanaFin.setDate(semanaFin.getDate() + 4)
     const query = `?fechaInicio=${isoLocal(semanaInicio)}&fechaFin=${isoLocal(semanaFin)}`
+    setActualizandoHorario(true)
+    setError(null)
     apiGet<Horario[]>(`/usuarios/me/horarios${query}`)
-      .then(setHorarios)
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar tu horario.'))
+      .then((datos) => { if (vigente) setHorarios(datos) })
+      .catch((err: unknown) => {
+        if (vigente) setError(err instanceof ApiError ? err.message : 'No se pudo cargar tu horario.')
+      })
+      .finally(() => { if (vigente) setActualizandoHorario(false) })
+    return () => { vigente = false }
+  }, [semanaInicio, revisionHorario])
 
+  useEffect(() => {
     apiGet<Usuario>('/usuarios/me')
       .then(setPerfil)
       .catch(() => {})
 
     apiGet<Ficha[]>('/fichas/').then(setFichas).catch(() => {})
-  }, [semanaInicio])
+  }, [])
 
   // La carga semanal (SCRUM-49) requiere el propio idUsuario — se pide
   // aparte una vez que /usuarios/me responde, igual que el patrón de
@@ -406,6 +417,17 @@ export function MiHorario() {
               <span className="material-symbols-outlined text-[18px]">chevron_right</span>
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={() => setRevisionHorario((revision) => revision + 1)}
+            disabled={actualizandoHorario}
+            aria-label="Actualizar horario"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-xs font-semibold text-on-surface hover:bg-surface-container-high disabled:cursor-wait disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">refresh</span>
+            {actualizandoHorario ? 'Actualizando…' : 'Actualizar horario'}
+          </button>
 
           <button
             type="button"
