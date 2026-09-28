@@ -20,6 +20,9 @@ class HorarioCreate(HorarioBase):
     # (ver horario_dia, tabla puente).
     dias: list[int]
     forzar: bool = False
+    # Compatibilidad: clientes antiguos siguen creando publicado; los nuevos
+    # pueden enviar false para guardar borradores sin avisar a usuarios.
+    publicado: bool = True
 
 
 class HorarioUpdate(HorarioCreate):
