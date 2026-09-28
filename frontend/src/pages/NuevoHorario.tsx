@@ -6,7 +6,7 @@ import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { HorarioEditor } from '../components/horario/HorarioEditor'
 import type { CatalogosBloque } from '../components/horario/ModalBloque'
 import { ModalCruce } from '../components/horario/ModalCruce'
-import { apiDelete, apiGet, apiPost, ApiError } from '../services/api'
+import { apiGet, apiPost, ApiError } from '../services/api'
 import { BLOQUES, DIAS } from './horario/tipos'
 import type { BloqueClase, GridAsignaciones, Jornada as JornadaGrid } from './horario/tipos'
 import { gridVacio } from './horario/useHorarioState'
@@ -107,6 +107,7 @@ export function NuevoHorario() {
   const [fechaInicio, setFechaInicio] = useState('')
   const [fechaFin, setFechaFin] = useState('')
   const [guardando, setGuardando] = useState(false)
+  const [guardarComoBorrador, setGuardarComoBorrador] = useState(true)
   const [erroresGuardar, setErroresGuardar] = useState<string[]>([])
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
 
@@ -201,33 +202,11 @@ export function NuevoHorario() {
   }, [])
 
   async function guardarHorario() {
-    if (!catalogos) return
+    if (!catalogos || idEditar !== null) return
 
     setGuardando(true)
     setErroresGuardar([])
     setMensajeExito(null)
-
-    // Modo edición: se borran primero las clases reales y el snapshot
-    // originales — todo lo de abajo (dry-run, POST /horarios/, POST
-    // /horarios-guardados/) es exactamente el mismo camino que crear desde
-    // cero, así el horario "modificado" queda con fechaCreacion nueva y
-    // sube al tope de Historial, como pidió. Si algún borrado falla (ya no
-    // existe, por ejemplo) no se frena el guardado — mismo criterio de
-    // "mejor esfuerzo" que ya tiene el resto de esta función.
-    if (datosEdicion) {
-      for (const idHorarioViejo of datosEdicion.idsHorarios ?? []) {
-        try {
-          await apiDelete(`/horarios/${idHorarioViejo}`)
-        } catch {
-          // No pasa nada si ya no existía.
-        }
-      }
-      try {
-        await apiDelete(`/horarios-guardados/${datosEdicion.idHorarioGuardado}`)
-      } catch {
-        // Idem.
-      }
-    }
 
     const { bloques: bloquesActuales, grid: gridActual } = estadoActualRef.current
     const grupos = agruparCeldas(gridActual)
@@ -271,6 +250,7 @@ export function NuevoHorario() {
         idFicha: bloque.idFicha,
         idResultado: bloque.idResultado,
         dias: grupo.diasIdx.map((diaIdx) => catalogos.diaIdPorNombre[DIAS[diaIdx]]),
+        publicado: !guardarComoBorrador,
       }
 
       const diasTexto = grupo.diasIdx.map((diaIdx) => DIAS[diaIdx]).join(' y ')
@@ -346,7 +326,7 @@ export function NuevoHorario() {
         )
       }
       setMensajeExito(
-        `${creados} clase${creados === 1 ? '' : 's'} ${datosEdicion ? 'guardada' : 'creada'}${creados === 1 ? '' : 's'} sin cruces.`,
+        `${creados} clase${creados === 1 ? '' : 's'} creada${creados === 1 ? '' : 's'} ${guardarComoBorrador ? 'como borrador privado' : 'y publicada'}.`,
       )
     }
 
@@ -374,7 +354,7 @@ export function NuevoHorario() {
           </div>
           <p className="text-sm text-on-surface-variant dark:text-slate-400">
             {datosEdicion
-              ? 'Edita los bloques de este horario completo y guarda — reemplaza las clases originales por las que queden acá, con fecha de creación nueva.'
+              ? 'La edición está protegida: el reemplazo anterior borraba las clases originales antes de comprobar que las nuevas se guardaran. El guardado está deshabilitado hasta ofrecer reemplazo seguro.'
               : 'Define un bloque de clase eligiendo de los catálogos reales y reutilízalo en el grid — al guardar, el sistema revisa cruces de ficha, instructor, ambiente y resultado repetido antes de crear cada clase.'}
           </p>
           {catalogos && (
@@ -384,7 +364,13 @@ export function NuevoHorario() {
           )}
         </div>
 
-        <div className="flex items-center gap-3 print:hidden">
+        <div className="flex flex-wrap items-center gap-3 print:hidden">
+          {!idEditar && (
+            <label className="inline-flex items-center gap-2 text-sm font-semibold text-on-surface">
+              <input type="checkbox" checked={guardarComoBorrador} onChange={(evento) => setGuardarComoBorrador(evento.target.checked)} disabled={guardando} className="accent-primary" />
+              Guardar como borrador
+            </label>
+          )}
           <Link
             to={datosEdicion ? '/horarios/historial' : '/dashboard'}
             className="rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
@@ -395,11 +381,11 @@ export function NuevoHorario() {
           <button
             type="button"
             onClick={() => void guardarHorario()}
-            disabled={guardando || !catalogos || cargandoEdicion}
-            title={!catalogos ? 'Cargando catálogos…' : cargandoEdicion ? 'Cargando horario a modificar…' : undefined}
+            disabled={guardando || !catalogos || cargandoEdicion || idEditar !== null}
+            title={idEditar !== null ? 'Edición deshabilitada hasta implementar reemplazo seguro' : !catalogos ? 'Cargando catálogos…' : cargandoEdicion ? 'Cargando horario a modificar…' : undefined}
             className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {guardando ? 'Guardando…' : datosEdicion ? 'Guardar cambios' : 'Guardar horario'}
+            {guardando ? 'Guardando…' : idEditar !== null ? 'Edición protegida' : guardarComoBorrador ? 'Guardar borrador' : 'Guardar y publicar'}
           </button>
         </div>
       </div>
