@@ -2,7 +2,7 @@
 
 Fecha: 2026-09-27  
 Rama: `develop`  
-Commit remoto evaluado: `9734b5f` (`docs: explicar protección temporal de edición de horarios`)
+Commit evaluado: `797847e` (`test: cubrir borradores en constructor manual`)
 
 ## Resultado
 
