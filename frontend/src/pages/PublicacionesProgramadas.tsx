@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { SelectorFechaHora } from '../components/horario/SelectorFechaHora'
 import { apiGet, apiPost, apiPut, ApiError } from '../services/api'
 import type { Horario, Trimestre } from '../types/api'
 
@@ -107,6 +108,7 @@ export function PublicacionesProgramadas() {
     horario.activo && !horario.publicado && horario.idTrimestre === trimestreSeleccionado,
   ), [horarios, trimestreSeleccionado])
   const programacionActiva = disponibilidad?.habilitado === true
+  const pendientes = publicaciones.filter((publicacion) => publicacion.estado === 'pendiente' || publicacion.estado === 'revision_requerida').length
   const trimestreNombre = trimestres.find((item) => item.idTrimestre === trimestreSeleccionado)?.nombre ?? `Período ${trimestreSeleccionado || 'sin seleccionar'}`
   const horariosSeleccionados = borradores.filter((horario) => seleccion.includes(horario.idHorario))
 
@@ -168,33 +170,50 @@ export function PublicacionesProgramadas() {
 
   return (
     <AppShell activo="Publicaciones programadas">
-      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">Coordinación académica</p>
           <h1 className="text-2xl font-bold text-on-surface dark:text-slate-100">Publicaciones programadas</h1>
-          <p className="mt-1 max-w-2xl text-sm text-on-surface-variant dark:text-slate-400">Programa borradores validados para que el worker los publique a la hora elegida de Colombia.</p>
+          <p className="mt-1 max-w-2xl text-sm text-on-surface-variant dark:text-slate-400">Prepara, revisa y publica horarios en una fecha elegida. Los instructores y aprendices no ven tus borradores.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link to="/horarios/nuevo" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Guardar borrador</Link>
           <Link to="/horarios/historial" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Historial</Link>
           <Link to="/notificaciones" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Notificaciones</Link>
         </div>
       </div>
 
-      {disponibilidad && (
-        <section className={`mb-4 rounded-xl border p-4 text-sm ${programacionActiva ? 'border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100' : 'border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100'}`} role="status" aria-live="polite">
-          <strong>{programacionActiva ? 'Worker disponible' : 'Publicación programada no disponible'}</strong>
-          <p className="mt-1">{programacionActiva ? `Señal recibida hace ${disponibilidad.segundosDesdeSenal ?? 0} s.` : disponibilidad.motivo ?? 'El backend no confirma un worker activo.'} Los borradores y el historial siguen accesibles.</p>
+      <div className="mb-5 grid gap-3 sm:grid-cols-3">
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Borradores activos</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{horarios.filter((horario) => horario.activo && !horario.publicado).length}</p>
+        </div>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Pendientes de publicación o revisión</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{pendientes}</p>
+        </div>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Publicación automática</p>
+          <p className={`mt-2 text-sm font-bold ${programacionActiva ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>{programacionActiva ? 'Servicio disponible' : 'Pendiente de activación'}</p>
+        </div>
+      </div>
+      {disponibilidad && !programacionActiva && (
+        <section className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100" role="status" aria-live="polite">
+          <span aria-hidden="true" className="material-symbols-outlined mt-0.5">info</span>
+          <div>
+            <strong>Publicación programada no disponible</strong>
+            <p className="mt-1">{disponibilidad.motivo ?? 'El servicio todavía no confirma un proceso de publicación activo.'} Puedes elegir fecha y revisar horarios; para confirmar necesitarás que el servicio esté habilitado.</p>
+          </div>
         </section>
       )}
       {error && <p className="mb-4 rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/50 dark:text-red-200" role="alert">{error}</p>}
       {mensaje && <p className="mb-4 rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-200" role="status">{mensaje}</p>}
 
-      <section id="form-programacion" className="mb-6 rounded-2xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-        <h2 className="mb-1 text-lg font-bold text-on-surface dark:text-slate-100">{reprogramando === null ? 'Programar publicación' : `Reprogramar publicación ${reprogramando}`}</h2>
+      <section id="form-programacion" className="mb-6 scroll-mt-24 rounded-2xl border border-outline-variant bg-surface-container-lowest p-4 sm:p-6 dark:border-slate-700 dark:bg-slate-800">
+        <div className="mb-5 flex items-center gap-3"><span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-container text-primary"><span className="material-symbols-outlined">event_available</span></span><div><p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Paso 1 · Preparar publicación</p><h2 className="text-lg font-bold text-on-surface dark:text-slate-100">{reprogramando === null ? 'Programar publicación' : `Reprogramar publicación ${reprogramando}`}</h2></div></div>
         {reprogramando !== null && <p className="mb-3 rounded-lg bg-amber-100 p-3 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-100">Al guardar, esta programación recibe una nueva revisión y requiere aprobación con el conjunto y la fecha actuales.</p>}
         <form onSubmit={(evento) => void guardarProgramacion(evento)} className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]">
             <div>
               <label htmlFor="periodo-publicacion" className="mb-1 block text-sm font-semibold text-on-surface dark:text-slate-200">Período académico</label>
               <select id="periodo-publicacion" value={periodo} onChange={(evento) => cambiarPeriodo(evento.target.value)} required className="w-full rounded-xl border border-outline bg-surface px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" disabled={ocupado}>
@@ -203,21 +222,20 @@ export function PublicacionesProgramadas() {
               </select>
             </div>
             <div>
-              <label htmlFor="fecha-publicacion" className="mb-1 block text-sm font-semibold text-on-surface dark:text-slate-200">Fecha y hora de Colombia</label>
-              <input id="fecha-publicacion" type="datetime-local" value={fechaLocal} onChange={(evento) => setFechaLocal(evento.target.value)} required disabled={!programacionActiva || ocupado} className="w-full rounded-xl border border-outline bg-surface px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" />
-              <p className="mt-1 text-xs text-on-surface-variant">Se interpreta como America/Bogota, sin depender de la zona horaria del navegador.</p>
+              <h3 className="mb-1 text-sm font-semibold text-on-surface dark:text-slate-200">Fecha y hora de Colombia</h3>
+              <SelectorFechaHora value={fechaLocal} onChange={setFechaLocal} disabled={ocupado} />
             </div>
           </div>
           <fieldset disabled={!periodo || ocupado} className="space-y-2">
-            <legend className="mb-2 text-sm font-semibold text-on-surface dark:text-slate-200">Borradores activos del período</legend>
+            <legend className="mb-2 text-sm font-semibold text-on-surface dark:text-slate-200">Paso 2 · Seleccionar borradores activos del período <span className="font-normal text-on-surface-variant">({seleccion.length} seleccionados)</span></legend>
             {!periodo ? <p className="text-sm text-on-surface-variant">Selecciona un período para ver sus borradores.</p> : borradores.length === 0 ? <p className="text-sm text-on-surface-variant">No hay borradores activos disponibles en {trimestreNombre}.</p> : (
-              <div className="max-h-56 space-y-1 overflow-y-auto rounded-xl border border-outline-variant p-2 dark:border-slate-700">
+              <div className="max-h-64 space-y-1 overflow-y-auto rounded-xl border border-outline-variant p-2 dark:border-slate-700">
                 {borradores.map((horario) => <label key={horario.idHorario} className="flex cursor-pointer items-start gap-2 rounded-lg p-2 text-sm hover:bg-surface-container dark:hover:bg-slate-700"><input type="checkbox" checked={seleccion.includes(horario.idHorario)} onChange={() => alternarHorario(horario.idHorario)} className="mt-1 accent-emerald-700" /><span>{horarioResumen(horario)}</span></label>)}
               </div>
             )}
           </fieldset>
           <div className="rounded-xl bg-surface-container-low p-3 text-sm dark:bg-slate-900" aria-label="Vista previa de publicación">
-            <h3 className="mb-1 font-semibold text-on-surface dark:text-slate-100">Antes de confirmar</h3>
+            <h3 className="mb-1 font-semibold text-on-surface dark:text-slate-100">Paso 3 · Revisar antes de confirmar</h3>
             <p>Período: {trimestreNombre}</p>
             <p>Fecha y hora: {fechaLocal ? `${fechaLocal.replace('T', ' ')} (America/Bogota)` : 'Sin seleccionar'}</p>
             <ul className="mt-1 list-inside list-disc text-on-surface-variant dark:text-slate-300">
@@ -225,14 +243,14 @@ export function PublicacionesProgramadas() {
             </ul>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button type="submit" disabled={!programacionActiva || !periodo || !fechaLocal || seleccion.length === 0 || ocupado} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:cursor-not-allowed disabled:opacity-50">{ocupado ? 'Guardando…' : reprogramando === null ? 'Confirmar y programar' : 'Aprobar nueva revisión'}</button>
+            <button type="submit" disabled={!programacionActiva || !periodo || !fechaLocal || seleccion.length === 0 || ocupado} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary hover:bg-on-primary-container disabled:cursor-not-allowed disabled:opacity-50">{ocupado ? 'Guardando…' : reprogramando === null ? 'Confirmar y programar' : 'Aprobar nueva revisión'}</button>
             {reprogramando !== null && <button type="button" onClick={() => setReprogramando(null)} className="rounded-xl border border-outline px-4 py-2 text-sm font-semibold" disabled={ocupado}>Salir de reprogramación</button>}
           </div>
         </form>
       </section>
 
-      <section className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><h2 className="text-lg font-bold text-on-surface dark:text-slate-100">Programaciones e historial</h2><p className="text-sm text-on-surface-variant">Estados consultados directamente al backend.</p></div><button type="button" onClick={() => void cargar()} disabled={cargando || ocupado} className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold disabled:opacity-50">Actualizar</button></div>
+      <section className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-4 sm:p-6 dark:border-slate-700 dark:bg-slate-800">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2"><div><h2 className="text-lg font-bold text-on-surface dark:text-slate-100">Seguimiento e historial</h2><p className="text-sm text-on-surface-variant">Revisa tus publicaciones pendientes, cambios y resultados.</p></div><button type="button" onClick={() => void cargar()} disabled={cargando || ocupado} className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold disabled:opacity-50">Actualizar</button></div>
         {cargando ? <p className="py-6 text-center text-sm text-on-surface-variant">Cargando programaciones…</p> : publicaciones.length === 0 ? <p className="py-6 text-center text-sm text-on-surface-variant">No hay publicaciones programadas. Los borradores siguen disponibles desde <Link className="font-semibold text-primary underline" to="/horarios/completos">Horarios completos</Link>.</p> : (
           <div className="space-y-3">
             {publicaciones.map((publicacion) => {
