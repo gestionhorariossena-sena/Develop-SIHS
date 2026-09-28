@@ -115,6 +115,81 @@ def _notificaciones_de(db_session, usuario):
     )
 
 
+def _payload_horario(instructor, *, publicado=None):
+    """Payload mínimo para ejercer el contrato HTTP de creación."""
+    payload = {
+        "horaInicio": "08:00:00",
+        "horaFin": "10:00:00",
+        "idJornada": 1,
+        "idTrimestre": 1,
+        "idAmbiente": 1,
+        "idInstructor": str(instructor.idUsuario),
+        "idFicha": 1,
+        "idResultado": 9,
+        "dias": [1],
+    }
+    if publicado is not None:
+        payload["publicado"] = publicado
+    return payload
+
+
+def test_post_borrador_permanece_privado_y_no_notifica(client, db_session, autenticar_como):
+    """Un POST con publicado=false no revela la propuesta antes de aprobarla."""
+    _crear_tablas_extra(db_session)
+    _, headers_coordinador = autenticar_como("Coordinador")
+    instructor, headers_instructor = autenticar_como("Instructor")
+    aprendiz, headers_aprendiz = autenticar_como("Aprendiz")
+    _catalogos(db_session)
+    db_session.add(FichaUsuario(idFicha=1, idUsuario=aprendiz.idUsuario))
+    db_session.commit()
+
+    respuesta = client.post(
+        "/api/v1/horarios/",
+        json=_payload_horario(instructor, publicado=False),
+        headers=headers_coordinador,
+    )
+
+    assert respuesta.status_code == 201
+    assert respuesta.json()["publicado"] is False
+    assert _notificaciones_de(db_session, instructor) == []
+    assert _notificaciones_de(db_session, aprendiz) == []
+
+    instructor_ve = client.get("/api/v1/usuarios/me/horarios", headers=headers_instructor)
+    aprendiz_ve = client.get("/api/v1/ficha-usuario/mi-horario", headers=headers_aprendiz)
+    assert instructor_ve.status_code == 200
+    assert instructor_ve.json() == []
+    assert aprendiz_ve.status_code == 200
+    assert aprendiz_ve.json() == []
+
+
+def test_post_sin_publicado_conserva_publicacion_y_notificacion(client, db_session, autenticar_como):
+    """Los consumidores anteriores que omiten publicado siguen creando una clase publicada."""
+    _crear_tablas_extra(db_session)
+    _, headers_coordinador = autenticar_como("Coordinador")
+    instructor, headers_instructor = autenticar_como("Instructor")
+    aprendiz, headers_aprendiz = autenticar_como("Aprendiz")
+    _catalogos(db_session)
+    db_session.add(FichaUsuario(idFicha=1, idUsuario=aprendiz.idUsuario))
+    db_session.commit()
+
+    respuesta = client.post(
+        "/api/v1/horarios/",
+        json=_payload_horario(instructor),
+        headers=headers_coordinador,
+    )
+
+    assert respuesta.status_code == 201
+    assert respuesta.json()["publicado"] is True
+    assert len(_notificaciones_de(db_session, instructor)) == 1
+    assert len(_notificaciones_de(db_session, aprendiz)) == 1
+    assert [fila["idHorario"] for fila in client.get(
+        "/api/v1/usuarios/me/horarios", headers=headers_instructor
+    ).json()] == [respuesta.json()["idHorario"]]
+    assert [fila["idHorario"] for fila in client.get(
+        "/api/v1/ficha-usuario/mi-horario", headers=headers_aprendiz
+    ).json()] == [respuesta.json()["idHorario"]]
+
+
 def test_mover_el_ambiente_avisa_tambien_al_instructor(client, db_session, autenticar_como, crear_usuario, crear_rol):
     """El hueco de H-8: al instructor le cambiaban el aula y se enteraba
     llegando al salón equivocado."""

@@ -4,7 +4,7 @@ import { AppShell } from '../components/AppShell'
 import { GridAsistente } from '../components/horario/GridAsistente'
 import { celdasDesdeHorarios } from '../components/horario/celdasAsistente'
 import type { CeldaAsistente } from '../components/horario/celdasAsistente'
-import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
+import { apiGet, apiPatch, apiPost, apiPostForm, ApiError } from '../services/api'
 import { avisoTrimestres, trimestreVigente } from '../utils/trimestreVigente'
 import { mapearConLimite } from '../utils/concurrencia'
 import type {
