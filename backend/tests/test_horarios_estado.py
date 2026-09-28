@@ -130,6 +130,31 @@ def test_publicar_y_despublicar_horario_no_toca_activo(client, db_session, auten
     assert respuesta.json()["publicado"] is True
 
 
+def test_despublicar_no_consulta_tablas_de_programaciones(client, db_session, autenticar_como, monkeypatch):
+    """Despublicar reduce visibilidad y no depende de migraciones del programador."""
+    from app.services.horario_service import HorarioService
+
+    _crear_tablas_extra(db_session)
+    _, headers = autenticar_como("Coordinador")
+    instructor, ficha = _catalogos_base(db_session)
+    _crear_horario(db_session, 100, instructor, ficha)
+
+    def consulta_innecesaria(*_args, **_kwargs):
+        raise AssertionError("Despublicar no debe consultar publicaciones programadas")
+
+    monkeypatch.setattr(HorarioService, "_publicaciones_programadas", consulta_innecesaria)
+
+    respuesta = client.patch(
+        "/api/v1/horarios/100/estado",
+        json={"publicado": False},
+        headers=headers,
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.json()["publicado"] is False
+    assert respuesta.json()["activo"] is True
+
+
 def test_mis_horarios_solo_muestra_lo_publicado_y_propio(client, db_session, autenticar_como):
     _crear_tablas_extra(db_session)
     yo, headers = autenticar_como("Instructor")
