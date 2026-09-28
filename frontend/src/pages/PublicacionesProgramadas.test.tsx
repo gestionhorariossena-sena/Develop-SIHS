@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ApiError } from '../services/api'
 import { renderConProviders } from '../test/renderConProviders'
@@ -57,8 +57,29 @@ describe('PublicacionesProgramadas', () => {
     expect(screen.getByRole('link', { name: 'Historial' })).toHaveAttribute('href', '/horarios/historial')
     await userEvent.selectOptions(screen.getByLabelText('Período académico'), '3')
     expect(screen.getByLabelText(/Ficha F-100/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Abrir calendario' })).toBeEnabled()
+    await userEvent.click(screen.getByRole('button', { name: 'Abrir calendario' }))
+    expect(screen.getByRole('group', { name: 'Calendario para fecha de publicación' })).toBeVisible()
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-10-15' } })
+    expect(screen.getByLabelText('Hora')).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Confirmar y programar' })).toBeDisabled()
     expect(apiPostMock).not.toHaveBeenCalled()
+  })
+
+  it('el calendario propio permite navegar y escoger un día sin depender del selector nativo', async () => {
+    prepararApi(false)
+    const user = userEvent.setup()
+    renderConProviders(<PublicacionesProgramadas />)
+    await screen.findByText('Publicación programada no disponible')
+    await user.click(screen.getByRole('button', { name: 'Abrir calendario' }))
+    expect(screen.getByRole('button', { name: 'Mes siguiente' })).toBeEnabled()
+    const mesVisible = screen.getByRole('group', { name: 'Calendario para fecha de publicación' })
+    expect(mesVisible).toBeVisible()
+    const primerDia = screen.getAllByRole('button', { name: /^Elegir 1 de / })[0]
+    await user.click(primerDia)
+    expect(screen.getByLabelText('Fecha')).toHaveValue(expect.stringMatching(/^\\d{4}-\\d{2}-01$/))
+    expect(screen.getByLabelText('Hora')).toHaveValue('09:00')
+    expect(screen.getByRole('button', { name: 'Confirmar y programar' })).toBeDisabled()
   })
 
   it('previsualiza el período, horarios y hora de Bogotá antes de confirmar la programación', async () => {
@@ -69,7 +90,8 @@ describe('PublicacionesProgramadas', () => {
     await screen.findByText('Worker disponible')
     await user.selectOptions(screen.getByLabelText('Período académico'), '3')
     await user.click(screen.getByLabelText(/Ficha F-100/))
-    await user.type(screen.getByLabelText('Fecha y hora de Colombia'), '2026-10-15T10:30')
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-10-15' } })
+    fireEvent.change(screen.getByLabelText('Hora'), { target: { value: '10:30' } })
     expect(screen.getByLabelText('Vista previa de publicación')).toHaveTextContent('2026-3')
     expect(screen.getByLabelText('Vista previa de publicación')).toHaveTextContent('2026-10-15 10:30 (America/Bogota)')
     expect(screen.getByLabelText('Vista previa de publicación')).toHaveTextContent('Ficha F-100')
@@ -87,7 +109,8 @@ describe('PublicacionesProgramadas', () => {
     await screen.findByText('Worker disponible')
     await user.selectOptions(screen.getByLabelText('Período académico'), '3')
     await user.click(screen.getByLabelText(/Ficha F-100/))
-    await user.type(screen.getByLabelText('Fecha y hora de Colombia'), '2026-10-15T10:30')
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-10-15' } })
+    fireEvent.change(screen.getByLabelText('Hora'), { target: { value: '10:30' } })
     await user.click(screen.getByRole('button', { name: 'Confirmar y programar' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Un horario ya tiene una publicación pendiente.')
     expect(screen.getByText(/esta pantalla no crea notificaciones locales/i)).toBeInTheDocument()
@@ -122,9 +145,8 @@ describe('PublicacionesProgramadas', () => {
     const user = userEvent.setup()
     renderConProviders(<PublicacionesProgramadas />)
     await user.click(await screen.findByRole('button', { name: 'Reprogramar' }))
-    const fecha = screen.getByLabelText('Fecha y hora de Colombia')
-    await user.clear(fecha)
-    await user.type(fecha, '2026-10-20T11:45')
+    fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-10-20' } })
+    fireEvent.change(screen.getByLabelText('Hora'), { target: { value: '11:45' } })
     await user.click(screen.getByRole('button', { name: 'Aprobar nueva revisión' }))
     await waitFor(() => expect(apiPutMock).toHaveBeenCalledWith('/publicaciones-programadas/21', {
       idTrimestre: 3, idHorarios: [27], fechaHoraLocal: '2026-10-20T11:45:00',
