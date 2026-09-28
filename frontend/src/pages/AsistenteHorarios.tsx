@@ -4,7 +4,7 @@ import { AppShell } from '../components/AppShell'
 import { GridAsistente } from '../components/horario/GridAsistente'
 import { celdasDesdeHorarios } from '../components/horario/celdasAsistente'
 import type { CeldaAsistente } from '../components/horario/celdasAsistente'
-import { apiGet, apiPatch, apiPost, apiPostForm, ApiError } from '../services/api'
+import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
 import { avisoTrimestres, trimestreVigente } from '../utils/trimestreVigente'
 import { mapearConLimite } from '../utils/concurrencia'
 import type {
@@ -518,15 +518,12 @@ export function AsistenteHorarios() {
     if (bloquesListos.length === 0 || !idTrimestre) return
     setConfirmando(true)
     const resultados: Record<number, 'ok' | string> = {}
-    // Publicar en lote (instructor + estudiante) al confirmar -- antes
-    // había que ir uno por uno a Horarios completos y darle "Publicar" a
-    // cada fila. Se hace por fuera del try/catch de creación: si crear el
-    // horario falla, no tiene sentido intentar publicarlo.
-    const idsCreados: number[] = []
+    // La confirmación guarda borradores. Publicar es una acción
+    // posterior y explícita de coordinación en Horarios completos.
     for (let i = 0; i < bloquesListos.length; i++) {
       const b = bloquesListos[i]
       try {
-        const creado = await apiPost<Horario>('/horarios/', {
+        await apiPost<Horario>('/horarios/', {
           horaInicio: b.horaInicio,
           horaFin: b.horaFin,
           idJornada: b.idJornada,
@@ -536,8 +533,8 @@ export function AsistenteHorarios() {
           idFicha: b.idFicha,
           idResultado: b.idResultado,
           dias: b.dias,
+          publicado: false,
         })
-        idsCreados.push(creado.idHorario)
         resultados[i] = 'ok'
       } catch (error) {
         resultados[i] = error instanceof ApiError ? error.message : 'No se pudo guardar.'
@@ -545,16 +542,8 @@ export function AsistenteHorarios() {
       setResultadosConfirmacion({ ...resultados })
     }
 
-    await Promise.all(
-      idsCreados.map((idHorario) =>
-        apiPatch(`/horarios/${idHorario}/estado`, { publicado: true }).catch(() => {
-          // No fatal: el horario ya quedó creado y visible en Historial;
-          // si publicar falla, el coordinador lo hace a mano desde
-          // Horarios completos. No vale la pena bloquear la confirmación
-          // por esto.
-        })
-      )
-    )
+    // Ningún PATCH de publicación: no notificar ni revelar propuestas
+    // a instructores/aprendices antes de su aprobación.
     setConfirmando(false)
   }
 
@@ -1177,7 +1166,7 @@ export function AsistenteHorarios() {
           <section className="space-y-4">
             <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
               <p className="text-sm text-on-surface-variant dark:text-slate-300">
-                Vas a guardar <strong>{bloquesListos.length}</strong> horario{bloquesListos.length === 1 ? '' : 's'} nuevo{bloquesListos.length === 1 ? '' : 's'}, y quedarán publicados de una vez (visibles para instructor y aprendiz en "Mi horario"). Esta es la última confirmación.
+                Vas a guardar <strong>{bloquesListos.length}</strong> horario{bloquesListos.length === 1 ? '' : 's'} nuevo{bloquesListos.length === 1 ? '' : 's'}, y quedarán como borradores privados para revisión. Instructor y aprendiz no podrán verlos hasta que coordinación los publique. Esta es la última confirmación.
               </p>
             </div>
 
@@ -1198,7 +1187,7 @@ export function AsistenteHorarios() {
             {!confirmando && bloquesListos.length > 0 && Object.keys(resultadosConfirmacion).length === bloquesListos.length && (
               <div className="rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
                 {bloquesListos.every((_, i) => resultadosConfirmacion[i] === 'ok')
-                  ? 'Listo, todo se guardó y quedó publicado.'
+                  ? 'Listo, todo se guardó como borrador. Puedes revisarlo y publicarlo desde Horarios completos.'
                   : 'Algunos bloques no se pudieron guardar -- revisa los mensajes de arriba.'}{' '}
                 <Link to="/horarios/completos" className="font-semibold underline">
                   Ver en Horarios completos →
