@@ -1,7 +1,9 @@
 from datetime import date, datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.schemas.horario import HorarioBase, HorarioResponse
 
 
 class BloqueClaseSchema(BaseModel):
@@ -47,6 +49,24 @@ class HorarioGuardadoCreate(HorarioGuardadoBase):
     pass
 
 
+class HorarioReemplazoCreate(HorarioBase):
+    """Asignación relacional propuesta al reemplazar un horario completo.
+
+    Publicación y activación se heredan de las asignaciones existentes; el
+    cliente no puede promover un borrador durante la edición.
+    """
+
+    dias: list[int]
+    idHorarioOriginal: int | None = None
+    fechaModificacionOriginal: datetime | None = None
+    bloqueIdx: int
+    bloqueId: str
+
+
+class HorarioGuardadoReemplazo(HorarioGuardadoBase):
+    horarios: list[HorarioReemplazoCreate]
+
+
 class HorarioGuardadoResponse(HorarioGuardadoBase):
     model_config = ConfigDict(from_attributes=True)
 
@@ -55,3 +75,4 @@ class HorarioGuardadoResponse(HorarioGuardadoBase):
     creadorNombre: str | None = None
     programaNombre: str | None = None
     fechaCreacion: datetime
+    asignaciones: list[HorarioResponse] = Field(default_factory=list)

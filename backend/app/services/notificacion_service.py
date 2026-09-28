@@ -19,6 +19,67 @@ TIPOS_VALIDOS = {TIPO_CRUCE, TIPO_HORARIO, TIPO_AMBIENTE, TIPO_SISTEMA}
 
 class NotificacionService:
     @staticmethod
+    def crear_transaccional(
+        db: Session,
+        *,
+        id_usuario,
+        tipo: str,
+        mensaje: str,
+        entidad_relacionada: str | None = None,
+        id_entidad_relacionada=None,
+    ) -> Notificacion:
+        """Agrega una notificación a la transacción activa, sin confirmarla.
+
+        Se usa en operaciones compuestas que deben revertir también sus
+        avisos si falla cualquier escritura posterior.
+        """
+        if tipo not in TIPOS_VALIDOS:
+            raise ValueError(f"Tipo de notificación desconocido: {tipo!r}.")
+        notificacion = Notificacion(
+            idUsuario=id_usuario,
+            tipo=tipo,
+            mensaje=mensaje,
+            entidadRelacionada=entidad_relacionada,
+            idEntidadRelacionada=(
+                str(id_entidad_relacionada) if id_entidad_relacionada is not None else None
+            ),
+        )
+        db.add(notificacion)
+        db.flush()
+        return notificacion
+
+    @staticmethod
+    def crear_agrupada_transaccional(
+        db: Session,
+        *,
+        id_usuario,
+        tipo: str,
+        mensaje: str,
+        entidad_relacionada: str,
+        id_entidad_relacionada,
+        minutos: int = 10,
+    ) -> Notificacion | None:
+        if not id_usuario:
+            return None
+        if NotificacionRepository.existe_reciente(
+            db,
+            id_usuario=id_usuario,
+            tipo=tipo,
+            entidad_relacionada=entidad_relacionada,
+            id_entidad_relacionada=id_entidad_relacionada,
+            minutos=minutos,
+        ):
+            return None
+        return NotificacionService.crear_transaccional(
+            db,
+            id_usuario=id_usuario,
+            tipo=tipo,
+            mensaje=mensaje,
+            entidad_relacionada=entidad_relacionada,
+            id_entidad_relacionada=id_entidad_relacionada,
+        )
+
+    @staticmethod
     def crear(
         db: Session,
         *,

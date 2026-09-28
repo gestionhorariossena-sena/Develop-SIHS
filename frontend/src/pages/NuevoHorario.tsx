@@ -6,7 +6,7 @@ import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { HorarioEditor } from '../components/horario/HorarioEditor'
 import type { CatalogosBloque } from '../components/horario/ModalBloque'
 import { ModalCruce } from '../components/horario/ModalCruce'
-import { apiGet, apiPost, ApiError } from '../services/api'
+import { apiGet, apiPost, apiPut, ApiError } from '../services/api'
 import { BLOQUES, DIAS } from './horario/tipos'
 import type { BloqueClase, GridAsignaciones, Jornada as JornadaGrid } from './horario/tipos'
 import { gridVacio } from './horario/useHorarioState'
@@ -114,13 +114,14 @@ export function NuevoHorario() {
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null)
   const [errorCatalogos, setErrorCatalogos] = useState<string | null>(null)
 
-  // Un snapshot histórico se puede consultar desde aquí, pero su edición
-  // queda temporalmente bloqueada: sustituirlo borrando primero las clases
-  // podía perder asignaciones ante un fallo. El reemplazo transaccional
-  // debe implementarse en backend antes de reactivar "Guardar cambios".
+  // La edición se habilita solo cuando el snapshot tiene todos sus vínculos
+  // relacionales, para reemplazarlo de forma atómica en el backend.
   const [datosEdicion, setDatosEdicion] = useState<HorarioGuardado | null>(null)
   const [cargandoEdicion, setCargandoEdicion] = useState(Boolean(idEditar))
   const [errorEdicion, setErrorEdicion] = useState<string | null>(null)
+  const [edicionSegura, setEdicionSegura] = useState(false)
+  const idsOriginalesPorGrupo = useRef<Record<string, number>>({})
+  const fechasOriginalesPorGrupo = useRef<Record<string, string>>({})
 
   // Cuando el dry-run (POST /horarios/validar) encuentra conflictos, se
   // pausa el guardado de ESE bloque y se muestra ModalCruce — el
@@ -184,7 +185,43 @@ export function NuevoHorario() {
     if (idEditar) {
       apiGet<HorarioGuardado>(`/horarios-guardados/${idEditar}`)
         .then((snapshot) => {
-          setDatosEdicion(snapshot)
+          const gruposOriginales = agruparCeldas(snapshot.grid)
+          const ids = snapshot.idsHorarios ?? []
+          const asignaciones = snapshot.asignaciones ?? []
+          const asignacionesPorId = new Map(asignaciones.map((asignacion) => [asignacion.idHorario, asignacion]))
+          if (
+            !ids.length || gruposOriginales.length !== ids.length || asignaciones.length !== ids.length ||
+            ids.some((id, index) => asignaciones[index]?.idHorario !== id || !asignaciones[index]?.fechaModificacion)
+          ) {
+            setErrorEdicion('Este snapshot no tiene vínculos completos con sus clases y no puede editarse de forma segura.')
+            setDatosEdicion(snapshot)
+            return
+          }
+          const idsPorGrupo: Record<string, number> = {}
+          const fechasPorGrupo: Record<string, string> = {}
+          const asignacionPorBloque = new Map<string, Horario>()
+          gruposOriginales.forEach((grupo, index) => {
+            const horario = asignacionesPorId.get(ids[index])
+            if (!horario) return
+            idsPorGrupo[`${grupo.bloqueIdx}-${grupo.bloqueId}`] = horario.idHorario
+            fechasPorGrupo[`${grupo.bloqueIdx}-${grupo.bloqueId}`] = horario.fechaModificacion
+            if (!asignacionPorBloque.has(grupo.bloqueId)) asignacionPorBloque.set(grupo.bloqueId, horario)
+          })
+          idsOriginalesPorGrupo.current = idsPorGrupo
+          fechasOriginalesPorGrupo.current = fechasPorGrupo
+          const bloques = snapshot.bloques.map((bloque) => {
+            const horario = asignacionPorBloque.get(bloque.id)
+            return horario ? {
+              ...bloque,
+              idResultado: horario.idResultado,
+              idInstructor: horario.idInstructor,
+              idFicha: horario.idFicha,
+              idTrimestre: horario.idTrimestre,
+              idAmbiente: horario.idAmbiente,
+            } : bloque
+          })
+          setDatosEdicion({ ...snapshot, bloques })
+          setEdicionSegura(true)
           setFicha(snapshot.ficha)
           setAprendices(snapshot.aprendices ?? '0')
           setHorasTrimestre(snapshot.horasTrimestre ?? '36')
@@ -200,7 +237,7 @@ export function NuevoHorario() {
   }, [])
 
   async function guardarHorario() {
-    if (!catalogos || idEditar !== null) return
+    if (!catalogos || (idEditar !== null && !edicionSegura)) return
 
     setGuardando(true)
     setErroresGuardar([])
@@ -209,6 +246,69 @@ export function NuevoHorario() {
     const { bloques: bloquesActuales, grid: gridActual } = estadoActualRef.current
     const grupos = agruparCeldas(gridActual)
     const errores: string[] = []
+
+    if (idEditar !== null) {
+      const horarios: (HorarioCreate & {
+        idHorarioOriginal?: number
+        fechaModificacionOriginal?: string
+        bloqueIdx: number
+        bloqueId: string
+      })[] = []
+      for (const grupo of grupos) {
+        const bloque = bloquesActuales.find((b) => b.id === grupo.bloqueId)
+        const bloqueHorario = BLOQUES[grupo.bloqueIdx]
+        if (
+          !bloque || !bloqueHorario || bloque.idResultado === undefined || bloque.idInstructor === undefined ||
+          bloque.idFicha === undefined || bloque.idTrimestre === undefined || bloque.idAmbiente === undefined
+        ) {
+          errores.push(`"${bloque?.tematica ?? 'una celda'}" no tiene todos los datos — vuelve a editarla.`)
+          continue
+        }
+        horarios.push({
+          horaInicio: bloqueHorario.horaInicio24,
+          horaFin: bloqueHorario.horaFin24,
+          idJornada: catalogos.jornadaIdPorNombre[bloqueHorario.jornada],
+          idTrimestre: bloque.idTrimestre,
+          idAmbiente: bloque.idAmbiente,
+          idInstructor: bloque.idInstructor,
+          idFicha: bloque.idFicha,
+          idResultado: bloque.idResultado,
+          dias: grupo.diasIdx.map((diaIdx) => catalogos.diaIdPorNombre[DIAS[diaIdx]]),
+          idHorarioOriginal: idsOriginalesPorGrupo.current[`${grupo.bloqueIdx}-${grupo.bloqueId}`],
+          fechaModificacionOriginal: (() => {
+            const key = `${grupo.bloqueIdx}-${grupo.bloqueId}`
+            return idsOriginalesPorGrupo.current[key] === undefined ? undefined : fechasOriginalesPorGrupo.current[key]
+          })(),
+          bloqueIdx: grupo.bloqueIdx,
+          bloqueId: grupo.bloqueId,
+        })
+      }
+      if (errores.length || !horarios.length) {
+        setErroresGuardar(errores.length ? errores : ['El horario debe conservar al menos una asignación.'])
+        setGuardando(false)
+        return
+      }
+      try {
+        await apiPut(`/horarios-guardados/${idEditar}/reemplazar`, {
+          ficha, aprendices, horasTrimestre,
+          fechaInicio: fechaInicio || null,
+          fechaFin: fechaFin || null,
+          bloques: bloquesActuales,
+          grid: gridActual,
+          horarios,
+        })
+        setMensajeExito('Los cambios del horario se guardaron de forma segura.')
+        setErroresGuardar([])
+      } catch (err) {
+        const detalle = err instanceof ApiError && err.detail && typeof err.detail === 'object'
+          ? (err.detail as { mensajes?: string[] }).mensajes?.join(' ')
+          : null
+        setErroresGuardar([detalle ?? (err instanceof ApiError ? err.message : 'No se pudieron guardar los cambios.')])
+      } finally {
+        setGuardando(false)
+      }
+      return
+    }
 
     // Cada grupo se guarda o falla de forma independiente — si uno choca,
     // los demás igual se crean de verdad y quedan en el historial. Antes
@@ -352,7 +452,9 @@ export function NuevoHorario() {
           </div>
           <p className="text-sm text-on-surface-variant dark:text-slate-400">
             {datosEdicion
-              ? 'La edición está protegida: el reemplazo anterior borraba las clases originales antes de comprobar que las nuevas se guardaran. El guardado está deshabilitado hasta ofrecer reemplazo seguro.'
+              ? edicionSegura
+                ? 'Los cambios se validan y reemplazan juntos en el servidor; si alguno falla, se conserva el horario original.'
+                : 'Este snapshot no dispone de vínculos completos con las clases originales y no puede editarse de forma segura.'
               : 'Define un bloque de clase eligiendo de los catálogos reales y reutilízalo en el grid — al guardar, el sistema revisa cruces de ficha, instructor, ambiente y resultado repetido antes de crear cada clase.'}
           </p>
           {catalogos && (
@@ -379,11 +481,11 @@ export function NuevoHorario() {
           <button
             type="button"
             onClick={() => void guardarHorario()}
-            disabled={guardando || !catalogos || cargandoEdicion || idEditar !== null}
-            title={idEditar !== null ? 'Edición deshabilitada hasta implementar reemplazo seguro' : !catalogos ? 'Cargando catálogos…' : cargandoEdicion ? 'Cargando horario a modificar…' : undefined}
+            disabled={guardando || !catalogos || cargandoEdicion || (idEditar !== null && !edicionSegura)}
+            title={idEditar !== null && !edicionSegura ? 'Snapshot incompleto: no se puede editar de forma segura' : !catalogos ? 'Cargando catálogos…' : cargandoEdicion ? 'Cargando horario a modificar…' : undefined}
             className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {guardando ? 'Guardando…' : idEditar !== null ? 'Edición protegida' : guardarComoBorrador ? 'Guardar borrador' : 'Guardar y publicar'}
+            {guardando ? 'Guardando…' : idEditar !== null ? 'Guardar cambios' : guardarComoBorrador ? 'Guardar borrador' : 'Guardar y publicar'}
           </button>
         </div>
       </div>

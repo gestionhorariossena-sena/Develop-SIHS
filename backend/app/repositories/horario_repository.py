@@ -50,6 +50,17 @@ class HorarioRepository:
         return db.query(Horario).filter(Horario.idHorario == id_horario).first()
 
     @staticmethod
+    def obtener_por_ids(db: Session, ids_horario: list[int], *, bloquear: bool = False) -> list[Horario]:
+        if not ids_horario:
+            return []
+        query = db.query(Horario).filter(Horario.idHorario.in_(ids_horario))
+        if bloquear:
+            query = query.with_for_update()
+        horarios = query.all()
+        por_id = {horario.idHorario: horario for horario in horarios}
+        return [por_id[id_horario] for id_horario in ids_horario if id_horario in por_id]
+
+    @staticmethod
     def obtener_dias(db: Session, id_horario: int) -> list[int]:
         filas = db.execute(horario_dia.select().where(horario_dia.c.idHorario == id_horario)).all()
         return [fila.idDia for fila in filas]
@@ -81,22 +92,38 @@ class HorarioRepository:
 
     @staticmethod
     def crear(db: Session, horario: Horario, dias: list[int]):
+        HorarioRepository.crear_sin_commit(db, horario, dias)
+        db.commit()
+        db.refresh(horario)
+        return horario
+
+    @staticmethod
+    def crear_sin_commit(db: Session, horario: Horario, dias: list[int]):
         db.add(horario)
         db.flush()  # asigna idHorario sin cerrar la transacción todavía
 
         for id_dia in dias:
             db.execute(horario_dia.insert().values(idHorario=horario.idHorario, idDia=id_dia))
 
-        db.commit()
-        db.refresh(horario)
         return horario
 
     @staticmethod
-    def actualizar(db: Session, horario: Horario, dias: list[int]):
+    def actualizar_sin_commit(db: Session, horario: Horario, dias: list[int]):
         db.execute(horario_dia.delete().where(horario_dia.c.idHorario == horario.idHorario))
         for id_dia in dias:
             db.execute(horario_dia.insert().values(idHorario=horario.idHorario, idDia=id_dia))
+        db.flush()
+        return horario
 
+    @staticmethod
+    def eliminar_sin_commit(db: Session, horario: Horario):
+        db.execute(horario_dia.delete().where(horario_dia.c.idHorario == horario.idHorario))
+        db.delete(horario)
+        db.flush()
+
+    @staticmethod
+    def actualizar(db: Session, horario: Horario, dias: list[int]):
+        HorarioRepository.actualizar_sin_commit(db, horario, dias)
         db.commit()
         db.refresh(horario)
         return horario

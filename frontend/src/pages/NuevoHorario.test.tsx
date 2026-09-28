@@ -17,12 +17,13 @@ const mocks = vi.hoisted(() => {
     }
   }
 
-  return { apiGet: vi.fn(), apiPost: vi.fn(), apiDelete: vi.fn(), ApiError: ApiErrorMock }
+  return { apiGet: vi.fn(), apiPost: vi.fn(), apiPut: vi.fn(), apiDelete: vi.fn(), ApiError: ApiErrorMock }
 })
 
 vi.mock('../services/api', () => ({
   apiGet: mocks.apiGet,
   apiPost: mocks.apiPost,
+  apiPut: mocks.apiPut,
   apiDelete: mocks.apiDelete,
   ApiError: mocks.ApiError,
 }))
@@ -125,9 +126,17 @@ describe('NuevoHorario', () => {
           horasTrimestre: '30',
           fechaInicio: '2026-01-15',
           fechaFin: '2026-04-15',
-          bloques: [],
-          grid: gridVacio(),
-          idsHorarios: [55, 56],
+          bloques: [{ id: 'bloque-1', tematica: 'Programación', instructor: 'Ana Ríos', ficha: '3228973', ambiente: 'Ambiente 101' }],
+          grid: [['bloque-1']],
+          idsHorarios: [55],
+          asignaciones: [{
+            idHorario: 55, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1,
+            idTrimestre: 1, idAmbiente: 1, idInstructor: '11111111-1111-1111-1111-111111111111',
+            idFicha: 1, idResultado: 9, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z',
+            fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: false,
+            instructorNombre: 'Ana Ríos', fichaCodigo: '3228973', ambienteNombre: 'Ambiente 101',
+            resultadoCodigo: 'RA-9', resultadoDescripcion: 'Resultado 9',
+          }],
           fechaCreacion: '2026-01-01T00:00:00Z',
         })
       }
@@ -150,7 +159,7 @@ describe('NuevoHorario', () => {
     expect(screen.getByLabelText('Ficha (referencia del formulario)')).toHaveValue('FICHA-EDIT')
     expect(screen.getByLabelText('Aprendices en formación a la fecha')).toHaveValue('25')
     expect(screen.getByLabelText('Horas asignadas trimestre')).toHaveValue('30')
-    expect(screen.getByRole('button', { name: 'Edición protegida' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled()
   })
 
   it('guarda clases nuevas como borradores privados por defecto', async () => {
@@ -190,14 +199,23 @@ describe('NuevoHorario', () => {
     })
   })
 
-  it('permite consultar un snapshot pero bloquea la edición destructiva', async () => {
+  it('edita mediante reemplazo atómico y nunca borra desde el frontend', async () => {
     configurarCatalogos()
     mocks.apiGet.mockImplementation((ruta: string) => {
       if (ruta === '/horarios-guardados/10') return Promise.resolve({
         idHorarioGuardado: 10, idUsuario: '22222222-2222-2222-2222-222222222222',
         creadorNombre: 'Coordinadora', ficha: 'FICHA-EDIT', aprendices: '25', horasTrimestre: '30',
-        fechaInicio: '2026-01-15', fechaFin: '2026-04-15', bloques: [], grid: gridVacio(),
-        idsHorarios: [55, 56], fechaCreacion: '2026-01-01T00:00:00Z',
+        fechaInicio: '2026-01-15', fechaFin: '2026-04-15',
+        bloques: [{ id: 'bloque-1', tematica: 'Programación', instructor: 'Ana Ríos', ficha: '3228973', ambiente: 'Ambiente 101' }],
+        grid: [['bloque-1']], idsHorarios: [55],
+        asignaciones: [{
+          idHorario: 55, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1,
+          idTrimestre: 1, idAmbiente: 1, idInstructor: '11111111-1111-1111-1111-111111111111',
+          idFicha: 1, idResultado: 9, dias: [1], fechaCreacion: '2026-01-01T00:00:00Z',
+          fechaModificacion: '2026-01-01T00:00:00Z', activo: true, publicado: false,
+          instructorNombre: 'Ana Ríos', fichaCodigo: '3228973', ambienteNombre: 'Ambiente 101',
+          resultadoCodigo: 'RA-9', resultadoDescripcion: 'Resultado 9',
+        }], fechaCreacion: '2026-01-01T00:00:00Z',
       })
       if (ruta === '/usuarios/me') return Promise.resolve({
         idUsuario: '22222222-2222-2222-2222-222222222222', nombre: 'Coordinadora',
@@ -213,9 +231,14 @@ describe('NuevoHorario', () => {
 
     renderConProviders(<NuevoHorario />, ['/horarios/nuevo?editar=10'])
     expect(await screen.findByLabelText('Ficha (referencia del formulario)')).toHaveValue('FICHA-EDIT')
-    const boton = screen.getByRole('button', { name: 'Edición protegida' })
-    expect(boton).toBeDisabled()
+    mocks.apiPut.mockResolvedValue({})
+    const boton = screen.getByRole('button', { name: 'Guardar cambios' })
+    expect(boton).toBeEnabled()
     await usuario.click(boton)
+    await waitFor(() => expect(mocks.apiPut).toHaveBeenCalledWith(
+      '/horarios-guardados/10/reemplazar',
+      expect.objectContaining({ horarios: [expect.objectContaining({ idHorarioOriginal: 55 })] }),
+    ))
     expect(mocks.apiDelete).not.toHaveBeenCalled()
     expect(mocks.apiPost).not.toHaveBeenCalled()
   })

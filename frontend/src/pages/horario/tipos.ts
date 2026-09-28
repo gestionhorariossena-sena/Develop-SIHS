@@ -31,6 +31,8 @@ export interface BloqueClase {
   idFicha?: number
   idTrimestre?: number
   idAmbiente?: number
+  /** ID relacional conservado al editar un snapshot existente. */
+  idHorarioOriginal?: number
 }
 
 /** Coordenada de una celda del grid: índice de bloque horario + índice de día. */

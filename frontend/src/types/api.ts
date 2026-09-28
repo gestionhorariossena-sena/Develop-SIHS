@@ -288,6 +288,7 @@ export interface HorarioGuardado {
   // snapshot — permite que borrar el "Horario completo" también libere
   // esas clases reales (ver backend/app/services/horario_guardado_service.py).
   idsHorarios?: number[]
+  asignaciones?: Horario[]
   fechaCreacion: string
 }
 

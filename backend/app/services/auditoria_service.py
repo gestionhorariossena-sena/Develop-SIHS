@@ -18,6 +18,30 @@ LOGIN_VENTANA_MINUTOS = 15
 
 class AuditoriaService:
     @staticmethod
+    def registrar_transaccional(
+        db,
+        *,
+        accion: str,
+        entidad: str,
+        usuario=None,
+        identificador: str | None = None,
+        id_entidad=None,
+        detalle: str | None = None,
+    ) -> Auditoria:
+        """Registra auditoría dentro de la transacción del llamador."""
+        registro = Auditoria(
+            idUsuario=usuario.idUsuario if usuario else None,
+            identificador=identificador or (usuario.email if usuario else None),
+            accion=accion,
+            entidad=entidad,
+            idEntidad=str(id_entidad) if id_entidad is not None else None,
+            detalle=detalle,
+        )
+        db.add(registro)
+        db.flush()
+        return registro
+
+    @staticmethod
     def registrar(
         db,
         *,

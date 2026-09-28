@@ -23,6 +23,16 @@ class HorarioGuardadoRepository:
         )
 
     @staticmethod
+    def obtener_para_reemplazo(db: Session, id_horario_guardado: int):
+        """Lee y bloquea el snapshot durante el reemplazo transaccional."""
+        return (
+            db.query(HorarioGuardado)
+            .filter(HorarioGuardado.idHorarioGuardado == id_horario_guardado)
+            .with_for_update()
+            .first()
+        )
+
+    @staticmethod
     def crear(db: Session, horario_guardado: HorarioGuardado):
         db.add(horario_guardado)
         db.commit()

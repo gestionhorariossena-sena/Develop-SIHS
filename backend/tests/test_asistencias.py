@@ -230,7 +230,9 @@ def test_no_se_pasa_lista_de_un_dia_en_que_esa_clase_no_se_dicta(client, escenar
 
 
 def test_no_se_pasa_lista_de_una_clase_futura(client, escenario):
-    proximo_lunes = (_lunes_pasado() + timedelta(days=7)).isoformat()
+    hoy = date.today()
+    dias_hasta_proximo_lunes = (7 - hoy.isoweekday()) % 7 or 7
+    proximo_lunes = (hoy + timedelta(days=dias_hasta_proximo_lunes)).isoformat()
 
     respuesta = client.post(
         "/api/v1/asistencias/sesion",

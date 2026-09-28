@@ -285,6 +285,41 @@ class HorarioService:
         )
 
     @staticmethod
+    def notificar_reemplazo_publicado_transaccional(db, horarios) -> None:
+        """Avisa cambios de horarios publicados sin confirmar la transacción.
+
+        El llamador confirma o revierte en conjunto horarios, snapshot,
+        auditoría y notificaciones.
+        """
+        fichas_notificadas: set[tuple[object, object]] = set()
+        for horario in horarios:
+            if not horario.publicado:
+                continue
+            ficha_codigo, _, _ = HorarioService._datos_para_mensaje(horario)
+            clave = (horario.idFicha, horario.idInstructor)
+            if clave in fichas_notificadas:
+                continue
+            fichas_notificadas.add(clave)
+
+            for vinculo in FichaUsuarioRepository.obtener_aprendices_por_ficha(db, horario.idFicha):
+                NotificacionService.crear_agrupada_transaccional(
+                    db,
+                    id_usuario=vinculo.idUsuario,
+                    tipo=TIPO_HORARIO,
+                    mensaje=f"Se actualizó el horario publicado de tu ficha {ficha_codigo}.",
+                    entidad_relacionada="fichas",
+                    id_entidad_relacionada=horario.idFicha,
+                )
+            NotificacionService.crear_agrupada_transaccional(
+                db,
+                id_usuario=horario.idInstructor,
+                tipo=TIPO_HORARIO,
+                mensaje=f"Se actualizó tu horario publicado con la ficha {ficha_codigo}.",
+                entidad_relacionada="fichas",
+                id_entidad_relacionada=horario.idFicha,
+            )
+
+    @staticmethod
     def eliminar(db, id_horario):
         horario = HorarioRepository.obtener_por_id(db, id_horario)
 

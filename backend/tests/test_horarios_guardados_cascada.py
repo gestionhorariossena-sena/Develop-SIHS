@@ -7,9 +7,13 @@ guarda `idsHorarios` (los ids reales creados en el mismo guardado) y
 borrarlo borra también esas clases."""
 
 import uuid
-from datetime import date, time
+from datetime import date, time, timedelta
+
+import pytest
 
 from app.models.ambiente import Ambiente
+from app.models.anotacion_horario import AnotacionHorario
+from app.models.asistencia import Asistencia
 from app.models.coordinacion import Coordinacion
 from app.models.dia_semana import DiaSemana
 from app.models.ficha import Ficha
@@ -19,6 +23,7 @@ from app.models.jornada import Jornada
 from app.models.programa import Programa
 from app.models.resultado_aprendizaje import ResultadoAprendizaje
 from app.models.sede import Sede
+from app.models.solicitud_cambio_horario import SolicitudCambioHorario
 from app.models.trimestre import Trimestre
 from app.models.usuario import Usuario
 
@@ -31,6 +36,7 @@ def _crear_tablas_extra(db_session):
         Ambiente.__table__, Jornada.__table__, DiaSemana.__table__, Ficha.__table__,
         ResultadoAprendizaje.__table__, Horario.__table__, horario_dia, Usuario.__table__,
         HorarioGuardado.__table__,
+        Asistencia.__table__, AnotacionHorario.__table__, SolicitudCambioHorario.__table__,
     ]
     Base.metadata.create_all(bind=db_session.bind, tables=tablas)
 
@@ -60,6 +66,211 @@ def _poblar(db_session):
     db_session.commit()
 
     return {"idHorario": horario.idHorario, "idInstructor": instructor.idUsuario}
+
+
+def _crear_snapshot(db_session, id_horario, usuario_id, *, publicado=True):
+    horario = db_session.query(Horario).filter(Horario.idHorario == id_horario).one()
+    horario.publicado = publicado
+    snapshot = HorarioGuardado(
+        idUsuario=usuario_id,
+        ficha="FICHA-001",
+        aprendices="30",
+        horasTrimestre="20",
+        bloques=[{"id": "b1", "tematica": "Tema", "instructor": "Carlos", "ficha": "FICHA-001", "ambiente": "Ambiente"}],
+        grid=[["b1"]],
+        idsHorarios=[id_horario],
+    )
+    db_session.add(snapshot)
+    db_session.commit()
+    return snapshot
+
+
+def _payload_reemplazo(db_session, id_horario, id_instructor, *, inicio="08:00:00", id_resultado=9):
+    fecha_original = db_session.query(Horario).filter_by(idHorario=id_horario).one().fechaModificacion
+    return {
+        "ficha": "FICHA-001", "aprendices": "30", "horasTrimestre": "20",
+        "fechaInicio": None, "fechaFin": None,
+        "bloques": [{"id": "b1", "tematica": "Tema editado", "instructor": "Carlos", "ficha": "FICHA-001", "ambiente": "Ambiente"}],
+        "grid": [["b1"]],
+        "horarios": [{
+            "horaInicio": inicio, "horaFin": "10:00:00", "idJornada": 1,
+            "idTrimestre": 1, "idAmbiente": 1, "idInstructor": str(id_instructor),
+            "idFicha": 1, "idResultado": id_resultado, "dias": [1],
+            "idHorarioOriginal": id_horario,
+            "fechaModificacionOriginal": fecha_original.isoformat(),
+            "bloqueIdx": 0, "bloqueId": "b1",
+        }],
+    }
+
+
+def test_reemplazo_exitoso_preserva_id_y_estado_borrador(client, db_session, autenticar_como, monkeypatch):
+    from app.services.horario_service import HorarioService
+
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar(db_session)
+    coordinador, headers = autenticar_como("Coordinador")
+    snapshot = _crear_snapshot(db_session, catalogos["idHorario"], coordinador.idUsuario, publicado=False)
+    monkeypatch.setattr(HorarioService, "_validar_ficha_del_periodo", staticmethod(lambda *_: None))
+
+    respuesta = client.put(
+        f"/api/v1/horarios-guardados/{snapshot.idHorarioGuardado}/reemplazar",
+        json=_payload_reemplazo(db_session, catalogos["idHorario"], catalogos["idInstructor"]),
+        headers=headers,
+    )
+
+    assert respuesta.status_code == 200, respuesta.text
+    db_session.refresh(snapshot)
+    horario = db_session.query(Horario).filter_by(idHorario=catalogos["idHorario"]).one()
+    assert snapshot.idsHorarios == [catalogos["idHorario"]]
+    assert horario.horaInicio == time(8, 0)
+    assert horario.activo is True
+    assert horario.publicado is False
+    from app.models.notificacion import Notificacion
+    assert db_session.query(Notificacion).count() == 0
+
+
+def test_reemplazo_con_conflicto_revierte_y_conserva_snapshot(client, db_session, autenticar_como, monkeypatch):
+    from app.services.horario_service import HorarioService
+
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar(db_session)
+    coordinador, headers = autenticar_como("Coordinador")
+    snapshot = _crear_snapshot(db_session, catalogos["idHorario"], coordinador.idUsuario)
+    monkeypatch.setattr(HorarioService, "_validar_ficha_del_periodo", staticmethod(lambda *_: None))
+    monkeypatch.setattr(HorarioService, "_detectar_cruces", staticmethod(lambda *_args, **_kwargs: ["conflicto simulado"]))
+
+    respuesta = client.put(
+        f"/api/v1/horarios-guardados/{snapshot.idHorarioGuardado}/reemplazar",
+        json=_payload_reemplazo(db_session, catalogos["idHorario"], catalogos["idInstructor"]),
+        headers=headers,
+    )
+
+    assert respuesta.status_code == 409
+    db_session.refresh(snapshot)
+    horario = db_session.query(Horario).filter_by(idHorario=catalogos["idHorario"]).one()
+    assert snapshot.idsHorarios == [catalogos["idHorario"]]
+    assert horario.horaInicio == time(7, 0)
+    assert horario.publicado is True
+
+
+def test_fallo_intermedio_revierte_horario_snapshot_y_notificaciones(client, db_session, autenticar_como, monkeypatch):
+    from app.models.notificacion import Notificacion
+    from app.services.auditoria_service import AuditoriaService
+    from app.services.horario_service import HorarioService
+
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar(db_session)
+    coordinador, headers = autenticar_como("Coordinador")
+    snapshot = _crear_snapshot(db_session, catalogos["idHorario"], coordinador.idUsuario)
+    monkeypatch.setattr(HorarioService, "_validar_ficha_del_periodo", staticmethod(lambda *_: None))
+    monkeypatch.setattr(HorarioService, "_detectar_cruces", staticmethod(lambda *_args, **_kwargs: []))
+    monkeypatch.setattr(AuditoriaService, "registrar_transaccional", staticmethod(lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("fallo intermedio"))))
+
+    respuesta = client.put(
+        f"/api/v1/horarios-guardados/{snapshot.idHorarioGuardado}/reemplazar",
+        json=_payload_reemplazo(db_session, catalogos["idHorario"], catalogos["idInstructor"]),
+        headers=headers,
+    )
+
+    assert respuesta.status_code == 500
+    db_session.refresh(snapshot)
+    horario = db_session.query(Horario).filter_by(idHorario=catalogos["idHorario"]).one()
+    assert horario.horaInicio == time(7, 0)
+    assert horario.publicado is True
+    assert snapshot.idsHorarios == [catalogos["idHorario"]]
+    assert db_session.query(Notificacion).count() == 0
+
+
+def test_detecta_conflicto_entre_asignaciones_nuevas_y_retrocede(client, db_session, autenticar_como, monkeypatch):
+    from app.services.horario_service import HorarioService
+
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar(db_session)
+    coordinador, headers = autenticar_como("Coordinador")
+    snapshot = _crear_snapshot(db_session, catalogos["idHorario"], coordinador.idUsuario)
+    monkeypatch.setattr(HorarioService, "_validar_ficha_del_periodo", staticmethod(lambda *_: None))
+    payload = _payload_reemplazo(db_session, catalogos["idHorario"], catalogos["idInstructor"])
+    payload["bloques"].append({"id": "b2", "tematica": "Tema 2", "instructor": "Carlos", "ficha": "FICHA-001", "ambiente": "Ambiente"})
+    payload["grid"] = [["b1"], ["b2"]]
+    segunda = {**payload["horarios"][0], "idHorarioOriginal": None}
+    segunda["fechaModificacionOriginal"] = None
+    segunda["bloqueIdx"] = 1
+    segunda["bloqueId"] = "b2"
+    payload["horarios"].append(segunda)
+
+    respuesta = client.put(
+        f"/api/v1/horarios-guardados/{snapshot.idHorarioGuardado}/reemplazar",
+        json=payload,
+        headers=headers,
+    )
+
+    assert respuesta.status_code == 409
+    db_session.refresh(snapshot)
+    assert snapshot.idsHorarios == [catalogos["idHorario"]]
+    assert db_session.query(Horario).filter_by(idHorario=catalogos["idHorario"]).one().horaInicio == time(7, 0)
+
+
+def test_edicion_publicada_notifica_solo_despues_de_confirmar(client, db_session, autenticar_como, monkeypatch):
+    from app.models.notificacion import Notificacion
+    from app.services.horario_service import HorarioService
+
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar(db_session)
+    coordinador, headers = autenticar_como("Coordinador")
+    snapshot = _crear_snapshot(db_session, catalogos["idHorario"], coordinador.idUsuario, publicado=True)
+    monkeypatch.setattr(HorarioService, "_validar_ficha_del_periodo", staticmethod(lambda *_: None))
+
+    respuesta = client.put(
+        f"/api/v1/horarios-guardados/{snapshot.idHorarioGuardado}/reemplazar",
+        json=_payload_reemplazo(db_session, catalogos["idHorario"], catalogos["idInstructor"]),
+        headers=headers,
+    )
+
+    assert respuesta.status_code == 200, respuesta.text
+    horario = db_session.query(Horario).filter_by(idHorario=catalogos["idHorario"]).one()
+    assert horario.publicado is True
+    notificaciones = db_session.query(Notificacion).all()
+    assert len(notificaciones) == 1
+    assert notificaciones[0].idUsuario == catalogos["idInstructor"]
+
+
+def test_reemplazo_requiere_rol_de_coordinacion(client, db_session, autenticar_como, monkeypatch):
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar(db_session)
+    coordinador, _ = autenticar_como("Coordinador")
+    snapshot = _crear_snapshot(db_session, catalogos["idHorario"], coordinador.idUsuario)
+    _, headers = autenticar_como("Instructor")
+
+    respuesta = client.put(
+        f"/api/v1/horarios-guardados/{snapshot.idHorarioGuardado}/reemplazar",
+        json=_payload_reemplazo(db_session, catalogos["idHorario"], catalogos["idInstructor"]),
+        headers=headers,
+    )
+
+    assert respuesta.status_code == 403
+    assert db_session.query(Horario).filter_by(idHorario=catalogos["idHorario"]).one().horaInicio == time(7, 0)
+
+
+def test_rechaza_edicion_obsoleta_sin_sobrescribir_cambio_reciente(client, db_session, autenticar_como, monkeypatch):
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar(db_session)
+    coordinador, headers = autenticar_como("Coordinador")
+    snapshot = _crear_snapshot(db_session, catalogos["idHorario"], coordinador.idUsuario)
+    payload = _payload_reemplazo(db_session, catalogos["idHorario"], catalogos["idInstructor"])
+    horario = db_session.query(Horario).filter_by(idHorario=catalogos["idHorario"]).one()
+    horario.horaInicio = time(7, 30)
+    horario.fechaModificacion = horario.fechaModificacion + timedelta(seconds=1)
+    db_session.commit()
+
+    respuesta = client.put(
+        f"/api/v1/horarios-guardados/{snapshot.idHorarioGuardado}/reemplazar",
+        json=payload,
+        headers=headers,
+    )
+
+    assert respuesta.status_code == 409
+    assert "cambió desde que se abrió" in respuesta.json()["detail"]
+    assert db_session.query(Horario).filter_by(idHorario=catalogos["idHorario"]).one().horaInicio == time(7, 30)
 
 
 def test_borrar_horario_completo_borra_tambien_la_clase_real_vinculada(client, db_session, autenticar_como):
