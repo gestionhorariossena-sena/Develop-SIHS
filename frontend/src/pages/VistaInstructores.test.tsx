@@ -97,9 +97,28 @@ describe('VistaInstructores', () => {
 
     await usuario.click(screen.getByText('Erick Granados'))
 
-    await waitFor(() => expect(screen.getByText('CPL18')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Gestión de inventarios')).toBeInTheDocument())
     const link = screen.getByRole('link', { name: 'Ver info →' })
     expect(link).toHaveAttribute('href', '/instructores?id=u1')
+  })
+
+  it('muestra varias clases y horarios fuera de las franjas institucionales, incluido sábado', async () => {
+    const extras: Horario[] = [
+      { ...HORARIOS[0], idHorario: 2, horaInicio: '08:00:00', horaFin: '10:00:00', resultadoDescripcion: 'Clase fuera de plantilla', dias: [1] },
+      { ...HORARIOS[0], idHorario: 3, horaInicio: '13:00:00', horaFin: '15:00:00', resultadoDescripcion: 'Clase de tarde', dias: [6] },
+    ]
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/usuarios/u1/horarios') return Promise.resolve([...HORARIOS, ...extras])
+      if (path === '/horarios/') return Promise.resolve([...HORARIOS, ...extras])
+      return Promise.reject(new Error('no mockeado'))
+    })
+    const usuario = userEvent.setup()
+    renderConProviders(<VistaInstructores />)
+    await usuario.click(await screen.findByText('Erick Granados'))
+    expect(await screen.findByText('Clase fuera de plantilla')).toBeInTheDocument()
+    expect(screen.getByText('Clase de tarde')).toBeInTheDocument()
+    expect(screen.getByText('Sábado')).toBeInTheDocument()
   })
 
   it('instructor sin horario asignado muestra el mensaje correspondiente', async () => {
@@ -121,7 +140,7 @@ describe('VistaInstructores', () => {
     mockeaBase()
     renderConProviders(<VistaInstructores />, ['/vista-instructores?id=u1'])
 
-    await waitFor(() => expect(screen.getByText('CPL18')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('Gestión de inventarios')).toBeInTheDocument())
     expect(screen.getByRole('link', { name: 'Ver info →' })).toHaveAttribute('href', '/instructores?id=u1')
   })
 
