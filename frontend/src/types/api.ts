@@ -172,6 +172,7 @@ export interface HorarioCreate {
   idResultado: number
   dias: number[]
   forzar?: boolean
+  publicado?: boolean
 }
 
 // Mensaje de error que devuelve POST/PUT /horarios cuando hay un cruce
