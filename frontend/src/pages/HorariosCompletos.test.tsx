@@ -203,7 +203,7 @@ describe('HorariosCompletos', () => {
 
     expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
     expect((await screen.findAllByText('Borrador')).length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: 'Publicar' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Publicar ahora' })).toBeInTheDocument()
   })
 
   it('clic de nuevo en la misma fila colapsa la caja expandida', async () => {

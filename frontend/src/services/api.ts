@@ -52,6 +52,8 @@ export function getUserFriendlyApiMessage(status: number, fallback?: string, det
       if (typeof detail === 'object' && detail !== null && 'motivo' in detail) {
         const motivo = (detail as { motivo?: string }).motivo
         switch (motivo) {
+          case 'worker_no_disponible':
+            return 'No se puede programar porque el backend no confirma un worker activo. Los borradores y el historial siguen disponibles.'
           case 'no_configurada':
             return 'El asistente con IA no está disponible: falta configurarlo en el servidor. El resto de la programación funciona igual — avisa al administrador del sistema.'
           case 'credenciales':

@@ -98,6 +98,19 @@ describe('AppRouter · roles por ruta', () => {
     expect(apiGetMock).not.toHaveBeenCalledWith(expect.stringContaining('/asistente'))
   })
 
+  it('un Aprendiz no puede abrir la gestión de publicaciones programadas', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/me') return Promise.resolve(PERFIL_APRENDIZ)
+      if (path === '/notificaciones/') return Promise.resolve([])
+      return Promise.reject(new ApiError(404, 'No encontrado', null))
+    })
+
+    renderRuta('/horarios/publicaciones-programadas')
+
+    expect(await screen.findByText(/^Hola/)).toBeInTheDocument()
+    expect(apiGetMock).not.toHaveBeenCalledWith('/publicaciones-programadas/')
+  })
+
   it('un Aprendiz tampoco alcanza el panel de administración', async () => {
     apiGetMock.mockImplementation((path: string) => {
       if (path === '/usuarios/me') return Promise.resolve(PERFIL_APRENDIZ)

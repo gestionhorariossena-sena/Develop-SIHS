@@ -13,6 +13,7 @@ from sqlalchemy import select
 from app.core.database import SessionLocal
 from app.models.publicacion_programada import PublicacionProgramada
 from app.services.publicacion_programada_service import ejecutar
+from app.services.worker_publicacion_service import registrar_senal
 
 logger = logging.getLogger("sihs.publicacion_worker")
 
@@ -40,7 +41,13 @@ def main():
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
     while True:
+        if not args.once:
+            with SessionLocal() as db:
+                registrar_senal(db)
         total = procesar_vencidas()
+        if not args.once:
+            with SessionLocal() as db:
+                registrar_senal(db)
         if total:
             logger.info("Publicaciones programadas procesadas: %s", total)
         if args.once:

@@ -193,3 +193,52 @@ def test_solo_coordinacion_y_admin_pueden_consultar(client, autenticar_como):
     assert response.status_code == 403
     _, coordinador_headers = autenticar_como("Coordinador")
     assert client.get("/api/v1/publicaciones-programadas/", headers=coordinador_headers).status_code == 200
+
+
+def test_disponibilidad_worker_senal_vigente(db_session):
+    from datetime import datetime, timezone
+
+    from app.services.worker_publicacion_service import consultar_disponibilidad, registrar_senal
+
+    assert consultar_disponibilidad(db_session)["habilitado"] is False
+
+    registrar_senal(db_session)
+    assert consultar_disponibilidad(db_session)["habilitado"] is True
+    assert consultar_disponibilidad(
+        db_session, ahora=datetime.now(timezone.utc) + timedelta(seconds=31)
+    )["habilitado"] is False
+
+
+def test_api_no_programa_si_no_hay_worker_activo(db_session, crear_usuario):
+    from fastapi import HTTPException
+
+    from app.api.v1.publicaciones_programadas import crear
+    from app.schemas.publicacion_programada import PublicacionProgramadaInput
+
+    coordinador = crear_usuario(nombre="Coordinador")
+    with pytest.raises(HTTPException) as error:
+        crear(
+            PublicacionProgramadaInput(
+                idTrimestre=1,
+                idHorarios=[1],
+                fechaHoraLocal=datetime(2099, 1, 1, 10),
+            ),
+            db=db_session,
+            usuario=coordinador,
+        )
+    assert error.value.status_code == 503
+    assert error.value.detail["motivo"] == "worker_no_disponible"
+
+
+def test_dependencia_de_gestion_rechaza_otros_roles(crear_usuario, crear_rol):
+    from fastapi import HTTPException
+
+    from app.api.v1.publicaciones_programadas import puede_gestionar
+
+    instructor = crear_usuario(roles=[crear_rol("Instructor")])
+    with pytest.raises(HTTPException) as error:
+        puede_gestionar(usuario=instructor)
+    assert error.value.status_code == 403
+
+    coordinador = crear_usuario(roles=[crear_rol("Coordinador")])
+    assert puede_gestionar(usuario=coordinador) is coordinador

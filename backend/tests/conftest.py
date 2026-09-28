@@ -26,6 +26,7 @@ from app.models.solicitud_acceso import SolicitudAcceso
 from app.models.trimestre import Trimestre
 from app.models.usuario import Usuario
 from app.models.usuario_rol import UsuarioRol
+from app.models.worker_publicacion import WorkerPublicacionEstado
 
 
 class _UUIDComoTextoParaSQLite(types.TypeDecorator):
@@ -87,6 +88,7 @@ def db_session():
             horario_dia,
             PublicacionProgramada.__table__,
             PublicacionProgramadaHorario.__table__,
+            WorkerPublicacionEstado.__table__,
             # La validación de fortalezas (¿el instructor tiene la
             # especialidad que pide el resultado?) consulta estas dos en
             # cada creación de horario, así que tampoco son opcionales.

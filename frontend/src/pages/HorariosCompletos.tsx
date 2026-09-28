@@ -128,8 +128,16 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
             title={horario.publicado ? 'Deja de mostrarse en "Mi horario" para el instructor' : 'A partir de ahora el instructor lo ve en "Mi horario"'}
             className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
           >
-            {publicando ? 'Guardando…' : horario.publicado ? 'Despublicar' : 'Publicar'}
+            {publicando ? 'Guardando…' : horario.publicado ? 'Despublicar' : 'Publicar ahora'}
           </button>
+          {!horario.publicado && (
+            <Link
+              to={`/horarios/publicaciones-programadas?idHorario=${horario.idHorario}`}
+              className="rounded-xl border border-primary px-3 py-1.5 text-sm font-semibold text-primary hover:bg-primary-container"
+            >
+              Programar publicación
+            </Link>
+          )}
           <Link
             to={`/horarios/historial?id=${horario.idHorario}`}
             title="El historial todavía no distingue horarios individuales — se está rediseñando como registro de cambios, por ahora esto abre el listado general."
@@ -372,6 +380,8 @@ export function HorariosCompletos() {
           <p className="text-sm text-on-surface-variant dark:text-slate-400">Cada horario con su ficha, instructor, ambiente y tema en un solo lugar.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Link to="/horarios/nuevo" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Guardar borrador</Link>
+          <Link to="/horarios/publicaciones-programadas" className="rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-on-primary">Publicaciones programadas</Link>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-3 py-1 text-xs font-semibold text-on-secondary-container">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" aria-hidden="true" />
             Auditoría de Malla Activa

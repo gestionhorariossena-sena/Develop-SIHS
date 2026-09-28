@@ -58,7 +58,7 @@ def pg_sessions():
         assert connection.scalar(text("SELECT current_database()")) == "sihs_phase2_test"
         data_dir = connection.scalar(text("SELECT current_setting('data_directory')"))
         assert data_dir == "/tmp/sihs-pg-phase2-data", "el clúster no coincide con el temporal del test"
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "f7b812a4d091"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "cc4815a70f22"
     sessions = sessionmaker(engine, expire_on_commit=False)
     yield sessions, engine
     engine.dispose()

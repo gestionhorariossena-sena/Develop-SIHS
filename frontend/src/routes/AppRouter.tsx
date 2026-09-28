@@ -35,6 +35,7 @@ import { AsistenciaInstructor } from '../pages/AsistenciaInstructor'
 import { MiAsistencia } from '../pages/MiAsistencia'
 import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
 import { Notificaciones } from '../pages/Notificaciones'
+import { PublicacionesProgramadas } from '../pages/PublicacionesProgramadas'
 
 /**
  * Quién puede abrir cada pantalla. Mismo criterio que usa el navbar para
@@ -134,6 +135,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={GESTION}>
             <HorariosCompletos />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/horarios/publicaciones-programadas"
+        element={
+          <ProtectedRoute roles={GESTION}>
+            <PublicacionesProgramadas />
           </ProtectedRoute>
         }
       />

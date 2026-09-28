@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen } from '@testing-library/react'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
 import { renderConProviders } from '../test/renderConProviders'
 import { AppShell } from './AppShell'
 import type { Notificacion, Usuario } from '../types/api'
@@ -111,5 +111,15 @@ describe('AppShell', () => {
     fireEvent.click(botonGrupo)
 
     expect(screen.queryByText('Solicitudes de acceso')).not.toBeInTheDocument()
+  })
+
+  it('consulta de nuevo las notificaciones persistidas al abrir la campana', async () => {
+    mockearApiGet(crearPerfil(['Coordinador']))
+    renderConProviders(<AppShell activo="Inicio"><p>contenido</p></AppShell>)
+    await screen.findByRole('button', { name: 'Programación' })
+    await waitFor(() => expect(apiGetMock).toHaveBeenCalledWith('/notificaciones/'))
+    const llamadasAntesDeAbrir = apiGetMock.mock.calls.filter(([ruta]) => ruta === '/notificaciones/').length
+    fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
+    await waitFor(() => expect(apiGetMock.mock.calls.filter(([ruta]) => ruta === '/notificaciones/').length).toBeGreaterThan(llamadasAntesDeAbrir))
   })
 })

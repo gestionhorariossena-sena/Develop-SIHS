@@ -75,6 +75,7 @@ const NAV: GrupoNav[] = [
       { etiqueta: 'Horarios', ruta: '/horarios/nuevo', soloGestion: true },
       { etiqueta: 'Asistente IA', ruta: '/horarios/asistente-ia', soloGestion: true },
       { etiqueta: 'Horarios completos', ruta: '/horarios/completos', soloGestion: true },
+      { etiqueta: 'Publicaciones programadas', ruta: '/horarios/publicaciones-programadas', soloGestion: true },
       { etiqueta: 'Historial de horarios', ruta: '/horarios/historial', soloGestion: true },
       { etiqueta: 'Vista por fichas', ruta: '/vista-fichas', soloGestion: true },
       { etiqueta: 'Vista por instructores', ruta: '/vista-instructores', soloGestion: true },
@@ -446,7 +447,18 @@ export function AppShell({ activo, children }: AppShellProps) {
             <div className="relative" ref={notifRef}>
               <button
                 type="button"
-                onClick={() => setNotifAbiertas((abiertas) => !abiertas)}
+                onClick={() => {
+                  const abrir = !notifAbiertas
+                  setNotifAbiertas(abrir)
+                  if (abrir) {
+                    // El worker puede publicar mientras esta pestaña sigue
+                    // abierta: refresca las notificaciones persistidas al
+                    // abrir el panel, sin fabricar eventos en el cliente.
+                    apiGet<Notificacion[]>('/notificaciones/')
+                      .then(setNotificaciones)
+                      .catch(() => {})
+                  }
+                }}
                 title="Notificaciones"
                 aria-label="Notificaciones"
                 aria-haspopup="true"

@@ -41,6 +41,7 @@ from app.models import (  # noqa: E402,F401
     usuario,
     usuario_especialidad,
     usuario_rol,
+    worker_publicacion,
 )
 
 # this is the Alembic Config object, which provides
