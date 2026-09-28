@@ -84,6 +84,7 @@ export function MiHorarioAprendiz() {
   const [sinFicha, setSinFicha] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [cargando, setCargando] = useState(true)
+  const [actualizandoHorario, setActualizandoHorario] = useState(false)
   const [ahora, setAhora] = useState(() => new Date())
 
   // H-1: vincular la ficha desde acá. El endpoint existía desde siempre
@@ -118,6 +119,19 @@ export function MiHorarioAprendiz() {
       })
       .finally(() => setCargando(false))
   }, [])
+
+  async function actualizarHorario() {
+    if (actualizandoHorario || cargando || sinFicha) return
+    setActualizandoHorario(true)
+    setError(null)
+    try {
+      setHorarios(await apiGet<Horario[]>('/ficha-usuario/mi-horario'))
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo actualizar tu horario.')
+    } finally {
+      setActualizandoHorario(false)
+    }
+  }
 
   async function vincularFicha(evento: React.FormEvent) {
     evento.preventDefault()
@@ -306,6 +320,17 @@ export function MiHorarioAprendiz() {
               Vista Agenda
             </button>
           </div>
+
+          <button
+            type="button"
+            onClick={actualizarHorario}
+            disabled={actualizandoHorario || cargando || sinFicha}
+            aria-label="Actualizar horario"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container-high disabled:cursor-wait disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">refresh</span>
+            {actualizandoHorario ? 'Actualizando…' : 'Actualizar horario'}
+          </button>
 
           <button
             type="button"
