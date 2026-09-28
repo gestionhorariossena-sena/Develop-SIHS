@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import { GridHorario } from '../components/horario/GridHorario'
-import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
+import { GridSemanalInstructor } from '../components/horario/GridSemanalInstructor'
 import { indexarPorInstructor, opcionesFichaAmbiente } from '../components/horario/indexarHorarios'
 import { apiGet, ApiError } from '../services/api'
 import type { Horario, Usuario } from '../types/api'
+import type { Jornada } from './horario/tipos'
 
 function iniciales(nombre: string) {
   return nombre.trim().split(/\s+/).slice(0, 2).map((parte) => parte.charAt(0).toUpperCase()).join('')
@@ -75,7 +75,7 @@ export function VistaInstructores() {
   const horariosVigentes = seleccionado && horarios?.idUsuario === seleccionado.idUsuario ? horarios.datos : null
   const errorHorarios = seleccionado?.idUsuario === errorHorariosPara
   const cargandoHorarios = Boolean(seleccionado) && horariosVigentes === null && !errorHorarios
-  const { bloques, grid } = convertirHorariosAGrid(horariosVigentes ?? [])
+  const jornadas: Jornada[] = ['Mañana', 'Tarde', 'Noche']
 
   const indiceAsociaciones = indexarPorInstructor(todosLosHorarios)
   const { fichas: opcionesFicha, ambientes: opcionesAmbiente } = opcionesFichaAmbiente(todosLosHorarios)
@@ -229,10 +229,19 @@ export function VistaInstructores() {
                 <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horario…</p>
               ) : errorHorarios ? (
                 <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">No se pudo cargar el horario de este instructor.</p>
-              ) : bloques.length === 0 ? (
+              ) : horariosVigentes?.length === 0 ? (
                 <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">Sin horario asignado en el trimestre actual.</p>
               ) : (
-                <GridHorario bloques={bloques} grid={grid} hayBloqueActivo={false} soloLectura />
+                <div className="overflow-x-auto">
+                  <div className="min-w-[760px]">
+                    <GridSemanalInstructor
+                      horarios={horariosVigentes ?? []}
+                      jornadasVisibles={jornadas}
+                      aprendicesPorFicha={{}}
+                      mostrarDetalle={false}
+                    />
+                  </div>
+                </div>
               )}
             </>
           )}
