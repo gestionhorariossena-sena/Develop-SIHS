@@ -18,6 +18,8 @@ from app.models.especialidad import Especialidad, especialidad_competencia, usua
 from app.models.ficha import Ficha
 from app.models.ficha_usuario import FichaUsuario
 from app.models.notificacion import Notificacion
+from app.models.horario import Horario, horario_dia
+from app.models.publicacion_programada import PublicacionProgramada, PublicacionProgramadaHorario
 from app.models.programa import Programa
 from app.models.rol import Rol
 from app.models.solicitud_acceso import SolicitudAcceso
@@ -81,6 +83,10 @@ def db_session():
             Especialidad.__table__,
             usuario_especialidad,
             SolicitudAcceso.__table__,
+            Horario.__table__,
+            horario_dia,
+            PublicacionProgramada.__table__,
+            PublicacionProgramadaHorario.__table__,
             # La validación de fortalezas (¿el instructor tiene la
             # especialidad que pide el resultado?) consulta estas dos en
             # cada creación de horario, así que tampoco son opcionales.

@@ -32,6 +32,7 @@ from app.models import (  # noqa: E402,F401
     jornada,
     notificacion,
     programa,
+    publicacion_programada,
     resultado_aprendizaje,
     rol,
     sede,

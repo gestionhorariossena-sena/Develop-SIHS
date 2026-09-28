@@ -82,6 +82,9 @@ class HorarioGuardadoService:
             raise HorarioGuardadoNoReemplazableError(
                 "El snapshot contiene vínculos de clases duplicados y requiere revisión."
             )
+        # El worker toma primero los locks de publicación y luego los de sus
+        # horarios. Respetamos el mismo orden para no interbloquear una edición.
+        HorarioService._publicaciones_programadas(db, ids_originales, bloquear=True)
         originales = HorarioRepository.obtener_por_ids(db, ids_originales, bloquear=True)
         if len(originales) != len(ids_originales):
             raise HorarioGuardadoNoReemplazableError(
@@ -155,6 +158,7 @@ class HorarioGuardadoService:
         cambios_publicados: list[Horario] = []
         nuevos_ids: list[int] = []
         activos_finales: dict[int, bool] = {}
+        ids_cambiados: set[int] = set()
 
         for asignacion in data.horarios:
             id_original = asignacion.idHorarioOriginal
@@ -189,6 +193,8 @@ class HorarioGuardadoService:
                 cambio = not HorarioGuardadoService._misma_asignacion(
                     existente, asignacion, dias_originales[existente.idHorario]
                 )
+                if cambio:
+                    ids_cambiados.add(existente.idHorario)
                 if cambio and dependencias[existente.idHorario]:
                     raise HorarioGuardadoNoReemplazableError(
                         f"La clase {existente.idHorario} tiene asistencia, solicitud o anotación "
@@ -219,6 +225,7 @@ class HorarioGuardadoService:
                 continue
             horario.activo = False
             horario.publicado = False
+            ids_cambiados.add(horario.idHorario)
 
         guardado.ficha = data.ficha
         guardado.aprendices = data.aprendices
@@ -228,6 +235,12 @@ class HorarioGuardadoService:
         guardado.bloques = [bloque.model_dump() for bloque in data.bloques]
         guardado.grid = data.grid
         guardado.idsHorarios = nuevos_ids
+
+        if ids_cambiados:
+            HorarioService.invalidar_publicaciones_programadas(
+                db, sorted(ids_cambiados),
+                "Un horario programado fue modificado mediante el reemplazo completo y requiere revisión.",
+            )
 
         for horario in nuevas:
             horario.activo = activos_finales[horario.idHorario]

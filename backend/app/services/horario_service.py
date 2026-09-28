@@ -3,6 +3,7 @@ from app.models.competencia_formacion import CompetenciaFormacion
 from app.models.especialidad import Especialidad, especialidad_competencia
 from app.models.ficha import Ficha
 from app.models.horario import Horario
+from app.models.publicacion_programada import PublicacionProgramada, PublicacionProgramadaHorario
 from app.models.jornada import Jornada
 from app.models.resultado_aprendizaje import ResultadoAprendizaje
 from app.models.trimestre import Trimestre
@@ -10,6 +11,7 @@ from app.models.usuario import Usuario
 from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
 from app.repositories.horario_repository import HorarioRepository
 from app.services.notificacion_service import NotificacionService, TIPO_AMBIENTE, TIPO_HORARIO
+from app.services.notificacion_service import TIPO_SISTEMA
 
 # RF-011 (Requisitos Funcionales V4.pdf, pág. 15-16): "Los instructores de
 # planta podrán estar asignados máximo 32 horas a la semana, mientras que
@@ -36,6 +38,10 @@ class FichaTrimestreInconsistenteError(Exception):
     se valida antes de crear o editar para no persistir horarios lógicamente
     inconsistentes, incluso cuando se usa ``forzar`` para documentar cruces.
     """
+
+
+class PublicacionProgramadaPendienteError(Exception):
+    """Un bloque reservado requiere cancelar o revisar su programación."""
 
 
 class HorarioService:
@@ -177,6 +183,19 @@ class HorarioService:
         errores = HorarioService._detectar_cruces(db, data, excluir_id=id_horario)
         if errores and not forzar:
             raise CruceHorarioError(errores)
+
+        dias_actuales = HorarioRepository.obtener_dias(db, id_horario)
+        cambio_contenido = any((
+            horario.horaInicio != data.horaInicio, horario.horaFin != data.horaFin,
+            horario.idJornada != data.idJornada, horario.idTrimestre != data.idTrimestre,
+            horario.idAmbiente != data.idAmbiente, horario.idInstructor != data.idInstructor,
+            horario.idFicha != data.idFicha, horario.idResultado != data.idResultado,
+            set(dias_actuales) != set(data.dias),
+        ))
+        if cambio_contenido:
+            HorarioService.invalidar_publicaciones_programadas(
+                db, [id_horario], "Un horario programado fue editado y requiere revisión.",
+            )
 
         horario.horaInicio = data.horaInicio
         horario.horaFin = data.horaFin
@@ -346,6 +365,16 @@ class HorarioService:
         if not horario:
             return None
 
+        publicaciones = HorarioService._publicaciones_programadas(db, [id_horario], bloquear=False)
+        if publicado is True and not horario.publicado and publicaciones:
+            raise PublicacionProgramadaPendienteError(
+                "Este horario está reservado para una publicación programada. Cancélala o reprograma una nueva revisión antes de publicarlo."
+            )
+        if activo is not None and activo != horario.activo:
+            HorarioService.invalidar_publicaciones_programadas(
+                db, [id_horario], "El estado de un horario programado cambió y requiere revisión.",
+            )
+
         # Solo el paso de borrador a publicado avisa: despublicar y volver
         # a publicar el mismo bloque no debe repetir el aviso, y
         # activar/desactivar no cambia lo que la gente ve en "Mi horario".
@@ -362,6 +391,46 @@ class HorarioService:
             HorarioService._notificar_publicacion(db, guardado)
 
         return guardado
+
+    @staticmethod
+    def _publicaciones_programadas(db, ids_horarios: list[int], *, bloquear: bool):
+        if not ids_horarios:
+            return []
+        query = (
+            db.query(PublicacionProgramada)
+            .join(PublicacionProgramadaHorario,
+                  PublicacionProgramadaHorario.idPublicacion == PublicacionProgramada.idPublicacion)
+            .filter(
+                PublicacionProgramadaHorario.idHorario.in_(ids_horarios),
+                PublicacionProgramada.estado.in_(("pendiente", "revision_requerida")),
+            )
+            .order_by(PublicacionProgramada.idPublicacion)
+        )
+        if bloquear:
+            query = query.with_for_update(of=PublicacionProgramada)
+        filas = query.all()
+        return list({fila.idPublicacion: fila for fila in filas}.values())
+
+    @staticmethod
+    def invalidar_publicaciones_programadas(db, ids_horarios: list[int], motivo: str):
+        """Invalida la revisión antes de confirmar una edición de sus horarios."""
+        from app.services.auditoria_service import AuditoriaService
+
+        for publicacion in HorarioService._publicaciones_programadas(db, ids_horarios, bloquear=True):
+            publicacion.estado = "revision_requerida"
+            publicacion.resultado = motivo
+            AuditoriaService.registrar_transaccional(
+                db, accion="REVISION_PUBLICACION_REQUERIDA", entidad="publicaciones_programadas",
+                identificador=str(publicacion.idCoordinador), id_entidad=publicacion.idPublicacion,
+                detalle=motivo,
+            )
+            NotificacionService.crear_transaccional(
+                db, id_usuario=publicacion.idCoordinador, tipo=TIPO_SISTEMA,
+                mensaje=f"La publicación {publicacion.idPublicacion} requiere revisión porque cambió uno de sus horarios.",
+                entidad_relacionada="publicaciones_programadas",
+                id_entidad_relacionada=publicacion.idPublicacion,
+            )
+        return True
 
     @staticmethod
     def obtener_publicados_por_instructor(

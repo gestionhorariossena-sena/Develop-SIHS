@@ -34,6 +34,7 @@ from app.services.horario_service import (
     CruceHorarioError,
     FichaTrimestreInconsistenteError,
     HorarioService,
+    PublicacionProgramadaPendienteError,
 )
 from app.services.horario_acceso_service import HorarioAccesoService
 from app.services.pdf_service import PdfService, SeccionTexto
@@ -232,7 +233,6 @@ def crear_horario(
         raise HTTPException(status_code=422, detail=str(error)) from error
     except CruceHorarioError as error:
         raise HTTPException(status_code=409, detail={"mensajes": error.mensajes}) from error
-
     accion = "FORZAR_CRUCE" if (forzar and conflictos) else "CREAR"
     detalle = "; ".join(conflictos) if conflictos else None
     AuditoriaService.registrar(
@@ -351,7 +351,10 @@ def cambiar_estado_horario(
     Horarios completos/Historial (pedido 2026-09-03). No pasa por
     HorarioUpdate: no cambia ficha/instructor/ambiente/horario, así que no
     tiene sentido pedir esos campos ni re-correr el dry-run completo."""
-    horario = HorarioService.cambiar_estado(db, id_horario, activo=data.activo, publicado=data.publicado)
+    try:
+        horario = HorarioService.cambiar_estado(db, id_horario, activo=data.activo, publicado=data.publicado)
+    except PublicacionProgramadaPendienteError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
     if not horario:
         raise HTTPException(status_code=404, detail="Horario no encontrado")
