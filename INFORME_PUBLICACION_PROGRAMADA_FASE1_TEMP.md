@@ -45,6 +45,7 @@ La migración se validó generando SQL offline con Alembic. **No se ejecutó con
 Entorno: Python 3.12.13, SQLite en memoria para todas las pruebas; no se conectó a PostgreSQL compartido.
 
 - `pytest -q backend/tests/test_publicaciones_programadas.py backend/tests/test_horarios_estado.py backend/tests/test_horarios_guardados_cascada.py` — 29 aprobadas.
+- `pytest -q backend/tests/test_publicaciones_programadas.py` — 10 aprobadas en la comprobación final.
 - `pytest -q backend/tests` — 310 aprobadas (suite completa).
 - `alembic upgrade c9d4e1f70a33:f7b812a4d091 --sql` — SQL offline generado y revisado; sin ejecución de DDL.
 - `git diff --check` — sin errores de whitespace.
