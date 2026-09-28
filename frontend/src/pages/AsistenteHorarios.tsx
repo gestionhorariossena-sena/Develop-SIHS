@@ -153,6 +153,7 @@ export function AsistenteHorarios() {
   const [trimestres, setTrimestres] = useState<Trimestre[]>([])
   const [idTrimestre, setIdTrimestre] = useState<number | null>(null)
   const [errorTrimestres, setErrorTrimestres] = useState(false)
+  const [trimestresCargados, setTrimestresCargados] = useState(false)
   const [jornada, setJornada] = useState<JornadaAsistente>('MAÑANA')
 
   // Paso 2 -- botón "Crear ficha" por fila, para las que no existen
@@ -228,6 +229,7 @@ export function AsistenteHorarios() {
         setErrorTrimestres(false)
       })
       .catch(() => setErrorTrimestres(true))
+      .finally(() => setTrimestresCargados(true))
     apiGet<Programa[]>('/programas/').then(setProgramas).catch(() => {})
     apiGet<Coordinacion[]>('/coordinaciones/').then(setCoordinaciones).catch(() => {})
   }, [])
@@ -603,7 +605,7 @@ export function AsistenteHorarios() {
         <p className="mb-6 text-sm text-on-surface-variant dark:text-slate-400">
           Estás viendo una propuesta en borrador. Nada se guardará en el sistema hasta que tú lo apruebes en el paso final.
         </p>
-        {(errorTrimestres || (!idTrimestre && avisoTrimestres(trimestres))) && (
+        {(errorTrimestres || (trimestresCargados && !idTrimestre && avisoTrimestres(trimestres))) && (
           <p role="alert" className="mb-4 rounded-xl border border-tertiary bg-tertiary-container px-4 py-3 text-sm text-on-tertiary-container">
             {errorTrimestres
               ? 'No se pudieron consultar los períodos académicos. Verifica la conexión antes de continuar.'
