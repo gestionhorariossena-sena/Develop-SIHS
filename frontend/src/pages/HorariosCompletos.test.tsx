@@ -82,6 +82,17 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('1 de 1 horarios')).toBeInTheDocument()
   })
 
+  it('no audita automáticamente un período activo vencido; permite elegirlo expresamente', async () => {
+    mockeaBase()
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+    await screen.findByText('3228973 B')
+    expect(await screen.findByText(/No existe un período activo que incluya la fecha actual/)).toBeInTheDocument()
+    expect(apiGetMock).not.toHaveBeenCalledWith('/horarios/auditoria-cruces?idTrimestre=1', 60000)
+    await usuario.selectOptions(screen.getByLabelText('Período a auditar'), '1')
+    await waitFor(() => expect(apiGetMock).toHaveBeenCalledWith('/horarios/auditoria-cruces?idTrimestre=1', 60000))
+  })
+
   it('el buscador filtra por ficha, programa, instructor o ambiente', async () => {
     mockeaBase([HORARIO, OTRO_HORARIO])
     const usuario = userEvent.setup()
