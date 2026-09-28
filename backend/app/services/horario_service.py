@@ -146,13 +146,12 @@ class HorarioService:
             idInstructor=data.idInstructor,
             idFicha=data.idFicha,
             idResultado=data.idResultado,
+            publicado=data.publicado,
         )
         horario = HorarioRepository.crear(db, nuevo_horario, data.dias)
 
-        # Un horario nace publicado (`publicado` tiene server_default true),
-        # así que el momento en que la gente puede verlo es este, no un
-        # PATCH posterior: si el aviso solo colgara de "despublicado ->
-        # publicado", el camino normal —crear y listo— no avisaría nunca.
+        # Notificar únicamente si se crea publicado; los borradores no
+        # deben ser visibles ni producir avisos prematuros.
         if horario.publicado:
             HorarioService._notificar_publicacion(db, horario)
 
