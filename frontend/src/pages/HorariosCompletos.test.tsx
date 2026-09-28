@@ -153,6 +153,18 @@ describe('HorariosCompletos', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('muestra el motivo del error al despublicar en lugar de ignorar el fallo', async () => {
+    mockeaBase()
+    apiPatchMock.mockRejectedValueOnce(new Error('El servidor rechazó el cambio de publicación.'))
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+    await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+    await usuario.click(await screen.findByRole('button', { name: 'Despublicar' }))
+    expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
+    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cambiar la publicación')
+    expect(screen.getByText('Publicado')).toBeInTheDocument()
+  })
+
   it('permite expandir un horario con el teclado y anuncia su estado', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
