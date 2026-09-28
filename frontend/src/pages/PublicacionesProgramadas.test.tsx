@@ -77,7 +77,7 @@ describe('PublicacionesProgramadas', () => {
     expect(mesVisible).toBeVisible()
     const primerDia = screen.getAllByRole('button', { name: /^Elegir 1 de / })[0]
     await user.click(primerDia)
-    expect(screen.getByLabelText('Fecha')).toHaveValue(expect.stringMatching(/^\\d{4}-\\d{2}-01$/))
+    expect((screen.getByLabelText('Fecha') as HTMLInputElement).value).toMatch(/^\d{4}-\d{2}-01$/)
     expect(screen.getByLabelText('Hora')).toHaveValue('09:00')
     expect(screen.getByRole('button', { name: 'Confirmar y programar' })).toBeDisabled()
   })
