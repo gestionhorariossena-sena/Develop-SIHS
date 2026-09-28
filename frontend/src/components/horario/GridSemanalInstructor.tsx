@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import type { Horario } from '../../types/api'
 import type { Jornada } from '../../pages/horario/tipos'
 
-const DIAS_GRID = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'] as const
+const DIAS_GRID = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'] as const
 
 const JORNADAS_GRID: { valor: Jornada; horas: string }[] = [
   { valor: 'Mañana', horas: '06:00 – 12:00' },
@@ -28,22 +28,24 @@ interface GridSemanalInstructorProps {
   /** idFicha -> aprendicesTotales (de GET /fichas/) para "aprendices
    * convocados" en cada tarjeta — Horario no trae ese dato. */
   aprendicesPorFicha: Record<number, number>
+  /** La vista de coordinación no enlaza al detalle personal del instructor. */
+  mostrarDetalle?: boolean
 }
 
 /**
- * Grid semanal Lunes-Viernes x Mañana/Tarde/Noche del instructor — una
+ * Grid semanal Lunes-Sábado x Mañana/Tarde/Noche del instructor — una
  * tarjeta por bloque real (ficha, tema, ambiente, aprendices convocados) y
  * "Franja Libre" en los huecos. Distinto de `GridHorario` (grid de 6
  * bloques institucionales + Receso que usa el Constructor de Horarios):
  * este es de solo lectura, una celda por jornada×día, pensado para el
  * mockup "Mi Horario Semanal" del instructor.
  */
-export function GridSemanalInstructor({ horarios, jornadasVisibles, aprendicesPorFicha }: GridSemanalInstructorProps) {
+export function GridSemanalInstructor({ horarios, jornadasVisibles, aprendicesPorFicha, mostrarDetalle = true }: GridSemanalInstructorProps) {
   const filas = JORNADAS_GRID.filter((jornada) => jornadasVisibles.includes(jornada.valor))
 
   return (
     <div className="overflow-hidden rounded-xl border border-outline-variant">
-      <div className="grid grid-cols-[minmax(84px,120px)_repeat(5,minmax(0,1fr))] bg-surface-container-low text-xs font-semibold text-on-surface-variant">
+      <div className="grid grid-cols-[minmax(84px,120px)_repeat(6,minmax(0,1fr))] bg-surface-container-low text-xs font-semibold text-on-surface-variant">
         <div className="px-3 py-2">Jornada</div>
         {DIAS_GRID.map((dia) => (
           <div key={dia} className="truncate px-2 py-2 text-center">
@@ -53,7 +55,7 @@ export function GridSemanalInstructor({ horarios, jornadasVisibles, aprendicesPo
       </div>
 
       {filas.map((jornada) => (
-        <div key={jornada.valor} className="grid grid-cols-[minmax(84px,120px)_repeat(5,minmax(0,1fr))] border-t border-outline-variant">
+        <div key={jornada.valor} className="grid grid-cols-[minmax(84px,120px)_repeat(6,minmax(0,1fr))] border-t border-outline-variant">
           <div className="flex flex-col justify-center gap-0.5 border-r border-outline-variant bg-surface-container-low px-3 py-3">
             <span className="text-xs font-bold uppercase text-on-surface">{jornada.valor}</span>
             <span className="text-[11px] text-on-surface-variant">{jornada.horas}</span>
@@ -85,12 +87,14 @@ export function GridSemanalInstructor({ horarios, jornadasVisibles, aprendicesPo
                         {aprendices != null && (
                           <p className="text-[10px] font-semibold text-on-primary-container">{aprendices} aprendices convocados</p>
                         )}
-                        <Link
-                          to={`/mi-horario/detalle-franja?horario=${bloque.idHorario}&dia=${encodeURIComponent(dia)}`}
-                          className="mt-0.5 text-right text-[10px] font-bold text-primary hover:underline"
-                        >
-                          Detalle →
-                        </Link>
+                        {mostrarDetalle && (
+                          <Link
+                            to={`/mi-horario/detalle-franja?horario=${bloque.idHorario}&dia=${encodeURIComponent(dia)}`}
+                            className="mt-0.5 text-right text-[10px] font-bold text-primary hover:underline"
+                          >
+                            Detalle →
+                          </Link>
+                        )}
                       </div>
                     )
                   })
