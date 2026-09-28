@@ -9,6 +9,7 @@ import type { Jornada } from './horario/tipos'
 import { colorParaBloque } from './horario/gridLogic'
 import type { ColorBloque } from './horario/gridLogic'
 import { apiGet, apiPatch, ApiError } from '../services/api'
+import { avisoTrimestres, trimestreVigente } from '../utils/trimestreVigente'
 import type { Ambiente, AuditoriaCrucesResponse, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
 
 // Mismos 4 "modos" que el mockup de Stitch (Vista General/Por Instructor/
@@ -274,27 +275,29 @@ export function HorariosCompletos() {
   // el panel lateral "Auditoría" del mockup — no es un dato nuevo inventado,
   // es el mismo GET /horarios/auditoria-cruces ya construido.
   const [auditoria, setAuditoria] = useState<AuditoriaCrucesResponse | null>(null)
+  const [trimestreAuditoria, setTrimestreAuditoria] = useState<number | null>(null)
+  const [errorAuditoria, setErrorAuditoria] = useState(false)
 
-  // Acotado al trimestre ACTIVO por defecto (no `?` sin filtro = TODOS los
-  // trimestres desde siempre) -- auditar_conflictos revalida cada horario
-  // activo contra todos los demás (varias queries de cruce por horario,
-  // no solo de datos), así que el conjunto que se audita importa mucho:
-  // sin acotar, con el catálogo real (130+ horarios de varios trimestres)
-  // este panel se quedaba "Auditando horarios…" por minutos sin terminar
-  // (encontrado en vivo el 2026-09-14, medido: pasó de 2 minutos sin
-  // completar). Acotar al trimestre activo no arregla el N+1 de fondo
-  // (eso requiere revisar con calma la lógica de cruces, no es un ajuste
-  // de una tarde), pero reduce el conjunto real al que un coordinador de
-  // verdad necesita auditar hoy. Espera a que `trimestres` cargue para
-  // saber cuál es el activo -- por eso depende de `trimestres`, no corre
-  // una sola vez al montar como antes.
+  // No auditar todos los períodos por defecto: la consulta es costosa.
+  // Si no existe uno vigente por estado Y fechas, esperar selección expresa.
   useEffect(() => {
-    if (trimestres.length === 0) return
-    const activo = trimestres.find((t) => t.estado === 'activo') ?? trimestres[0]
-    apiGet<AuditoriaCrucesResponse>(`/horarios/auditoria-cruces?idTrimestre=${activo.idTrimestre}`, 60000)
-      .then(setAuditoria)
-      .catch(() => {})
+    setTrimestreAuditoria(trimestreVigente(trimestres)?.idTrimestre ?? null)
   }, [trimestres])
+
+  useEffect(() => {
+    if (trimestreAuditoria === null) {
+      setAuditoria(null)
+      setErrorAuditoria(false)
+      return
+    }
+    let vigente = true
+    setAuditoria(null)
+    setErrorAuditoria(false)
+    apiGet<AuditoriaCrucesResponse>(`/horarios/auditoria-cruces?idTrimestre=${trimestreAuditoria}`, 60000)
+      .then((datos) => { if (vigente) setAuditoria(datos) })
+      .catch(() => { if (vigente) setErrorAuditoria(true) })
+    return () => { vigente = false }
+  }, [trimestreAuditoria])
 
   useEffect(() => {
     apiGet<Horario[]>('/horarios/')
@@ -371,6 +374,12 @@ export function HorariosCompletos() {
           <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {horarios.length} horarios</p>
         </div>
       </div>
+
+      {avisoTrimestres(trimestres) && (
+        <p role="alert" className="mb-4 rounded-xl border border-tertiary bg-tertiary-container px-4 py-3 text-sm text-on-tertiary-container">
+          {avisoTrimestres(trimestres)} La lista histórica sigue disponible; la auditoría requiere escoger un período.
+        </p>
+      )}
 
       {/* Selector de perspectiva — mismos 4 modos del mockup, como links
        * reales a las vistas que ya existen (evita duplicar Vista por
@@ -550,7 +559,27 @@ export function HorariosCompletos() {
               {auditoria === null ? '…' : auditoria.conflictos.length}
             </span>
           </div>
-          {auditoria === null ? (
+          <label htmlFor="trimestre-auditoria" className="mb-2 block text-xs font-medium text-on-surface-variant">
+            Período a auditar
+          </label>
+          <select
+            id="trimestre-auditoria"
+            value={trimestreAuditoria ?? ''}
+            onChange={(evento) => setTrimestreAuditoria(evento.target.value ? Number(evento.target.value) : null)}
+            className="mb-3 w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
+          >
+            <option value="">Selecciona un período</option>
+            {trimestres.map((trimestre) => (
+              <option key={trimestre.idTrimestre} value={trimestre.idTrimestre}>
+                {trimestre.nombre} · {trimestre.fechaInicio} a {trimestre.fechaFin}
+              </option>
+            ))}
+          </select>
+          {trimestreAuditoria === null ? (
+            <p className="text-xs text-on-surface-variant">Selecciona un período para consultar sus cruces.</p>
+          ) : errorAuditoria ? (
+            <p role="alert" className="text-xs text-error">No se pudo cargar la auditoría del período seleccionado.</p>
+          ) : auditoria === null ? (
             <p className="text-xs text-on-surface-variant dark:text-slate-400">Auditando horarios…</p>
           ) : auditoria.conflictos.length === 0 ? (
             <p className="text-xs text-on-surface-variant dark:text-slate-400">Sin conflictos activos entre los horarios guardados.</p>
