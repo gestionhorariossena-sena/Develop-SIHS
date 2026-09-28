@@ -80,6 +80,9 @@ export function GridSemanalInstructor({ horarios, jornadasVisibles, aprendicesPo
                         <span className="w-max rounded bg-primary px-1.5 py-0.5 font-mono text-[10px] font-bold text-on-primary">
                           {bloque.fichaCodigo ?? `Ficha ${bloque.idFicha}`}
                         </span>
+                        <p className="text-[11px] font-semibold text-on-primary-container">
+                          {bloque.horaInicio.slice(0, 5)} – {bloque.horaFin.slice(0, 5)}
+                        </p>
                         <p className="text-xs leading-tight font-bold text-on-primary-container">
                           {bloque.resultadoDescripcion ?? bloque.resultadoCodigo ?? 'Sin tema'}
                         </p>
