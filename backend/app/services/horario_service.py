@@ -370,8 +370,13 @@ class HorarioService:
         if not horario:
             return None
 
-        publicaciones = HorarioService._publicaciones_programadas(db, [id_horario], bloquear=False)
-        if publicado is True and not horario.publicado and publicaciones:
+        # Despublicar no necesita consultar las tablas del programador: es
+        # una acción segura que reduce visibilidad. Consultarlas siempre
+        # impedía despublicar incluso horarios antiguos si la migración
+        # de publicación programada aún no se había aplicado.
+        if publicado is True and not horario.publicado and HorarioService._publicaciones_programadas(
+            db, [id_horario], bloquear=False,
+        ):
             raise PublicacionProgramadaPendienteError(
                 "Este horario está reservado para una publicación programada. Cancélala o reprograma una nueva revisión antes de publicarlo."
             )
