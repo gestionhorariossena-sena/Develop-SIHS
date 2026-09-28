@@ -276,6 +276,8 @@ export function HorariosCompletos() {
   // es el mismo GET /horarios/auditoria-cruces ya construido.
   const [auditoria, setAuditoria] = useState<AuditoriaCrucesResponse | null>(null)
   const [trimestreAuditoria, setTrimestreAuditoria] = useState<number | null>(null)
+  const [trimestresCargados, setTrimestresCargados] = useState(false)
+  const [errorTrimestres, setErrorTrimestres] = useState(false)
   const [errorAuditoria, setErrorAuditoria] = useState(false)
 
   // No auditar todos los períodos por defecto: la consulta es costosa.
@@ -319,7 +321,10 @@ export function HorariosCompletos() {
     apiGet<Usuario[]>('/usuarios/').then(setInstructores).catch(() => {})
     apiGet<Ambiente[]>('/ambientes').then(setAmbientes).catch(() => {})
     apiGet<Sede[]>('/sedes').then(setSedes).catch(() => {})
-    apiGet<Trimestre[]>('/trimestres/').then(setTrimestres).catch(() => {})
+    apiGet<Trimestre[]>('/trimestres/')
+      .then(setTrimestres)
+      .catch(() => setErrorTrimestres(true))
+      .finally(() => setTrimestresCargados(true))
     apiGet<DiaSemana[]>('/dias-semana/').then(setDiasSemana).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idDesdeUrl no cambia en la vida del componente.
   }, [])
@@ -375,9 +380,9 @@ export function HorariosCompletos() {
         </div>
       </div>
 
-      {avisoTrimestres(trimestres) && (
+      {trimestresCargados && (errorTrimestres || avisoTrimestres(trimestres)) && (
         <p role="alert" className="mb-4 rounded-xl border border-tertiary bg-tertiary-container px-4 py-3 text-sm text-on-tertiary-container">
-          {avisoTrimestres(trimestres)} La lista histórica sigue disponible; la auditoría requiere escoger un período.
+          {errorTrimestres ? 'No se pudieron consultar los períodos académicos.' : avisoTrimestres(trimestres)} La lista histórica sigue disponible; la auditoría requiere escoger un período.
         </p>
       )}
 
@@ -556,7 +561,7 @@ export function HorariosCompletos() {
             <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
               (auditoria?.conflictos.length ?? 0) > 0 ? 'bg-error-container text-on-error-container' : 'bg-primary-container text-on-primary-container'
             }`}>
-              {auditoria === null ? '…' : auditoria.conflictos.length}
+              {trimestreAuditoria === null ? '—' : auditoria === null ? '…' : auditoria.conflictos.length}
             </span>
           </div>
           <label htmlFor="trimestre-auditoria" className="mb-2 block text-xs font-medium text-on-surface-variant">
