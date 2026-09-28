@@ -30,7 +30,11 @@ from app.schemas.horario import (
 from app.services.asistente_horario_service import generar_propuesta as generar_propuesta_service
 from app.services.asistente_horario_service import previsualizar_excel
 from app.services.auditoria_service import AuditoriaService
-from app.services.horario_service import CruceHorarioError, HorarioService
+from app.services.horario_service import (
+    CruceHorarioError,
+    FichaTrimestreInconsistenteError,
+    HorarioService,
+)
 from app.services.horario_acceso_service import HorarioAccesoService
 from app.services.pdf_service import PdfService, SeccionTexto
 
@@ -224,6 +228,8 @@ def crear_horario(
     forzar = getattr(data, "forzar", False)
     try:
         horario, conflictos = HorarioService.crear(db, data, forzar=forzar)
+    except FichaTrimestreInconsistenteError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     except CruceHorarioError as error:
         raise HTTPException(status_code=409, detail={"mensajes": error.mensajes}) from error
 
@@ -317,6 +323,8 @@ def actualizar_horario(
     forzar = getattr(data, "forzar", False)
     try:
         horario, conflictos = HorarioService.actualizar(db, id_horario, data, forzar=forzar)
+    except FichaTrimestreInconsistenteError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
     except CruceHorarioError as error:
         raise HTTPException(status_code=409, detail={"mensajes": error.mensajes}) from error
 

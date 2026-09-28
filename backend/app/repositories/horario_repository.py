@@ -123,13 +123,16 @@ class HorarioRepository:
         dias: list[int],
         hora_inicio,
         hora_fin,
+        id_trimestre: int,
         excluir_id: int | None = None,
     ) -> Horario | None:
-        """Mismo `campo` (idFicha/idInstructor/idAmbiente), rango de horas
-        que se solapa, y al menos un día en común — ver la consulta de
-        ejemplo en database/02_datos_prueba.sql. Devuelve el horario
-        existente con el que choca (o None) para poder explicar el cruce
-        con detalle, no solo confirmar que existe."""
+        """Busca un solape del mismo recurso dentro de un período.
+
+        Un horario semanal es recurrente durante su trimestre. Por eso un
+        instructor, ambiente o ficha puede usar la misma franja en otro
+        trimestre sin que sea un cruce: solo compiten los horarios activos
+        con el mismo ``idTrimestre``.
+        """
         query = (
             db.query(Horario)
             .join(horario_dia, horario_dia.c.idHorario == Horario.idHorario)
@@ -139,6 +142,7 @@ class HorarioRepository:
                 Horario.horaInicio < hora_fin,
                 Horario.horaFin > hora_inicio,
                 Horario.activo.is_(True),
+                Horario.idTrimestre == id_trimestre,
             )
         )
         if excluir_id is not None:
@@ -152,6 +156,7 @@ class HorarioRepository:
         excluir_id: int | None = None,
         fecha_inicio=None,
         fecha_fin=None,
+        id_trimestre: int | None = None,
     ) -> list[Horario]:
         """Todos los horarios ya asignados a un instructor, sin filtrar por
         día/hora — HorarioService los usa para sumar horas semanales y
@@ -159,6 +164,8 @@ class HorarioRepository:
         los activos: uno desactivado no debería sumar a la carga semanal
         ni aparecer como vigente en el drawer de relacionados."""
         query = db.query(Horario).filter(Horario.idInstructor == id_instructor, Horario.activo.is_(True))
+        if id_trimestre is not None:
+            query = query.filter(Horario.idTrimestre == id_trimestre)
         if fecha_inicio is not None and fecha_fin is not None:
             query = query.join(Trimestre, Horario.idTrimestre == Trimestre.idTrimestre).filter(
                 Trimestre.fechaInicio <= fecha_fin,
@@ -232,6 +239,7 @@ class HorarioRepository:
         id_resultado: int,
         id_instructor,
         dias: list[int],
+        id_trimestre: int,
         excluir_id: int | None = None,
     ) -> Horario | None:
         """Cruce de contenido, no de horas — ver REGLAS_DE_NEGOCIO_CONOCIDAS.md.
@@ -257,6 +265,7 @@ class HorarioRepository:
             Horario.idResultado == id_resultado,
             Horario.idInstructor == id_instructor,
             Horario.activo.is_(True),
+            Horario.idTrimestre == id_trimestre,
         )
         if excluir_id is not None:
             query = query.filter(Horario.idHorario != excluir_id)

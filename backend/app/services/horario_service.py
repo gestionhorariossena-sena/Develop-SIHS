@@ -29,6 +29,15 @@ class CruceHorarioError(Exception):
         super().__init__("; ".join(mensajes))
 
 
+class FichaTrimestreInconsistenteError(Exception):
+    """El período del horario debe ser el período de su ficha.
+
+    Esta relación no se expresa con una FK compuesta en el esquema actual;
+    se valida antes de crear o editar para no persistir horarios lógicamente
+    inconsistentes, incluso cuando se usa ``forzar`` para documentar cruces.
+    """
+
+
 class HorarioService:
     @staticmethod
     def obtener_todos(db):
@@ -123,6 +132,7 @@ class HorarioService:
     def crear(db, data, forzar: bool = False) -> tuple:
         """Crea horario. Si forzar=False, lanza excepción si hay cruces.
         Si forzar=True, ignora cruces pero devuelve (horario, conflictos) para auditar."""
+        HorarioService._validar_ficha_del_periodo(db, data)
         errores = HorarioService._detectar_cruces(db, data)
         if errores and not forzar:
             raise CruceHorarioError(errores)
@@ -156,6 +166,8 @@ class HorarioService:
 
         if not horario:
             return None, []
+
+        HorarioService._validar_ficha_del_periodo(db, data)
 
         cambio_ambiente = horario.idAmbiente != data.idAmbiente
         cambio_instructor = horario.idInstructor != data.idInstructor
@@ -333,6 +345,30 @@ class HorarioService:
         ]
 
     @staticmethod
+    def _mensaje_ficha_del_periodo(db, data) -> str | None:
+        """Comprueba la coherencia entre el período solicitado y la ficha.
+
+        ``horarios.idTrimestre`` y ``horarios.idFicha`` son FKs
+        independientes. Sin esta comprobación ambas FKs permiten guardar un
+        horario que mezcla el trimestre de una ficha con otro período.
+        """
+        ficha = db.get(Ficha, data.idFicha)
+        if ficha is None:
+            return None
+        if ficha.idTrimestre != data.idTrimestre:
+            return (
+                f"La ficha {ficha.codigoFicha} pertenece al trimestre {ficha.idTrimestre}; "
+                f"no puede programarse en el trimestre {data.idTrimestre}."
+            )
+        return None
+
+    @staticmethod
+    def _validar_ficha_del_periodo(db, data) -> None:
+        mensaje = HorarioService._mensaje_ficha_del_periodo(db, data)
+        if mensaje:
+            raise FichaTrimestreInconsistenteError(mensaje)
+
+    @staticmethod
     def _detectar_cruces(db, data, excluir_id: int | None = None) -> list[str]:
         """Cruces por solape de horario: misma ficha, mismo instructor o
         mismo ambiente ya ocupados en ese día/hora — ver
@@ -347,7 +383,8 @@ class HorarioService:
         errores: list[str] = []
 
         ficha_existente = HorarioRepository.buscar_solape(
-            db, "idFicha", data.idFicha, data.dias, data.horaInicio, data.horaFin, excluir_id
+            db, "idFicha", data.idFicha, data.dias, data.horaInicio, data.horaFin,
+            data.idTrimestre, excluir_id,
         )
         if ficha_existente:
             errores.append(
@@ -356,7 +393,8 @@ class HorarioService:
             )
 
         instructor_existente = HorarioRepository.buscar_solape(
-            db, "idInstructor", data.idInstructor, data.dias, data.horaInicio, data.horaFin, excluir_id
+            db, "idInstructor", data.idInstructor, data.dias, data.horaInicio, data.horaFin,
+            data.idTrimestre, excluir_id,
         )
         if instructor_existente:
             errores.append(
@@ -365,7 +403,8 @@ class HorarioService:
             )
 
         ambiente_existente = HorarioRepository.buscar_solape(
-            db, "idAmbiente", data.idAmbiente, data.dias, data.horaInicio, data.horaFin, excluir_id
+            db, "idAmbiente", data.idAmbiente, data.dias, data.horaInicio, data.horaFin,
+            data.idTrimestre, excluir_id,
         )
         if ambiente_existente:
             errores.append(
@@ -374,7 +413,8 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, data.idInstructor, data.dias, excluir_id
+            db, data.idFicha, data.idResultado, data.idInstructor, data.dias,
+            data.idTrimestre, excluir_id,
         )
         if resultado_existente:
             errores.append(
@@ -390,8 +430,17 @@ class HorarioService:
     def validar_dry_run(db, data, excluir_id: int | None = None) -> list[dict]:
         conflictos: list[dict] = []
 
+        error_ficha_trimestre = HorarioService._mensaje_ficha_del_periodo(db, data)
+        if error_ficha_trimestre:
+            conflictos.append({
+                "tipo": "ficha_trimestre",
+                "mensaje": error_ficha_trimestre,
+                "idFicha": data.idFicha,
+            })
+
         ficha_existente = HorarioRepository.buscar_solape(
-            db, "idFicha", data.idFicha, data.dias, data.horaInicio, data.horaFin, excluir_id
+            db, "idFicha", data.idFicha, data.dias, data.horaInicio, data.horaFin,
+            data.idTrimestre, excluir_id,
         )
         if ficha_existente:
             conflictos.append(
@@ -405,7 +454,8 @@ class HorarioService:
             )
 
         instructor_existente = HorarioRepository.buscar_solape(
-            db, "idInstructor", data.idInstructor, data.dias, data.horaInicio, data.horaFin, excluir_id
+            db, "idInstructor", data.idInstructor, data.dias, data.horaInicio, data.horaFin,
+            data.idTrimestre, excluir_id,
         )
         if instructor_existente:
             conflictos.append(
@@ -419,7 +469,8 @@ class HorarioService:
             )
 
         ambiente_existente = HorarioRepository.buscar_solape(
-            db, "idAmbiente", data.idAmbiente, data.dias, data.horaInicio, data.horaFin, excluir_id
+            db, "idAmbiente", data.idAmbiente, data.dias, data.horaInicio, data.horaFin,
+            data.idTrimestre, excluir_id,
         )
         if ambiente_existente:
             conflictos.append(
@@ -433,7 +484,8 @@ class HorarioService:
             )
 
         resultado_existente = HorarioRepository.buscar_resultado_en_ficha(
-            db, data.idFicha, data.idResultado, data.idInstructor, data.dias, excluir_id
+            db, data.idFicha, data.idResultado, data.idInstructor, data.dias,
+            data.idTrimestre, excluir_id,
         )
         if resultado_existente:
             conflictos.append(
@@ -782,7 +834,7 @@ class HorarioService:
 
         jornada_nueva = db.get(Jornada, data.idJornada)
         horarios_instructor = HorarioRepository.obtener_por_instructor(
-            db, data.idInstructor, excluir_id
+            db, data.idInstructor, excluir_id, id_trimestre=data.idTrimestre
         )
         duracion_nueva = HorarioService._duracion_horas(data.horaInicio, data.horaFin)
 
