@@ -2,6 +2,7 @@
 
 | Tarea | Título | Dueño | Rama | Estado | Abierta |
 |-------|--------|-------|------|--------|---------|
+| T-010 | clen | `chat` | `chat/t-010-clen` | abierta | 2026-09-30 |
 | T-009 | docter | `cc` | `cc/t-009-docter` | abierta | 2026-09-30 |
 | T-008 | stats | `chat` | `chat/t-008-stats` | abierta | 2026-09-30 |
 | T-007 | stats | `chat` | `chat/t-007-stats` | abierta | 2026-09-30 |
