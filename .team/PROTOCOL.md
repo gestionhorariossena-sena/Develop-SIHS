@@ -31,8 +31,9 @@ libremente dentro de `chat/*`, nunca hacia `develop`.
 1. David lanza `duo "<lo que quiere>"`.
 2. El router (script, sin IA) clasifica y elige dueño balanceando el ledger.
 3. Se escribe el brief en `.team/inbox/<agente>/T-NNN.md` y se publica.
-4. El agente trabaja **en su rama**, y al terminar escribe su entregable en
-   `.team/outbox/T-NNN-<agente>.md` (qué hizo, qué rama, qué falta).
+4. El agente trabaja **en su rama** y termina con un resumen. `duo` lo archiva
+   solo en `.team/outbox/T-NNN-<agente>.md` junto al diff contra `develop`.
+   Excepción: `chat` sí escribe su propio entregable (tiene acceso a GitHub).
 5. `duo status` muestra el tablero. La integración es un paso aparte y humano.
 
 ## Para el agente que lee un brief
@@ -40,6 +41,8 @@ libremente dentro de `chat/*`, nunca hacia `develop`.
 - Trabaja solo en la rama indicada en el brief. Si no existe, créala desde
   `develop`.
 - No toques archivos fuera del alcance declarado en `Territorio`.
-- Si necesitas algo de otro agente, escríbelo en la sección `Bloqueos` de tu
-  entregable en `outbox/`. No lo resuelvas invadiendo su territorio.
-- Al terminar, entregable en `outbox/` y push de tu rama. Nada más.
+- Si necesitas algo de otro agente, dilo en tu resumen. No lo resuelvas
+  invadiendo su territorio.
+- Al terminar, push de tu rama y un resumen claro. Nada más.
+- Usa el venv enlazado del backend: `cd backend && .venv/bin/python -m pytest -q`.
+  No hay `pytest` ni `pip` en el PATH.
