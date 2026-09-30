@@ -34,7 +34,13 @@ libremente dentro de `chat/*`, nunca hacia `develop`.
 4. El agente trabaja **en su rama** y termina con un resumen. `duo` lo archiva
    solo en `.team/outbox/T-NNN-<agente>.md` junto al diff contra `develop`.
    Excepción: `chat` sí escribe su propio entregable (tiene acceso a GitHub).
-5. `duo status` muestra el tablero. La integración es un paso aparte y humano.
+5. `duo status` muestra el tablero.
+6. `duo review T-NNN` manda el resultado a un agente que NO lo hizo, para
+   revisión cruzada. Nadie revisa su propio trabajo.
+7. `duo done T-NNN` la cierra; `duo clean` archiva lo cerrado en
+   `.team/archivo/AAAA-MM/` (mueve, no borra).
+
+La integración a `develop` es siempre un paso aparte y humano: la decide David.
 
 ## Para el agente que lee un brief
 
