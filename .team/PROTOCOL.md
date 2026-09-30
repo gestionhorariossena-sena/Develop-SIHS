@@ -42,6 +42,22 @@ libremente dentro de `chat/*`, nunca hacia `develop`.
 
 La integración a `develop` es siempre un paso aparte y humano: la decide David.
 
+## Cuando el agente necesita una decisión
+
+Un agente headless no puede preguntar a media tarea. Por eso: hace todo lo que
+no dependa de la duda y termina con un bloque `## PREGUNTA` con las dudas
+numeradas. `duo` lo detecta, deja la tarea en estado `esperando`, guarda las
+preguntas en `.team/preguntas/T-NNN.md` y avisa en `duo status`.
+
+David responde con `duo ask T-NNN` (ventana de KDE) o
+`duo answer T-NNN "texto"`. Para `codex` y `cc`, `duo` **reanuda la sesión**
+del agente con su contexto intacto (`codex exec resume --last`, `claude -c`),
+así que no se pierde nada de lo ya razonado. Para `chat`, la respuesta se
+guarda y se contesta en el chat.
+
+Una duda de detalle que el agente pueda resolver con una suposición razonable
+NO va en `## PREGUNTA`: la declara y sigue.
+
 ## Para el agente que lee un brief
 
 - Trabaja solo en la rama indicada en el brief. Si no existe, créala desde
