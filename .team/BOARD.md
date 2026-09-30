@@ -2,10 +2,6 @@
 
 | Tarea | Título | Dueño | Rama | Estado | Abierta |
 |-------|--------|-------|------|--------|---------|
-| T-011 | implementa el filtro por instructor en la vista | `codex` | `codex/t-011-implementa-el-filtro-por-instructor-en-l` | abierta | 2026-09-30 |
-| T-010 | clen | `chat` | `chat/t-010-clen` | abierta | 2026-09-30 |
-| T-009 | docter | `cc` | `cc/t-009-docter` | abierta | 2026-09-30 |
-| T-008 | stats | `chat` | `chat/t-008-stats` | abierta | 2026-09-30 |
 | T-007 | stats | `chat` | `chat/t-007-stats` | abierta | 2026-09-30 |
 | T-006 | implementa el endpoint GET /api/v1/fichas/{id_ficha}/asistencias/reporte segun el contrato en _Docs, con sus tests | `cc` | `cc/t-006-implementa-el-endpoint-get-api-v1-fichas` | entregada | 2026-09-30 |
 | T-005 | corrige los 3 puntos de la revisión T-004 en el contrato | `codex` | `codex/t-005-corrige-los-3-puntos-de-la-revision-t-00` | entregada | 2026-09-30 |
