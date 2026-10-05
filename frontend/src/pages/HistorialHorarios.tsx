@@ -174,7 +174,7 @@ export function HistorialHorarios() {
 
       {!seleccionado && (
         <div className="print:hidden">
-          {cargando && <p className="text-sm text-on-surface-variant">Cargando…</p>}
+          {cargando && <p className="py-12 text-center text-sm text-on-surface-variant">Cargando…</p>}
 
           {!cargando && !hayFilas && (
             <p className="text-sm text-on-surface-variant">
@@ -299,7 +299,7 @@ export function HistorialHorarios() {
                       ? 'Deja de mostrarse en "Mi horario" para el instructor'
                       : 'Publica todas las clases de este horario — a partir de ahora el instructor las ve en "Mi horario"'
                   }
-                  className="rounded-xl bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {publicando ? 'Guardando…' : horarioCompletoPublicado ? 'Despublicar' : 'Publicar'}
                 </button>
