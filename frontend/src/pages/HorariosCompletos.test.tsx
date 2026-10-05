@@ -161,7 +161,7 @@ describe('HorariosCompletos', () => {
     await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
     await usuario.click(await screen.findByRole('button', { name: 'Despublicar' }))
     expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
-    expect(await screen.findByRole('alert')).toHaveTextContent('No se pudo cambiar la publicación')
+    expect(await screen.findByText('No se pudo cambiar la publicación. Intenta de nuevo.')).toBeInTheDocument()
     expect(screen.getAllByText('Publicado').length).toBeGreaterThan(0)
   })
 

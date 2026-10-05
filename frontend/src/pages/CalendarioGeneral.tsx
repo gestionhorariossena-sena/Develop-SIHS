@@ -194,7 +194,7 @@ export function CalendarioGeneral() {
         </div>
         <Link
           to="/horarios/historial"
-          className="rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700"
+          className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
         >
           Ver historial de horarios
         </Link>
@@ -289,7 +289,7 @@ export function CalendarioGeneral() {
         </div>
 
         {cargando ? (
-          <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando calendario...</p>
+          <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando calendario…</p>
         ) : (
           <div className="overflow-hidden rounded-xl border border-outline-variant dark:border-slate-700">
             <div className="grid grid-cols-7 bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
@@ -317,7 +317,7 @@ export function CalendarioGeneral() {
                     <span
                       className={`mb-1 inline-flex h-5 w-5 items-center justify-center rounded-full text-xs font-semibold ${
                         esHoy
-                          ? 'bg-sena-600 text-white'
+                          ? 'bg-primary text-on-primary'
                           : delMes
                             ? 'text-on-surface-variant dark:text-slate-300'
                             : 'text-on-surface-variant dark:text-slate-600'
