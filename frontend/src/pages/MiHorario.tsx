@@ -155,6 +155,7 @@ export function MiHorario() {
     const semanaFin = new Date(semanaInicio)
     semanaFin.setDate(semanaFin.getDate() + 4)
     const query = `?fechaInicio=${isoLocal(semanaInicio)}&fechaFin=${isoLocal(semanaFin)}`
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActualizandoHorario(true)
     setError(null)
     apiGet<Horario[]>(`/usuarios/me/horarios${query}`)

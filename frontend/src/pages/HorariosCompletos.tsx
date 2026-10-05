@@ -292,11 +292,13 @@ export function HorariosCompletos() {
   // No auditar todos los períodos por defecto: la consulta es costosa.
   // Si no existe uno vigente por estado Y fechas, esperar selección expresa.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTrimestreAuditoria(trimestreVigente(trimestres)?.idTrimestre ?? null)
   }, [trimestres])
 
   useEffect(() => {
     if (trimestreAuditoria === null) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAuditoria(null)
       setErrorAuditoria(false)
       return

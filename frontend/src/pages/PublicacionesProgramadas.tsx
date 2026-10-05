@@ -101,7 +101,10 @@ export function PublicacionesProgramadas() {
     setCargando(false)
   }
 
-  useEffect(() => { void cargar() }, [])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void cargar()
+  }, [])
 
   const trimestreSeleccionado = Number(periodo)
   const borradores = useMemo(() => horarios.filter((horario) =>
