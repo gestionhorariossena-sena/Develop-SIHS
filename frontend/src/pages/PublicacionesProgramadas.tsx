@@ -197,7 +197,7 @@ export function PublicacionesProgramadas() {
         </div>
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
           <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Publicación automática</p>
-          <p className={`mt-2 text-sm font-bold ${programacionActiva ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>{programacionActiva ? 'Servicio disponible' : 'Pendiente de activación'}</p>
+          <p className={`mt-2 text-sm font-bold ${programacionActiva ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>{programacionActiva ? 'Worker disponible' : 'Pendiente de activación'}</p>
         </div>
       </div>
       {disponibilidad && !programacionActiva && (
