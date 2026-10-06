@@ -31,7 +31,7 @@ import type {
  * Asistente de programación -- wizard de 4 pasos, separado de
  * NuevoHorario.tsx (el "Constructor" manual de un horario a la vez, que
  * sigue existiendo tal cual). Este es el flujo de "tengo un Excel de
- * planeación del trimestre, ayúdame a armar la propuesta completa":
+ * planeación del período académico, ayúdame a armar la propuesta completa":
  *
  *   1. Subir archivo  -> POST /horarios/asistente/importar (IA clasifica columnas)
  *   2. Así lo entendimos -> revisión, nada se guarda todavía
@@ -498,7 +498,7 @@ export function AsistenteHorarios() {
     setRespuestaPregunta(null)
     try {
       const contexto = propuesta
-        ? `Propuesta con ${propuesta.bloques.length} bloques para el trimestre ${idTrimestre}, jornada ${jornada}.`
+        ? `Propuesta con ${propuesta.bloques.length} bloques para el período académico ${idTrimestre}, jornada ${jornada}.`
         : `Archivo ${previsualizacion?.nombreArchivo ?? ''} con ${previsualizacion?.totalFilas ?? 0} filas, ${previsualizacion?.filasConAdvertencia ?? 0} con advertencia.`
       const resultado = await apiPost<RespuestaPreguntaHorario>(
         '/horarios/asistente/preguntar',
@@ -603,7 +603,7 @@ export function AsistenteHorarios() {
         )}
         {idTrimestre !== null && trimestreVigente(trimestres)?.idTrimestre !== idTrimestre && (
           <p role="status" className="mb-4 rounded-xl border border-tertiary bg-tertiary-container px-4 py-3 text-sm text-on-tertiary-container">
-            Estás trabajando con un período que no está vigente hoy. Comprueba el período y las fichas seleccionadas antes de guardar.
+            Estás trabajando con un período que no está vigente hoy. Comprueba el período académico y las fichas seleccionadas antes de guardar.
           </p>
         )}
 
@@ -667,7 +667,7 @@ export function AsistenteHorarios() {
             ) : (
               <>
                 <p className="mb-1 text-sm text-on-surface-variant dark:text-slate-300">
-                  Sube el Excel de planeación del trimestre. Revisamos lo que trae antes de tocar nada.
+                  Sube el Excel de planeación del período académico. Revisamos lo que trae antes de tocar nada.
                 </p>
                 <input
                   type="file"
@@ -946,7 +946,7 @@ export function AsistenteHorarios() {
                                   resultado/horario (una ficha puede tener clases en
                                   sedes distintas), no acá. */}
                               <span className="text-xs text-on-surface-variant dark:text-slate-400">
-                                Trimestre: <strong className="text-on-surface dark:text-slate-200">{trimestres.find((t) => t.idTrimestre === idTrimestre)?.nombre ?? '—'}</strong>
+                                Período académico: <strong className="text-on-surface dark:text-slate-200">{trimestres.find((t) => t.idTrimestre === idTrimestre)?.nombre ?? '—'}</strong>
                               </span>
 
                               <button
@@ -981,13 +981,13 @@ export function AsistenteHorarios() {
 
             <div className="flex items-center gap-3">
               <label className="text-sm text-on-surface-variant dark:text-slate-300">
-                Trimestre
+                Período académico
                 <select
                   value={idTrimestre ?? ''}
                   onChange={(e) => setIdTrimestre(e.target.value ? Number(e.target.value) : null)}
                   className="ml-2 rounded-lg border border-outline-variant bg-surface px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
                 >
-                  <option value="">Selecciona un período</option>
+                  <option value="">Selecciona un período académico</option>
                   {trimestres.map((t) => (
                     <option key={t.idTrimestre} value={t.idTrimestre}>
                       {t.nombre} · {t.fechaInicio} a {t.fechaFin} ({t.estado})
