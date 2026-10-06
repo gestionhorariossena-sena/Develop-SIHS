@@ -68,3 +68,26 @@ def test_cors_no_abre_cualquier_proyecto_vercel():
 
     assert respuesta.status_code == 200
     assert "access-control-allow-origin" not in respuesta.headers
+
+
+@pytest.mark.parametrize(
+    "origen",
+    [
+        "https://proyectosihs.vercel.app",
+        "https://proyecto-sihs.vercel.app",
+        "https://proyectosihs-git-main-sihs.vercel.app",
+        "https://proyecto-sihs-git-main-sihs.vercel.app",
+    ],
+)
+def test_cors_acepta_aliases_vercel_sihs(origen):
+    cliente = TestClient(app)
+    respuesta = cliente.options(
+        "/api/v1/usuarios/me",
+        headers={
+            "Origin": origen,
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "authorization",
+        },
+    )
+    assert respuesta.status_code == 200
+    assert respuesta.headers.get("access-control-allow-origin") == origen
