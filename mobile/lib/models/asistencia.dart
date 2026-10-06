@@ -27,6 +27,13 @@ extension EstadoAsistenciaX on EstadoAsistencia {
         EstadoAsistencia.excusa => 'Excusa',
         EstadoAsistencia.ausente => 'Ausente',
       };
+
+  String get valorApi => switch (this) {
+        EstadoAsistencia.presente => 'presente',
+        EstadoAsistencia.tardanza => 'tardanza',
+        EstadoAsistencia.excusa => 'excusa',
+        EstadoAsistencia.ausente => 'ausente',
+      };
 }
 
 class SesionAsistida {
@@ -153,8 +160,8 @@ class AprendizDeSesion {
 }
 
 /// Lo que el Instructor ve de una de sus clases en una fecha concreta.
-/// En el móvil es solo consulta: pasar lista es `POST /asistencias/sesion`
-/// y se hace desde la web (ARQUITECTURA_MOBILE.md).
+/// La misma estructura sirve como estado inicial para registrar o corregir
+/// la lista desde el móvil mediante `POST /asistencias/sesion`.
 class SesionAsistencia {
   final int idHorario;
   final DateTime fechaSesion;
