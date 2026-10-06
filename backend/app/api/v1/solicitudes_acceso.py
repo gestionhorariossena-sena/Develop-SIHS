@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.core.supabase_auth import require_admin
 from app.schemas.solicitud_acceso import (
     EstadoSolicitudAcceso,
+    SolicitudAccesoAprobadaResponse,
     SolicitudAccesoAprobar,
     SolicitudAccesoCreate,
     SolicitudAccesoRechazar,
@@ -68,7 +69,7 @@ def exportar_solicitudes_acceso(
     )
 
 
-@router.post("/{id_solicitud}/aprobar", response_model=SolicitudAccesoResponse)
+@router.post("/{id_solicitud}/aprobar", response_model=SolicitudAccesoAprobadaResponse)
 def aprobar_solicitud_acceso(
     id_solicitud: int,
     data: SolicitudAccesoAprobar,

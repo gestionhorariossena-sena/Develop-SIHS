@@ -3,6 +3,8 @@ from app.repositories.rol_repository import RolRepository
 from app.repositories.usuario_repository import UsuarioRepository
 from app.repositories.usuario_rol_repository import UsuarioRolRepository
 
+NOMBRE_ROL_ADMINISTRADOR = "Administrador"
+
 
 class UsuarioRolService:
     @staticmethod
@@ -28,10 +30,19 @@ class UsuarioRolService:
 
     @staticmethod
     def remover(db, id_usuario, id_rol):
+        """T-13: si es el rol Administrador y a este usuario quitárselo
+        dejaría el sistema sin ningún Administrador, se bloquea -- si no,
+        nadie podría volver a gestionar roles."""
         relacion = UsuarioRolRepository.obtener(db, id_usuario, id_rol)
 
         if not relacion:
             return False
+
+        rol = RolRepository.obtener_por_id(db, id_rol)
+        if rol and rol.nombre == NOMBRE_ROL_ADMINISTRADOR:
+            total_admins = UsuarioRolRepository.contar_usuarios_con_rol(db, id_rol)
+            if total_admins <= 1:
+                return "ULTIMO_ADMINISTRADOR"
 
         UsuarioRolRepository.eliminar(db, relacion)
         return True

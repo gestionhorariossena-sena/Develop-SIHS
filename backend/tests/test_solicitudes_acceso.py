@@ -214,10 +214,13 @@ class TestAprobarSolicitud:
 
         assert respuesta.status_code == 200
         cuerpo = respuesta.json()
-        assert cuerpo["estado"] == "aprobada"
-        assert cuerpo["rolSolicitado"] == "Coordinador"
-        assert cuerpo["idAdminResolvio"] == str(admin.idUsuario)
-        assert cuerpo["fechaResolucion"] is not None
+        assert cuerpo["solicitud"]["estado"] == "aprobada"
+        assert cuerpo["solicitud"]["rolSolicitado"] == "Coordinador"
+        assert cuerpo["solicitud"]["idAdminResolvio"] == str(admin.idUsuario)
+        assert cuerpo["solicitud"]["fechaResolucion"] is not None
+        assert cuerpo["email"] == "mbenitez@sena.edu.co"
+        assert cuerpo["correoEnviado"] is True
+        assert cuerpo["passwordTemporal"] is None
 
         usuario_creado = db_session.get(Usuario, id_usuario_nuevo)
         assert usuario_creado is not None
@@ -298,7 +301,10 @@ class TestAprobarSolicitud:
         )
 
         assert respuesta.status_code == 200
-        assert respuesta.json()["estado"] == "aprobada"
+        cuerpo = respuesta.json()
+        assert cuerpo["solicitud"]["estado"] == "aprobada"
+        assert cuerpo["correoEnviado"] is False
+        assert cuerpo["passwordTemporal"]
 
 
 class TestRechazarSolicitud:

@@ -49,6 +49,9 @@ def actualizar_rol(
 ):
     rol = RolService.actualizar(db, id_rol, data)
 
+    if rol == "ROL_PROTEGIDO":
+        raise HTTPException(status_code=400, detail="El rol Administrador no se puede renombrar")
+
     if not rol:
         raise HTTPException(status_code=404, detail="Rol no encontrado")
 
@@ -62,6 +65,9 @@ def eliminar_rol(
     usuario=Depends(require_admin),
 ):
     eliminado = RolService.eliminar(db, id_rol)
+
+    if eliminado == "ROL_PROTEGIDO":
+        raise HTTPException(status_code=400, detail="El rol Administrador no se puede eliminar")
 
     if not eliminado:
         raise HTTPException(status_code=404, detail="Rol no encontrado")

@@ -49,6 +49,12 @@ def remover_rol(
 ):
     eliminado = UsuarioRolService.remover(db, data.idUsuario, data.idRol)
 
+    if eliminado == "ULTIMO_ADMINISTRADOR":
+        raise HTTPException(
+            status_code=400,
+            detail="No se puede quitar el rol Administrador al último administrador del sistema",
+        )
+
     if not eliminado:
         raise HTTPException(status_code=404, detail="Relación no encontrada")
 

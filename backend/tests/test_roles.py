@@ -99,3 +99,28 @@ def test_eliminar_rol_inexistente_da_404(client, autenticar_como):
     respuesta = client.delete("/api/v1/roles/9999", headers=headers)
 
     assert respuesta.status_code == 404
+
+
+def test_eliminar_rol_administrador_esta_protegido(client, autenticar_como, crear_rol):
+    """T-13: "Administrador" está hardcodeado en varios servicios -- borrar
+    el rol del catálogo dejaría el sistema sin nadie que pueda
+    gestionarlo."""
+    _, headers = autenticar_como("Administrador")
+    rol_admin = crear_rol("Administrador")
+
+    respuesta = client.delete(f"/api/v1/roles/{rol_admin.idRol}", headers=headers)
+
+    assert respuesta.status_code == 400
+    assert client.get(f"/api/v1/roles/{rol_admin.idRol}", headers=headers).status_code == 200
+
+
+def test_renombrar_rol_administrador_esta_protegido(client, autenticar_como, crear_rol):
+    _, headers = autenticar_como("Administrador")
+    rol_admin = crear_rol("Administrador")
+
+    respuesta = client.put(
+        f"/api/v1/roles/{rol_admin.idRol}", json={"nombre": "Superadmin"}, headers=headers
+    )
+
+    assert respuesta.status_code == 400
+    assert client.get(f"/api/v1/roles/{rol_admin.idRol}", headers=headers).json()["nombre"] == "Administrador"

@@ -48,5 +48,17 @@ class SolicitudAccesoAprobar(BaseModel):
     idRol: int
 
 
+class SolicitudAccesoAprobadaResponse(BaseModel):
+    """Respuesta de POST /{id}/aprobar -- espejo de
+    SolicitudAccesoAprobada en frontend/src/types/api.ts. `passwordTemporal`
+    solo viaja mientras el SMTP del proyecto no esté configurado
+    (correoEnviado=False); el Administrador la entrega a mano."""
+
+    solicitud: SolicitudAccesoResponse
+    email: str
+    passwordTemporal: str | None = None
+    correoEnviado: bool
+
+
 class SolicitudAccesoRechazar(BaseModel):
     motivoRechazo: str = Field(min_length=1)

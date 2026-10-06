@@ -80,6 +80,13 @@ export function Roles() {
     }
   }
 
+  function esRolProtegido(rol: Rol) {
+    // T-13: el backend ya rechaza borrar/renombrar el rol Administrador
+    // (RolService.NOMBRE_ROL_ADMINISTRADOR) -- esto evita que el
+    // Administrador se tope con el error recién al confirmar.
+    return rol.nombre === 'Administrador'
+  }
+
   async function confirmarEliminacion() {
     if (!eliminacionPendiente) return
     setEliminandoId(eliminacionPendiente.idRol)
@@ -134,7 +141,7 @@ export function Roles() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1">
               <label htmlFor="nombre-rol" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">{editandoId === null ? 'Nuevo rol' : 'Editar rol'}</label>
-              <input id="nombre-rol" value={nombre} onChange={(evento) => setNombre(evento.target.value)} placeholder="Ej. Coordinador" className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+              <input id="nombre-rol" value={nombre} onChange={(evento) => setNombre(evento.target.value)} disabled={editandoId !== null && nombre === 'Administrador'} title={editandoId !== null && nombre === 'Administrador' ? 'El rol Administrador no se puede renombrar.' : undefined} placeholder="Ej. Coordinador" className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
             </div>
             <div className="flex gap-2">
               <button type="submit" disabled={guardando} className="rounded-xl bg-sena-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-800 disabled:cursor-not-allowed disabled:opacity-60">{guardando ? 'Guardando…' : editandoId === null ? 'Crear rol' : 'Guardar cambios'}</button>
@@ -159,7 +166,7 @@ export function Roles() {
                 <tr key={rol.idRol} className="hover:bg-surface dark:hover:bg-slate-700/60">
                   <td className="px-4 py-3 font-medium text-on-surface dark:text-slate-100">{rol.nombre}</td>
                   <td className="px-4 py-3 text-on-surface-variant dark:text-slate-400">#{rol.idRol}</td>
-                  <td className="px-4 py-3 text-right">{esAdministrador ? <div className="flex justify-end gap-2"><button type="button" onClick={() => comenzarEdicion(rol)} className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button><button type="button" onClick={() => setEliminacionPendiente(rol)} className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40">Borrar</button></div> : <span className="text-xs text-on-surface-variant">—</span>}</td>
+                  <td className="px-4 py-3 text-right">{esAdministrador ? <div className="flex justify-end gap-2"><button type="button" onClick={() => comenzarEdicion(rol)} className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700">Editar</button>{esRolProtegido(rol) ? <span title="El rol Administrador no se puede borrar." className="rounded-xl border border-outline-variant px-3 py-1.5 text-xs font-semibold text-on-surface-variant opacity-60 dark:border-slate-700 dark:text-slate-400">Protegido</span> : <button type="button" onClick={() => setEliminacionPendiente(rol)} className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/40">Borrar</button>}</div> : <span className="text-xs text-on-surface-variant">—</span>}</td>
                 </tr>
               ))}
             </tbody>

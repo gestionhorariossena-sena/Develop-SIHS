@@ -45,4 +45,12 @@ describe('DashboardRouter', () => {
 
     expect(await screen.findByText('Dashboard de gestión')).toBeInTheDocument()
   })
+
+  it('muestra el aviso de cuenta pendiente cuando el usuario no tiene ningún rol', async () => {
+    apiGetMock.mockResolvedValue({ ...crearPerfil('Aprendiz'), roles: [] })
+    render(<DashboardRouter />)
+
+    expect(await screen.findByText('Cuenta pendiente de aprobación')).toBeInTheDocument()
+    expect(screen.queryByText('Dashboard de gestión')).not.toBeInTheDocument()
+  })
 })
