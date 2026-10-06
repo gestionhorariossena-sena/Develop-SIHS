@@ -52,6 +52,27 @@ export function DashboardRouter() {
     )
   }
 
+  // T-12: un usuario recién registrado (get_current_user lo crea en su
+  // primer login, ver supabase_auth.py) no tiene rol todavía -- caía antes
+  // en Dashboard.tsx, que dispara fetches de gestión (/horarios/,
+  // /usuarios/, etc.) para los que no tiene permiso y solo mostraba
+  // errores "No se pudo cargar...". Mientras un Administrador no le
+  // asigne un rol (Usuarios.tsx / AprobarlicitarSolicitudes.tsx), ve este
+  // aviso en vez de una pantalla rota.
+  if (perfil.roles.length === 0) {
+    return (
+      <div className="grid min-h-screen place-items-center bg-slate-50 px-4 dark:bg-slate-900">
+        <div className="max-w-md rounded-xl border border-outline-variant bg-surface-container-lowest p-6 text-center shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <h1 className="mb-2 text-lg font-semibold text-on-surface dark:text-slate-100">Cuenta pendiente de aprobación</h1>
+          <p className="text-sm text-on-surface-variant dark:text-slate-400">
+            Tu cuenta ya está creada, pero todavía no tiene un rol asignado. Un Administrador debe
+            asignarte uno antes de que puedas usar el sistema.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const puedeGestionar = perfil.roles.some((rol) => rol.nombre === 'Administrador' || rol.nombre === 'Coordinador')
   const esInstructor = perfil.roles.some((rol) => rol.nombre === 'Instructor')
   const esAprendiz = perfil.roles.some((rol) => rol.nombre === 'Aprendiz')

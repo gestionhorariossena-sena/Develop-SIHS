@@ -121,7 +121,13 @@ export function Usuarios() {
                     </td>
                   </tr>
                 ) : (
-                  usuarios.map((usuario) => (
+                  usuarios.map((usuario) => {
+                    const esAdministrador = usuario.roles.some((rol) => rol.nombre === 'Administrador')
+                    const esUnicoAdministrador =
+                      esAdministrador &&
+                      usuarios.filter((u) => u.roles.some((rol) => rol.nombre === 'Administrador')).length === 1
+
+                    return (
                     <tr key={usuario.idUsuario} className="hover:bg-surface-container-low dark:hover:bg-slate-700/60">
                       <td className="px-4 py-3 font-medium text-on-surface dark:text-slate-100">{usuario.nombre}</td>
                       <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{usuario.email}</td>
@@ -135,7 +141,12 @@ export function Usuarios() {
                       <td className="px-4 py-3">
                         <select
                           value={usuario.roles[0]?.idRol ?? ''}
-                          disabled={guardandoId === usuario.idUsuario}
+                          disabled={guardandoId === usuario.idUsuario || esUnicoAdministrador}
+                          title={
+                            esUnicoAdministrador
+                              ? 'Es el único Administrador del sistema: asigna el rol a otra persona antes de cambiarlo.'
+                              : undefined
+                          }
                           onChange={(e) => solicitarCambioRol(usuario, e.target.value)}
                           className="rounded-xl border border-outline bg-surface-container-lowest px-2.5 py-1.5 text-sm text-on-surface-variant disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
                         >
@@ -151,7 +162,8 @@ export function Usuarios() {
                         </select>
                       </td>
                     </tr>
-                  ))
+                    )
+                  })
                 )}
               </tbody>
             </table>

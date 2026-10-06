@@ -25,3 +25,7 @@ class UsuarioRolRepository:
     def eliminar(db: Session, relacion: UsuarioRol):
         db.delete(relacion)
         db.commit()
+
+    @staticmethod
+    def contar_usuarios_con_rol(db: Session, id_rol: int) -> int:
+        return db.query(UsuarioRol).filter(UsuarioRol.idRol == id_rol).count()

@@ -152,6 +152,7 @@ class SolicitudAccesoService:
         db.commit()
         db.refresh(solicitud)
 
+        correo_enviado = True
         try:
             EmailService.enviar_credencial_temporal(
                 destinatario_email=solicitud.email,
@@ -162,12 +163,19 @@ class SolicitudAccesoService:
             # Ver DECISION_ENVIO_CREDENCIAL_TEMPORAL.md: la cuenta y el rol
             # ya quedaron creados igual, el envío del correo es lo único
             # pendiente de que exista la configuración SMTP.
-            pass
+            correo_enviado = False
 
         # `rolSolicitado` en la respuesta refleja el rol que se pidió
         # originalmente (idRolSolicitado no cambia) -- el rol realmente
         # otorgado es el que ya envió el caller en `data.idRol`.
-        return SolicitudAccesoService.a_response(solicitud, rol_solicitado)
+        return {
+            "solicitud": SolicitudAccesoService.a_response(solicitud, rol_solicitado),
+            "email": solicitud.email,
+            # Si el correo sí salió, la persona ya la tiene en su bandeja --
+            # no hace falta que el Administrador la vea también en pantalla.
+            "passwordTemporal": None if correo_enviado else password_temporal,
+            "correoEnviado": correo_enviado,
+        }
 
     @staticmethod
     def rechazar(db, id_solicitud: int, motivo_rechazo: str, admin_usuario):
