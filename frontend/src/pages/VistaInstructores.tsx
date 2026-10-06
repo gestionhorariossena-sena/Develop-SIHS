@@ -185,7 +185,7 @@ export function VistaInstructores() {
                             ? 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-400'
                             : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
                         }`}
-                        title={cantidadFichas === 0 ? 'Sin fichas asignadas este trimestre' : `${cantidadFichas} ficha${cantidadFichas === 1 ? '' : 's'} asignada${cantidadFichas === 1 ? '' : 's'}`}
+                        title={cantidadFichas === 0 ? 'Sin fichas asignadas en este período académico' : `${cantidadFichas} ficha${cantidadFichas === 1 ? '' : 's'} asignada${cantidadFichas === 1 ? '' : 's'}`}
                       >
                         {cantidadFichas}
                       </span>
@@ -230,7 +230,7 @@ export function VistaInstructores() {
               ) : errorHorarios ? (
                 <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">No se pudo cargar el horario de este instructor.</p>
               ) : horariosVigentes?.length === 0 ? (
-                <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">Sin horario asignado en el trimestre actual.</p>
+                <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">Sin horario asignado en el período académico actual.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <div className="min-w-[760px]">
