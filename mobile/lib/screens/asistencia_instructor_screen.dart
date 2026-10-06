@@ -706,7 +706,7 @@ class _FilaAprendizEditable extends StatelessWidget {
   }
 
   static String _iniciales(String nombre) {
-    final palabras = nombre.trim().split(RegExp(r'\\s+'));
+    final palabras = nombre.trim().split(RegExp(r'\s+'));
     final primera = palabras.isNotEmpty && palabras[0].isNotEmpty ? palabras[0][0] : '';
     final segunda = palabras.length > 1 && palabras[1].isNotEmpty ? palabras[1][0] : '';
     return (primera + segunda).toUpperCase();
