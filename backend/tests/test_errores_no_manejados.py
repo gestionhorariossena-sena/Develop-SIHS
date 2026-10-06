@@ -40,3 +40,31 @@ def test_el_traceback_no_viaja_al_navegador():
 
     assert "algo se rompió adentro" not in respuesta.text
     assert "Traceback" not in respuesta.text
+
+
+@pytest.mark.parametrize(
+    "origen",
+    [
+        "https://proyectosihs.vercel.app",
+        "https://proyectosihs-git-chat-fix-pr-106-role-delete-guard-sihs.vercel.app",
+    ],
+)
+def test_cors_acepta_produccion_y_previews_del_proyecto_vercel(origen):
+    cliente = TestClient(app)
+
+    respuesta = cliente.get("/api/v1/health", headers={"Origin": origen})
+
+    assert respuesta.status_code == 200
+    assert respuesta.headers.get("access-control-allow-origin") == origen
+
+
+def test_cors_no_abre_cualquier_proyecto_vercel():
+    cliente = TestClient(app)
+
+    respuesta = cliente.get(
+        "/api/v1/health",
+        headers={"Origin": "https://otro-proyecto.vercel.app"},
+    )
+
+    assert respuesta.status_code == 200
+    assert "access-control-allow-origin" not in respuesta.headers

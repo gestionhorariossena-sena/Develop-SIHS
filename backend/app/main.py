@@ -87,12 +87,17 @@ async def convertir_errores_no_manejados(request: Request, call_next):
 
 
 # Desarrollo: acepta cualquier puerto de localhost (Vite salta al siguiente
-# puerto libre — 5174, 5175... — si 5173 ya está ocupado por otro proyecto,
-# así que fijar un solo puerto rompe el CORS en silencio). En producción se
-# suma la URL real del frontend desplegado vía la variable FRONTEND_URL.
+# puerto libre — 5174, 5175... — si 5173 ya está ocupado por otro proyecto).
+# Producción: además de FRONTEND_URL, se aceptan SOLO los dominios Vercel del
+# proyecto SIHS. Vercel usa un dominio estable para producción y dominios
+# derivados del nombre de rama para previews; exigir una única URL exacta
+# hacía que un redeploy/preview válido fallara como TypeError de red.
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+    allow_origin_regex=(
+        r"http://(localhost|127\\.0\\.0\\.1):\\d+"
+        r"|https://proyectosihs(?:-[a-z0-9-]+-sihs)?\\.vercel\\.app"
+    ),
     allow_origins=[settings.frontend_url] if settings.frontend_url else [],
     allow_credentials=True,
     allow_methods=["*"],
