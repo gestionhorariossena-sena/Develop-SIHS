@@ -3,7 +3,7 @@ import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { CambiosHorario } from './CambiosHorario'
-import type { Horario, SolicitudCambioHorario, Usuario } from '../types/api'
+import type { SolicitudCambioHorario, Usuario } from '../types/api'
 
 const INSTRUCTOR: Usuario = {
   idUsuario: 'i-1',
@@ -16,14 +16,6 @@ const INSTRUCTOR: Usuario = {
   especialidades: [],
 }
 
-const HORARIO: Horario = {
-  idHorario: 169, horaInicio: '11:00:00', horaFin: '13:00:00', idJornada: 1, idTrimestre: 1,
-  idAmbiente: 1, idInstructor: 'i-1', idFicha: 21, idResultado: 1, dias: [4],
-  fechaCreacion: '2026-09-14T11:00:00Z', fechaModificacion: '2026-09-14T11:00:00Z',
-  activo: true, publicado: true, instructorNombre: 'Carlos López', fichaCodigo: '3171618',
-  ambienteNombre: 'Laboratorio de Redes', resultadoCodigo: null, resultadoDescripcion: 'Redes',
-}
-
 const PENDIENTE: SolicitudCambioHorario = {
   idSolicitud: 1,
   idInstructor: 'i-1',
@@ -34,6 +26,11 @@ const PENDIENTE: SolicitudCambioHorario = {
   fechaSolicitud: '2026-09-24T10:00:00Z',
   fechaResolucion: null,
   idAdminResolvio: null,
+  instructorNombre: 'Carlos López',
+  fichaCodigo: '3171618',
+  horaInicio: '11:00:00',
+  horaFin: '13:00:00',
+  ambienteNombre: 'Laboratorio de Redes',
 }
 
 const apiGetMock = vi.fn()
@@ -61,10 +58,7 @@ const COORDINADOR: Usuario = {
 function mockearCatalogos(solicitudes: SolicitudCambioHorario[]) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/solicitudes-cambio-horario/') return Promise.resolve(solicitudes)
-    // Antes de la lista: AppShell lo pide para armar el navbar.
     if (path === '/usuarios/me') return Promise.resolve(COORDINADOR)
-    if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
-    if (path === '/horarios/') return Promise.resolve([HORARIO])
     if (path === '/notificaciones/') return Promise.resolve([])
     return Promise.resolve([])
   })

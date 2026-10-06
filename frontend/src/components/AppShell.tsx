@@ -101,17 +101,11 @@ const NAV: GrupoNav[] = [
     ],
   },
   {
-    grupo: 'Operación',
+    grupo: 'Comunicaciones',
     items: [
-      // H-4: la bandeja de lo que reportan los instructores. Estuvo en
-      // gris desde siempre aunque su backend estaba completo.
-      { etiqueta: 'Cambios', ruta: '/cambios', soloGestion: true },
-      // El tablón de comunicados (`GET /avisos/`) lo lee CUALQUIER sesión,
-      // así que este ítem no lleva restricción: es el mismo destino para
-      // aprendiz, instructor y coordinación. Ocupa el lugar del ítem
-      // "Notificaciones" que vivía en gris acá (H-11) — la campana ya
-      // cubre lo personal, esto es el canal oficial del centro.
-      { etiqueta: 'Avisos', ruta: '/avisos' },
+      { etiqueta: 'Solicitudes de cambio', ruta: '/cambios', soloGestion: true },
+      { etiqueta: 'Mis solicitudes', ruta: '/mis-solicitudes-cambio', soloInstructor: true },
+      { etiqueta: 'Comunicados', ruta: '/avisos' },
     ],
   },
   {

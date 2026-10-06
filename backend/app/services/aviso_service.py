@@ -41,8 +41,21 @@ class AvisoService:
         return AvisoService._a_response(aviso)
 
     @staticmethod
-    def obtener_todos(db: Session, *, categoria: str | None = None, id_ficha: int | None = None) -> list[dict]:
-        avisos = AvisoRepository.obtener_todos(db, categoria=categoria, id_ficha=id_ficha)
+    def obtener_todos(
+        db: Session,
+        *,
+        categoria: str | None = None,
+        id_ficha: int | None = None,
+        id_usuario=None,
+        ver_todos: bool = False,
+    ) -> list[dict]:
+        avisos = AvisoRepository.obtener_todos(
+            db,
+            categoria=categoria,
+            id_ficha=id_ficha,
+            id_usuario=id_usuario,
+            ver_todos=ver_todos,
+        )
         return [AvisoService._a_response(aviso) for aviso in avisos]
 
     @staticmethod

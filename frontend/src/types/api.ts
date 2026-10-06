@@ -272,6 +272,16 @@ export interface Aviso {
   sedeNombre: string | null
 }
 
+export interface AvisoInput {
+  titulo: string
+  cuerpo: string
+  categoria: CategoriaAviso
+  idFicha: number | null
+  idSede: number | null
+  adjuntoUrl: string | null
+  vigenteHasta: string | null
+}
+
 export interface HorarioGuardado {
   idHorarioGuardado: number
   idUsuario: string
@@ -385,6 +395,11 @@ export interface SolicitudCambioHorario {
   fechaSolicitud: string
   fechaResolucion: string | null
   idAdminResolvio: string | null
+  instructorNombre: string | null
+  fichaCodigo: string | null
+  horaInicio: string | null
+  horaFin: string | null
+  ambienteNombre: string | null
 }
 
 /** Respuesta de `POST /solicitudes-acceso/{id}/aprobar`. Mientras el SMTP

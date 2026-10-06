@@ -46,7 +46,7 @@ function IconoCampana() {
 const ACCESOS: AccesoDirecto[] = [
   { etiqueta: 'Mi Horario', descripcion: 'Tu grilla semanal, próxima clase e instructores.', ruta: '/mi-horario', icono: <IconoCalendario /> },
   { etiqueta: 'Mensajes Docentes', descripcion: 'Escríbele a los instructores que te dictan clase.', ruta: '/mensajes-docentes', icono: <IconoMensaje /> },
-  { etiqueta: 'Avisos & Eventos', descripcion: 'Comunicados oficiales de Coordinación.', ruta: '/avisos', icono: <IconoAviso /> },
+  { etiqueta: 'Comunicados del centro', descripcion: 'Comunicados oficiales de Coordinación.', ruta: '/avisos', icono: <IconoAviso /> },
   { etiqueta: 'Notificaciones', descripcion: 'Cambios de horario, ambiente y novedades.', ruta: '/notificaciones', icono: <IconoCampana /> },
 ]
 

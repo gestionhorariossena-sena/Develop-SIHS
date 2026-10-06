@@ -36,6 +36,7 @@ import { MiAsistencia } from '../pages/MiAsistencia'
 import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
 import { Notificaciones } from '../pages/Notificaciones'
 import { PublicacionesProgramadas } from '../pages/PublicacionesProgramadas'
+import { MisSolicitudesCambioHorario } from '../pages/MisSolicitudesCambioHorario'
 
 /**
  * Quién puede abrir cada pantalla. Mismo criterio que usa el navbar para
@@ -184,6 +185,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={APRENDIZ}>
             <MensajesAprendiz />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mis-solicitudes-cambio"
+        element={
+          <ProtectedRoute roles={INSTRUCTOR}>
+            <MisSolicitudesCambioHorario />
           </ProtectedRoute>
         }
       />

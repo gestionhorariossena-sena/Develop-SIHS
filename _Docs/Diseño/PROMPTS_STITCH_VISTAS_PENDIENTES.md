@@ -20,7 +20,7 @@ momento y nunca construido. No hay que volver a pedirlas:
 
 | Módulo | Mockup existente | Estado |
 |---|---|---|
-| `/avisos` (lado lectura) | `avisos_oficiales_y_eventos_rol_aprendiz_sihs_sena/` | **Construido** el 2026-09-24 (`pages/Avisos.tsx`, ruta `/avisos`). Falta el lado de quien publica → **Prompt 1** |
+| `/avisos` | `avisos_oficiales_y_eventos_rol_aprendiz_sihs_sena/` | **Construido**: lectura filtrada por audiencia y consola de publicación/edición/eliminación para Coordinación y Administración (`pages/Avisos.tsx`, ruta `/avisos`). |
 | `/mensajeria` (lado Aprendiz) | `mensajer_a_de_instructores_rol_aprendiz_sihs_sena/` | **Construido** (`pages/MensajesAprendiz.tsx`, ruta `/mensajes`). Falta el lado del Instructor → **Prompt 2** |
 | `/anotaciones-horario` | `mi_horario_rol_aprendiz_sihs_sena/` | **Construido** dentro de "Mi horario" del Aprendiz (`components/OrganizadorAnotacion.tsx`) |
 
@@ -46,65 +46,6 @@ Los prompts de abajo cubren lo que **no** tiene diseño.
 > contenido de la página.
 
 ---
-
-## Prompt 1 — Consola de avisos (Coordinador / Administrador)
-
-**Endpoints**: `GET /avisos/?categoria=&idFicha=` (cualquier sesión) ·
-`POST /avisos/` · `PUT /avisos/{id}` · `DELETE /avisos/{id}` (Admin y
-Coordinador).
-
-```
-[pegar el bloque de estilo común]
-
-Pantalla: "Avisos y comunicados", la consola desde la que la coordinación
-publica comunicados para instructores y aprendices.
-
-Encabezado: título "Avisos y comunicados", bajada "Lo que publiques acá lo
-ven los instructores y aprendices a los que va dirigido", y a la derecha un
-botón verde primario "Publicar aviso".
-
-Debajo, una fila de filtros: cuatro píldoras de categoría —"Reprogramación",
-"Eventos", "Sede", "Extraordinario"— más una píldora "Todas" activa por
-defecto, y un selector "Ficha" para filtrar por una ficha puntual.
-
-Cuerpo: lista vertical de tarjetas de aviso, la más reciente arriba. Cada
-tarjeta muestra:
-- una insignia de categoría arriba a la izquierda, con color propio por
-  categoría (reprogramación en ámbar, eventos en verde suave, sede en gris,
-  extraordinario en rojo suave);
-- el título del aviso en negrita;
-- las dos primeras líneas del cuerpo, cortadas con puntos suspensivos;
-- una línea de metadatos con: a quién va dirigido ("Ficha 3171618", "Sede
-  Calle 52" o "Todo el centro"), quién lo publicó y hace cuánto;
-- si el aviso tiene documento anexo, un enlace discreto con icono de
-  documento que dice "Ver documento adjunto";
-- si el aviso tiene fecha de vigencia, un texto pequeño "Vigente hasta el 30
-  de septiembre"; y si esa fecha ya pasó, la tarjeta se ve atenuada con una
-  insignia gris "Vencido";
-- a la derecha, dos acciones discretas: "Editar" y "Eliminar".
-
-Incluye el estado vacío: cuando no hay avisos en el filtro elegido, una
-tarjeta centrada con icono de megáfono, el texto "Todavía no hay avisos en
-esta categoría" y el mismo botón "Publicar aviso".
-
-Incluye también el panel lateral (drawer) que se abre al pulsar "Publicar
-aviso", con: campo de título; área de texto grande para el cuerpo; selector
-de categoría con las cuatro opciones; un grupo de opciones excluyentes para
-el destinatario ("Todo el centro" / "Una ficha" / "Una sede") que revela el
-selector correspondiente al elegir; un campo de texto etiquetado "Enlace al
-documento (opcional)" con el ejemplo "https://..."; un campo de fecha
-"Vigente hasta (opcional)"; y abajo los botones "Cancelar" y "Publicar".
-
-No incluir: subida de archivos por arrastre ni botón de "Adjuntar archivo"
-(el sistema solo guarda un enlace, no almacena documentos), contador de
-lecturas o "visto por X personas", estado de borrador, programación para
-publicar más tarde, comentarios ni reacciones.
-```
-
-**Por qué esas exclusiones** — `adjuntoUrl` es un `String(500)`: no hay
-endpoint de subida. No existe tabla de lecturas por usuario, ni estado
-borrador, ni `fechaProgramada`. La vigencia (`vigenteHasta`) la guarda pero no
-la filtra: lo de «Vencido» se calcula en el cliente.
 
 ---
 

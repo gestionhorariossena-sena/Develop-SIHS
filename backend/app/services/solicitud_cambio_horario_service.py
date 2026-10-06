@@ -10,6 +10,26 @@ ESTADOS_RESOLUCION_VALIDOS = {"aprobada", "rechazada"}
 
 class SolicitudCambioHorarioService:
     @staticmethod
+    def _a_response(solicitud):
+        horario = solicitud.horarioOrigen
+        return {
+            "idSolicitud": solicitud.idSolicitud,
+            "idInstructor": solicitud.idInstructor,
+            "idHorarioOrigen": solicitud.idHorarioOrigen,
+            "tipo": solicitud.tipo,
+            "motivo": solicitud.motivo,
+            "estado": solicitud.estado,
+            "fechaSolicitud": solicitud.fechaSolicitud,
+            "fechaResolucion": solicitud.fechaResolucion,
+            "idAdminResolvio": solicitud.idAdminResolvio,
+            "instructorNombre": solicitud.instructor.nombre if solicitud.instructor else None,
+            "fichaCodigo": horario.ficha.codigoFicha if horario and horario.ficha else None,
+            "horaInicio": horario.horaInicio if horario else None,
+            "horaFin": horario.horaFin if horario else None,
+            "ambienteNombre": horario.ambiente.nombre if horario and horario.ambiente else None,
+        }
+
+    @staticmethod
     def crear(db, id_instructor, data):
         horario = HorarioRepository.obtener_por_id(db, data.idHorarioOrigen)
         if not horario or horario.idInstructor != id_instructor:
@@ -21,15 +41,22 @@ class SolicitudCambioHorarioService:
             tipo=data.tipo,
             motivo=data.motivo,
         )
-        return SolicitudCambioHorarioRepository.crear(db, solicitud)
+        solicitud = SolicitudCambioHorarioRepository.crear(db, solicitud)
+        return SolicitudCambioHorarioService._a_response(solicitud)
 
     @staticmethod
     def obtener_mias(db, id_instructor):
-        return SolicitudCambioHorarioRepository.obtener_por_instructor(db, id_instructor)
+        return [
+            SolicitudCambioHorarioService._a_response(solicitud)
+            for solicitud in SolicitudCambioHorarioRepository.obtener_por_instructor(db, id_instructor)
+        ]
 
     @staticmethod
     def obtener_todas(db, estado: str | None = None):
-        return SolicitudCambioHorarioRepository.obtener_todas(db, estado)
+        return [
+            SolicitudCambioHorarioService._a_response(solicitud)
+            for solicitud in SolicitudCambioHorarioRepository.obtener_todas(db, estado)
+        ]
 
     @staticmethod
     def resolver(db, id_solicitud: int, id_admin, estado: str):
@@ -75,4 +102,4 @@ class SolicitudCambioHorarioService:
             id_entidad_relacionada=resuelta.idSolicitud,
         )
 
-        return resuelta
+        return SolicitudCambioHorarioService._a_response(resuelta)

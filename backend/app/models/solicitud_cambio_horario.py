@@ -1,5 +1,6 @@
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
 from app.core.database import Base
@@ -25,3 +26,6 @@ class SolicitudCambioHorario(Base):
     fechaSolicitud = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     fechaResolucion = Column(DateTime(timezone=True), nullable=True)
     idAdminResolvio = Column(UUID(as_uuid=True), ForeignKey("usuarios.idUsuario"), nullable=True)
+
+    instructor = relationship("Usuario", foreign_keys=[idInstructor])
+    horarioOrigen = relationship("Horario", foreign_keys=[idHorarioOrigen])

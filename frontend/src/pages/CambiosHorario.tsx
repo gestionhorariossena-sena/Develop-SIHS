@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
 import { apiGet, apiPatch, ApiError } from '../services/api'
-import type { Horario, SolicitudCambioHorario, Usuario } from '../types/api'
+import type { SolicitudCambioHorario } from '../types/api'
 
 type Tab = 'pendiente' | 'aprobada' | 'rechazada'
 
@@ -27,10 +27,6 @@ function formatFecha(iso: string) {
   })
 }
 
-function formatoHora(hora: string) {
-  return hora.slice(0, 5)
-}
-
 /**
  * Bandeja del coordinador para lo que reportan los instructores — el ítem
  * «Cambios» del navbar, que hasta H-4 (2026-09-24) estaba en gris con el
@@ -50,8 +46,6 @@ function formatoHora(hora: string) {
  */
 export function CambiosHorario() {
   const [solicitudes, setSolicitudes] = useState<SolicitudCambioHorario[] | null>(null)
-  const [instructores, setInstructores] = useState<Map<string, Usuario>>(new Map())
-  const [horarios, setHorarios] = useState<Map<number, Horario>>(new Map())
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
@@ -59,15 +53,9 @@ export function CambiosHorario() {
   const [tabActivo, setTabActivo] = useState<Tab>('pendiente')
 
   function cargar() {
-    return Promise.all([
-      apiGet<SolicitudCambioHorario[]>('/solicitudes-cambio-horario/'),
-      apiGet<Usuario[]>('/usuarios/'),
-      apiGet<Horario[]>('/horarios/'),
-    ])
-      .then(([lista, usuarios, listaHorarios]) => {
+    return apiGet<SolicitudCambioHorario[]>('/solicitudes-cambio-horario/')
+      .then((lista) => {
         setSolicitudes(lista)
-        setInstructores(new Map(usuarios.map((u) => [u.idUsuario, u])))
-        setHorarios(new Map(listaHorarios.map((h) => [h.idHorario, h])))
         setError(null)
       })
       .catch((err: unknown) => {
@@ -95,9 +83,8 @@ export function CambiosHorario() {
 
     try {
       await apiPatch(`/solicitudes-cambio-horario/${solicitud.idSolicitud}/resolver`, { estado })
-      const instructor = instructores.get(solicitud.idInstructor)
       setMensajeExito(
-        `Solicitud de ${instructor?.nombre ?? 'el instructor'} marcada como ${estado}. Se le notificó.`,
+        `Solicitud de ${solicitud.instructorNombre ?? 'el instructor'} marcada como ${estado}. Se le notificó.`,
       )
       setTimeout(() => setMensajeExito(null), 6000)
       await cargar()
@@ -111,10 +98,10 @@ export function CambiosHorario() {
   const visibles = porEstado[tabActivo]
 
   return (
-    <AppShell activo="Cambios">
+    <AppShell activo="Solicitudes de cambio">
       <div className="mx-auto max-w-5xl">
-        <p className="text-xs font-semibold uppercase tracking-wide text-primary">Operación</p>
-        <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Cambios y novedades</h1>
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary">Comunicaciones · Gestión</p>
+        <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Solicitudes de cambio de horario</h1>
         <p className="mb-6 text-sm text-on-surface-variant dark:text-slate-400">
           Lo que los instructores reportan sobre sus franjas. Aprobar deja constancia de la decisión y les
           avisa; el horario se ajusta después en el creador de horarios.
@@ -164,9 +151,6 @@ export function CambiosHorario() {
 
         <ul className="flex flex-col gap-3">
           {visibles.map((solicitud) => {
-            const instructor = instructores.get(solicitud.idInstructor)
-            const horario = horarios.get(solicitud.idHorarioOrigen)
-
             return (
               <li
                 key={solicitud.idSolicitud}
@@ -177,7 +161,7 @@ export function CambiosHorario() {
                     {ETIQUETA_TIPO[solicitud.tipo]}
                   </span>
                   <span className="text-sm font-semibold text-on-surface dark:text-slate-100">
-                    {instructor?.nombre ?? 'Instructor'}
+                    {solicitud.instructorNombre ?? 'Instructor'}
                   </span>
                   <span className="text-xs text-on-surface-variant dark:text-slate-400">
                     {formatFecha(solicitud.fechaSolicitud)}
@@ -187,8 +171,8 @@ export function CambiosHorario() {
                 <p className="mb-2 text-sm text-on-surface-variant dark:text-slate-300">{solicitud.motivo}</p>
 
                 <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
-                  {horario
-                    ? `Ficha ${horario.fichaCodigo ?? horario.idFicha} · ${formatoHora(horario.horaInicio)} a ${formatoHora(horario.horaFin)} · ${horario.ambienteNombre ?? 'sin ambiente'}`
+                  {solicitud.fichaCodigo && solicitud.horaInicio && solicitud.horaFin
+                    ? `Ficha ${solicitud.fichaCodigo} · ${solicitud.horaInicio.slice(0, 5)} a ${solicitud.horaFin.slice(0, 5)} · ${solicitud.ambienteNombre ?? 'sin ambiente'}`
                     : `Bloque #${solicitud.idHorarioOrigen}`}
                 </p>
 

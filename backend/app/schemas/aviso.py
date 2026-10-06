@@ -1,13 +1,14 @@
 from datetime import date, datetime
+from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AvisoCreate(BaseModel):
-    titulo: str
-    cuerpo: str
-    categoria: str
+    titulo: str = Field(min_length=1, max_length=200)
+    cuerpo: str = Field(min_length=1)
+    categoria: Literal["reprog", "eventos", "sede", "extraordinario"]
     idFicha: int | None = None
     idSede: int | None = None
     adjuntoUrl: str | None = None
@@ -15,9 +16,9 @@ class AvisoCreate(BaseModel):
 
 
 class AvisoUpdate(BaseModel):
-    titulo: str
-    cuerpo: str
-    categoria: str
+    titulo: str = Field(min_length=1, max_length=200)
+    cuerpo: str = Field(min_length=1)
+    categoria: Literal["reprog", "eventos", "sede", "extraordinario"]
     idFicha: int | None = None
     idSede: int | None = None
     adjuntoUrl: str | None = None

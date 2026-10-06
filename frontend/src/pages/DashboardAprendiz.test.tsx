@@ -89,7 +89,7 @@ describe('DashboardAprendiz', () => {
     const contenido = within(screen.getByRole('main'))
     expect(contenido.getByRole('link', { name: /Mi Horario/ })).toHaveAttribute('href', '/mi-horario')
     expect(contenido.getByRole('link', { name: /Mensajes Docentes/ })).toHaveAttribute('href', '/mensajes-docentes')
-    expect(contenido.getByRole('link', { name: /Avisos & Eventos/ })).toHaveAttribute('href', '/avisos')
+    expect(contenido.getByRole('link', { name: /Comunicados del centro/ })).toHaveAttribute('href', '/avisos')
     expect(contenido.getByRole('link', { name: /Notificaciones/ })).toHaveAttribute('href', '/notificaciones')
   })
 })
