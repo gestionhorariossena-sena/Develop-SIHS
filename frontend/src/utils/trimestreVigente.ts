@@ -28,7 +28,7 @@ export function avisoTrimestres(trimestres: Trimestre[], fecha = fechaLocalISO()
       trimestre.fechaInicio <= fecha &&
       fecha <= trimestre.fechaFin,
   )
-  if (vigentes.length > 1) return 'Hay varios períodos activos para la fecha actual. Selecciona el período de trabajo y solicita revisar su configuración.'
+  if (vigentes.length > 1) return 'Hay varios períodos académicos activos para la fecha actual. Selecciona el período académico de trabajo y solicita revisar su configuración.'
   if (vigentes.length === 1) return null
-  return 'No existe un período activo que incluya la fecha actual. Selecciona explícitamente un período para consultar o planear; verifica sus fechas antes de guardar.'
+  return 'No hay un período académico activo para la fecha actual. Selecciona un período académico para consultar, planear o auditar horarios. Verifica las fechas del período antes de guardar cambios.'
 }
