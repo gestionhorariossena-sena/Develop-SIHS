@@ -16,6 +16,7 @@ class SesionesFalsas implements AsistenciaGateway {
   SesionAsistencia? respuesta;
   Object? error;
   final List<String> pedidos = [];
+  final List<Map<String, EstadoAsistencia>> registros = [];
 
   @override
   Future<MiAsistencia> obtenerMiAsistencia() async =>
@@ -29,6 +30,17 @@ class SesionesFalsas implements AsistenciaGateway {
     pedidos.add('$idHorario@${AsistenciaService.soloFecha(fecha)}');
     if (error != null) throw error!;
     return respuesta ?? _sesion();
+  }
+
+  @override
+  Future<void> registrarSesion({
+    required int idHorario,
+    required DateTime fecha,
+    required Map<String, EstadoAsistencia> marcas,
+    Map<String, String?> referenciasExcusa = const {},
+  }) async {
+    if (error != null) throw error!;
+    registros.add(Map<String, EstadoAsistencia>.from(marcas));
   }
 }
 
@@ -130,10 +142,10 @@ void main() {
     expect(find.text('Ausente: 1'), findsNothing);
   });
 
-  testWidgets('deja claro que desde el móvil solo se consulta', (tester) async {
+  testWidgets('deja claro que desde el móvil se puede iniciar la lista', (tester) async {
     await montar(tester, gateway: SesionesFalsas());
 
-    expect(find.textContaining('Para pasar lista'), findsOneWidget);
+    expect(find.textContaining('iniciar o corregir la lista'), findsOneWidget);
   });
 
   testWidgets('al tocar la clase se abre la nómina con cada aprendiz',
@@ -159,11 +171,33 @@ void main() {
 
     expect(find.text('Laura Peña'), findsOneWidget);
     expect(find.text('Tarde'), findsOneWidget);
-    // Sin marca no es lo mismo que ausente: son estados distintos y la
-    // nómina tiene que distinguirlos.
     expect(find.text('Juan Gómez'), findsOneWidget);
-    expect(find.text('Sin marcar'), findsOneWidget);
+    expect(find.byKey(const Key('guardar-asistencia')), findsOneWidget);
     expect(find.textContaining('Lista registrada por Carlos Ruiz'), findsOneWidget);
+  });
+
+  testWidgets('puede marcar y guardar asistencia desde el móvil', (tester) async {
+    final gateway = SesionesFalsas(
+      respuesta: _sesion(
+        aprendices: const [
+          AprendizDeSesion(idUsuario: 'a1', nombre: 'Laura Peña'),
+          AprendizDeSesion(idUsuario: 'a2', nombre: 'Juan Gómez'),
+        ],
+      ),
+    );
+    await montar(tester, gateway: gateway);
+
+    await tester.tap(find.byKey(const Key('clase-1')));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('marcar-todos-presentes')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('guardar-asistencia')));
+    await tester.pumpAndSettle();
+
+    expect(gateway.registros, hasLength(1));
+    expect(gateway.registros.single['a1'], EstadoAsistencia.presente);
+    expect(gateway.registros.single['a2'], EstadoAsistencia.presente);
   });
 
   testWidgets('no ofrece avanzar a mañana, y sí retroceder', (tester) async {

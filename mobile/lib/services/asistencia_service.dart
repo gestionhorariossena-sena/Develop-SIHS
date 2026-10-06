@@ -10,12 +10,23 @@ abstract class AsistenciaGateway {
   Future<MiAsistencia> obtenerMiAsistencia();
 
   /// Solo para Instructor (`GET /asistencias/sesion`), y solo de SUS
-  /// clases: el backend responde 404 si el bloque es de otro. Acá es
-  /// consulta y nada más — pasar lista (`POST`) se hace desde la web.
+  /// clases: el backend responde 404 si el bloque es de otro.
   Future<SesionAsistencia> obtenerSesion({
     required int idHorario,
     required DateTime fecha,
   });
+
+  /// Registra o corrige la lista completa de una sesión del instructor.
+  /// El backend vuelve a validar que la clase sea suya y que la fecha
+  /// corresponda a un día real del bloque.
+  Future<void> registrarSesion({
+    required int idHorario,
+    required DateTime fecha,
+    required Map<String, EstadoAsistencia> marcas,
+    Map<String, String?> referenciasExcusa = const {},
+  }) async {
+    throw UnsupportedError('Este gateway no implementa escritura de asistencia.');
+  }
 }
 
 class AsistenciaService implements AsistenciaGateway {
@@ -39,6 +50,31 @@ class AsistenciaService implements AsistenciaGateway {
       queryParameters: {'idHorario': idHorario, 'fecha': soloFecha(fecha)},
     );
     return SesionAsistencia.fromJson(respuesta);
+  }
+
+  @override
+  Future<void> registrarSesion({
+    required int idHorario,
+    required DateTime fecha,
+    required Map<String, EstadoAsistencia> marcas,
+    Map<String, String?> referenciasExcusa = const {},
+  }) async {
+    await _apiClient.post<Map<String, dynamic>>(
+      '/asistencias/sesion',
+      data: {
+        'idHorario': idHorario,
+        'fechaSesion': soloFecha(fecha),
+        'marcas': marcas.entries
+            .map((entry) => {
+                  'idUsuarioAprendiz': entry.key,
+                  'estado': entry.value.valorApi,
+                  'referenciaExcusa': entry.value == EstadoAsistencia.excusa
+                      ? referenciasExcusa[entry.key]
+                      : null,
+                })
+            .toList(),
+      },
+    );
   }
 
   /// "2026-09-25". `toIso8601String()` no sirve: arrastra la hora y la
