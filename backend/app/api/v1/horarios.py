@@ -112,19 +112,27 @@ def auditar_cruces(
     usuario=Depends(require_puede_programar),
 ):
     """Barrido de cruces entre horarios ya guardados (activos) — pantalla
-    "Auditoría de Cruces" de Coordinación. Reutiliza la misma lógica de
-    validar_dry_run por cada horario existente (ver
-    HorarioService.auditar_conflictos), así que los tipos de conflicto son
-    exactamente los mismos que ya devuelve /horarios/validar:
+    "Auditoría de Cruces" de Coordinación. Mismas reglas y mismos tipos que
+    /horarios/validar (ver HorarioService.auditar_conflictos):
     cruce_ficha, cruce_instructor, cruce_ambiente, resultado_repetido,
-    regla_instructor."""
+    regla_instructor, fortaleza_instructor y ficha_trimestre."""
     conflictos = HorarioService.auditar_conflictos(db, id_trimestre=idTrimestre, id_sede=idSede)
+
+    por_tipo: dict[str, int] = {}
+    afectados: set[int] = set()
+    for conflicto in conflictos:
+        por_tipo[conflicto["tipo"]] = por_tipo.get(conflicto["tipo"], 0) + 1
+        afectados.add(conflicto["idHorario"])
+        if conflicto.get("idHorarioExistente") is not None:
+            afectados.add(conflicto["idHorarioExistente"])
 
     return {
         "conflictos": conflictos,
         "resumen": {
             "totalCruces": len(conflictos),
-            "tipos": sorted({c["tipo"] for c in conflictos}),
+            "tipos": sorted(por_tipo),
+            "porTipo": por_tipo,
+            "horariosAfectados": len(afectados),
         },
     }
 

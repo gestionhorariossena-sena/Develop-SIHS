@@ -19,6 +19,7 @@ const TITULO_POR_TIPO: Record<TipoConflictoHorario, string> = {
   resultado_repetido: 'Resultado repetido',
   regla_instructor: 'Regla institucional (RF-011)',
   fortaleza_instructor: 'Fortaleza del instructor',
+  ficha_trimestre: 'Ficha fuera de su trimestre',
 }
 
 /**

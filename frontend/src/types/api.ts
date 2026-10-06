@@ -212,6 +212,10 @@ export type TipoConflictoHorario =
   // HorarioService._validar_fortaleza_instructor. Forzable, igual que
   // regla_instructor.
   | 'fortaleza_instructor'
+  // La ficha pertenece a otro trimestre que el del horario — ver
+  // HorarioService._mensaje_ficha_del_periodo. El dry-run y la auditoría
+  // ya lo devolvían, pero ninguna pantalla sabía titularlo.
+  | 'ficha_trimestre'
 
 export interface HorarioDryRunConflict {
   tipo: TipoConflictoHorario
@@ -241,7 +245,13 @@ export interface AuditoriaConflicto extends HorarioDryRunConflict {
 
 export interface AuditoriaCrucesResponse {
   conflictos: AuditoriaConflicto[]
-  resumen: { totalCruces: number; tipos: string[] }
+  resumen: {
+    totalCruces: number
+    tipos: string[]
+    porTipo?: Record<string, number>
+    /** Horarios distintos que aparecen en al menos un conflicto. */
+    horariosAfectados?: number
+  }
 }
 
 // Espejo de HorarioGuardadoResponse (backend/app/schemas/horario_guardado.py).
