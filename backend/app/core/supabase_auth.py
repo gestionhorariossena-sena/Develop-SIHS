@@ -1,3 +1,6 @@
+import base64
+import json
+import logging
 import threading
 import time
 
@@ -70,6 +73,25 @@ def _verificar_token_supabase(token: str) -> dict:
         ) from ultimo_error
 
     if respuesta.status_code != 200:
+        # Diagnóstico seguro para despliegues: registra solo el emisor (iss)
+        # público del JWT y la URL pública configurada de Supabase. Nunca
+        # imprime el token ni las claves. Esto permite detectar de inmediato
+        # si frontend y backend apuntan a proyectos Supabase distintos.
+        issuer = "desconocido"
+        try:
+            payload_segment = token.split(".")[1]
+            payload_segment += "=" * (-len(payload_segment) % 4)
+            payload = json.loads(base64.urlsafe_b64decode(payload_segment.encode()).decode())
+            issuer = str(payload.get("iss") or "desconocido")
+        except Exception:
+            pass
+
+        logging.getLogger("uvicorn.error").warning(
+            "Supabase rechazó token con HTTP %s. issuer=%s configured_supabase_url=%s",
+            respuesta.status_code,
+            issuer,
+            settings.supabase_url,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token inválido o expirado",
