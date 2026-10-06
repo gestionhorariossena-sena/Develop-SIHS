@@ -2,6 +2,7 @@ from app.models.ficha_usuario import FichaUsuario
 from app.repositories.ficha_repository import FichaRepository
 from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
 from app.repositories.horario_repository import HorarioRepository
+from app.repositories.trimestre_repository import TrimestreRepository
 
 
 class FichaUsuarioService:
@@ -38,6 +39,10 @@ class FichaUsuarioService:
 
         if not ficha:
             return None
+
+        vigente = TrimestreRepository.obtener_vigente(db)
+        if vigente is None or ficha.idTrimestre != vigente.idTrimestre:
+            return []
 
         return HorarioRepository.obtener_publicados_por_ficha(db, ficha.idFicha)
 
