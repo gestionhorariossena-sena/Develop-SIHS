@@ -1,4 +1,6 @@
 import logging
+from contextlib import asynccontextmanager
+from threading import Event, Thread
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +11,7 @@ from app.api.v1.roles import router as roles_router
 from app.api.v1.usuario_rol import router as usuario_rol_router
 from app.api.v1.usuarios import router as usuarios_router
 from app.core.config import settings
+from app.workers.publicacion_programada_worker import run_worker
 from app.api.v1.dias_semana import router as dias_semana_router
 from app.api.v1.especialidades import router as especialidades_router
 from app.api.v1.jornadas import router as jornadas_router
@@ -38,7 +41,44 @@ from app.api.v1.solicitudes_cambio_horario import router as solicitudes_cambio_h
 from app.api.v1.solicitudes_acceso import router as solicitudes_acceso_router
 
 
-app = FastAPI(title=settings.app_name)
+_worker_stop_event = Event()
+
+
+def _run_embedded_publication_worker() -> None:
+    logger = logging.getLogger("sihs.publicacion_worker")
+    while not _worker_stop_event.is_set():
+        try:
+            run_worker(stop_event=_worker_stop_event)
+        except Exception:
+            logger.exception("El worker embebido se detuvo inesperadamente; reintentando en 5 s")
+            if _worker_stop_event.wait(5):
+                return
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    worker_thread = None
+    if settings.embedded_publication_worker:
+        _worker_stop_event.clear()
+        worker_thread = Thread(
+            target=_run_embedded_publication_worker,
+            name="sihs-publicacion-worker",
+            daemon=True,
+        )
+        worker_thread.start()
+        logging.getLogger("uvicorn.error").info(
+            "Worker embebido de publicaciones programadas habilitado"
+        )
+
+    try:
+        yield
+    finally:
+        if worker_thread is not None:
+            _worker_stop_event.set()
+            worker_thread.join(timeout=10)
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 # La capa de IA es opcional: sin clave el sistema funciona completo, pero el
 # asistente de programación no puede importar un Excel. Avisarlo al arrancar
@@ -88,12 +128,17 @@ async def convertir_errores_no_manejados(request: Request, call_next):
 
 
 # Desarrollo: acepta cualquier puerto de localhost (Vite salta al siguiente
-# puerto libre — 5174, 5175... — si 5173 ya está ocupado por otro proyecto,
-# así que fijar un solo puerto rompe el CORS en silencio). En producción se
-# suma la URL real del frontend desplegado vía la variable FRONTEND_URL.
+# puerto libre — 5174, 5175... — si 5173 ya está ocupado por otro proyecto).
+# Producción: además de FRONTEND_URL, se aceptan SOLO los dominios Vercel del
+# proyecto SIHS. Vercel usa un dominio estable para producción y dominios
+# derivados del nombre de rama para previews; exigir una única URL exacta
+# hacía que un redeploy/preview válido fallara como TypeError de red.
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=r"http://(localhost|127\.0\.0\.1):\d+",
+    allow_origin_regex=(
+        r"http://(localhost|127\.0\.0\.1):\d+"
+        r"|https://(?:proyectosihs|proyecto-sihs)(?:-[a-z0-9-]+)?\.vercel\.app"
+    ),
     allow_origins=[settings.frontend_url] if settings.frontend_url else [],
     allow_credentials=True,
     allow_methods=["*"],
