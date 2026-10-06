@@ -86,7 +86,7 @@ describe('VistaAmbientes', () => {
 
     await usuario.click(screen.getByText('Sala 101'))
 
-    expect(await screen.findByText('Sin horario asignado en el trimestre actual.')).toBeInTheDocument()
+    expect(await screen.findByText('Sin horario asignado en el período académico actual.')).toBeInTheDocument()
   })
 
   it('con ?id= en la URL, selecciona ese ambiente directo (deep link desde el drawer de Ambientes.tsx)', async () => {
