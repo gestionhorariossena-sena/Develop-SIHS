@@ -187,10 +187,12 @@ describe('HorariosCompletos', () => {
     await usuario.click(screen.getAllByText('3228973 B')[0])
     await screen.findByText('Horario #7')
 
+    // T-22 (SCRUM-141): "Más info →" de fichas (href /fichas?id=1) se quitó
+    // junto con la ruta /fichas, desactivada temporalmente -- destapar
+    // cuando se reactive.
     const masInfo = screen.getAllByRole('link', { name: 'Más info →' })
-    expect(masInfo[0]).toHaveAttribute('href', '/fichas?id=1')
-    expect(masInfo[1]).toHaveAttribute('href', '/instructores?id=u1')
-    expect(masInfo[2]).toHaveAttribute('href', '/ambientes?id=1')
+    expect(masInfo[0]).toHaveAttribute('href', '/instructores?id=u1')
+    expect(masInfo[1]).toHaveAttribute('href', '/ambientes?id=1')
 
     expect(screen.getByRole('link', { name: 'Ver horario por ficha →' })).toHaveAttribute('href', '/vista-fichas?id=1')
     expect(screen.getByRole('link', { name: 'Ver horario por instructor →' })).toHaveAttribute('href', '/vista-instructores?id=u1')

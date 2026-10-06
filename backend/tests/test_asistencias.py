@@ -25,6 +25,12 @@ from app.models.sede import Sede
 from app.models.trimestre import Trimestre
 from app.models.usuario import Usuario
 
+# T-23 (SCRUM-141): el router de asistencias está desregistrado
+# temporalmente en app/main.py para la presentación -- estos tests pegan
+# directo a esas rutas, así que fallarían con 404 mientras tanto. Quitar
+# este skip cuando se reactive el router.
+pytestmark = pytest.mark.skip(reason="T-23: módulo de Asistencia desactivado temporalmente (SCRUM-141)")
+
 
 def _crear_tablas(db_session):
     from app.core.database import Base

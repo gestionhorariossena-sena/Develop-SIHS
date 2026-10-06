@@ -172,7 +172,7 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
             <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-400">Sin más datos disponibles.</p>
           )}
           <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-outline-variant pt-2 dark:border-slate-700">
-            <Link to={`/fichas?id=${horario.idFicha}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Más info →</Link>
+            {/* T-22 (SCRUM-141): "Más info →" llevaba a /fichas, desactivado temporalmente. */}
             <Link to={`/vista-fichas?id=${horario.idFicha}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Ver horario por ficha →</Link>
           </div>
         </div>

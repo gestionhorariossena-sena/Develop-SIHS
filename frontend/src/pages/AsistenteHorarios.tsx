@@ -658,8 +658,10 @@ export function AsistenteHorarios() {
                 </p>
                 <p className="mt-2">
                   Para verlo, ve a{' '}
-                  <Link to="/fichas" className="font-semibold text-primary hover:underline dark:text-sena-400">
-                    Fichas
+                  {/* T-22 (SCRUM-141): /fichas desactivado temporalmente -- /vista-fichas
+                      muestra lo mismo que se quiere mostrar acá (el horario de la ficha). */}
+                  <Link to="/vista-fichas" className="font-semibold text-primary hover:underline dark:text-sena-400">
+                    Vista por fichas
                   </Link>{' '}
                   y abre la ficha que te interesa. Para crear o ajustar un horario, usa "Horario de instructor" arriba.
                 </p>

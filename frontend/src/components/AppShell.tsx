@@ -56,13 +56,14 @@ const NAV: GrupoNav[] = [
     grupo: 'Mi trabajo',
     items: [
       { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
-      // Pasar lista: solo el instructor, y solo de sus propias clases.
-      { etiqueta: 'Asistencia', ruta: '/asistencia', soloInstructor: true },
+      // T-23 (SCRUM-141): Asistencia desactivada temporalmente para la
+      // presentación -- destapar junto con las rutas en AppRouter.tsx.
+      // { etiqueta: 'Asistencia', ruta: '/asistencia', soloInstructor: true },
       { etiqueta: 'Mi horario', ruta: '/mi-horario-aprendiz', soloAprendiz: true },
       // Solo el Aprendiz abre conversaciones (lo valida el backend), así
       // que por ahora el ítem es suyo; la bandeja del Instructor es otra
       // pantalla pendiente de diseño.
-      { etiqueta: 'Mi asistencia', ruta: '/mi-asistencia', soloAprendiz: true },
+      // { etiqueta: 'Mi asistencia', ruta: '/mi-asistencia', soloAprendiz: true },
       { etiqueta: 'Mensajes', ruta: '/mensajes', soloAprendiz: true },
       // Centro de notificaciones del Aprendiz (pantalla propia, distinta
       // de la campana del navbar: ahí caben el historial y el detalle).
@@ -87,7 +88,8 @@ const NAV: GrupoNav[] = [
   {
     grupo: 'Formación',
     items: [
-      { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
+      // T-22 (SCRUM-141): Directorio de fichas desactivado temporalmente.
+      // { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
       { etiqueta: 'Programas', ruta: '/programas', soloGestion: true },
       { etiqueta: 'Temáticas', soloGestion: true },
     ],

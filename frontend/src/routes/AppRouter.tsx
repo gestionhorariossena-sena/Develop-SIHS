@@ -15,7 +15,9 @@ import { Ambientes } from '../pages/Ambientes'
 import { Sedes } from '../pages/Sedes'
 import { Instructores } from '../pages/Instructores'
 import { VistaInstructores } from '../pages/VistaInstructores'
-import { Fichas } from '../pages/Fichas'
+// T-22 (SCRUM-141): import sin usar mientras la ruta /fichas está
+// comentada más abajo -- destapar junto con esa ruta.
+// import { Fichas } from '../pages/Fichas'
 import { VistaFichas } from '../pages/VistaFichas'
 import { VistaAmbientes } from '../pages/VistaAmbientes'
 import { MiHorario } from '../pages/MiHorario'
@@ -31,8 +33,10 @@ import { Programas } from '../pages/Programas'
 import { CambiosHorario } from '../pages/CambiosHorario'
 import { Avisos } from '../pages/Avisos'
 import { MensajesAprendiz } from '../pages/MensajesAprendiz'
-import { AsistenciaInstructor } from '../pages/AsistenciaInstructor'
-import { MiAsistencia } from '../pages/MiAsistencia'
+// T-23 (SCRUM-141): import sin usar mientras las rutas de Asistencia
+// están comentadas más abajo -- destapar junto con las rutas.
+// import { AsistenciaInstructor } from '../pages/AsistenciaInstructor'
+// import { MiAsistencia } from '../pages/MiAsistencia'
 import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
 import { Notificaciones } from '../pages/Notificaciones'
 import { PublicacionesProgramadas } from '../pages/PublicacionesProgramadas'
@@ -162,8 +166,9 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
-      {/* Pasar lista es del Instructor; el Aprendiz solo lee la suya. */}
-      <Route
+      {/* T-23 (SCRUM-141): Asistencia desactivada temporalmente para la
+          presentación -- destapar estas 2 rutas para reactivarla. */}
+      {/* <Route
         path="/asistencia"
         element={
           <ProtectedRoute roles={INSTRUCTOR}>
@@ -178,7 +183,7 @@ export function AppRouter() {
             <MiAsistencia />
           </ProtectedRoute>
         }
-      />
+      /> */}
       <Route
         path="/mensajes"
         element={
@@ -244,14 +249,17 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route
+      {/* T-22 (SCRUM-141): Directorio de fichas desactivado temporalmente
+          para la presentación -- no es "Vista por fichas" (/vista-fichas,
+          abajo), esa es otra pantalla y sigue activa. */}
+      {/* <Route
         path="/fichas"
         element={
           <ProtectedRoute roles={GESTION}>
             <Fichas />
           </ProtectedRoute>
         }
-      />
+      /> */}
       <Route
         path="/vista-fichas"
         element={

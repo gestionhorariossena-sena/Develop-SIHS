@@ -52,7 +52,9 @@ describe('AppShell', () => {
   // Desde que pasar lista es suyo, el Instructor tiene dos pantallas en
   // "Mi trabajo" (horario y asistencia), así que el grupo ya no se
   // renderiza como link plano sino como desplegable.
-  it('un Instructor ve su horario y su asistencia en el grupo "Mi trabajo"', async () => {
+  // T-23 (SCRUM-141): "Asistencia" no aparece mientras el ítem de nav está
+  // comentado -- destapar este test junto con el resto de T-23.
+  it.skip('un Instructor ve su horario y su asistencia en el grupo "Mi trabajo"', async () => {
     mockearApiGet(crearPerfil(['Instructor']))
     renderConProviders(
       <AppShell activo="Inicio">

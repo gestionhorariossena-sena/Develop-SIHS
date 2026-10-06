@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
@@ -180,12 +180,9 @@ export function VistaFichas() {
                     </p>
                   </div>
                 </div>
-                <Link
-                  to={`/fichas?id=${seleccionada.idFicha}`}
-                  className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-                >
-                  Ver info →
-                </Link>
+                {/* T-22 (SCRUM-141): "Ver info →" llevaba al drawer de
+                    /fichas, desactivado temporalmente -- no hay otra
+                    pantalla a la que redirigir este link mientras tanto. */}
               </div>
 
               {cargandoHorarios ? (

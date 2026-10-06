@@ -85,7 +85,7 @@ describe('VistaFichas', () => {
     expect(screen.getByText('Elige una ficha de la lista para ver su horario.')).toBeInTheDocument()
   })
 
-  it('clic en una ficha muestra su horario y un link "Ver info" al detalle', async () => {
+  it('clic en una ficha muestra su horario', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<VistaFichas />)
@@ -93,9 +93,9 @@ describe('VistaFichas', () => {
 
     await usuario.click(screen.getByText('3228973 B'))
 
+    // T-22 (SCRUM-141): el link "Ver info →" llevaba a /fichas, desactivado
+    // temporalmente -- destapar la aserción del link cuando se reactive.
     await waitFor(() => expect(screen.getByText('CPL18')).toBeInTheDocument())
-    const link = screen.getByRole('link', { name: 'Ver info →' })
-    expect(link).toHaveAttribute('href', '/fichas?id=1')
   })
 
   it('ficha sin horario asignado muestra el mensaje correspondiente', async () => {
@@ -118,7 +118,6 @@ describe('VistaFichas', () => {
     renderConProviders(<VistaFichas />, ['/vista-fichas?id=1'])
 
     await waitFor(() => expect(screen.getByText('CPL18')).toBeInTheDocument())
-    expect(screen.getByRole('link', { name: 'Ver info →' })).toHaveAttribute('href', '/fichas?id=1')
   })
 
   it('filtra la lista de fichas por instructor', async () => {
