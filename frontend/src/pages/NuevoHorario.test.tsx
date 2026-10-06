@@ -158,7 +158,7 @@ describe('NuevoHorario', () => {
     expect(await screen.findByText('Modificar horario')).toBeInTheDocument()
     expect(screen.getByLabelText('Ficha (referencia del formulario)')).toHaveValue('FICHA-EDIT')
     expect(screen.getByLabelText('Aprendices en formación a la fecha')).toHaveValue('25')
-    expect(screen.getByLabelText('Horas asignadas trimestre')).toHaveValue('30')
+    expect(screen.getByLabelText('Horas asignadas período académico')).toHaveValue('30')
     expect(screen.getByRole('button', { name: 'Guardar cambios' })).toBeEnabled()
   })
 
