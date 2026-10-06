@@ -184,11 +184,10 @@ class _TarjetaResumen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _Cifra(etiqueta: 'Presente', valor: resumen.presente, color: tema.colorScheme.primary),
-                _Cifra(etiqueta: 'Tarde', valor: resumen.tardanza, color: tema.colorScheme.tertiary),
-                _Cifra(etiqueta: 'Ausente', valor: resumen.ausente, color: tema.colorScheme.error),
+                Expanded(child: _Cifra(etiqueta: 'Presente', valor: resumen.presente, color: tema.colorScheme.primary)),
+                Expanded(child: _Cifra(etiqueta: 'Tarde', valor: resumen.tardanza, color: tema.colorScheme.tertiary)),
+                Expanded(child: _Cifra(etiqueta: 'Ausente', valor: resumen.ausente, color: tema.colorScheme.error)),
               ],
             ),
             if (bajoUmbral) ...[

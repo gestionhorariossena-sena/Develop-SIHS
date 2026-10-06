@@ -16,6 +16,9 @@ TIPO_SISTEMA = "sistema"
 
 TIPOS_VALIDOS = {TIPO_CRUCE, TIPO_HORARIO, TIPO_AMBIENTE, TIPO_SISTEMA}
 
+ROLES_GESTION = {"Coordinador", "Administrador"}
+ROLES_ADMINISTRACION = {"Administrador"}
+
 
 class NotificacionService:
     @staticmethod
@@ -148,11 +151,61 @@ class NotificacionService:
         )
 
     @staticmethod
+    def notificar_roles_transaccional(
+        db: Session,
+        *,
+        roles: set[str],
+        tipo: str,
+        mensaje: str,
+        entidad_relacionada: str | None = None,
+        id_entidad_relacionada=None,
+        excluir=None,
+    ) -> int:
+        """Un aviso por cada persona con alguno de `roles`, en la misma
+        transacción que la operación que lo dispara. `excluir` es quien
+        provocó el evento: no tiene sentido avisarle de lo que acaba de
+        hacer. Devuelve cuántos avisos se crearon."""
+        destinatarios = [
+            id_usuario
+            for id_usuario in NotificacionRepository.ids_usuarios_con_roles(db, roles)
+            if excluir is None or str(id_usuario) != str(excluir)
+        ]
+        for id_usuario in destinatarios:
+            NotificacionService.crear_transaccional(
+                db,
+                id_usuario=id_usuario,
+                tipo=tipo,
+                mensaje=mensaje,
+                entidad_relacionada=entidad_relacionada,
+                id_entidad_relacionada=id_entidad_relacionada,
+            )
+        return len(destinatarios)
+
+    @staticmethod
     def obtener_por_usuario(
         db: Session,
         id_usuario,
+        *,
+        solo_no_leidas: bool = False,
+        limite: int | None = None,
     ) -> list[Notificacion]:
-        return NotificacionRepository.obtener_por_usuario(db, id_usuario)
+        return NotificacionRepository.obtener_por_usuario(
+            db, id_usuario, solo_no_leidas=solo_no_leidas, limite=limite
+        )
+
+    @staticmethod
+    def contar_no_leidas(db: Session, id_usuario) -> int:
+        return NotificacionRepository.contar_no_leidas(db, id_usuario)
+
+    @staticmethod
+    def eliminar(db: Session, id_notificacion: int, id_usuario) -> bool:
+        """Solo el dueño puede borrar su aviso; uno ajeno se trata igual
+        que uno inexistente para no revelar que existe."""
+        notificacion = NotificacionRepository.obtener_por_id(db, id_notificacion)
+        if notificacion is None or notificacion.idUsuario != id_usuario:
+            return False
+        NotificacionRepository.eliminar(db, notificacion)
+        return True
 
     @staticmethod
     def marcar_leida(

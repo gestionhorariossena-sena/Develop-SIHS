@@ -104,7 +104,7 @@ export function ImportarArchivo({ columnas, onImportarFila, onTerminado, onCerra
         className="block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-sena-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sena-700 dark:text-slate-300 dark:file:bg-sena-950/50 dark:file:text-sena-400"
       />
 
-      {errorArchivo && <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorArchivo}</p>}
+      {errorArchivo && <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{errorArchivo}</p>}
 
       {filas && !resultados && (
         <div className="mt-4">

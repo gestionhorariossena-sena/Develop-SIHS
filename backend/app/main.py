@@ -26,6 +26,7 @@ from app.api.v1.ficha_usuario import router as ficha_usuario_router
 from app.api.v1.guias import router as guias_router
 from app.api.v1.competencias_formacion import router as competencias_formacion_router
 from app.api.v1.resultados_aprendizaje import router as resultados_aprendizaje_router
+from app.api.v1.tematicas import router as tematicas_router
 from app.api.v1.horarios import router as horarios_router
 from app.api.v1.actividades_aprendizaje import router as actividades_aprendizaje_router
 from app.api.v1.asistencias import router as asistencias_router
@@ -162,6 +163,7 @@ app.include_router(ficha_usuario_router, prefix="/api/v1")
 app.include_router(guias_router, prefix="/api/v1")
 app.include_router(competencias_formacion_router, prefix="/api/v1")
 app.include_router(resultados_aprendizaje_router, prefix="/api/v1")
+app.include_router(tematicas_router, prefix="/api/v1")
 app.include_router(horarios_router, prefix="/api/v1")
 app.include_router(actividades_aprendizaje_router, prefix="/api/v1")
 app.include_router(asistencias_router, prefix="/api/v1")

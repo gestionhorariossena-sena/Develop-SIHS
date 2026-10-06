@@ -1,6 +1,8 @@
 from datetime import datetime
 from uuid import UUID
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 
 from app.schemas.especialidad import EspecialidadResponse
@@ -13,6 +15,20 @@ class UsuarioCodigoInstructorRequest(BaseModel):
 
 class UsuarioCodigoInstructorValidacionRequest(BaseModel):
     codigo: str
+
+
+class UsuarioCodigoInstructorResponse(BaseModel):
+    idUsuario: UUID
+    codigo: str
+    idTrimestre: int | None = None
+
+
+class UsuarioCodigoInstructorValidacionResponse(BaseModel):
+    """Respuesta pública (sin sesión): solo dice si el código sirve, no a
+    quién pertenece."""
+
+    valido: bool
+    codigo: str | None = None
 
 
 class UsuarioLoginDocumentoRequest(BaseModel):
@@ -58,8 +74,19 @@ class UsuarioResponse(BaseModel):
     # login con credencial temporal — ver app/models/usuario.py y
     # ProtectedRoute.tsx (frontend), que es quien la consume.
     debeCambiarClave: bool = False
+    preferenciaTema: str | None = None
     roles: list[RolResponse] = []
     especialidades: list[EspecialidadResponse] = []
+
+
+TemaInterfaz = Literal["claro", "oscuro", "sistema"]
+
+
+class UsuarioPreferenciasUpdate(BaseModel):
+    """PATCH /usuarios/me/preferencias — mismos valores que `Tema` en
+    frontend/src/context/theme-context.ts."""
+
+    tema: TemaInterfaz
 
 
 class UsuarioEspecialidadesUpdate(BaseModel):

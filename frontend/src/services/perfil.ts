@@ -1,4 +1,5 @@
-import { apiGet } from './api'
+import { apiGet, apiPatch } from './api'
+import type { Tema } from '../context/theme-context'
 import type { Usuario } from '../types/api'
 
 /**
@@ -38,4 +39,13 @@ export function getPerfil(idUsuario: string): Promise<Usuario> {
  * anterior. Los tests lo usan para arrancar cada caso sin caché. */
 export function olvidarPerfil() {
   cache = null
+}
+
+/** Guarda el tema elegido en el backend (T-9) y deja el perfil cacheado al
+ * día: si no, la siguiente pantalla leería el tema viejo del caché y lo
+ * volvería a aplicar encima de la elección recién hecha. */
+export async function guardarPreferenciaTema(idUsuario: string, tema: Tema): Promise<Usuario> {
+  const actualizado = await apiPatch<Usuario>('/usuarios/me/preferencias', { tema })
+  cache = { idUsuario, perfil: Promise.resolve(actualizado) }
+  return actualizado
 }

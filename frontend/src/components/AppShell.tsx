@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import senaLogo from '../assets/sena-logo.jpeg'
 import { useAuth } from '../hooks/useAuth'
+import { useTheme } from '../hooks/useTheme'
 import { apiGet } from '../services/api'
-import { getPerfil } from '../services/perfil'
+import { getPerfil, guardarPreferenciaTema } from '../services/perfil'
 import type { Notificacion, Usuario } from '../types/api'
 import { NotificacionesPanel } from './NotificacionesPanel'
 import { ThemeSelector } from './ThemeSelector'
@@ -89,7 +90,7 @@ const NAV: GrupoNav[] = [
     items: [
       { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
       { etiqueta: 'Programas', ruta: '/programas', soloGestion: true },
-      { etiqueta: 'Temáticas', soloGestion: true },
+      { etiqueta: 'Temáticas', ruta: '/tematicas', soloGestion: true },
     ],
   },
   {
@@ -154,6 +155,7 @@ interface AppShellProps {
  */
 export function AppShell({ activo, children }: AppShellProps) {
   const { signOut, session } = useAuth()
+  const { setTema } = useTheme()
   const idUsuario = session?.user?.id ?? ''
 
   const [miPerfil, setMiPerfil] = useState<Usuario | null>(null)
@@ -210,6 +212,10 @@ export function AppShell({ activo, children }: AppShellProps) {
       .then((perfil) => {
         setMiPerfil(perfil)
         setErrorPerfil(null)
+        // T-9: el tema guardado en el backend manda sobre el del
+        // localStorage, para que la elección siga a la persona entre
+        // navegadores y dispositivos.
+        if (perfil.preferenciaTema) setTema(perfil.preferenciaTema)
       })
       .catch((err) => {
         const mensaje =
@@ -219,7 +225,7 @@ export function AppShell({ activo, children }: AppShellProps) {
 
         setErrorPerfil(mensaje)
       })
-  }, [idUsuario])
+  }, [idUsuario, setTema])
 
   useEffect(() => {
     apiGet<Notificacion[]>('/notificaciones/')
@@ -229,6 +235,19 @@ export function AppShell({ activo, children }: AppShellProps) {
       .catch(() => {
         setNotificaciones([])
       })
+
+    // Los avisos nacen en el backend (publicaciones, cruces forzados,
+    // solicitudes) mientras la persona sigue con la pestaña abierta: sin
+    // este refresco el globo rojo solo se enteraba al recargar. Se salta
+    // si la pestaña está oculta para no gastar peticiones en segundo plano.
+    const intervalo = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      apiGet<Notificacion[]>('/notificaciones/')
+        .then(setNotificaciones)
+        .catch(() => {})
+    }, 60_000)
+
+    return () => window.clearInterval(intervalo)
   }, [])
 
   useEffect(() => {
@@ -436,7 +455,11 @@ export function AppShell({ activo, children }: AppShellProps) {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2">
-            <ThemeSelector />
+            <ThemeSelector
+              alCambiar={(nuevo) => {
+                if (idUsuario) guardarPreferenciaTema(idUsuario, nuevo).catch(() => {})
+              }}
+            />
 
             <div className="relative" ref={notifRef}>
               <button
@@ -534,7 +557,7 @@ export function AppShell({ activo, children }: AppShellProps) {
       </header>
 
       {errorPerfil && (
-        <div className="fixed top-16 z-40 w-full border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 print:hidden">
+        <div className="fixed top-16 z-40 w-full border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 print:hidden">
           {errorPerfil}
         </div>
       )}

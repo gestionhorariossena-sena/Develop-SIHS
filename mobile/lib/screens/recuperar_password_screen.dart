@@ -90,16 +90,18 @@ class _RecuperarPasswordScreenState extends State<RecuperarPasswordScreen> {
                                   color: colores.onPrimary, size: 24),
                             ),
                             const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Sistema de Horarios',
-                                    style: textos.titleMedium
-                                        ?.copyWith(fontWeight: FontWeight.w700)),
-                                Text('SIHS · CGMLTI',
-                                    style: textos.bodySmall
-                                        ?.copyWith(color: colores.onSurfaceVariant)),
-                              ],
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Sistema de Horarios',
+                                      style: textos.titleMedium
+                                          ?.copyWith(fontWeight: FontWeight.w700)),
+                                  Text('SIHS · CGMLTI',
+                                      style: textos.bodySmall
+                                          ?.copyWith(color: colores.onSurfaceVariant)),
+                                ],
+                              ),
                             ),
                           ],
                         ),

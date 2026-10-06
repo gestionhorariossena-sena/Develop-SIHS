@@ -20,13 +20,21 @@ from app.schemas.usuario import (
     CargaSemanalResponse,
     UsuarioEspecialidadesUpdate,
     UsuarioCodigoInstructorRequest,
+    UsuarioCodigoInstructorResponse,
     UsuarioCodigoInstructorValidacionRequest,
+    UsuarioCodigoInstructorValidacionResponse,
     UsuarioLoginDocumentoRequest,
     UsuarioLoginDocumentoResponse,
+    UsuarioPreferenciasUpdate,
     UsuarioResponse,
 )
 from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import HorarioService
+from app.services.instructor_service import (
+    CodigoNoDisponibleError,
+    InstructorService,
+    NoEsInstructorError,
+)
 from app.services.pdf_service import PdfService
 from app.services.usuario_service import UsuarioService
 
@@ -51,6 +59,18 @@ def confirmar_cambio_clave(
     temporal) — limpia debeCambiarClave para que ProtectedRoute deje
     de redirigir ahí."""
     return UsuarioService.confirmar_cambio_clave(db, usuario)
+
+
+@router.patch("/me/preferencias", response_model=UsuarioResponse)
+def actualizar_mis_preferencias(
+    data: UsuarioPreferenciasUpdate,
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """Guarda el tema de la interfaz (claro/oscuro/sistema) para que la
+    elección siga a la persona entre navegadores y dispositivos. Cualquier
+    rol puede cambiar solo el suyo."""
+    return UsuarioService.actualizar_preferencia_tema(db, usuario, data.tema)
 
 
 @router.post("/login-documento", response_model=UsuarioLoginDocumentoResponse)
@@ -150,6 +170,27 @@ def listar_usuarios(
     return UsuarioService.listar_usuarios(db)
 
 
+@router.get("/instructores", response_model=list[UsuarioResponse])
+def listar_instructores(
+    busqueda: str | None = Query(None, max_length=100, description="Nombre, correo, sigla o código."),
+    id_especialidad: int | None = Query(None, description="Solo quienes tengan esta fortaleza."),
+    db: Session = Depends(get_db),
+    usuario=Depends(require_lectura_catalogo),
+):
+    """Solo usuarios con rol Instructor, ordenados por nombre. Antes cada
+    pantalla (Instructores, Vista por instructores, Código de instructor)
+    pedía /usuarios/ completo y filtraba el rol en el navegador. Va antes
+    de /{id_usuario} para que "instructores" no se lea como un UUID."""
+    return InstructorService.listar(db, busqueda=busqueda, id_especialidad=id_especialidad)
+
+
+def _no_es_instructor() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="El usuario no tiene rol Instructor.",
+    )
+
+
 @router.get("/{id_usuario}", response_model=UsuarioResponse)
 def obtener_usuario(
     id_usuario: UUID,
@@ -216,7 +257,10 @@ def actualizar_especialidades_instructor(
     """Fortalezas del instructor. Es coordinación quien las conoce y las
     mantiene, así que no se restringe a Administrador como el resto de la
     parametrización de catálogos."""
-    actualizado = UsuarioService.reemplazar_especialidades(db, id_usuario, data.idsEspecialidades)
+    try:
+        actualizado = InstructorService.reemplazar_especialidades(db, id_usuario, data.idsEspecialidades)
+    except NoEsInstructorError:
+        raise _no_es_instructor() from None
 
     if not actualizado:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
@@ -233,13 +277,21 @@ def actualizar_especialidades_instructor(
     return actualizado
 
 
-@router.post("/instructor/codigo/generar")
+@router.post("/instructor/codigo/generar", response_model=UsuarioCodigoInstructorResponse)
 def generar_codigo_instructor(
     data: UsuarioCodigoInstructorRequest,
     db: Session = Depends(get_db),
     usuario=Depends(require_admin_o_coordinador),
 ):
-    generado = UsuarioService.generar_codigo_instructor(db, data.idUsuario)
+    try:
+        generado = InstructorService.generar_codigo(db, data.idUsuario)
+    except NoEsInstructorError:
+        raise _no_es_instructor() from None
+    except CodigoNoDisponibleError:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="No se pudo generar un código único. Inténtalo de nuevo.",
+        ) from None
 
     if generado is None:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
@@ -247,9 +299,10 @@ def generar_codigo_instructor(
     return generado
 
 
-@router.post("/instructor/codigo/validar")
+@router.post("/instructor/codigo/validar", response_model=UsuarioCodigoInstructorValidacionResponse)
 def validar_codigo_instructor(
     data: UsuarioCodigoInstructorValidacionRequest,
     db: Session = Depends(get_db),
 ):
-    return UsuarioService.validar_codigo_instructor(db, data.codigo)
+    """Pública a propósito: el registro la usa antes de que exista sesión."""
+    return InstructorService.validar_codigo(db, data.codigo)

@@ -40,9 +40,9 @@ export function VistaInstructores() {
   const [todosLosHorarios, setTodosLosHorarios] = useState<Horario[]>([])
 
   useEffect(() => {
-    apiGet<Usuario[]>('/usuarios/')
-      .then((usuarios) => {
-        const soloInstructores = usuarios.filter((usuario) => usuario.roles.some((rol) => rol.nombre === 'Instructor'))
+    // El backend ya devuelve solo rol Instructor y ordenados por nombre.
+    apiGet<Usuario[]>('/usuarios/instructores')
+      .then((soloInstructores) => {
         setInstructores(soloInstructores)
 
         // Deep link desde el drawer de Instructores.tsx ("Ver horario
@@ -102,7 +102,7 @@ export function VistaInstructores() {
         </p>
       </div>
 
-      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
       <div className="grid gap-4 lg:grid-cols-[20rem_1fr]">
         <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtro de instructores">

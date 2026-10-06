@@ -70,20 +70,27 @@ traen el claro.
 | Vista movil Aprendiz / Vista Instructor Movil | `home_screen.dart` + `sesion_card.dart` — mismo layout para ambos roles |
 | Mi asistencia Aprendiz | `asistencia_screen.dart` — resumen con el umbral del 85% e historial por mes |
 | (sin diseño propio) Asistencia Instructor | `asistencia_instructor_screen.dart` — sus clases del día y la nómina de cada una, **solo consulta**. Contraparte de `AsistenciaInstructor.tsx`, sin los controles de marcar |
+| Campana de avisos (de los dos diseños) | `avisos_screen.dart` — pestañas Avisos (`GET /avisos/`, sin los vencidos) y Notificaciones (`GET /notificaciones/`, con contador de no leídas). **Solo lectura**: no marca como leídas |
 
 **Del diseño se implementó**: encabezado verde con saludo y rol, ficha del
 aprendiz (`/ficha-usuario/mi-ficha`), selector de días de la semana con
 fecha real y marca de "Hoy", filtro Mañana/Tarde/Noche, tarjetas con franja
 de color y píldora de estado (En curso / Finalizado / Por iniciar, calculada
 contra el reloj), detalle en bottom sheet, pull-to-refresh, bottom nav
-(Mi horario / Perfil).
+(Mi horario / Asistencia / Avisos / Perfil) y la campana de avisos.
 
 **Del diseño se omitió, por no existir en el backend**: nº de aprendices
 por sesión en la tarjeta de horario, "Novedad", sincronización con SOFIA
-Plus, buscador global, tabs "Por ambientes"/"Fichas asignadas" y la campana
-de avisos. Se prefirió omitirlos a dibujarlos con datos inventados.
-`/avisos` y `/notificaciones` sí existen (`get_current_user`, sin exigir
-rol) y son el siguiente candidato natural.
+Plus, buscador global y tabs "Por ambientes"/"Fichas asignadas". Se
+prefirió omitirlos a dibujarlos con datos inventados.
+
+**Tamaños de pantalla.** Desde 600 px de ancho (`anchoParaRiel` en
+`home_screen.dart`) el menú pasa a un `NavigationRail` y el contenido se
+centra a 720 px como máximo. `test/adaptacion_pantallas_test.dart` monta
+los flujos en 320×568, 360×740, 740×360, 800×1280 y 1280×800, con la
+letra al 100 % y al 130 %, y falla con cualquier desborde. Una `Row` con
+texto nuevo va con `Expanded`/`Flexible`, o esa prueba lo marca. Detalle
+en `DIAGNOSTICO_VERSION_MOVIL.md`.
 
 La asistencia sí dejó de ser un hueco: existe `/asistencias` y los dos
 roles tienen su pestaña. Ninguno marca desde el móvil — pasar lista es un
@@ -160,8 +167,8 @@ sin comprimir.
 
 ## Tests
 
-`flutter test` — 42 casos. `test/ayudas.dart` tiene los dobles
-(`AuthFalso`, `HorariosFalsos`), los constructores de datos de prueba y
+`flutter test` — 93 casos. `test/ayudas.dart` tiene los dobles
+(`AuthFalso`, `HorariosFalsos`, `AvisosFalsos`), los constructores de datos de prueba y
 `envolver()` para montar un widget con tema y providers.
 
 `usarFuentesDelSistema()` apaga la descarga de google_fonts: en test no hay
@@ -169,8 +176,9 @@ red, y una fuente que no carga cambia las métricas de texto.
 
 ## Pendiente / ideas
 
-- Pantalla de avisos/notificaciones (`/avisos`, `/notificaciones`) — la
-  campana del diseño.
+- Lista priorizada completa en `DIAGNOSTICO_VERSION_MOVIL.md` §2.
+- `applicationId` sigue en `com.example.mobile`: elegir el definitivo
+  antes de publicar en tienda.
 - Descarga del horario en PDF: `GET /usuarios/me/horarios/pdf` ya existe.
 - Deep link para que el correo de recuperación abra la app y no la web.
 - Los prompts de diseño viejos (`BRAND_GUIDE_SIHS_MOBILE.md`,

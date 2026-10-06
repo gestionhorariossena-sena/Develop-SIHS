@@ -81,9 +81,9 @@ export function Instructores() {
   const [diasPorId, setDiasPorId] = useState<Record<number, string>>({})
 
   useEffect(() => {
-    apiGet<Usuario[]>('/usuarios/')
-      .then((usuarios) => {
-        const soloInstructores = usuarios.filter((usuario) => usuario.roles.some((rol) => rol.nombre === 'Instructor'))
+    // El backend ya devuelve solo rol Instructor y ordenados por nombre.
+    apiGet<Usuario[]>('/usuarios/instructores')
+      .then((soloInstructores) => {
         setInstructores(soloInstructores)
 
         // Deep link desde VistaInstructores.tsx ("Ver info" →
@@ -269,7 +269,7 @@ export function Instructores() {
         </div>
       </section>
 
-      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
       {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Carga horaria</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Horas contratadas</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((item) => { const asignadas = horasAsignadasPara(item.idUsuario, todosLosHorarios); const maximas = horasMaximasPara(item); return <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-on-surface dark:text-slate-100">{item.nombre}</p><p className="text-xs text-on-surface-variant dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="min-w-[140px] px-4 py-3"><div className="mb-1 flex items-center justify-between text-xs font-medium text-on-surface-variant dark:text-slate-300"><span>{asignadas}h / {maximas}h</span><span>{Math.round((asignadas / maximas) * 100)}%</span></div><div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high dark:bg-slate-700"><div className={`h-full rounded-full ${colorBarraCarga(asignadas, maximas)}`} style={{ width: `${Math.min(100, Math.round((asignadas / maximas) * 100))}%` }} /></div></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr> })}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (

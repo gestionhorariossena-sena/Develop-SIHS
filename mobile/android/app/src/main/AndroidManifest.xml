@@ -1,6 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Sin esto la build release no puede hablar con Supabase ni con el
+         backend: el manifest de debug la declara, el de main no la tenía. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="mobile"
+        android:label="SIHS"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
