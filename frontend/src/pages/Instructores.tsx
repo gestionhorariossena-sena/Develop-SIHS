@@ -240,7 +240,7 @@ export function Instructores() {
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
           <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Disponibles asignación</p>
           <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{disponibles}</p>
-          <p className="mt-1 text-xs text-on-surface-variant">sin horario asignado este trimestre</p>
+          <p className="mt-1 text-xs text-on-surface-variant">sin horario asignado en este período académico</p>
         </div>
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
           <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Horas semanales totales</p>
@@ -362,7 +362,7 @@ export function Instructores() {
             <>
               <SeccionDrawer titulo="Horario semanal">
                 {bloquesGridInstructor.length === 0 ? (
-                  <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin horario asignado en el trimestre actual.</p>
+                  <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin horario asignado en el período académico actual.</p>
                 ) : (
                   <div className="text-[10px]">
                     <GridHorario bloques={bloquesGridInstructor} grid={gridInstructor} hayBloqueActivo={false} soloLectura ocultarFilasVacias />
