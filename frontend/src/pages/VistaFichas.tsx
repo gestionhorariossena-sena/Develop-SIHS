@@ -193,7 +193,7 @@ export function VistaFichas() {
               ) : errorHorarios ? (
                 <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">No se pudo cargar el horario de esta ficha.</p>
               ) : bloques.length === 0 ? (
-                <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">Sin horario asignado en el trimestre actual.</p>
+                <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">Sin horario asignado en el período académico actual.</p>
               ) : (
                 <GridHorario bloques={bloques} grid={grid} hayBloqueActivo={false} soloLectura />
               )}
