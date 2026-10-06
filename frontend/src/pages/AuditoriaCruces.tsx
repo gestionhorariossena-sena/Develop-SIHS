@@ -23,7 +23,7 @@ const DESCRIPCION_POR_TIPO: Record<TipoConflictoHorario, string> = {
   cruce_ambiente: 'Dos o más fichas programadas en el mismo ambiente en franja idéntica.',
   cruce_instructor: 'Un instructor asignado simultáneamente a dos sesiones.',
   cruce_ficha: 'El mismo grupo de aprendices tiene doble franja lectiva solapada.',
-  resultado_repetido: 'Resultado de aprendizaje ya evaluado o duplicado en el mismo trimestre.',
+  resultado_repetido: 'Resultado de aprendizaje ya evaluado o duplicado en el mismo período académico.',
   regla_instructor: 'Exceso del tope de horas lectivas semanales (32-40 hrs según contrato).',
   fortaleza_instructor: 'El instructor no tiene la especialidad que exige la competencia del resultado.',
 }
@@ -183,7 +183,7 @@ export function AuditoriaCruces() {
       <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de auditoría">
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
-            <label htmlFor="filtro-trimestre-auditoria" className="mb-1.5 block text-xs font-medium text-on-surface-variant">Trimestre</label>
+            <label htmlFor="filtro-trimestre-auditoria" className="mb-1.5 block text-xs font-medium text-on-surface-variant">Período académico</label>
             <select
               id="filtro-trimestre-auditoria"
               value={filtroTrimestre}
