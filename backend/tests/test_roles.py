@@ -93,6 +93,28 @@ def test_eliminar_rol(client, autenticar_como, crear_rol):
     assert client.get(f"/api/v1/roles/{rol.idRol}", headers=headers).status_code == 404
 
 
+def test_eliminar_rol_asignado_da_409_y_conserva_asignacion(
+    client, autenticar_como, crear_rol, crear_usuario
+):
+    """T-10: la BD real usa ON DELETE CASCADE en usuario_rol.idRol.
+    La protección debe ocurrir ANTES del DELETE para no perder asignaciones."""
+    rol = crear_rol("Rol temporal")
+    usuario = crear_usuario(nombre="Usuario con rol", roles=[rol])
+    _, headers = autenticar_como("Administrador")
+
+    respuesta = client.delete(f"/api/v1/roles/{rol.idRol}", headers=headers)
+
+    assert respuesta.status_code == 409
+    assert respuesta.json()["detail"] == "No se puede eliminar un rol que tiene usuarios asignados."
+    assert client.get(f"/api/v1/roles/{rol.idRol}", headers=headers).status_code == 200
+
+    roles_usuario = client.get(
+        f"/api/v1/usuario-rol/usuario/{usuario.idUsuario}", headers=headers
+    )
+    assert roles_usuario.status_code == 200
+    assert any(item["idRol"] == rol.idRol for item in roles_usuario.json())
+
+
 def test_eliminar_rol_inexistente_da_404(client, autenticar_como):
     _, headers = autenticar_como("Administrador")
 
