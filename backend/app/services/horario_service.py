@@ -10,6 +10,7 @@ from app.models.trimestre import Trimestre
 from app.models.usuario import Usuario
 from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
 from app.repositories.horario_repository import HorarioRepository
+from app.repositories.trimestre_repository import TrimestreRepository
 from app.services.notificacion_service import NotificacionService, TIPO_AMBIENTE, TIPO_HORARIO
 from app.services.notificacion_service import ROLES_GESTION, TIPO_CRUCE, TIPO_SISTEMA
 
@@ -489,13 +490,27 @@ class HorarioService:
     def obtener_publicados_por_instructor(
         db, id_instructor, fecha_inicio=None, fecha_fin=None
     ) -> list[dict]:
-        """GET /usuarios/me/horarios — autoservicio del instructor ("Mi
-        horario"): solo lo activo y publicado, nunca un borrador que el
-        coordinador todavía está armando."""
+        """GET /usuarios/me/horarios — autoservicio del instructor.
+
+        Siempre oculta borradores. Si el cliente no envía rango de fechas
+        (caso móvil), se limita al período académico vigente para no mezclar
+        horarios históricos con el actual.
+        """
+        id_trimestre = None
+        if fecha_inicio is None and fecha_fin is None:
+            vigente = TrimestreRepository.obtener_vigente(db)
+            if vigente is None:
+                return []
+            id_trimestre = vigente.idTrimestre
+
         return [
             HorarioService.a_response(db, h)
             for h in HorarioRepository.obtener_por_instructor(
-                db, id_instructor, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+                db,
+                id_instructor,
+                fecha_inicio=fecha_inicio,
+                fecha_fin=fecha_fin,
+                id_trimestre=id_trimestre,
             )
             if h.publicado
         ]

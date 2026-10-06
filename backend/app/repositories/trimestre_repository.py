@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlalchemy.orm import Session
 
 from app.models.trimestre import Trimestre
@@ -15,6 +17,21 @@ class TrimestreRepository:
     @staticmethod
     def obtener_activo(db: Session):
         return db.query(Trimestre).filter(Trimestre.estado == "activo").first()
+
+    @staticmethod
+    def obtener_vigente(db: Session, fecha: date | None = None):
+        """Período activo que realmente cubre la fecha indicada."""
+        fecha = fecha or date.today()
+        return (
+            db.query(Trimestre)
+            .filter(
+                Trimestre.estado == "activo",
+                Trimestre.fechaInicio <= fecha,
+                Trimestre.fechaFin >= fecha,
+            )
+            .order_by(Trimestre.fechaInicio.desc())
+            .first()
+        )
 
     @staticmethod
     def crear(db: Session, trimestre: Trimestre):
