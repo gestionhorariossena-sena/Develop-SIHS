@@ -252,4 +252,13 @@ def validar_codigo_instructor(
     data: UsuarioCodigoInstructorValidacionRequest,
     db: Session = Depends(get_db),
 ):
+    """Pública a propósito (T-27/SCRUM-142): el instructor todavía no tiene
+    sesión en este punto del flujo -- usa el código que le generó
+    coordinación (POST /instructor/codigo/generar, ese sí requiere
+    Coordinador/Administrador) para autovincularse antes de loguearse.
+    Impacto de que sea pública: solo expone {valido, codigo, idUsuario} de
+    un instructor ya existente si se adivina el código (formato
+    INS-XXXXXX, 36^6 combinaciones, sin rate limit propio) -- ningún dato
+    sensible, pero si en el futuro se agrega PII a la respuesta, revisar
+    este comentario primero."""
     return UsuarioService.validar_codigo_instructor(db, data.codigo)
