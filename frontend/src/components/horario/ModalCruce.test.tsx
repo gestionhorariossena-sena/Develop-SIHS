@@ -117,4 +117,17 @@ describe('ModalCruce', () => {
 
     expect(screen.getByRole('button', { name: 'Cancelar' })).toBeInTheDocument()
   })
+
+  it('titula el conflicto de ficha fuera de su trimestre (T-5)', () => {
+    render(
+      <ModalCruce
+        bloqueResumen={BLOQUE_RESUMEN}
+        conflictos={[{ tipo: 'ficha_trimestre', mensaje: 'La ficha 3068356 pertenece al trimestre 2; no puede programarse en el trimestre 1.' }]}
+        onCancelar={vi.fn()}
+        onForzar={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('Ficha fuera de su trimestre')).toBeInTheDocument()
+  })
 })

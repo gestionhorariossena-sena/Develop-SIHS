@@ -24,17 +24,6 @@ const OTRO_INSTRUCTOR: Usuario = {
   especialidades: [{ idEspecialidad: 2, nombre: 'Bases de datos', descripcion: null, activo: true }],
 }
 
-const COORDINADOR: Usuario = {
-  idUsuario: 'u3',
-  nombre: 'Ana Martínez',
-  email: 'ana@example.com',
-  estado: 'activo',
-  fechaRegistro: '2026-01-01',
-  roles: [{ idRol: 2, nombre: 'Coordinador' }],
-  especialidades: [],
-  debeCambiarClave: false,
-}
-
 const HORARIOS: Horario[] = [
   {
     idHorario: 1, horaInicio: '06:15:00', horaFin: '09:00:00', idJornada: 1, idTrimestre: 1,
@@ -52,7 +41,7 @@ vi.mock('../services/api', () => ({
 
 function mockeaBase(todosLosHorarios: Horario[] = HORARIOS) {
   apiGetMock.mockImplementation((path: string) => {
-    if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR, OTRO_INSTRUCTOR, COORDINADOR])
+    if (path === '/usuarios/instructores') return Promise.resolve([INSTRUCTOR, OTRO_INSTRUCTOR])
     if (path === '/usuarios/u1/horarios') return Promise.resolve(HORARIOS)
     if (path === '/horarios/') return Promise.resolve(todosLosHorarios)
     return Promise.reject(new Error('no mockeado en este test'))
@@ -60,13 +49,13 @@ function mockeaBase(todosLosHorarios: Horario[] = HORARIOS) {
 }
 
 describe('VistaInstructores', () => {
-  it('lista solo instructores, sin coordinadores', async () => {
+  it('lista los instructores que devuelve el endpoint dedicado', async () => {
     mockeaBase()
     renderConProviders(<VistaInstructores />)
 
     expect(await screen.findByText('Erick Granados')).toBeInTheDocument()
     expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
-    expect(screen.queryByText('Ana Martínez')).not.toBeInTheDocument()
+    expect(apiGetMock).toHaveBeenCalledWith('/usuarios/instructores')
   })
 
   it('el buscador filtra la lista por nombre o especialidad', async () => {
@@ -108,7 +97,7 @@ describe('VistaInstructores', () => {
       { ...HORARIOS[0], idHorario: 3, horaInicio: '13:00:00', horaFin: '15:00:00', resultadoDescripcion: 'Clase de tarde', dias: [6] },
     ]
     apiGetMock.mockImplementation((path: string) => {
-      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/usuarios/instructores') return Promise.resolve([INSTRUCTOR])
       if (path === '/usuarios/u1/horarios') return Promise.resolve([...HORARIOS, ...extras])
       if (path === '/horarios/') return Promise.resolve([...HORARIOS, ...extras])
       return Promise.reject(new Error('no mockeado'))
@@ -123,7 +112,7 @@ describe('VistaInstructores', () => {
 
   it('instructor sin horario asignado muestra el mensaje correspondiente', async () => {
     apiGetMock.mockImplementation((path: string) => {
-      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/usuarios/instructores') return Promise.resolve([INSTRUCTOR])
       if (path === '/usuarios/u1/horarios') return Promise.resolve([])
       return Promise.reject(new Error('no mockeado en este test'))
     })

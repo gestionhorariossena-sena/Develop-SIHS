@@ -9,6 +9,7 @@ from app.repositories.rol_repository import RolRepository
 from app.repositories.solicitud_acceso_repository import SolicitudAccesoRepository
 from app.repositories.usuario_repository import UsuarioRepository
 from app.services.email_service import EmailService, SmtpNoConfiguradoError
+from app.services.notificacion_service import ROLES_ADMINISTRACION, TIPO_SISTEMA, NotificacionService
 from app.services.supabase_admin_service import crear_o_recuperar_usuario_supabase
 from app.services.usuario_rol_service import UsuarioRolService
 
@@ -65,6 +66,16 @@ class SolicitudAccesoService:
             motivo=data.motivo,
         )
         SolicitudAccesoRepository.crear(db, solicitud)
+
+        NotificacionService.notificar_roles_transaccional(
+            db,
+            roles=ROLES_ADMINISTRACION,
+            tipo=TIPO_SISTEMA,
+            mensaje=f"Nueva solicitud de acceso de {solicitud.nombre} como {rol.nombre}.",
+            entidad_relacionada="solicitudes_acceso",
+            id_entidad_relacionada=solicitud.idSolicitud,
+        )
+        db.commit()
 
         return SolicitudAccesoService.a_response(solicitud, rol)
 
@@ -144,6 +155,15 @@ class SolicitudAccesoService:
         UsuarioRolService.asignar(db, id_usuario, id_rol_otorgado)
 
         usuario.debeCambiarClave = True
+        # Lo primero que ve en la campana al entrar por primera vez.
+        NotificacionService.crear_transaccional(
+            db,
+            id_usuario=usuario.idUsuario,
+            tipo=TIPO_SISTEMA,
+            mensaje=f"Te damos la bienvenida a SIHS: tu acceso como {rol_otorgado.nombre} fue aprobado.",
+            entidad_relacionada="solicitudes_acceso",
+            id_entidad_relacionada=solicitud.idSolicitud,
+        )
         db.commit()
 
         solicitud.estado = "aprobada"

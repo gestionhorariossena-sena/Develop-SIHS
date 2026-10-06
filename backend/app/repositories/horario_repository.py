@@ -177,6 +177,39 @@ class HorarioRepository:
         return query.first()
 
     @staticmethod
+    def buscar_solapes(
+        db: Session,
+        campo: str,
+        valor,
+        dias: list[int],
+        hora_inicio,
+        hora_fin,
+        id_trimestre: int,
+        excluir_id: int | None = None,
+    ) -> list[Horario]:
+        """Como `buscar_solape`, pero devuelve TODOS los horarios que
+        chocan, ordenados por id. La auditoría de cruces lo necesita: con
+        `.first()` un bloque que pisaba a otros dos solo reportaba uno, y
+        en un triple cruce (A, B y C en la misma franja) el par B–C no
+        aparecía nunca."""
+        query = (
+            db.query(Horario)
+            .join(horario_dia, horario_dia.c.idHorario == Horario.idHorario)
+            .filter(
+                getattr(Horario, campo) == valor,
+                horario_dia.c.idDia.in_(dias),
+                Horario.horaInicio < hora_fin,
+                Horario.horaFin > hora_inicio,
+                Horario.activo.is_(True),
+                Horario.idTrimestre == id_trimestre,
+            )
+        )
+        if excluir_id is not None:
+            query = query.filter(Horario.idHorario != excluir_id)
+        # Un horario de varios días aparece una vez por día compartido.
+        return query.distinct().order_by(Horario.idHorario).all()
+
+    @staticmethod
     def obtener_por_instructor(
         db: Session,
         id_instructor,
@@ -287,6 +320,24 @@ class HorarioRepository:
         programación -- la regla original no miraba el instructor y lo
         bloqueaba igual, un falso positivo real reportado por el usuario.
         Devuelve el horario existente que choca, o None."""
+        repetidos = HorarioRepository.buscar_resultados_repetidos_en_ficha(
+            db, id_ficha, id_resultado, id_instructor, dias, id_trimestre, excluir_id
+        )
+        return repetidos[0] if repetidos else None
+
+    @staticmethod
+    def buscar_resultados_repetidos_en_ficha(
+        db: Session,
+        id_ficha: int,
+        id_resultado: int,
+        id_instructor,
+        dias: list[int],
+        id_trimestre: int,
+        excluir_id: int | None = None,
+    ) -> list[Horario]:
+        """Todos los horarios que cuentan como resultado repetido según la
+        regla de `buscar_resultado_en_ficha` (mismo instructor, ningún día
+        en común), ordenados por id — para la auditoría de cruces."""
         query = db.query(Horario).filter(
             Horario.idFicha == id_ficha,
             Horario.idResultado == id_resultado,
@@ -298,8 +349,8 @@ class HorarioRepository:
             query = query.filter(Horario.idHorario != excluir_id)
 
         dias_nuevos = set(dias)
-        for horario in query.all():
-            dias_existentes = set(HorarioRepository.obtener_dias(db, horario.idHorario))
-            if not (dias_existentes & dias_nuevos):
-                return horario
-        return None
+        return [
+            horario
+            for horario in query.order_by(Horario.idHorario).all()
+            if not (set(HorarioRepository.obtener_dias(db, horario.idHorario)) & dias_nuevos)
+        ]

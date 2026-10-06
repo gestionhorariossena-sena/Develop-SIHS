@@ -18,18 +18,8 @@ const INSTRUCTOR: Usuario = {
   debeCambiarClave: false,
 }
 
-const COORDINADOR: Usuario = {
-  idUsuario: 'u2',
-  nombre: 'Ana Martínez',
-  email: 'ana@example.com',
-  estado: 'activo',
-  fechaRegistro: '2026-01-01',
-  roles: [{ idRol: 2, nombre: 'Coordinador' }],
-  especialidades: [],
-  debeCambiarClave: false,
-}
-
-const USUARIOS: Usuario[] = [INSTRUCTOR, COORDINADOR]
+// /usuarios/instructores ya viene filtrado por rol desde el backend.
+const USUARIOS: Usuario[] = [INSTRUCTOR]
 
 const DIAS: DiaSemana[] = [
   { idDia: 1, nombreDia: 'Lunes' },
@@ -58,7 +48,7 @@ vi.mock('../services/api', () => ({
  * que devuelva /usuarios/. */
 function mockeaUsuariosYPerfil(usuarios: unknown, todosLosHorarios: Horario[] = HORARIOS) {
   apiGetMock.mockImplementation((path: string) => {
-    if (path === '/usuarios/') return Promise.resolve(usuarios)
+    if (path === '/usuarios/instructores') return Promise.resolve(usuarios)
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
     if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA)
     if (path === '/usuarios/u1/horarios') return Promise.resolve(HORARIOS)
@@ -68,13 +58,13 @@ function mockeaUsuariosYPerfil(usuarios: unknown, todosLosHorarios: Horario[] = 
 }
 
 describe('Instructores', () => {
-  it('carga los usuarios y solo muestra los que tienen rol Instructor', async () => {
+  it('carga los instructores desde el endpoint dedicado, no el listado completo de usuarios', async () => {
     mockeaUsuariosYPerfil(USUARIOS)
     renderConProviders(<Instructores />)
 
     expect(await screen.findByText('Erick Granados')).toBeInTheDocument()
-    expect(screen.queryByText('Ana Martínez')).not.toBeInTheDocument()
-    expect(apiGetMock).toHaveBeenCalledWith('/usuarios/')
+    expect(apiGetMock).toHaveBeenCalledWith('/usuarios/instructores')
+    expect(apiGetMock).not.toHaveBeenCalledWith('/usuarios/')
     expect(screen.getByText('1 de 1 instructores')).toBeInTheDocument()
   })
 
@@ -151,7 +141,7 @@ describe('Instructores', () => {
   it('muestra "sin horario asignado" cuando el instructor no tiene ningún bloque', async () => {
     mockeaUsuariosYPerfil(USUARIOS)
     apiGetMock.mockImplementation((path: string) => {
-      if (path === '/usuarios/') return Promise.resolve(USUARIOS)
+      if (path === '/usuarios/instructores') return Promise.resolve(USUARIOS)
       if (path === '/dias-semana/') return Promise.resolve(DIAS)
       if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA)
       if (path === '/usuarios/u1/horarios') return Promise.resolve([])
@@ -183,7 +173,7 @@ describe('Instructores', () => {
 
   it('muestra el error del backend si la carga falla', async () => {
     apiGetMock.mockImplementation((path: string) =>
-      path === '/usuarios/' ? Promise.reject(new Error('falló')) : Promise.reject(new Error('no mockeado')),
+      path === '/usuarios/instructores' ? Promise.reject(new Error('falló')) : Promise.reject(new Error('no mockeado')),
     )
     renderConProviders(<Instructores />)
 

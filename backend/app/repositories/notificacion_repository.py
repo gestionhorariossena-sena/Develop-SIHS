@@ -1,8 +1,11 @@
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.models.notificacion import Notificacion
+from app.models.rol import Rol
+from app.models.usuario import Usuario
 
 
 class NotificacionRepository:
@@ -46,13 +49,49 @@ class NotificacionRepository:
     def obtener_por_usuario(
         db: Session,
         id_usuario,
+        *,
+        solo_no_leidas: bool = False,
+        limite: int | None = None,
     ) -> list[Notificacion]:
+        consulta = db.query(Notificacion).filter(Notificacion.idUsuario == id_usuario)
+        if solo_no_leidas:
+            consulta = consulta.filter(Notificacion.leida.is_(False))
+        consulta = consulta.order_by(
+            Notificacion.fechaCreacion.desc(), Notificacion.idNotificacion.desc()
+        )
+        if limite is not None:
+            consulta = consulta.limit(limite)
+        return consulta.all()
+
+    @staticmethod
+    def contar_no_leidas(db: Session, id_usuario) -> int:
         return (
             db.query(Notificacion)
-            .filter(Notificacion.idUsuario == id_usuario)
-            .order_by(Notificacion.fechaCreacion.desc())
+            .filter(Notificacion.idUsuario == id_usuario, Notificacion.leida.is_(False))
+            .count()
+        )
+
+    @staticmethod
+    def ids_usuarios_con_roles(db: Session, nombres_roles: set[str]) -> list:
+        """Destinatarios de los avisos que van "a coordinación" o "a
+        administración": no hay un buzón compartido, así que le llega a
+        cada persona que tenga alguno de esos roles y esté activa."""
+        filas = (
+            db.query(Usuario.idUsuario)
+            .join(Usuario.roles)
+            .filter(
+                Rol.nombre.in_(nombres_roles),
+                or_(Usuario.estado.is_(None), Usuario.estado != "inactivo"),
+            )
+            .distinct()
             .all()
         )
+        return [fila[0] for fila in filas]
+
+    @staticmethod
+    def eliminar(db: Session, notificacion: Notificacion) -> None:
+        db.delete(notificacion)
+        db.commit()
 
     @staticmethod
     def obtener_por_id(

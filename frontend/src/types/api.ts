@@ -33,6 +33,8 @@ export interface Usuario {
    * ProtectedRoute.tsx fuerza CambiarClaveObligatorio.tsx hasta que se
    * limpie con PATCH /usuarios/me/confirmar-cambio-clave. */
   debeCambiarClave: boolean
+  /** T-9: tema guardado en el backend; null = nunca eligió. */
+  preferenciaTema?: 'claro' | 'oscuro' | 'sistema' | null
 }
 
 // Espejo de CargaSemanalResponse (backend/app/schemas/usuario.py) —
@@ -210,6 +212,10 @@ export type TipoConflictoHorario =
   // HorarioService._validar_fortaleza_instructor. Forzable, igual que
   // regla_instructor.
   | 'fortaleza_instructor'
+  // La ficha pertenece a otro trimestre que el del horario — ver
+  // HorarioService._mensaje_ficha_del_periodo. El dry-run y la auditoría
+  // ya lo devolvían, pero ninguna pantalla sabía titularlo.
+  | 'ficha_trimestre'
 
 export interface HorarioDryRunConflict {
   tipo: TipoConflictoHorario
@@ -239,7 +245,13 @@ export interface AuditoriaConflicto extends HorarioDryRunConflict {
 
 export interface AuditoriaCrucesResponse {
   conflictos: AuditoriaConflicto[]
-  resumen: { totalCruces: number; tipos: string[] }
+  resumen: {
+    totalCruces: number
+    tipos: string[]
+    porTipo?: Record<string, number>
+    /** Horarios distintos que aparecen en al menos un conflicto. */
+    horariosAfectados?: number
+  }
 }
 
 // Espejo de HorarioGuardadoResponse (backend/app/schemas/horario_guardado.py).
@@ -513,6 +525,29 @@ export interface CompetenciaFormacionCreate {
 
 export interface CompetenciaFormacionResponse extends CompetenciaFormacionCreate {
   idCompetencia: number
+}
+
+// Espejo de TematicaResultadoResponse / TematicaCompetenciaResponse
+// (backend/app/schemas/tematica.py) — GET /tematicas/.
+export interface TematicaResultado {
+  idResultado: number
+  codigo: string | null
+  descripcion: string
+  horasAsignadas: number | null
+  numeroFase: number | null
+  idGuia: number | null
+  horariosAsignados: number
+}
+
+export interface TematicaCompetencia {
+  idCompetencia: number
+  codigo: string | null
+  descripcion: string
+  idPrograma: number
+  nombrePrograma: string | null
+  especialidades: Especialidad[]
+  resultados: TematicaResultado[]
+  totalHoras: number
 }
 
 export interface ResultadoAprendizajeCreate {

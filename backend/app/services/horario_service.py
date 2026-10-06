@@ -11,7 +11,7 @@ from app.models.usuario import Usuario
 from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
 from app.repositories.horario_repository import HorarioRepository
 from app.services.notificacion_service import NotificacionService, TIPO_AMBIENTE, TIPO_HORARIO
-from app.services.notificacion_service import TIPO_SISTEMA
+from app.services.notificacion_service import ROLES_GESTION, TIPO_CRUCE, TIPO_SISTEMA
 
 # RF-011 (Requisitos Funcionales V4.pdf, pág. 15-16): "Los instructores de
 # planta podrán estar asignados máximo 32 horas a la semana, mientras que
@@ -302,6 +302,48 @@ class HorarioService:
             entidad_relacionada="fichas",
             id_entidad_relacionada=horario.idFicha,
         )
+
+    @staticmethod
+    def notificar_cruce_forzado(db, horario, conflictos: list[str], id_autor) -> None:
+        """`forzar` deja guardar un bloque que choca con otro o que rompe
+        una regla (RF-011). Queda en auditoría, pero nadie la mira a diario:
+        el resto de coordinación se entera por la campana, y el instructor
+        también si el bloque ya está publicado (si es borrador todavía no
+        lo ve, y avisarle sería adelantarse)."""
+        if not conflictos:
+            return
+
+        ficha_codigo, _, franja = HorarioService._datos_para_mensaje(horario)
+        primero = conflictos[0]
+        resto = f" (y {len(conflictos) - 1} más)" if len(conflictos) > 1 else ""
+
+        NotificacionService.notificar_roles_transaccional(
+            db,
+            roles=ROLES_GESTION,
+            tipo=TIPO_CRUCE,
+            mensaje=(
+                f"Se guardó con cruce autorizado el bloque de {franja} de la ficha "
+                f"{ficha_codigo}: {primero}{resto}"
+            )[:500],
+            entidad_relacionada="horarios",
+            id_entidad_relacionada=horario.idHorario,
+            excluir=id_autor,
+        )
+
+        if horario.publicado and horario.idInstructor and str(horario.idInstructor) != str(id_autor):
+            NotificacionService.crear_transaccional(
+                db,
+                id_usuario=horario.idInstructor,
+                tipo=TIPO_CRUCE,
+                mensaje=(
+                    f"Tu bloque de {franja} con la ficha {ficha_codigo} quedó con un cruce "
+                    "autorizado por coordinación. Revisa «Mi horario»."
+                ),
+                entidad_relacionada="horarios",
+                id_entidad_relacionada=horario.idHorario,
+            )
+
+        db.commit()
 
     @staticmethod
     def notificar_reemplazo_publicado_transaccional(db, horarios) -> None:
@@ -632,35 +674,64 @@ class HorarioService:
     @staticmethod
     def auditar_conflictos(db, id_trimestre: int | None = None, id_sede: int | None = None) -> list[dict]:
         """Barrido de cruces entre horarios YA guardados (activos) — para
-        la pantalla "Auditoría de Cruces". A diferencia de validar_dry_run
-        (que valida UN candidato nuevo contra lo existente), acá se
-        re-valida cada horario ya guardado contra todos los demás,
-        reutilizando validar_dry_run tal cual para no duplicar ni desviarse
-        de las reglas de negocio (RF-011, solapes, resultado repetido).
+        la pantalla "Auditoría de Cruces". Usa las mismas reglas y los
+        mismos tipos que validar_dry_run (cruce_ficha, cruce_instructor,
+        cruce_ambiente, resultado_repetido, regla_instructor,
+        fortaleza_instructor, ficha_trimestre), pero recorriendo lo que ya
+        está guardado en vez de un candidato nuevo.
 
-        Deduplicación: un cruce por solape (ficha/instructor/ambiente/
-        resultado repetido) es simétrico — h1 choca con h2 y viceversa —
-        así que se reporta una sola vez por par (idHorario menor primero).
-        `regla_instructor` (tope de horas semanales) no es un cruce entre
-        dos horarios sino un estado del instructor, así que se reporta una
-        sola vez por instructor aunque tenga varios horarios que la violen.
+        T-5 (SCRUM-136) corrigió tres huecos de la versión anterior, que
+        llamaba validar_dry_run por cada horario:
+
+        - Solapes: validar_dry_run solo devuelve el PRIMER horario que
+          choca. En un triple cruce (A, B y C en la misma franja) el par
+          B–C no salía nunca. Ahora se reportan todos los pares, una vez
+          cada uno (idHorario menor primero).
+        - Tope de horas (RF-011): se deduplicaba por instructor aunque el
+          mensaje fuera de otra regla, así que un instructor de planta con
+          exceso de horas Y bloques de noche solo mostraba lo primero. Ahora
+          el tope se evalúa una vez por (instructor, trimestre) con sus
+          horas reales —no "superaría", que es lenguaje de un bloque nuevo—
+          y cada bloque nocturno de planta es su propio conflicto.
+        - El tope suma TODAS las horas del instructor en el trimestre,
+          aunque se audite una sola sede: el contrato es uno solo.
+
+        Cada conflicto de dos horarios trae `idHorario` y
+        `idHorarioExistente`; los de un solo horario (noche, fortaleza,
+        ficha fuera de su trimestre) solo `idHorario`.
         """
         from app.schemas.horario import HorarioDryRunRequest  # evita import circular a nivel de módulo
 
-        horarios = HorarioRepository.obtener_activos(db, id_trimestre=id_trimestre, id_sede=id_sede)
-        # Bulk en vez de un `obtener_dias` por horario -- ver
-        # HorarioService.obtener_todos_con_respuesta, mismo problema N+1.
-        # No elimina el costo dominante de este barrido (validar_dry_run
-        # se sigue llamando una vez POR horario, con sus propias queries
-        # de buscar_solape), pero saca del camino el N+1 más barato de
-        # arreglar sin tocar la lógica de detección de cruces.
+        horarios = sorted(
+            HorarioRepository.obtener_activos(db, id_trimestre=id_trimestre, id_sede=id_sede),
+            key=lambda h: h.idHorario,
+        )
         dias_por_horario = HorarioRepository.obtener_dias_por_horarios(db, [h.idHorario for h in horarios])
 
         pares_vistos: set[tuple[int, int, str]] = set()
-        instructores_vistos: set = set()
         resultado: list[dict] = []
 
+        def agregar_par(horario, otro, tipo: str, mensaje: str, **ids) -> None:
+            par = (min(horario.idHorario, otro.idHorario), max(horario.idHorario, otro.idHorario), tipo)
+            if par in pares_vistos:
+                return
+            pares_vistos.add(par)
+            resultado.append({
+                "tipo": tipo,
+                "mensaje": mensaje,
+                "idHorario": par[0],
+                "idHorarioExistente": par[1],
+                **ids,
+            })
+
+        recursos = (
+            ("cruce_ficha", "idFicha", "La ficha ya tiene otra clase programada en ese horario"),
+            ("cruce_instructor", "idInstructor", "El instructor ya tiene otra clase programada en ese horario"),
+            ("cruce_ambiente", "idAmbiente", "El ambiente ya está ocupado en ese horario"),
+        )
+
         for horario in horarios:
+            dias = dias_por_horario.get(horario.idHorario, [])
             candidato = HorarioDryRunRequest(
                 horaInicio=horario.horaInicio,
                 horaFin=horario.horaFin,
@@ -670,29 +741,111 @@ class HorarioService:
                 idInstructor=horario.idInstructor,
                 idFicha=horario.idFicha,
                 idResultado=horario.idResultado,
-                dias=dias_por_horario.get(horario.idHorario, []),
+                dias=dias,
             )
 
-            for conflicto in HorarioService.validar_dry_run(db, candidato, excluir_id=horario.idHorario):
-                if conflicto["tipo"] == "regla_instructor":
-                    if horario.idInstructor in instructores_vistos:
-                        continue
-                    instructores_vistos.add(horario.idInstructor)
-                    resultado.append({**conflicto, "idHorario": horario.idHorario})
-                    continue
+            error_periodo = HorarioService._mensaje_ficha_del_periodo(db, candidato)
+            if error_periodo:
+                resultado.append({
+                    "tipo": "ficha_trimestre",
+                    "mensaje": error_periodo,
+                    "idHorario": horario.idHorario,
+                    "idFicha": horario.idFicha,
+                })
 
-                existente = conflicto.get("idHorarioExistente")
-                if existente is None:
-                    resultado.append({**conflicto, "idHorario": horario.idHorario})
-                    continue
+            if dias:
+                for tipo, campo, frase in recursos:
+                    for otro in HorarioRepository.buscar_solapes(
+                        db, campo, getattr(horario, campo), dias, horario.horaInicio, horario.horaFin,
+                        horario.idTrimestre, excluir_id=horario.idHorario,
+                    ):
+                        agregar_par(
+                            horario, otro, tipo,
+                            f"{frase}: {HorarioService._describir(db, horario)} choca con "
+                            f"{HorarioService._describir(db, otro)}.",
+                            **{campo: getattr(horario, campo)},
+                        )
 
-                par = (min(horario.idHorario, existente), max(horario.idHorario, existente), conflicto["tipo"])
-                if par in pares_vistos:
-                    continue
-                pares_vistos.add(par)
-                resultado.append({**conflicto, "idHorario": horario.idHorario})
+            for otro in HorarioRepository.buscar_resultados_repetidos_en_ficha(
+                db, horario.idFicha, horario.idResultado, horario.idInstructor, dias,
+                horario.idTrimestre, excluir_id=horario.idHorario,
+            ):
+                agregar_par(
+                    horario, otro, "resultado_repetido",
+                    "La ficha tiene este resultado de aprendizaje programado dos veces: "
+                    f"{HorarioService._describir(db, horario)} y {HorarioService._describir(db, otro)}.",
+                    idFicha=horario.idFicha,
+                    idResultado=horario.idResultado,
+                )
 
+            instructor = horario.instructor
+            jornada = db.get(Jornada, horario.idJornada)
+            if (
+                instructor
+                and instructor.tipoContrato == "planta"
+                and jornada
+                and jornada.nombreJornada == "Noche"
+            ):
+                resultado.append({
+                    "tipo": "regla_instructor",
+                    "mensaje": (
+                        f"El instructor {instructor.nombre} es de planta y está programado en jornada "
+                        f"Noche: {HorarioService._describir(db, horario)}."
+                    ),
+                    "idHorario": horario.idHorario,
+                    "idInstructor": horario.idInstructor,
+                })
+
+            for error in HorarioService._validar_fortaleza_instructor(db, candidato):
+                resultado.append({
+                    "tipo": "fortaleza_instructor",
+                    "mensaje": error,
+                    "idHorario": horario.idHorario,
+                    "idInstructor": horario.idInstructor,
+                    "idResultado": horario.idResultado,
+                })
+
+        resultado.extend(HorarioService._auditar_topes_instructor(db, horarios))
         return resultado
+
+    @staticmethod
+    def _auditar_topes_instructor(db, horarios) -> list[dict]:
+        """RF-011, tope de horas semanales: un conflicto por (instructor,
+        trimestre) que lo supere, con las horas que YA tiene. Se suman
+        todos sus horarios activos del trimestre, no solo los de la sede
+        auditada."""
+        conflictos: list[dict] = []
+        vistos: set = set()
+        for horario in horarios:
+            clave = (horario.idInstructor, horario.idTrimestre)
+            if clave in vistos:
+                continue
+            vistos.add(clave)
+
+            instructor = horario.instructor
+            if not instructor or not instructor.tipoContrato:
+                continue
+
+            limite = HORAS_MAX_PLANTA if instructor.tipoContrato == "planta" else HORAS_MAX_CONTRATO
+            propios = HorarioRepository.obtener_por_instructor(
+                db, horario.idInstructor, None, id_trimestre=horario.idTrimestre
+            )
+            dias = HorarioRepository.obtener_dias_por_horarios(db, [h.idHorario for h in propios])
+            horas = sum(
+                HorarioService._duracion_horas(h.horaInicio, h.horaFin) * len(dias.get(h.idHorario, []))
+                for h in propios
+            )
+            if horas > limite:
+                conflictos.append({
+                    "tipo": "regla_instructor",
+                    "mensaje": (
+                        f"El instructor {instructor.nombre} ({instructor.tipoContrato}) tiene {horas:.1f}h/semana "
+                        f"programadas y supera el máximo de {limite}h."
+                    ),
+                    "idHorario": min(h.idHorario for h in propios),
+                    "idInstructor": horario.idInstructor,
+                })
+        return conflictos
 
     @staticmethod
     def _duracion_horas(hora_inicio, hora_fin) -> float:

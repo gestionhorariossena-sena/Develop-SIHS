@@ -39,7 +39,13 @@ const OPCIONES: OpcionTema[] = [
   },
 ]
 
-export function ThemeSelector() {
+interface ThemeSelectorProps {
+  /** Se llama después de aplicar el tema. AppShell lo usa para guardarlo
+   * en el backend; en login/presentación no hay sesión y se omite. */
+  alCambiar?: (tema: Tema) => void
+}
+
+export function ThemeSelector({ alCambiar }: ThemeSelectorProps = {}) {
   const { tema, setTema } = useTheme()
 
   return (
@@ -50,7 +56,11 @@ export function ThemeSelector() {
           <button
             key={opcion.valor}
             type="button"
-            onClick={() => setTema(opcion.valor)}
+            onClick={() => {
+              if (opcion.valor === tema) return
+              setTema(opcion.valor)
+              alCambiar?.(opcion.valor)
+            }}
             title={opcion.etiqueta}
             aria-label={opcion.etiqueta}
             aria-pressed={activo}

@@ -14,7 +14,7 @@ def test_generar_codigo_instructor_route(monkeypatch):
     def fake_generar(*args, **kwargs):
         return {"codigo": "INS-AB12CD", "idUsuario": "11111111-1111-1111-1111-111111111111"}
 
-    monkeypatch.setattr("app.api.v1.usuarios.UsuarioService.generar_codigo_instructor", fake_generar)
+    monkeypatch.setattr("app.api.v1.usuarios.InstructorService.generar_codigo", fake_generar)
     app.dependency_overrides[require_admin_o_coordinador] = lambda: {"id": "admin-1"}
 
     response = client.post(
@@ -35,7 +35,7 @@ def test_validar_codigo_instructor_route(monkeypatch):
     def fake_validar(*args, **kwargs):
         return {"valido": True, "codigo": "INS-AB12CD", "idUsuario": "11111111-1111-1111-1111-111111111111"}
 
-    monkeypatch.setattr("app.api.v1.usuarios.UsuarioService.validar_codigo_instructor", fake_validar)
+    monkeypatch.setattr("app.api.v1.usuarios.InstructorService.validar_codigo", fake_validar)
 
     response = client.post(
         "/api/v1/usuarios/instructor/codigo/validar",

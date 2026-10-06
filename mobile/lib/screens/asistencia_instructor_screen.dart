@@ -332,21 +332,37 @@ class _TarjetaClase extends StatelessWidget {
                 style: tema.textTheme.bodySmall,
               ),
               const SizedBox(height: 8),
-              Row(
+              // Wrap y no Row: en un teléfono angosto (320 px) o con letra
+              // grande, la hora y el ambiente no caben en una línea; el
+              // ambiente baja a la siguiente en vez de desbordar.
+              Wrap(
+                spacing: 12,
+                runSpacing: 4,
                 children: [
-                  Icon(Icons.schedule_rounded, size: 14, color: tema.colorScheme.onSurfaceVariant),
-                  const SizedBox(width: 4),
-                  Text(bloque.rangoHorarioTexto, style: tema.textTheme.labelMedium),
-                  const SizedBox(width: 12),
-                  Icon(Icons.meeting_room_outlined,
-                      size: 14, color: tema.colorScheme.onSurfaceVariant),
-                  const SizedBox(width: 4),
-                  Flexible(
-                    child: Text(
-                      horario.ambienteTexto,
-                      overflow: TextOverflow.ellipsis,
-                      style: tema.textTheme.labelMedium,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.schedule_rounded, size: 14, color: tema.colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(bloque.rangoHorarioTexto, style: tema.textTheme.labelMedium),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.meeting_room_outlined,
+                          size: 14, color: tema.colorScheme.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          horario.ambienteTexto,
+                          overflow: TextOverflow.ellipsis,
+                          style: tema.textTheme.labelMedium,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

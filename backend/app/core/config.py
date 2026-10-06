@@ -31,6 +31,11 @@ class Settings(BaseSettings):
     # llamar al backend por CORS además de localhost. Vacía en desarrollo local.
     frontend_url: str = ""
 
+    # Render Free no ofrece background worker gratuito. Cuando está activo,
+    # FastAPI inicia el worker de publicaciones en un hilo del mismo proceso.
+    # Se mantiene opt-in para poder migrar a un worker dedicado sin duplicarlo.
+    embedded_publication_worker: bool = False
+
     # SMTP de la cuenta de Gmail de gestión — mismas credenciales que el
     # ticket de recuperación de contraseña (Epic SCRUM-96). Vacío hasta que
     # ese ticket configure la cuenta; EmailService falla explícito mientras

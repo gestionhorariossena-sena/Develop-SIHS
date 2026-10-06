@@ -65,12 +65,14 @@ class SesionCard extends StatelessWidget {
                           Icon(Icons.schedule_rounded,
                               size: 16, color: colores.onSurfaceVariant),
                           const SizedBox(width: 6),
-                          Text(
-                            '${sesion.horaInicioTexto} - ${sesion.horaFinTexto}',
-                            style: textos.labelLarge
-                                ?.copyWith(fontWeight: FontWeight.w700),
+                          Expanded(
+                            child: Text(
+                              '${sesion.horaInicioTexto} - ${sesion.horaFinTexto}',
+                              style: textos.labelLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: 8),
                           _PildoraEstado(estado: estado),
                         ],
                       ),
