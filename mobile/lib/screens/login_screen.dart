@@ -239,9 +239,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text(cargando
-                                        ? 'Iniciando sesión...'
-                                        : 'Iniciar sesión'),
+                                    Flexible(
+                                      child: Text(
+                                        cargando
+                                            ? 'Iniciando sesión...'
+                                            : 'Iniciar sesión',
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
                                     const SizedBox(width: 8),
                                     if (cargando)
                                       SizedBox(
@@ -357,13 +362,16 @@ class _ChipPortal extends StatelessWidget {
           children: [
             Icon(Icons.circle, size: 8, color: colores.primary),
             const SizedBox(width: 10),
-            Text(
-              portal.etiqueta,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: colores.primary,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.5,
-                  ),
+            Flexible(
+              child: Text(
+                portal.etiqueta,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: colores.primary,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+              ),
             ),
             const SizedBox(width: 6),
             Icon(Icons.swap_horiz_rounded, size: 16, color: colores.primary),

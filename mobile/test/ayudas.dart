@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:sihs_mobile/models/aviso.dart';
 import 'package:sihs_mobile/models/ficha.dart';
 import 'package:sihs_mobile/models/horario.dart';
 import 'package:sihs_mobile/models/usuario.dart';
 import 'package:sihs_mobile/providers/auth_provider.dart';
 import 'package:sihs_mobile/providers/horario_provider.dart';
 import 'package:sihs_mobile/services/auth_service.dart';
+import 'package:sihs_mobile/services/aviso_service.dart';
 import 'package:sihs_mobile/services/horario_service.dart';
 import 'package:sihs_mobile/theme/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -177,5 +179,64 @@ Widget envolver(
       ),
     ],
     child: MaterialApp(theme: AppTheme.claro, home: hijo),
+  );
+}
+
+/// Doble de [AvisoGateway]: cada fuente puede fallar por separado.
+class AvisosFalsos implements AvisoGateway {
+  List<Aviso> avisos;
+  List<Notificacion> notificaciones;
+  Object? errorAvisos;
+  Object? errorNotificaciones;
+
+  AvisosFalsos({
+    this.avisos = const [],
+    this.notificaciones = const [],
+    this.errorAvisos,
+    this.errorNotificaciones,
+  });
+
+  @override
+  Future<List<Aviso>> obtenerAvisos() async {
+    if (errorAvisos != null) throw errorAvisos!;
+    return avisos;
+  }
+
+  @override
+  Future<List<Notificacion>> obtenerNotificaciones() async {
+    if (errorNotificaciones != null) throw errorNotificaciones!;
+    return notificaciones;
+  }
+}
+
+Aviso avisoDePrueba({
+  int idAviso = 1,
+  String titulo = 'Cambio de ambiente',
+  CategoriaAviso categoria = CategoriaAviso.reprogramacion,
+  DateTime? vigenteHasta,
+}) {
+  return Aviso(
+    idAviso: idAviso,
+    titulo: titulo,
+    cuerpo: 'Esta semana la clase pasa al ambiente 304.',
+    categoria: categoria,
+    fechaPublicacion: DateTime.now().subtract(Duration(hours: idAviso)),
+    vigenteHasta: vigenteHasta,
+    publicadorNombre: 'Coordinación Teleinformática',
+    fichaCodigo: '2758392',
+  );
+}
+
+Notificacion notificacionDePrueba({
+  int idNotificacion = 1,
+  String mensaje = 'Tu horario cambió',
+  bool leida = false,
+}) {
+  return Notificacion(
+    idNotificacion: idNotificacion,
+    tipo: 'cambio_horario',
+    mensaje: mensaje,
+    leida: leida,
+    fechaCreacion: DateTime.now(),
   );
 }

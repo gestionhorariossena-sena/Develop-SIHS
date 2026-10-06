@@ -13,6 +13,7 @@ import '../widgets/horario_card.dart';
 import '../widgets/sesion_card.dart';
 import 'asistencia_instructor_screen.dart';
 import 'asistencia_screen.dart';
+import 'avisos_screen.dart';
 import 'perfil_screen.dart';
 
 /// "Mi horario" — implementa los diseños "Vista movil Aprendiz" y "Vista
@@ -67,7 +68,11 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_ultimoUsuarioIdCargado == usuario.idUsuario) return;
 
     _ultimoUsuarioIdCargado = usuario.idUsuario;
-    unawaited(_cargar());
+    // Después del frame y no ya: esto también corre desde
+    // didChangeDependencies, o sea en pleno build, y si el provider ya
+    // tiene sesiones (volver a entrar tras un 401) `cargar` notifica de
+    // forma síncrona -> "setState() called during build".
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_cargar()));
   }
 
   Future<void> _cargar() async {
@@ -93,57 +98,127 @@ class _HomeScreenState extends State<HomeScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Scaffold(
-      body: switch (_pestana) {
-        0 => _VistaHorario(
-            usuario: usuario,
-            diaElegido: _diaElegido,
-            jornadaElegida: _jornadaElegida,
-            onElegirDia: (d) => setState(() => _diaElegido = d),
-            onElegirJornada: (j) => setState(() => _jornadaElegida = j),
-            onRecargar: _cargar,
-          ),
-        // Aprendiz: su historial. Instructor: la lista de sus clases,
-        // solo para consultarla — registrarla es de la web (el móvil es
-        // read-only, ver ARQUITECTURA_MOBILE.md).
-        1 when esAprendiz => const AsistenciaScreen(),
-        1 when muestraAsistencia => const AsistenciaInstructorScreen(),
-        _ => const PerfilScreen(),
-      },
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _pestana,
-        onDestinationSelected: (i) => setState(() => _pestana = i),
-        destinations: [
-          const NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: 'Mi horario',
-          ),
-          if (muestraAsistencia)
-            const NavigationDestination(
-              icon: Icon(Icons.fact_check_outlined),
-              selectedIcon: Icon(Icons.fact_check_rounded),
-              label: 'Asistencia',
+    final secciones = [
+      _Seccion.horario,
+      if (muestraAsistencia) _Seccion.asistencia,
+      _Seccion.avisos,
+      _Seccion.perfil,
+    ];
+    // Si cambian las secciones (otro rol tras volver a entrar), el índice
+    // guardado puede quedar fuera de rango.
+    final indice = _pestana.clamp(0, secciones.length - 1);
+    final seccion = secciones[indice];
+
+    final contenido = switch (seccion) {
+      _Seccion.horario => _VistaHorario(
+          usuario: usuario,
+          diaElegido: _diaElegido,
+          jornadaElegida: _jornadaElegida,
+          onElegirDia: (d) => setState(() => _diaElegido = d),
+          onElegirJornada: (j) => setState(() => _jornadaElegida = j),
+          onRecargar: _cargar,
+        ),
+      // Aprendiz: su historial. Instructor: la lista de sus clases,
+      // solo para consultarla — registrarla es de la web (el móvil es
+      // read-only, ver ARQUITECTURA_MOBILE.md).
+      _Seccion.asistencia when esAprendiz => const AsistenciaScreen(),
+      _Seccion.asistencia => const AsistenciaInstructorScreen(),
+      _Seccion.avisos => const AvisosScreen(),
+      _Seccion.perfil => const PerfilScreen(),
+    };
+
+    void elegir(int i) => setState(() => _pestana = i);
+
+    final botonRefrescar = seccion == _Seccion.horario && !horarios.isLoading
+        ? FloatingActionButton.small(
+            key: const Key('boton-refrescar'),
+            onPressed: _cargar,
+            tooltip: 'Actualizar',
+            child: const Icon(Icons.refresh_rounded),
+          )
+        : null;
+
+    // Tablet o teléfono en horizontal: la barra inferior le roba alto a una
+    // pantalla que ya es baja, y el contenido estirado a 1280 px se lee
+    // mal. Ahí el menú pasa a un riel lateral y el contenido se centra con
+    // un ancho máximo legible.
+    final ancho = MediaQuery.sizeOf(context).width;
+    if (ancho >= anchoParaRiel) {
+      return Scaffold(
+        body: Row(
+          children: [
+            SafeArea(
+              right: false,
+              child: NavigationRail(
+                key: const Key('riel-navegacion'),
+                selectedIndex: indice,
+                onDestinationSelected: elegir,
+                labelType: NavigationRailLabelType.all,
+                destinations: [
+                  for (final s in secciones)
+                    NavigationRailDestination(
+                      icon: Icon(s.icono),
+                      selectedIcon: Icon(s.iconoElegido),
+                      label: Text(s.etiqueta),
+                    ),
+                ],
+              ),
             ),
-          const NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: 'Perfil',
-          ),
+            const VerticalDivider(width: 1),
+            Expanded(
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: anchoMaximoContenido),
+                  child: contenido,
+                ),
+              ),
+            ),
+          ],
+        ),
+        floatingActionButton: botonRefrescar,
+      );
+    }
+
+    return Scaffold(
+      body: contenido,
+      bottomNavigationBar: NavigationBar(
+        key: const Key('barra-navegacion'),
+        selectedIndex: indice,
+        onDestinationSelected: elegir,
+        destinations: [
+          for (final s in secciones)
+            NavigationDestination(
+              icon: Icon(s.icono),
+              selectedIcon: Icon(s.iconoElegido),
+              label: s.etiqueta,
+            ),
         ],
       ),
-      floatingActionButton: _pestana == 0 && horarios.isLoading
-          ? null
-          : (_pestana == 0
-              ? FloatingActionButton.small(
-                  key: const Key('boton-refrescar'),
-                  onPressed: _cargar,
-                  tooltip: 'Actualizar',
-                  child: const Icon(Icons.refresh_rounded),
-                )
-              : null),
+      floatingActionButton: botonRefrescar,
     );
   }
+}
+
+/// Desde este ancho (el "medium" de Material 3) el menú pasa de la barra
+/// inferior a un riel lateral.
+const double anchoParaRiel = 600;
+
+/// Ancho máximo del contenido en tablet: más que esto y las tarjetas se
+/// vuelven renglones larguísimos.
+const double anchoMaximoContenido = 720;
+
+enum _Seccion {
+  horario('Mi horario', Icons.calendar_month_outlined, Icons.calendar_month_rounded),
+  asistencia('Asistencia', Icons.fact_check_outlined, Icons.fact_check_rounded),
+  avisos('Avisos', Icons.notifications_outlined, Icons.notifications_rounded),
+  perfil('Perfil', Icons.person_outline_rounded, Icons.person_rounded);
+
+  const _Seccion(this.etiqueta, this.icono, this.iconoElegido);
+
+  final String etiqueta;
+  final IconData icono;
+  final IconData iconoElegido;
 }
 
 class _VistaHorario extends StatelessWidget {
