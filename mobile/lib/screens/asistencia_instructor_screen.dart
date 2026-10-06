@@ -487,6 +487,11 @@ class _NominaSesionScreenState extends State<NominaSesionScreen> {
     for (final aprendiz in widget.sesion.aprendices)
       if (aprendiz.estado != null) aprendiz.idUsuario: aprendiz.estado!,
   };
+  late final Map<String, String?> _referenciasExcusa = {
+    for (final aprendiz in widget.sesion.aprendices)
+      if (aprendiz.referenciaExcusa != null)
+        aprendiz.idUsuario: aprendiz.referenciaExcusa,
+  };
 
   bool _guardando = false;
   String? _error;
@@ -511,6 +516,7 @@ class _NominaSesionScreenState extends State<NominaSesionScreen> {
         idHorario: widget.sesion.idHorario,
         fecha: widget.sesion.fechaSesion,
         marcas: Map.unmodifiable(_marcas),
+        referenciasExcusa: Map.unmodifiable(_referenciasExcusa),
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -605,9 +611,17 @@ class _NominaSesionScreenState extends State<NominaSesionScreen> {
               _FilaAprendizEditable(
                 aprendiz: aprendiz,
                 estado: _marcas[aprendiz.idUsuario],
+                referenciaExcusa: _referenciasExcusa[aprendiz.idUsuario],
                 onCambiar: (estado) => setState(() {
                   _marcas[aprendiz.idUsuario] = estado;
+                  if (estado != EstadoAsistencia.excusa) {
+                    _referenciasExcusa.remove(aprendiz.idUsuario);
+                  }
                   _error = null;
+                }),
+                onReferenciaExcusa: (valor) => setState(() {
+                  _referenciasExcusa[aprendiz.idUsuario] =
+                      valor.trim().isEmpty ? null : valor.trim();
                 }),
               ),
           ],
@@ -645,12 +659,16 @@ class _FilaAprendizEditable extends StatelessWidget {
   const _FilaAprendizEditable({
     required this.aprendiz,
     required this.estado,
+    required this.referenciaExcusa,
     required this.onCambiar,
+    required this.onReferenciaExcusa,
   });
 
   final AprendizDeSesion aprendiz;
   final EstadoAsistencia? estado;
+  final String? referenciaExcusa;
   final ValueChanged<EstadoAsistencia> onCambiar;
+  final ValueChanged<String> onReferenciaExcusa;
 
   @override
   Widget build(BuildContext context) {
@@ -699,6 +717,19 @@ class _FilaAprendizEditable extends StatelessWidget {
                   ),
               ],
             ),
+            if (estado == EstadoAsistencia.excusa) ...[
+              const SizedBox(height: 8),
+              TextFormField(
+                key: Key('excusa-${aprendiz.idUsuario}'),
+                initialValue: referenciaExcusa ?? '',
+                onChanged: onReferenciaExcusa,
+                decoration: const InputDecoration(
+                  labelText: 'Referencia o radicado de la excusa',
+                  hintText: 'Opcional',
+                  isDense: true,
+                ),
+              ),
+            ],
           ],
         ),
       ),
