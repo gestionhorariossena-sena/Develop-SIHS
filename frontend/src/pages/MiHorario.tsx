@@ -465,7 +465,7 @@ export function MiHorario() {
           ) : (horariosFiltrados ?? []).length === 0 ? (
             <p className="py-16 text-center text-sm text-on-surface-variant">
               {filtroJornada === 'todas'
-                ? 'Todavía no tenés clases publicadas en este trimestre.'
+                ? 'Todavía no tenés clases publicadas en este período académico.'
                 : 'No tenés clases publicadas en esa jornada.'}
             </p>
           ) : (
@@ -517,7 +517,7 @@ export function MiHorario() {
             {!horarios ? (
               <p className="text-sm text-on-surface-variant">Cargando…</p>
             ) : fichasActivasCompletas.length === 0 ? (
-              <p className="text-sm text-on-surface-variant">Sin fichas asignadas este trimestre.</p>
+              <p className="text-sm text-on-surface-variant">Sin fichas asignadas en este período académico.</p>
             ) : (
               <ul className="space-y-3">
                 {fichasActivasCompletas.map((ficha) => (

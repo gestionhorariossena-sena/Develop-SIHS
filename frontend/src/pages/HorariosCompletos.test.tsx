@@ -87,9 +87,9 @@ describe('HorariosCompletos', () => {
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await screen.findByText('3228973 B')
-    expect(await screen.findByText(/No existe un período activo que incluya la fecha actual/)).toBeInTheDocument()
+    expect(await screen.findByText(/No hay un período académico activo para la fecha actual/)).toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalledWith('/horarios/auditoria-cruces?idTrimestre=1', 60000)
-    await usuario.selectOptions(screen.getByLabelText('Período a auditar'), '1')
+    await usuario.selectOptions(screen.getByLabelText('Período académico a auditar'), '1')
     await waitFor(() => expect(apiGetMock).toHaveBeenCalledWith('/horarios/auditoria-cruces?idTrimestre=1', 60000))
   })
 
@@ -119,7 +119,7 @@ describe('HorariosCompletos', () => {
 
     await usuario.selectOptions(screen.getByLabelText('Jornada'), 'Todas')
     await usuario.click(screen.getByRole('button', { name: 'Más filtros' }))
-    await usuario.selectOptions(screen.getByLabelText('Trimestre'), 'Trimestre 1')
+    await usuario.selectOptions(screen.getByLabelText('Período académico'), 'Trimestre 1')
 
     expect(screen.getByText('Erick Granados')).toBeInTheDocument()
     expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()

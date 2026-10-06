@@ -73,7 +73,7 @@ describe('MiHorario', () => {
     renderConProviders(<MiHorario />)
     await screen.findByText('Gestión de inventarios')
     await usuario.click(screen.getByRole('button', { name: 'Actualizar horario' }))
-    expect(await screen.findByText('Todavía no tenés clases publicadas en este trimestre.')).toBeInTheDocument()
+    expect(await screen.findByText('Todavía no tenés clases publicadas en este período académico.')).toBeInTheDocument()
     expect(solicitudes).toBe(2)
   })
 
@@ -202,7 +202,7 @@ describe('MiHorario', () => {
     )
     renderConProviders(<MiHorario />)
 
-    expect(await screen.findByText('Todavía no tenés clases publicadas en este trimestre.')).toBeInTheDocument()
+    expect(await screen.findByText('Todavía no tenés clases publicadas en este período académico.')).toBeInTheDocument()
   })
 
   it('muestra el error del backend si la carga falla', async () => {
@@ -247,7 +247,7 @@ describe('MiHorario', () => {
     const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
 
-    await screen.findByText('Todavía no tenés clases publicadas en este trimestre.')
+    await screen.findByText('Todavía no tenés clases publicadas en este período académico.')
     expect(screen.queryByRole('link', { name: 'Mi horario' })).not.toBeInTheDocument()
 
     // "Fichas" e "Instructores" ahora viven en desplegables del navbar
