@@ -96,7 +96,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=(
         r"http://(localhost|127\\.0\\.0\\.1):\\d+"
-        r"|https://proyectosihs(?:-[a-z0-9-]+-sihs)?\\.vercel\\.app"
+        r"|https://(?:proyectosihs|proyecto-sihs)(?:-[a-z0-9-]+)?\\.vercel\\.app"
     ),
     allow_origins=[settings.frontend_url] if settings.frontend_url else [],
     allow_credentials=True,
