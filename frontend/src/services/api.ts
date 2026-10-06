@@ -1,6 +1,6 @@
 import { supabase } from './supabaseClient'
 
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8001/api/v1'
+const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? 'https://sihs-backend.onrender.com/api/v1' : 'http://127.0.0.1:8001/api/v1')
 const TIMEOUT_MS = 15000
 
 /**
