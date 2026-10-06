@@ -23,6 +23,7 @@ abstract class AsistenciaGateway {
     required int idHorario,
     required DateTime fecha,
     required Map<String, EstadoAsistencia> marcas,
+    Map<String, String?> referenciasExcusa = const {},
   }) async {
     throw UnsupportedError('Este gateway no implementa escritura de asistencia.');
   }
@@ -56,6 +57,7 @@ class AsistenciaService implements AsistenciaGateway {
     required int idHorario,
     required DateTime fecha,
     required Map<String, EstadoAsistencia> marcas,
+    Map<String, String?> referenciasExcusa = const {},
   }) async {
     await _apiClient.post<Map<String, dynamic>>(
       '/asistencias/sesion',
@@ -66,7 +68,9 @@ class AsistenciaService implements AsistenciaGateway {
             .map((entry) => {
                   'idUsuarioAprendiz': entry.key,
                   'estado': entry.value.valorApi,
-                  'referenciaExcusa': null,
+                  'referenciaExcusa': entry.value == EstadoAsistencia.excusa
+                      ? referenciasExcusa[entry.key]
+                      : null,
                 })
             .toList(),
       },
