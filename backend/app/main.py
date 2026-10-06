@@ -94,9 +94,11 @@ async def convertir_errores_no_manejados(request: Request, call_next):
 # hacía que un redeploy/preview válido fallara como TypeError de red.
 app.add_middleware(
     CORSMiddleware,
+    # Raw strings con UNA sola barra: con doble barra el regex exigía una
+    # barra invertida literal y no aceptaba ningún origen.
     allow_origin_regex=(
-        r"http://(localhost|127\\.0\\.0\\.1):\\d+"
-        r"|https://proyectosihs(?:-[a-z0-9-]+-sihs)?\\.vercel\\.app"
+        r"http://(localhost|127\.0\.0\.1):\d+"
+        r"|https://proyectosihs(?:-[a-z0-9-]+-sihs)?\.vercel\.app"
     ),
     allow_origins=[settings.frontend_url] if settings.frontend_url else [],
     allow_credentials=True,
