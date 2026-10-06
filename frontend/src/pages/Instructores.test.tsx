@@ -164,7 +164,7 @@ describe('Instructores', () => {
     await usuario.click(screen.getByText('Erick Granados'))
 
     const panel = screen.getByRole('dialog', { name: 'Erick Granados' })
-    expect(await within(panel).findByText('Sin horario asignado en el trimestre actual.')).toBeInTheDocument()
+    expect(await within(panel).findByText('Sin horario asignado en el período académico actual.')).toBeInTheDocument()
     expect(within(panel).queryByText('Jornada Mañana')).not.toBeInTheDocument()
   })
 
