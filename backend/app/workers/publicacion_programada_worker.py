@@ -1,12 +1,14 @@
 """Worker de polling para publicaciones programadas.
 
 Ejecutar desde backend con: python -m app.workers.publicacion_programada_worker
-El despliegue debe iniciar este proceso además del servidor web.
+También puede ejecutarse embebido en el proceso web (Render Free) mediante
+`run_worker`, que acepta un Event para apagado limpio.
 """
 import argparse
 import logging
 import time
 from datetime import datetime, timezone
+from threading import Event
 
 from sqlalchemy import select
 
@@ -34,25 +36,51 @@ def procesar_vencidas() -> int:
     return procesadas
 
 
-def main():
+def run_worker(
+    intervalo: float = 5.0,
+    once: bool = False,
+    stop_event: Event | None = None,
+) -> None:
+    """Ejecuta el ciclo del worker.
+
+    `stop_event` permite que el servidor web lo detenga de forma limpia.
+    Sin evento conserva el comportamiento histórico de proceso persistente.
+    """
+    espera = max(0.5, intervalo)
+    while True:
+        if stop_event is not None and stop_event.is_set():
+            return
+
+        if not once:
+            with SessionLocal() as db:
+                registrar_senal(db)
+
+        total = procesar_vencidas()
+
+        if not once:
+            with SessionLocal() as db:
+                registrar_senal(db)
+
+        if total:
+            logger.info("Publicaciones programadas procesadas: %s", total)
+
+        if once:
+            return
+
+        if stop_event is not None:
+            if stop_event.wait(espera):
+                return
+        else:
+            time.sleep(espera)
+
+
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--intervalo", type=float, default=5.0)
     parser.add_argument("--once", action="store_true", help="procesa lo vencido y termina")
     args = parser.parse_args()
     logging.basicConfig(level=logging.INFO)
-    while True:
-        if not args.once:
-            with SessionLocal() as db:
-                registrar_senal(db)
-        total = procesar_vencidas()
-        if not args.once:
-            with SessionLocal() as db:
-                registrar_senal(db)
-        if total:
-            logger.info("Publicaciones programadas procesadas: %s", total)
-        if args.once:
-            return
-        time.sleep(max(0.5, args.intervalo))
+    run_worker(intervalo=args.intervalo, once=args.once)
 
 
 if __name__ == "__main__":
