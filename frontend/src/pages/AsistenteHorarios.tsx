@@ -666,8 +666,37 @@ export function AsistenteHorarios() {
               </div>
             ) : (
               <>
+                <div className="mb-5 rounded-xl border border-outline-variant bg-surface p-4 dark:border-slate-700 dark:bg-slate-900">
+                  <label htmlFor="periodo-asistente-importacion" className="mb-1 block text-sm font-semibold text-on-surface dark:text-slate-200">
+                    Período académico para estos horarios
+                  </label>
+                  <select
+                    id="periodo-asistente-importacion"
+                    value={idTrimestre ?? ''}
+                    onChange={(e) => setIdTrimestre(e.target.value ? Number(e.target.value) : null)}
+                    disabled={subiendo || errorTrimestres}
+                    required
+                    className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                  >
+                    <option value="">Selecciona un período académico</option>
+                    {trimestres.map((t) => (
+                      <option key={t.idTrimestre} value={t.idTrimestre}>
+                        {t.nombre} · {t.fechaInicio} a {t.fechaFin} ({t.estado})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs text-on-surface-variant dark:text-slate-400">
+                    El período elegido se usará para crear las fichas que falten, generar la propuesta y guardar todo el lote.
+                  </p>
+                  {trimestresCargados && trimestres.length === 0 && !errorTrimestres && (
+                    <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+                      No hay períodos académicos registrados. Crea uno antes de importar el archivo maestro.
+                    </p>
+                  )}
+                </div>
+
                 <p className="mb-1 text-sm text-on-surface-variant dark:text-slate-300">
-                  Sube el Excel de planeación del período académico. Revisamos lo que trae antes de tocar nada.
+                  Sube el Excel maestro de planeación. Revisamos lo que trae antes de tocar nada.
                 </p>
                 <input
                   type="file"
@@ -693,7 +722,7 @@ export function AsistenteHorarios() {
 
                 <button
                   type="button"
-                  disabled={!archivoPrincipal || subiendo}
+                  disabled={!archivoPrincipal || !idTrimestre || subiendo}
                   onClick={() => void importarArchivos()}
                   className="mt-5 rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
@@ -979,22 +1008,20 @@ export function AsistenteHorarios() {
               </table>
             </div>
 
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-on-surface-variant dark:text-slate-300">
-                Período académico
-                <select
-                  value={idTrimestre ?? ''}
-                  onChange={(e) => setIdTrimestre(e.target.value ? Number(e.target.value) : null)}
-                  className="ml-2 rounded-lg border border-outline-variant bg-surface px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                Período académico del lote:{' '}
+                <strong className="text-on-surface dark:text-slate-100">
+                  {trimestres.find((t) => t.idTrimestre === idTrimestre)?.nombre ?? 'Sin seleccionar'}
+                </strong>
+                <button
+                  type="button"
+                  onClick={() => setPaso(1)}
+                  className="ml-2 font-semibold text-primary hover:underline dark:text-sena-400"
                 >
-                  <option value="">Selecciona un período académico</option>
-                  {trimestres.map((t) => (
-                    <option key={t.idTrimestre} value={t.idTrimestre}>
-                      {t.nombre} · {t.fechaInicio} a {t.fechaFin} ({t.estado})
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  Cambiar
+                </button>
+              </div>
               <label className="text-sm text-on-surface-variant dark:text-slate-300">
                 Jornada
                 <select
