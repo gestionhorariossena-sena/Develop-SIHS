@@ -317,8 +317,8 @@ export function HistorialHorarios() {
           <div className="mb-6 grid gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 sm:grid-cols-4 dark:border-slate-700 dark:bg-slate-800">
             <Campo etiqueta="Ficha">{seleccionado.ficha}</Campo>
             <Campo etiqueta="Aprendices en formación">{seleccionado.aprendices ?? '—'}</Campo>
-            <Campo etiqueta="Horas asignadas trimestre">{seleccionado.horasTrimestre ?? '—'}</Campo>
-            <Campo etiqueta="Inicio / fin de trimestre">
+            <Campo etiqueta="Horas asignadas del período académico">{seleccionado.horasTrimestre ?? '—'}</Campo>
+            <Campo etiqueta="Inicio / fin del período académico">
               {seleccionado.fechaInicio ?? '—'} – {seleccionado.fechaFin ?? '—'}
             </Campo>
           </div>

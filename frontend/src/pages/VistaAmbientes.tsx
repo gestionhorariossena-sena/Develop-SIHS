@@ -244,7 +244,7 @@ export function VistaAmbientes() {
  ) : errorHorarios ? (
  <p className="py-8 text-center text-sm text-on-surface-variant">No se pudo cargar el horario de este ambiente.</p>
  ) : bloques.length === 0 ? (
- <p className="py-8 text-center text-sm text-on-surface-variant">Sin horario asignado en el trimestre actual.</p>
+ <p className="py-8 text-center text-sm text-on-surface-variant">Sin horario asignado en el período académico actual.</p>
  ) : (
  <GridHorario bloques={bloques} grid={grid} hayBloqueActivo={false} soloLectura />
  )}

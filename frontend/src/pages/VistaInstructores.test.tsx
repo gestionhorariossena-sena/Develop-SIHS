@@ -122,7 +122,7 @@ describe('VistaInstructores', () => {
 
     await usuario.click(screen.getByText('Erick Granados'))
 
-    expect(await screen.findByText('Sin horario asignado en el trimestre actual.')).toBeInTheDocument()
+    expect(await screen.findByText('Sin horario asignado en el período académico actual.')).toBeInTheDocument()
   })
 
   it('con ?id= en la URL, selecciona ese instructor directo (deep link desde el drawer de Instructores.tsx)', async () => {

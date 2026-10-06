@@ -35,7 +35,7 @@ def obtener_trimestre(
     trimestre = TrimestreService.obtener_por_id(db, id_trimestre)
 
     if not trimestre:
-        raise HTTPException(status_code=404, detail="Trimestre no encontrado")
+        raise HTTPException(status_code=404, detail="Período académico no encontrado")
 
     return trimestre
 
@@ -50,7 +50,7 @@ def actualizar_trimestre(
     trimestre = TrimestreService.actualizar(db, id_trimestre, data)
 
     if not trimestre:
-        raise HTTPException(status_code=404, detail="Trimestre no encontrado")
+        raise HTTPException(status_code=404, detail="Período académico no encontrado")
 
     return trimestre
 
@@ -64,6 +64,6 @@ def eliminar_trimestre(
     eliminado = TrimestreService.eliminar(db, id_trimestre)
 
     if not eliminado:
-        raise HTTPException(status_code=404, detail="Trimestre no encontrado")
+        raise HTTPException(status_code=404, detail="Período académico no encontrado")
 
-    return {"mensaje": "Trimestre eliminado"}
+    return {"mensaje": "Período académico eliminado"}
