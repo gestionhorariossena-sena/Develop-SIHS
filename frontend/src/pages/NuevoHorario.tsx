@@ -537,14 +537,14 @@ export function NuevoHorario() {
                 className="w-24 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               />
             </Campo>
-            <Campo etiqueta="Horas asignadas trimestre">
+            <Campo etiqueta="Horas asignadas del período académico">
               <input
                 value={horasTrimestre}
                 onChange={(e) => setHorasTrimestre(e.target.value)}
                 className="w-24 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
               />
             </Campo>
-            <Campo etiqueta="Inicio / fin de trimestre">
+            <Campo etiqueta="Inicio / fin del período académico">
               <div className="flex items-center gap-1.5">
                 <input
                   type="date"
