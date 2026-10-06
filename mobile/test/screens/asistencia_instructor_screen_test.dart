@@ -37,6 +37,7 @@ class SesionesFalsas implements AsistenciaGateway {
     required int idHorario,
     required DateTime fecha,
     required Map<String, EstadoAsistencia> marcas,
+    Map<String, String?> referenciasExcusa = const {},
   }) async {
     if (error != null) throw error!;
     registros.add(Map<String, EstadoAsistencia>.from(marcas));
