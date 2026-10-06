@@ -16,7 +16,7 @@ export function SeccionFichasAsignadas({ horarios, diasPorId }: { horarios: Hora
   return (
     <SeccionDrawer titulo="Fichas asignadas">
       {fichas.length === 0 ? (
-        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin fichas asignadas en el trimestre actual.</p>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin fichas asignadas en el período académico actual.</p>
       ) : (
         <ul className="space-y-2">
           {fichas.map((ficha) => (
@@ -47,7 +47,7 @@ export function SeccionTemasQueDicta({ horarios }: { horarios: Horario[] }) {
   return (
     <SeccionDrawer titulo="Temas que dicta">
       {lista.length === 0 ? (
-        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin temas asignados en el trimestre actual.</p>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin temas asignados en el período académico actual.</p>
       ) : (
         <ul className="space-y-1.5">
           {lista.map((tema) => (
@@ -68,7 +68,7 @@ export function SeccionAmbientesAsignados({ horarios }: { horarios: Horario[] })
   return (
     <SeccionDrawer titulo="Ambientes asignados">
       {ambientes.length === 0 ? (
-        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin ambientes asignados en el trimestre actual.</p>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin ambientes asignados en el período académico actual.</p>
       ) : (
         <div className="flex flex-wrap gap-1.5">
           {ambientes.map((nombre) => (
