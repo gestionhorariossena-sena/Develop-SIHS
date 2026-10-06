@@ -210,7 +210,7 @@ class _TarjetaResumen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Se calcula sobre las clases a las que ya te pasaron lista, no sobre el total del '
-              'trimestre. Las excusas no cuentan en contra.',
+              'período académico. Las excusas no cuentan en contra.',
               style: tema.textTheme.bodySmall?.copyWith(color: tema.colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
