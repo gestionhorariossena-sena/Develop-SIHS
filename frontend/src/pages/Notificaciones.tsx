@@ -1,36 +1,42 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
-import { apiGet, apiPatch, ApiError } from '../services/api'
+import { Link } from 'react-router-dom'
+import { apiDelete, apiGet, apiPatch, ApiError } from '../services/api'
 import type { Notificacion } from '../types/api'
 
-type FiltroTipo = 'all' | 'cambios' | 'recordatorios' | 'sistema'
+type FiltroTipo = 'all' | 'cambios' | 'cruces' | 'sistema'
 type Grupo = 'Hoy' | 'Esta semana' | 'Anteriores'
 
-// Los únicos tres valores de "tipo" que describe el ticket. El backend no
-// los restringe con un enum (String(30) libre) -- cualquier valor que no
-// coincida con los dos primeros cae en "Sistema & Coordinación" como
-// categoría general, para no ocultar notificaciones de un tipo futuro que
-// todavía no exista hoy.
-const TIPO_CAMBIOS = 'Cambios de Aula & Horario'
-const TIPO_RECORDATORIOS = 'Recordatorios de Tareas'
-const TIPO_SISTEMA = 'Sistema & Coordinación'
+// Vocabulario cerrado que emite el backend (TIPOS_VALIDOS en
+// backend/app/services/notificacion_service.py). Los textos largos de
+// antes ("Cambios de Aula & Horario"...) ya no se generan, pero pueden
+// quedar filas viejas en BD: se siguen clasificando para no perderlas.
+const TIPOS_CAMBIOS = new Set(['horario', 'ambiente', 'Cambios de Aula & Horario'])
+const TIPOS_CRUCES = new Set(['cruce'])
+
+const ETIQUETA_TIPO: Record<string, string> = {
+  horario: 'Horario',
+  ambiente: 'Ambiente',
+  cruce: 'Cruce',
+  sistema: 'Sistema',
+}
 
 const PILLS: { id: FiltroTipo; etiqueta: string }[] = [
   { id: 'all', etiqueta: 'Todas' },
-  { id: 'cambios', etiqueta: TIPO_CAMBIOS },
-  { id: 'recordatorios', etiqueta: TIPO_RECORDATORIOS },
-  { id: 'sistema', etiqueta: TIPO_SISTEMA },
+  { id: 'cambios', etiqueta: 'Cambios de horario y ambiente' },
+  { id: 'cruces', etiqueta: 'Cruces' },
+  { id: 'sistema', etiqueta: 'Sistema y coordinación' },
 ]
 
 function categoriaDe(tipo: string): Exclude<FiltroTipo, 'all'> {
-  if (tipo === TIPO_CAMBIOS) return 'cambios'
-  if (tipo === TIPO_RECORDATORIOS) return 'recordatorios'
+  if (TIPOS_CAMBIOS.has(tipo)) return 'cambios'
+  if (TIPOS_CRUCES.has(tipo)) return 'cruces'
   return 'sistema'
 }
 
 const CLASE_BADGE: Record<Exclude<FiltroTipo, 'all'>, string> = {
-  cambios: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
-  recordatorios: 'bg-sena-50 text-sena-700 dark:bg-sena-950/50 dark:text-sena-300',
+  cambios: 'bg-sena-50 text-sena-700 dark:bg-sena-950/50 dark:text-sena-300',
+  cruces: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
   sistema: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
 }
 
@@ -87,7 +93,7 @@ export function Notificaciones() {
   const cambiosEstaSemana = notificaciones.filter(
     (n) => categoriaDe(n.tipo) === 'cambios' && grupoDe(n.fechaCreacion) !== 'Anteriores',
   ).length
-  const recordatorios = notificaciones.filter((n) => categoriaDe(n.tipo) === 'recordatorios').length
+  const avisosSistema = notificaciones.filter((n) => categoriaDe(n.tipo) === 'sistema').length
 
   const filtradas = notificaciones.filter((n) => filtro === 'all' || categoriaDe(n.tipo) === filtro)
 
@@ -105,6 +111,15 @@ export function Notificaciones() {
       setNotificaciones((prev) => prev.map((n) => (n.idNotificacion === idNotificacion ? actualizada : n)))
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo marcar la notificación como leída.')
+    }
+  }
+
+  async function eliminar(idNotificacion: number) {
+    try {
+      await apiDelete(`/notificaciones/${idNotificacion}`)
+      setNotificaciones((prev) => prev.filter((n) => n.idNotificacion !== idNotificacion))
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo eliminar la notificación.')
     }
   }
 
@@ -151,8 +166,8 @@ export function Notificaciones() {
           <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{cambiosEstaSemana}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Recordatorios de tareas</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{recordatorios}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Avisos de coordinación</p>
+          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{avisosSistema}</p>
         </div>
       </section>
 
@@ -173,7 +188,11 @@ export function Notificaciones() {
         ))}
       </div>
 
-      {error && <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && (
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+          {error}
+        </p>
+      )}
 
       {cargando ? (
         <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando notificaciones...</p>
@@ -186,7 +205,9 @@ export function Notificaciones() {
                   <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">{grupo}</h2>
                   {grupos[grupo].map((notificacion) => {
                     const categoria = categoriaDe(notificacion.tipo)
-                    const esDeHorario = notificacion.entidadRelacionada === 'horarios' && notificacion.idEntidadRelacionada
+                    const esDeHorario =
+                      (notificacion.entidadRelacionada === 'horarios' || notificacion.entidadRelacionada === 'fichas') &&
+                      Boolean(notificacion.idEntidadRelacionada)
 
                     return (
                       <article
@@ -197,25 +218,21 @@ export function Notificaciones() {
                       >
                         <div className="mb-2 flex flex-wrap items-center gap-2">
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${CLASE_BADGE[categoria]}`}>
-                            {notificacion.tipo}
+                            {ETIQUETA_TIPO[notificacion.tipo] ?? notificacion.tipo}
                           </span>
                           <span className="text-xs text-slate-500 dark:text-slate-400">{tiempoRelativo(notificacion.fechaCreacion)}</span>
                           {!notificacion.leida && <span className="h-1.5 w-1.5 rounded-full bg-sena-600" aria-hidden="true" />}
                         </div>
                         <p className="text-sm text-slate-700 dark:text-slate-300">{notificacion.mensaje}</p>
                         <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <button
-                            type="button"
-                            disabled
-                            title={
-                              esDeHorario
-                                ? 'Aún no implementado: la pantalla de Mi Horario del Aprendiz es otro ticket de este Epic.'
-                                : 'Esta notificación no está relacionada a un horario.'
-                            }
-                            className="cursor-not-allowed rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-500 dark:border-slate-700 dark:text-slate-400"
-                          >
-                            Ver en mi horario
-                          </button>
+                          {esDeHorario && (
+                            <Link
+                              to="/mi-horario-aprendiz"
+                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+                            >
+                              Ver en mi horario
+                            </Link>
+                          )}
                           {!notificacion.leida && (
                             <button
                               type="button"
@@ -225,6 +242,14 @@ export function Notificaciones() {
                               Marcar como leída
                             </button>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => void eliminar(notificacion.idNotificacion)}
+                            aria-label={`Eliminar notificación: ${notificacion.mensaje}`}
+                            className="ml-auto rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-red-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-red-300"
+                          >
+                            Eliminar
+                          </button>
                         </div>
                       </article>
                     )

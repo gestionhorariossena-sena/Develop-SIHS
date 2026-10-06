@@ -11,6 +11,7 @@ from app.schemas.competencia_formacion import (
 )
 from app.schemas.curriculo import PreviewCurriculoResponse
 from app.services.competencia_formacion_service import CompetenciaFormacionService
+from app.services.tematica_service import ReferenciaInexistenteError, TematicaEnUsoError, TematicaService
 from app.services.curriculo_service import previsualizar_curriculo
 
 router = APIRouter(prefix="/competencias-formacion", tags=["competencias-formacion"])
@@ -42,6 +43,10 @@ def crear_competencia(
     db: Session = Depends(get_db),
     usuario=Depends(require_admin),
 ):
+    try:
+        TematicaService.validar_programa(db, data.idPrograma)
+    except ReferenciaInexistenteError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from None
     return CompetenciaFormacionService.crear(db, data)
 
 
@@ -74,6 +79,10 @@ def actualizar_competencia(
     db: Session = Depends(get_db),
     usuario=Depends(require_admin),
 ):
+    try:
+        TematicaService.validar_programa(db, data.idPrograma)
+    except ReferenciaInexistenteError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from None
     competencia = CompetenciaFormacionService.actualizar(db, id_competencia, data)
 
     if not competencia:
@@ -88,6 +97,10 @@ def eliminar_competencia(
     db: Session = Depends(get_db),
     usuario=Depends(require_admin),
 ):
+    try:
+        TematicaService.verificar_competencia_borrable(db, id_competencia)
+    except TematicaEnUsoError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from None
     eliminado = CompetenciaFormacionService.eliminar(db, id_competencia)
 
     if not eliminado:

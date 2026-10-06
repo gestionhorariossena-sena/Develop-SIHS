@@ -33,6 +33,8 @@ export interface Usuario {
    * ProtectedRoute.tsx fuerza CambiarClaveObligatorio.tsx hasta que se
    * limpie con PATCH /usuarios/me/confirmar-cambio-clave. */
   debeCambiarClave: boolean
+  /** T-9: tema guardado en el backend; null = nunca eligió. */
+  preferenciaTema?: 'claro' | 'oscuro' | 'sistema' | null
 }
 
 // Espejo de CargaSemanalResponse (backend/app/schemas/usuario.py) —
@@ -513,6 +515,29 @@ export interface CompetenciaFormacionCreate {
 
 export interface CompetenciaFormacionResponse extends CompetenciaFormacionCreate {
   idCompetencia: number
+}
+
+// Espejo de TematicaResultadoResponse / TematicaCompetenciaResponse
+// (backend/app/schemas/tematica.py) — GET /tematicas/.
+export interface TematicaResultado {
+  idResultado: number
+  codigo: string | null
+  descripcion: string
+  horasAsignadas: number | null
+  numeroFase: number | null
+  idGuia: number | null
+  horariosAsignados: number
+}
+
+export interface TematicaCompetencia {
+  idCompetencia: number
+  codigo: string | null
+  descripcion: string
+  idPrograma: number
+  nombrePrograma: string | null
+  especialidades: Especialidad[]
+  resultados: TematicaResultado[]
+  totalHoras: number
 }
 
 export interface ResultadoAprendizajeCreate {

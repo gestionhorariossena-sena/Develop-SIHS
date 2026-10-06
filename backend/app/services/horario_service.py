@@ -11,7 +11,7 @@ from app.models.usuario import Usuario
 from app.repositories.ficha_usuario_repository import FichaUsuarioRepository
 from app.repositories.horario_repository import HorarioRepository
 from app.services.notificacion_service import NotificacionService, TIPO_AMBIENTE, TIPO_HORARIO
-from app.services.notificacion_service import TIPO_SISTEMA
+from app.services.notificacion_service import ROLES_GESTION, TIPO_CRUCE, TIPO_SISTEMA
 
 # RF-011 (Requisitos Funcionales V4.pdf, pág. 15-16): "Los instructores de
 # planta podrán estar asignados máximo 32 horas a la semana, mientras que
@@ -302,6 +302,48 @@ class HorarioService:
             entidad_relacionada="fichas",
             id_entidad_relacionada=horario.idFicha,
         )
+
+    @staticmethod
+    def notificar_cruce_forzado(db, horario, conflictos: list[str], id_autor) -> None:
+        """`forzar` deja guardar un bloque que choca con otro o que rompe
+        una regla (RF-011). Queda en auditoría, pero nadie la mira a diario:
+        el resto de coordinación se entera por la campana, y el instructor
+        también si el bloque ya está publicado (si es borrador todavía no
+        lo ve, y avisarle sería adelantarse)."""
+        if not conflictos:
+            return
+
+        ficha_codigo, _, franja = HorarioService._datos_para_mensaje(horario)
+        primero = conflictos[0]
+        resto = f" (y {len(conflictos) - 1} más)" if len(conflictos) > 1 else ""
+
+        NotificacionService.notificar_roles_transaccional(
+            db,
+            roles=ROLES_GESTION,
+            tipo=TIPO_CRUCE,
+            mensaje=(
+                f"Se guardó con cruce autorizado el bloque de {franja} de la ficha "
+                f"{ficha_codigo}: {primero}{resto}"
+            )[:500],
+            entidad_relacionada="horarios",
+            id_entidad_relacionada=horario.idHorario,
+            excluir=id_autor,
+        )
+
+        if horario.publicado and horario.idInstructor and str(horario.idInstructor) != str(id_autor):
+            NotificacionService.crear_transaccional(
+                db,
+                id_usuario=horario.idInstructor,
+                tipo=TIPO_CRUCE,
+                mensaje=(
+                    f"Tu bloque de {franja} con la ficha {ficha_codigo} quedó con un cruce "
+                    "autorizado por coordinación. Revisa «Mi horario»."
+                ),
+                entidad_relacionada="horarios",
+                id_entidad_relacionada=horario.idHorario,
+            )
+
+        db.commit()
 
     @staticmethod
     def notificar_reemplazo_publicado_transaccional(db, horarios) -> None:

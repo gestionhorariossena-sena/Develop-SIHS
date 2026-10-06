@@ -238,6 +238,8 @@ def crear_horario(
     AuditoriaService.registrar(
         db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=horario.idHorario, detalle=detalle
     )
+    if accion == "FORZAR_CRUCE":
+        HorarioService.notificar_cruce_forzado(db, horario, conflictos, usuario.idUsuario)
 
     return HorarioService.a_response(db, horario)
 
@@ -336,6 +338,8 @@ def actualizar_horario(
     AuditoriaService.registrar(
         db, usuario=usuario, accion=accion, entidad="horarios", id_entidad=id_horario, detalle=detalle
     )
+    if accion == "FORZAR_CRUCE":
+        HorarioService.notificar_cruce_forzado(db, horario, conflictos, usuario.idUsuario)
 
     return HorarioService.a_response(db, horario)
 

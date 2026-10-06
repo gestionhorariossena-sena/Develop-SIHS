@@ -3,7 +3,12 @@ from datetime import datetime, timezone
 from app.repositories.horario_repository import HorarioRepository
 from app.repositories.solicitud_cambio_horario_repository import SolicitudCambioHorarioRepository
 from app.models.solicitud_cambio_horario import SolicitudCambioHorario
-from app.services.notificacion_service import NotificacionService, TIPO_HORARIO
+from app.services.notificacion_service import (
+    ROLES_GESTION,
+    TIPO_HORARIO,
+    TIPO_SISTEMA,
+    NotificacionService,
+)
 
 ESTADOS_RESOLUCION_VALIDOS = {"aprobada", "rechazada"}
 
@@ -42,7 +47,23 @@ class SolicitudCambioHorarioService:
             motivo=data.motivo,
         )
         solicitud = SolicitudCambioHorarioRepository.crear(db, solicitud)
-        return SolicitudCambioHorarioService._a_response(solicitud)
+        respuesta = SolicitudCambioHorarioService._a_response(solicitud)
+
+        # La ida del circuito: sin esto coordinación solo se enteraba del
+        # reporte si entraba por su cuenta a "Solicitudes de cambio".
+        quien = respuesta["instructorNombre"] or "Un instructor"
+        ficha = f" de la ficha {respuesta['fichaCodigo']}" if respuesta["fichaCodigo"] else ""
+        NotificacionService.notificar_roles_transaccional(
+            db,
+            roles=ROLES_GESTION,
+            tipo=TIPO_SISTEMA,
+            mensaje=f"{quien} envió una solicitud de cambio ({solicitud.tipo}) sobre un bloque{ficha}.",
+            entidad_relacionada="solicitudes_cambio_horario",
+            id_entidad_relacionada=solicitud.idSolicitud,
+            excluir=id_instructor,
+        )
+        db.commit()
+        return respuesta
 
     @staticmethod
     def obtener_mias(db, id_instructor):

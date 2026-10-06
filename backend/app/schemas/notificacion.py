@@ -15,3 +15,9 @@ class NotificacionResponse(BaseModel):
     fechaCreacion: datetime
     entidadRelacionada: str | None = None
     idEntidadRelacionada: str | None = None
+
+class NotificacionesConteoResponse(BaseModel):
+    """Lo único que necesita el globo rojo de la campana: pedir la lista
+    completa cada minuto solo para contar es tráfico de más."""
+
+    noLeidas: int

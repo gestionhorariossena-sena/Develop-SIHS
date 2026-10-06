@@ -218,7 +218,7 @@ export function Programas() {
         </div>
       </section>
 
-      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
       {cargando ? (
         <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando programas...</p>
@@ -324,7 +324,7 @@ export function Programas() {
             />
             {subiendoCurriculo && <p className="mt-2 text-sm text-on-surface-variant dark:text-slate-400">Leyendo el archivo…</p>}
             {errorCurriculo && (
-              <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorCurriculo}</p>
+              <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{errorCurriculo}</p>
             )}
             {resultadoImportacion && (
               <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">

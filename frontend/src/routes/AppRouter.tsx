@@ -28,6 +28,7 @@ import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
 import { PanelAdministracion } from '../pages/PanelAdministracion'
 import { ProtectedRoute } from './ProtectedRoute'
 import { Programas } from '../pages/Programas'
+import { Tematicas } from '../pages/Tematicas'
 import { CambiosHorario } from '../pages/CambiosHorario'
 import { Avisos } from '../pages/Avisos'
 import { MensajesAprendiz } from '../pages/MensajesAprendiz'
@@ -274,6 +275,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={GESTION}>
             <Programas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tematicas"
+        element={
+          <ProtectedRoute roles={GESTION}>
+            <Tematicas />
           </ProtectedRoute>
         }
       />

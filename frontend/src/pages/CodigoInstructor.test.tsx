@@ -30,17 +30,6 @@ const INSTRUCTOR_SIN_CODIGO: Usuario = {
   debeCambiarClave: false,
 }
 
-const COORDINADOR: Usuario = {
-  idUsuario: 'u3',
-  nombre: 'Ana Martínez',
-  email: 'ana@example.com',
-  estado: 'activo',
-  fechaRegistro: '2026-01-01',
-  roles: [{ idRol: 2, nombre: 'Coordinador' }],
-  especialidades: [],
-  debeCambiarClave: false,
-}
-
 const apiGetMock = vi.fn()
 const apiPostMock = vi.fn()
 vi.mock('../services/api', () => ({
@@ -57,14 +46,14 @@ vi.mock('../services/api', () => ({
 
 function mockeaUsuarios(usuarios: Usuario[]) {
   apiGetMock.mockImplementation((path: string) => {
-    if (path === '/usuarios/') return Promise.resolve(usuarios)
+    if (path === '/usuarios/instructores') return Promise.resolve(usuarios)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
 
 describe('CodigoInstructor', () => {
-  it('lista solo instructores, mostrando su código o "Sin código aún"', async () => {
-    mockeaUsuarios([INSTRUCTOR_CON_CODIGO, INSTRUCTOR_SIN_CODIGO, COORDINADOR])
+  it('lista los instructores, mostrando su código o "Sin código aún"', async () => {
+    mockeaUsuarios([INSTRUCTOR_CON_CODIGO, INSTRUCTOR_SIN_CODIGO])
     renderConProviders(<CodigoInstructor />)
 
     expect(await screen.findByText('Erick Granados')).toBeInTheDocument()
@@ -73,14 +62,13 @@ describe('CodigoInstructor', () => {
     expect(screen.getByText('Laura Pérez')).toBeInTheDocument()
     const filaLaura = screen.getByText('Laura Pérez').closest('tr') as HTMLElement
     expect(within(filaLaura).getByText('Sin código aún')).toBeInTheDocument()
-
-    expect(screen.queryByText('Ana Martínez')).not.toBeInTheDocument()
+    expect(apiGetMock).toHaveBeenCalledWith('/usuarios/instructores')
   })
 
   it('muestra el mensaje de acceso denegado si el backend responde 403', async () => {
     const { ApiError } = await import('../services/api')
     apiGetMock.mockImplementation((path: string) => {
-      if (path === '/usuarios/') return Promise.reject(new ApiError(403, 'Prohibido'))
+      if (path === '/usuarios/instructores') return Promise.reject(new ApiError(403, 'Prohibido'))
       return Promise.reject(new Error('no mockeado en este test'))
     })
 

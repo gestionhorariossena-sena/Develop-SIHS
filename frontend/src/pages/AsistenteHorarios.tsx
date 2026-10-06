@@ -700,7 +700,7 @@ export function AsistenteHorarios() {
                   {subiendo ? 'Leyendo…' : 'Continuar'}
                 </button>
                 {errorImportar && (
-                  <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorImportar}</p>
+                  <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{errorImportar}</p>
                 )}
               </>
             )}
@@ -1057,9 +1057,9 @@ export function AsistenteHorarios() {
             </div>
 
             {generando && <p className="text-sm text-on-surface-variant dark:text-slate-400">Armando tu horario…</p>}
-            {errorPropuesta && <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorPropuesta}</p>}
+            {errorPropuesta && <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{errorPropuesta}</p>}
             {propuesta && propuesta.bloques.length === 0 && (
-              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{propuesta.mensaje}</p>
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">{propuesta.mensaje}</p>
             )}
             {propuesta && propuesta.bloques.length > 0 && propuesta.fichasSinProgramar.length > 0 && (
               <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">

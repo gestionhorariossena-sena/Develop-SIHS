@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session, selectinload
 
+from app.models.rol import Rol
 from app.models.usuario import Usuario
 
 
@@ -9,6 +10,17 @@ class UsuarioRepository:
     @staticmethod
     def obtener_todos(db: Session):
         return db.query(Usuario).options(selectinload(Usuario.roles), selectinload(Usuario.especialidades)).all()
+
+    @staticmethod
+    def obtener_por_rol(db: Session, nombre_rol: str):
+        return (
+            db.query(Usuario)
+            .join(Usuario.roles)
+            .filter(Rol.nombre == nombre_rol)
+            .options(selectinload(Usuario.roles), selectinload(Usuario.especialidades))
+            .distinct()
+            .all()
+        )
 
     @staticmethod
     def obtener_por_id(db: Session, id_usuario: UUID):

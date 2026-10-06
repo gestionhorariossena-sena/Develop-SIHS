@@ -27,7 +27,7 @@ export function CodigoInstructor() {
   const [generandoId, setGenerandoId] = useState<string | null>(null)
 
   useEffect(() => {
-    apiGet<Usuario[]>('/usuarios/')
+    apiGet<Usuario[]>('/usuarios/instructores')
       .then(setUsuarios)
       .catch((err: unknown) => {
         if (err instanceof ApiError && (err.status === 403 || err.status === 401)) {
@@ -38,9 +38,7 @@ export function CodigoInstructor() {
       })
   }, [])
 
-  const instructores = usuarios?.filter((usuario) =>
-    usuario.roles.some((rol) => rol.nombre === 'Instructor'),
-  ) ?? []
+  const instructores = usuarios ?? []
 
   async function copiar(idUsuario: string, codigo: string) {
     try {
@@ -84,7 +82,7 @@ export function CodigoInstructor() {
       )}
 
       {!noAutorizado && error && (
-        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           {error}
         </p>
       )}
