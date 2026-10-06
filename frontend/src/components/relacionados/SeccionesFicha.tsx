@@ -19,7 +19,7 @@ export function SeccionInstructoresAsignados({ horarios, diasPorId }: { horarios
   return (
     <SeccionDrawer titulo="Instructores">
       {instructores.length === 0 ? (
-        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin instructores asignados en el trimestre actual.</p>
+        <p className="text-sm text-on-surface-variant dark:text-slate-400">Sin instructores asignados en el período académico actual.</p>
       ) : (
         <ul className="space-y-2">
           {instructores.map((instructor) => (
