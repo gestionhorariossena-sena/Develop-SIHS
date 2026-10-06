@@ -16,14 +16,11 @@ const _meses = [
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
 
-/// "Asistencia" del Instructor en el móvil — **solo consulta**.
+/// "Asistencia" del Instructor en el móvil.
 ///
-/// Contraparte de `frontend/src/pages/AsistenciaInstructor.tsx`: la misma
-/// nómina (`GET /asistencias/sesion`), pero sin los controles para marcar.
-/// Pasar lista es `POST /asistencias/sesion` y se hace desde la web, porque
-/// el móvil es read-only por arquitectura (ARQUITECTURA_MOBILE.md). La
-/// pantalla lo dice en vez de dejar al instructor buscando un botón que no
-/// existe.
+/// Contraparte de `frontend/src/pages/AsistenciaInstructor.tsx`: consulta la
+/// nómina con `GET /asistencias/sesion` y permite registrar/corregir la lista
+/// con el mismo `POST /asistencias/sesion` que usa la web.
 ///
 /// El backend solo devuelve bloques de quien pregunta (404 si son de otro
 /// instructor), así que acá no hay filtro de propiedad que reimplementar:
@@ -137,7 +134,7 @@ class _AsistenciaInstructorScreenState extends State<AsistenciaInstructorScreen>
               onHoy: () => setState(() => _fecha = _hoy),
             ),
             const SizedBox(height: 12),
-            const _NotaSoloLectura(),
+            const _NotaRegistroMovil(),
             const SizedBox(height: 16),
             if (horarios.isLoading || _cargando)
               const Padding(
@@ -154,6 +151,8 @@ class _AsistenciaInstructorScreenState extends State<AsistenciaInstructorScreen>
                   sesion: _sesiones[bloque.horario.idHorario],
                   error: _errores[bloque.horario.idHorario],
                   fecha: _fecha,
+                  gateway: _gateway,
+                  onGuardada: _recargar,
                 ),
           ],
         ),
@@ -215,8 +214,8 @@ class _SelectorDeFecha extends StatelessWidget {
   }
 }
 
-class _NotaSoloLectura extends StatelessWidget {
-  const _NotaSoloLectura();
+class _NotaRegistroMovil extends StatelessWidget {
+  const _NotaRegistroMovil();
 
   @override
   Widget build(BuildContext context) {
@@ -230,12 +229,12 @@ class _NotaSoloLectura extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(Icons.visibility_outlined, size: 18, color: tema.colorScheme.onSurfaceVariant),
+          Icon(Icons.fact_check_outlined, size: 18, color: tema.colorScheme.onSurfaceVariant),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Consulta de la lista de tus clases. Para pasar lista o corregirla, '
-              'entra a SIHS desde el computador.',
+              'Abre una clase para iniciar o corregir la lista desde el celular. '
+              'Solo puedes registrar asistencia en tus propias clases.',
               style: tema.textTheme.bodySmall
                   ?.copyWith(color: tema.colorScheme.onSurfaceVariant),
             ),
@@ -287,12 +286,16 @@ class _TarjetaClase extends StatelessWidget {
     required this.fecha,
     this.sesion,
     this.error,
+    required this.gateway,
+    required this.onGuardada,
   });
 
   final SesionHorario bloque;
   final DateTime fecha;
   final SesionAsistencia? sesion;
   final String? error;
+  final AsistenciaGateway gateway;
+  final Future<void> Function() onGuardada;
 
   @override
   Widget build(BuildContext context) {
@@ -305,9 +308,17 @@ class _TarjetaClase extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: sesion == null
             ? null
-            : () => Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => NominaSesionScreen(sesion: sesion!),
-                )),
+            : () async {
+                final guardada = await Navigator.of(context).push<bool>(
+                  MaterialPageRoute(
+                    builder: (_) => NominaSesionScreen(
+                      sesion: sesion!,
+                      gateway: gateway,
+                    ),
+                  ),
+                );
+                if (guardada == true) await onGuardada();
+              },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -457,14 +468,70 @@ class _ResumenMarcas extends StatelessWidget {
 /// La nómina completa de una sesión. Pantalla aparte y no una hoja
 /// inferior: una ficha puede tener treinta aprendices y eso es una lista
 /// larga, no un vistazo.
-class NominaSesionScreen extends StatelessWidget {
-  const NominaSesionScreen({super.key, required this.sesion});
+class NominaSesionScreen extends StatefulWidget {
+  const NominaSesionScreen({
+    super.key,
+    required this.sesion,
+    required this.gateway,
+  });
 
   final SesionAsistencia sesion;
+  final AsistenciaGateway gateway;
+
+  @override
+  State<NominaSesionScreen> createState() => _NominaSesionScreenState();
+}
+
+class _NominaSesionScreenState extends State<NominaSesionScreen> {
+  late final Map<String, EstadoAsistencia> _marcas = {
+    for (final aprendiz in widget.sesion.aprendices)
+      if (aprendiz.estado != null) aprendiz.idUsuario: aprendiz.estado!,
+  };
+
+  bool _guardando = false;
+  String? _error;
+
+  void _marcarTodosPresentes() {
+    setState(() {
+      for (final aprendiz in widget.sesion.aprendices) {
+        _marcas[aprendiz.idUsuario] = EstadoAsistencia.presente;
+      }
+      _error = null;
+    });
+  }
+
+  Future<void> _guardar() async {
+    if (_guardando || _marcas.isEmpty) return;
+    setState(() {
+      _guardando = true;
+      _error = null;
+    });
+    try {
+      await widget.gateway.registrarSesion(
+        idHorario: widget.sesion.idHorario,
+        fecha: widget.sesion.fechaSesion,
+        marcas: Map.unmodifiable(_marcas),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Asistencia guardada.')),
+      );
+      Navigator.of(context).pop(true);
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.mensaje);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'No se pudo guardar la asistencia.');
+      }
+    } finally {
+      if (mounted) setState(() => _guardando = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
+    final sesion = widget.sesion;
     final aprendices = sesion.aprendices;
 
     return Scaffold(
@@ -485,94 +552,161 @@ class NominaSesionScreen extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
         children: [
           if (sesion.registrada)
             Text(
-              'Lista registrada por ${sesion.registradaPor ?? 'ti'}.',
+              'Lista registrada por ${sesion.registradaPor ?? 'ti'}. Puedes corregirla y guardar de nuevo.',
               style: tema.textTheme.bodySmall?.copyWith(color: tema.colorScheme.onSurfaceVariant),
             )
           else
             Text(
-              'Esta clase todavía no tiene lista. Pásala desde SIHS en el computador.',
+              'Esta clase todavía no tiene lista. Marca a los aprendices y guarda la asistencia.',
               style: tema.textTheme.bodySmall?.copyWith(color: tema.colorScheme.tertiary),
             ),
           const SizedBox(height: 12),
+          if (_error != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: tema.colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _error!,
+                style: tema.textTheme.bodySmall?.copyWith(
+                  color: tema.colorScheme.onErrorContainer,
+                ),
+              ),
+            ),
           if (aprendices.isEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 32),
               child: Text(
                 'Ningún aprendiz vinculado a esta ficha. La nómina sale de quienes se '
-                'registraron en SIHS y vincularon su ficha; el centro los gestiona en '
-                'Sofía Plus, así que puede estar incompleta.',
+                'registraron en SIHS y vincularon su ficha.',
                 style: tema.textTheme.bodySmall,
                 textAlign: TextAlign.center,
               ),
             )
-          else
-            for (final aprendiz in aprendices) _FilaAprendiz(aprendiz: aprendiz),
+          else ...[
+            Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                key: const Key('marcar-todos-presentes'),
+                onPressed: _guardando ? null : _marcarTodosPresentes,
+                icon: const Icon(Icons.done_all_rounded),
+                label: const Text('Marcar todos presentes'),
+              ),
+            ),
+            const SizedBox(height: 12),
+            for (final aprendiz in aprendices)
+              _FilaAprendizEditable(
+                aprendiz: aprendiz,
+                estado: _marcas[aprendiz.idUsuario],
+                onCambiar: (estado) => setState(() {
+                  _marcas[aprendiz.idUsuario] = estado;
+                  _error = null;
+                }),
+              ),
+          ],
         ],
       ),
+      bottomNavigationBar: aprendices.isEmpty
+          ? null
+          : SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                decoration: BoxDecoration(
+                  color: tema.colorScheme.surface,
+                  border: Border(top: BorderSide(color: tema.colorScheme.outlineVariant)),
+                ),
+                child: FilledButton.icon(
+                  key: const Key('guardar-asistencia'),
+                  onPressed: _marcas.isEmpty || _guardando ? null : _guardar,
+                  icon: _guardando
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: Text(_guardando ? 'Guardando…' : 'Guardar asistencia'),
+                ),
+              ),
+            ),
     );
   }
 }
 
-class _FilaAprendiz extends StatelessWidget {
-  const _FilaAprendiz({required this.aprendiz});
+class _FilaAprendizEditable extends StatelessWidget {
+  const _FilaAprendizEditable({
+    required this.aprendiz,
+    required this.estado,
+    required this.onCambiar,
+  });
 
   final AprendizDeSesion aprendiz;
+  final EstadoAsistencia? estado;
+  final ValueChanged<EstadoAsistencia> onCambiar;
 
   @override
   Widget build(BuildContext context) {
     final tema = Theme.of(context);
-    final estado = aprendiz.estado;
-
-    // Sin marcar es un gris neutro: no es una falta, es una lista a medio
-    // llenar, y pintarlo de rojo acusaría a alguien por error.
-    final color = switch (estado) {
-      EstadoAsistencia.presente => tema.colorScheme.primary,
-      EstadoAsistencia.tardanza => tema.colorScheme.tertiary,
-      EstadoAsistencia.excusa => tema.colorScheme.onSurfaceVariant,
-      EstadoAsistencia.ausente => tema.colorScheme.error,
-      null => tema.colorScheme.outline,
-    };
-
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: 0.12),
-          child: Text(
-            _iniciales(aprendiz.nombre),
-            style: tema.textTheme.labelMedium?.copyWith(color: color, fontWeight: FontWeight.bold),
-          ),
-        ),
-        title: Text(aprendiz.nombre, style: tema.textTheme.bodyMedium),
-        subtitle: Text(
-          [
-            if (aprendiz.rolEnFicha != null) aprendiz.rolEnFicha!,
-            if (aprendiz.numeroDocumento != null) 'Doc. ${aprendiz.numeroDocumento}',
-            if (aprendiz.referenciaExcusa != null) 'Ref: ${aprendiz.referenciaExcusa}',
-          ].join(' · '),
-          style: tema.textTheme.labelSmall,
-        ),
-        trailing: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            estado?.etiqueta ?? 'Sin marcar',
-            style: tema.textTheme.labelSmall?.copyWith(color: color, fontWeight: FontWeight.bold),
-          ),
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  child: Text(_iniciales(aprendiz.nombre)),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(aprendiz.nombre, style: tema.textTheme.bodyMedium),
+                      Text(
+                        [
+                          if (aprendiz.rolEnFicha != null) aprendiz.rolEnFicha!,
+                          if (aprendiz.numeroDocumento != null) 'Doc. ${aprendiz.numeroDocumento}',
+                        ].join(' · '),
+                        style: tema.textTheme.labelSmall,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final opcion in EstadoAsistencia.values)
+                  ChoiceChip(
+                    key: Key('estado-${aprendiz.idUsuario}-${opcion.valorApi}'),
+                    label: Text(opcion.etiqueta),
+                    selected: estado == opcion,
+                    onSelected: (_) => onCambiar(opcion),
+                  ),
+              ],
+            ),
+          ],
         ),
       ),
     );
   }
 
   static String _iniciales(String nombre) {
-    final palabras = nombre.trim().split(RegExp(r'\s+'));
+    final palabras = nombre.trim().split(RegExp(r'\\s+'));
     final primera = palabras.isNotEmpty && palabras[0].isNotEmpty ? palabras[0][0] : '';
     final segunda = palabras.length > 1 && palabras[1].isNotEmpty ? palabras[1][0] : '';
     return (primera + segunda).toUpperCase();
