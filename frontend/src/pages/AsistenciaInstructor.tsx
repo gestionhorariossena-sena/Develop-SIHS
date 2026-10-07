@@ -61,13 +61,22 @@ function iniciales(nombre: string): string {
 
 /** El día de la semana en que se dicta un bloque, para saber qué fecha
  * ofrecer: un horario de los lunes no se puede pasar un martes. */
-function fechaDeLaSesion(horario: Horario, semana: Date): string | null {
-  const idDia = horario.dias?.[0]
+function fechaDeLaSesion(idDia: number | null, semana: Date): string | null {
   if (!idDia) return null
 
   const fecha = new Date(semana)
   fecha.setDate(fecha.getDate() + (idDia - 1))
   return aISO(fecha)
+}
+
+const NOMBRES_DIA: Record<number, string> = {
+  1: 'Lunes',
+  2: 'Martes',
+  3: 'Miércoles',
+  4: 'Jueves',
+  5: 'Viernes',
+  6: 'Sábado',
+  7: 'Domingo',
 }
 
 /**
@@ -95,6 +104,7 @@ export function AsistenciaInstructor() {
 
   const [horarios, setHorarios] = useState<Horario[]>([])
   const [idHorario, setIdHorario] = useState<number | null>(idPedido)
+  const [idDiaSesion, setIdDiaSesion] = useState<number | null>(null)
   const [semana, setSemana] = useState(() => inicioDeSemana(new Date()))
 
   const [sesion, setSesion] = useState<SesionAsistencia | null>(null)
@@ -108,7 +118,12 @@ export function AsistenciaInstructor() {
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
 
   const horarioElegido = horarios.find((h) => h.idHorario === idHorario) ?? null
-  const fecha = horarioElegido ? fechaDeLaSesion(horarioElegido, semana) : null
+  const fecha = fechaDeLaSesion(idDiaSesion, semana)
+
+  useEffect(() => {
+    const dias = horarioElegido?.dias ?? []
+    setIdDiaSesion((actual) => (actual && dias.includes(actual) ? actual : (dias[0] ?? null)))
+  }, [horarioElegido])
 
   useEffect(() => {
     apiGet<Horario[]>('/usuarios/me/horarios')
@@ -276,6 +291,29 @@ export function AsistenciaInstructor() {
                 ))}
               </select>
             </div>
+
+            {(horarioElegido?.dias?.length ?? 0) > 1 && (
+              <div>
+                <label
+                  htmlFor="dia-sesion"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400"
+                >
+                  Día de la clase
+                </label>
+                <select
+                  id="dia-sesion"
+                  value={idDiaSesion ?? ''}
+                  onChange={(e) => setIdDiaSesion(Number(e.target.value))}
+                  className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                >
+                  {(horarioElegido?.dias ?? []).map((dia) => (
+                    <option key={dia} value={dia}>
+                      {NOMBRES_DIA[dia] ?? `Día ${dia}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             <div>
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">
