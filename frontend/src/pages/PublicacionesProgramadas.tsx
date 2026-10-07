@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
@@ -74,7 +74,7 @@ export function PublicacionesProgramadas() {
   const [error, setError] = useState<string | null>(null)
   const [mensaje, setMensaje] = useState<string | null>(null)
 
-  async function cargar() {
+  const cargar = useCallback(async () => {
     setCargando(true)
     setError(null)
     const resultados = await Promise.allSettled([
@@ -99,12 +99,12 @@ export function PublicacionesProgramadas() {
       setDisponibilidad({ habilitado: false, ultimaSenal: null, segundosDesdeSenal: null, motivo: 'No fue posible verificar la señal reciente del worker.' })
     }
     setCargando(false)
-  }
+  }, [idInicial])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void cargar()
-  }, [])
+  }, [cargar])
 
   const trimestreSeleccionado = Number(periodo)
   const borradores = useMemo(() => horarios.filter((horario) =>
