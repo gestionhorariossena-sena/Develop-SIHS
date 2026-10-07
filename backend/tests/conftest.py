@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -223,10 +223,12 @@ def crear_ficha(db_session):
         )
         db_session.add(programa)
 
+        hoy = date.today()
         trimestre = Trimestre(
             nombre="Trimestre 1",
-            fechaInicio=date(2026, 1, 1),
-            fechaFin=date(2026, 3, 31),
+            fechaInicio=hoy - timedelta(days=30),
+            fechaFin=hoy + timedelta(days=60),
+            estado="activo",
         )
         db_session.add(trimestre)
         db_session.commit()
