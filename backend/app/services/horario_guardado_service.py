@@ -277,26 +277,45 @@ class HorarioGuardadoService:
 
     @staticmethod
     def eliminar(db, id_horario_guardado):
-        horario_guardado = HorarioGuardadoRepository.obtener_por_id(db, id_horario_guardado)
+        """Elimina un snapshot sin dejar horarios activos huérfanos.
+
+        La operación completa es atómica: o desaparecen el snapshot y sus
+        clases, o no cambia nada. Si una clase ya tiene dependencias
+        operativas (asistencia, solicitud o anotación), se conserva por
+        trazabilidad pero queda inactiva y no publicada para que no siga
+        generando cruces ni aparezca como horario vigente.
+        """
+        horario_guardado = HorarioGuardadoRepository.obtener_para_reemplazo(
+            db, id_horario_guardado
+        )
 
         if not horario_guardado:
             return False
 
-        ids_horarios = list(horario_guardado.idsHorarios or [])
+        ids_horarios = list(dict.fromkeys(horario_guardado.idsHorarios or []))
         if HorarioService._publicaciones_programadas(db, ids_horarios, bloquear=True):
             raise HorarioGuardadoNoReemplazableError(
                 "Cancela o reprograma las publicaciones pendientes antes de eliminar este horario guardado."
             )
 
-        # Borra también las clases reales de `horarios` que este snapshot
-        # representa — sin esto quedaban huérfanas (bug reportado
-        # 2026-09-02): el instructor seguía "ocupado" para cruces aunque
-        # su "horario completo" ya no apareciera en el historial. Ignora
-        # silenciosamente las que ya no existan (borradas a mano aparte).
-        for id_horario in ids_horarios:
-            horario = HorarioRepository.obtener_por_id(db, id_horario)
-            if horario:
-                HorarioRepository.eliminar(db, horario)
+        horarios = HorarioRepository.obtener_por_ids(db, ids_horarios, bloquear=True)
 
-        HorarioGuardadoRepository.eliminar(db, horario_guardado)
+        for horario in horarios:
+            if HorarioGuardadoService._tiene_dependencias_operativas(
+                db, horario.idHorario
+            ):
+                # No se puede borrar evidencia histórica referenciada. Lo
+                # importante para evitar el horario fantasma es que deje de
+                # participar en cruces y de mostrarse como vigente.
+                horario.activo = False
+                horario.publicado = False
+                db.flush()
+            else:
+                HorarioRepository.eliminar_sin_commit(db, horario)
+
+        # El snapshot se borra dentro de la misma transacción. No usar el
+        # repository.eliminar aquí porque ese método hace commit propio y
+        # podría dejar una eliminación parcial si una clase falla después.
+        db.delete(horario_guardado)
+        db.commit()
         return True
