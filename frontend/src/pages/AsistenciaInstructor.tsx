@@ -118,12 +118,12 @@ export function AsistenciaInstructor() {
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
 
   const horarioElegido = horarios.find((h) => h.idHorario === idHorario) ?? null
-  const fecha = fechaDeLaSesion(idDiaSesion, semana)
-
-  useEffect(() => {
-    const dias = horarioElegido?.dias ?? []
-    setIdDiaSesion((actual) => (actual && dias.includes(actual) ? actual : (dias[0] ?? null)))
-  }, [horarioElegido])
+  const diasHorarioElegido = horarioElegido?.dias ?? []
+  const idDiaSesionEfectivo =
+    idDiaSesion && diasHorarioElegido.includes(idDiaSesion)
+      ? idDiaSesion
+      : (diasHorarioElegido[0] ?? null)
+  const fecha = fechaDeLaSesion(idDiaSesionEfectivo, semana)
 
   useEffect(() => {
     apiGet<Horario[]>('/usuarios/me/horarios')
@@ -302,7 +302,7 @@ export function AsistenciaInstructor() {
                 </label>
                 <select
                   id="dia-sesion"
-                  value={idDiaSesion ?? ''}
+                  value={idDiaSesionEfectivo ?? ''}
                   onChange={(e) => setIdDiaSesion(Number(e.target.value))}
                   className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
                 >
