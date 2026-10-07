@@ -58,6 +58,41 @@ Para más detalles, ver [`mobile/README.md`](./mobile/README.md).
 
 ---
 
+## ✅ Estado funcional actual
+
+La versión web de SIHS ya cubre el flujo principal de gestión de horarios y
+sus módulos relacionados. El sistema trabaja con cuatro perfiles:
+**Administrador, Coordinador, Instructor y Aprendiz**, con acceso a rutas
+según rol.
+
+### Módulos principales disponibles
+
+- **Horarios:** constructor manual por ficha, asistente de programación,
+  calendario general, horarios completos, historial, auditoría de cruces y
+  publicaciones programadas.
+- **Fichas y formación:** fichas, programas, temáticas/resultados de
+  aprendizaje, fase actual y vínculo de aprendices con su ficha.
+- **Recursos:** ambientes, sedes, jornadas e instructores.
+- **Instructor:** horario propio, detalle de franja, asistencia y solicitudes
+  de cambio de horario.
+- **Aprendiz:** horario propio, consulta de asistencia y mensajería.
+- **Comunicaciones:** avisos y notificaciones.
+- **Administración:** usuarios, roles, códigos de instructor y aprobación de
+  solicitudes de acceso.
+
+### Reglas importantes del horario
+
+- Los horarios activos se validan por cruces de **ficha, instructor y
+  ambiente**.
+- Una ficha solo puede programarse en el período académico al que pertenece.
+- Los borradores no aparecen en los horarios personales hasta ser publicados.
+- Los horarios históricos con dependencias operativas se conservan para
+  trazabilidad, pero pueden quedar inactivos y no publicados.
+- La edición y creación por ficha mantienen separadas las asignaciones de cada
+  ficha para evitar modificaciones accidentales sobre otras.
+
+---
+
 ## 🛠️ Tecnologías Utilizadas
 
 ### **Backend**
@@ -235,29 +270,30 @@ El frontend estará corriendo en: `http://localhost:5173`
 
 ---
 
-## 🌿 Flujo de Trabajo en Git
+## 🌿 Flujo de Trabajo en Git y CI
 
-Para mantener la estabilidad del código, el equipo utiliza una estrategia de ramificación basada en tareas cortas:
-
-* **main**: Código en versión final y funcional. No se trabaja directamente sobre esta rama.
-* **develop**: Rama principal de integración diaria.
-* **Ramas por Tarea** (`feature/*`): Cada integrante crea una rama corta partiendo de `develop` para desarrollar un módulo o pantalla específica (ej. `front/login`, `back/auth-jwt`).
-
-Comandos Frecuentes:
+La rama estable es **`main`**. Para trabajo colaborativo normal se recomienda
+crear una rama corta por tarea y abrir un Pull Request hacia `main`.
 
 ```bash
-# Sincronizar develop antes de iniciar una tarea
-git checkout develop
-git pull origin develop
+git checkout main
+git pull origin main
+git checkout -b feature/nombre-tarea
 
-# Crear una nueva rama para una tarea
-git checkout -b front/nombre-tarea
-
-# Subir cambios e integrar vía Pull Request en GitHub
+# trabajar y validar
 git add .
-git commit -m "Descripción clara del cambio"
-git push -u origin front/nombre-tarea
+git commit -m "feat: descripción clara"
+git push -u origin feature/nombre-tarea
 ```
+
+Cada `push` y Pull Request ejecuta GitHub Actions:
+
+- **Frontend:** `npm ci`, `npm run lint`, `npm run build` y `npm run test`.
+- **Backend:** instalación de `requirements.txt` y `pytest -v`.
+
+Antes de integrar una rama, ambos jobs deben finalizar correctamente. Los
+cambios directos sobre `main` se reservan para mantenimiento coordinado del
+repositorio.
 
 ---
 
