@@ -137,7 +137,7 @@ def obtener_mis_horarios(
     )
 
 
-@router.get("/me/horarios/periodos", response_model=list[TrimestreResponse])
+@router.get("/me/periodos-horario", response_model=list[TrimestreResponse])
 def obtener_periodos_de_mi_horario(
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
