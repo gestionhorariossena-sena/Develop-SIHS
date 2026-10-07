@@ -116,7 +116,7 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded px-2 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>Horario #{horario.idHorario}</span>
           <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">Jornada {jornada ?? 'sin definir'}</span>
-          <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">{trimestre?.nombre ?? 'Sin trimestre'}</span>
+          <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">{trimestre?.nombre ?? 'Sin período académico'}</span>
           <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeEstadoPublicacion(horario.publicado)}`}>
             {horario.publicado ? 'Publicado' : 'Borrador'}
           </span>
@@ -164,7 +164,7 @@ function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trim
             <dl className="mt-1.5 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
               <div>{ficha.programa.nombrePrograma} ({ficha.programa.codigoPrograma})</div>
               <div>Nivel: {ficha.programa.nivelFormacion ?? 'Sin definir'}</div>
-              <div>Trimestre: {ficha.trimestre.nombre} ({ficha.trimestre.fechaInicio} a {ficha.trimestre.fechaFin})</div>
+              <div>Período académico: {ficha.trimestre.nombre} ({ficha.trimestre.fechaInicio} a {ficha.trimestre.fechaFin})</div>
               <div>Aprendices: {ficha.aprendicesTotales}</div>
               <div>Jornadas de la ficha: {ficha.jornadas.length ? ficha.jornadas.join(', ') : 'Sin horario'}</div>
             </dl>
@@ -461,14 +461,14 @@ export function HorariosCompletos() {
         {!mostrarFiltrosAvanzados && (filtroTrimestre !== 'todos' || filtroEstado !== 'todos') && (
           <p className="mt-1 text-xs text-on-surface-variant" role="status">
             Filtros avanzados activos: {[
-              filtroTrimestre !== 'todos' ? trimestres.find((item) => String(item.idTrimestre) === filtroTrimestre)?.nombre ?? `Trimestre ${filtroTrimestre}` : null,
+              filtroTrimestre !== 'todos' ? trimestres.find((item) => String(item.idTrimestre) === filtroTrimestre)?.nombre ?? `Período académico ${filtroTrimestre}` : null,
               filtroEstado !== 'todos' ? `Estado ${filtroEstado}` : null,
             ].filter(Boolean).join(' · ')}
           </p>
         )}
         {mostrarFiltrosAvanzados && <div className="mt-3 grid gap-3 md:grid-cols-2">
           <div>
-            <label htmlFor="filtro-trimestre-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Trimestre</label>
+            <label htmlFor="filtro-trimestre-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Período académico</label>
             <select id="filtro-trimestre-horario" value={filtroTrimestre} onChange={(evento) => setFiltroTrimestre(evento.target.value)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todos">Todos</option>
               {trimestres.map((trimestre) => <option key={trimestre.idTrimestre} value={trimestre.idTrimestre}>{trimestre.nombre}</option>)}
@@ -485,8 +485,8 @@ export function HorariosCompletos() {
         </div>}
       </section>
 
-      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Trimestre</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Período académico</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
         const color = colorParaBloque(String(horario.idHorario))
         const expandido = horario.idHorario === idExpandido
         const jornada = jornadaDeHorario(horario)
@@ -578,7 +578,7 @@ export function HorariosCompletos() {
             </span>
           </div>
           <label htmlFor="trimestre-auditoria" className="mb-2 block text-xs font-medium text-on-surface-variant">
-            Período a auditar
+            Período académico a auditar
           </label>
           <select
             id="trimestre-auditoria"
@@ -586,7 +586,7 @@ export function HorariosCompletos() {
             onChange={(evento) => setTrimestreAuditoria(evento.target.value ? Number(evento.target.value) : null)}
             className="mb-3 w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
           >
-            <option value="">Selecciona un período</option>
+            <option value="">Selecciona un período académico</option>
             {trimestres.map((trimestre) => (
               <option key={trimestre.idTrimestre} value={trimestre.idTrimestre}>
                 {trimestre.nombre} · {trimestre.fechaInicio} a {trimestre.fechaFin}
@@ -594,9 +594,9 @@ export function HorariosCompletos() {
             ))}
           </select>
           {trimestreAuditoria === null ? (
-            <p className="text-xs text-on-surface-variant">Selecciona un período para consultar sus cruces.</p>
+            <p className="text-xs text-on-surface-variant">Selecciona un período académico para consultar sus cruces.</p>
           ) : errorAuditoria ? (
-            <p role="alert" className="text-xs text-error">No se pudo cargar la auditoría del período seleccionado.</p>
+            <p role="alert" className="text-xs text-error">No se pudo cargar la auditoría del período académico seleccionado.</p>
           ) : auditoria === null ? (
             <p className="text-xs text-on-surface-variant dark:text-slate-400">Auditando horarios…</p>
           ) : auditoria.conflictos.length === 0 ? (

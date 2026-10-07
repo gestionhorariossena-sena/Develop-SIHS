@@ -5,8 +5,10 @@ import { AppShell } from './AppShell'
 import type { Notificacion, Usuario } from '../types/api'
 
 const apiGetMock = vi.fn()
+const apiPatchMock = vi.fn()
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiPatch: (...args: unknown[]) => apiPatchMock(...args),
 }))
 
 function crearPerfil(roles: string[]): Usuario {
@@ -33,6 +35,36 @@ function mockearApiGet(perfil: Usuario, notificaciones: Notificacion[] = []) {
 }
 
 describe('AppShell', () => {
+  it('aplica el tema guardado en el backend aunque el navegador tenga otro (T-9)', async () => {
+    localStorage.setItem('sihs-tema', 'claro')
+    mockearApiGet({ ...crearPerfil(['Instructor']), preferenciaTema: 'oscuro' })
+    renderConProviders(
+      <AppShell activo="Inicio">
+        <p>contenido</p>
+      </AppShell>,
+    )
+
+    await waitFor(() => expect(document.documentElement).toHaveClass('dark'))
+    expect(screen.getByRole('button', { name: 'Tema oscuro' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('cambiar el tema desde el navbar lo guarda en el backend (T-9)', async () => {
+    localStorage.setItem('sihs-tema', 'claro')
+    mockearApiGet(crearPerfil(['Aprendiz']))
+    apiPatchMock.mockResolvedValue({ ...crearPerfil(['Aprendiz']), preferenciaTema: 'oscuro' })
+    renderConProviders(
+      <AppShell activo="Inicio">
+        <p>contenido</p>
+      </AppShell>,
+    )
+    await screen.findByRole('button', { name: 'Mi trabajo' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Tema oscuro' }))
+
+    expect(apiPatchMock).toHaveBeenCalledWith('/usuarios/me/preferencias', { tema: 'oscuro' })
+    expect(document.documentElement).toHaveClass('dark')
+  })
+
   it('un Aprendiz ve el grupo "Mi trabajo" con sus pantallas, en un desplegable propio del navbar', async () => {
     mockearApiGet(crearPerfil(['Aprendiz']))
     renderConProviders(
@@ -52,9 +84,7 @@ describe('AppShell', () => {
   // Desde que pasar lista es suyo, el Instructor tiene dos pantallas en
   // "Mi trabajo" (horario y asistencia), así que el grupo ya no se
   // renderiza como link plano sino como desplegable.
-  // T-23 (SCRUM-141): "Asistencia" no aparece mientras el ítem de nav está
-  // comentado -- destapar este test junto con el resto de T-23.
-  it.skip('un Instructor ve su horario y su asistencia en el grupo "Mi trabajo"', async () => {
+  it('un Instructor ve su horario y su asistencia en el grupo "Mi trabajo"', async () => {
     mockearApiGet(crearPerfil(['Instructor']))
     renderConProviders(
       <AppShell activo="Inicio">

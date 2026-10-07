@@ -112,7 +112,7 @@ export function PublicacionesProgramadas() {
   ), [horarios, trimestreSeleccionado])
   const programacionActiva = disponibilidad?.habilitado === true
   const pendientes = publicaciones.filter((publicacion) => publicacion.estado === 'pendiente' || publicacion.estado === 'revision_requerida').length
-  const trimestreNombre = trimestres.find((item) => item.idTrimestre === trimestreSeleccionado)?.nombre ?? `Período ${trimestreSeleccionado || 'sin seleccionar'}`
+  const trimestreNombre = trimestres.find((item) => item.idTrimestre === trimestreSeleccionado)?.nombre ?? `Período académico ${trimestreSeleccionado || 'sin seleccionar'}`
   const horariosSeleccionados = borradores.filter((horario) => seleccion.includes(horario.idHorario))
 
   function cambiarPeriodo(valor: string) {
@@ -220,7 +220,7 @@ export function PublicacionesProgramadas() {
             <div>
               <label htmlFor="periodo-publicacion" className="mb-1 block text-sm font-semibold text-on-surface dark:text-slate-200">Período académico</label>
               <select id="periodo-publicacion" value={periodo} onChange={(evento) => cambiarPeriodo(evento.target.value)} required className="w-full rounded-xl border border-outline bg-surface px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900" disabled={ocupado}>
-                <option value="">Selecciona un período</option>
+                <option value="">Selecciona un período académico</option>
                 {trimestres.map((trimestre) => <option key={trimestre.idTrimestre} value={trimestre.idTrimestre}>{trimestre.nombre} · {trimestre.fechaInicio} a {trimestre.fechaFin}</option>)}
               </select>
             </div>
@@ -230,8 +230,8 @@ export function PublicacionesProgramadas() {
             </div>
           </div>
           <fieldset disabled={!periodo || ocupado} className="space-y-2">
-            <legend className="mb-2 text-sm font-semibold text-on-surface dark:text-slate-200">Paso 2 · Seleccionar borradores activos del período <span className="font-normal text-on-surface-variant">({seleccion.length} seleccionados)</span></legend>
-            {!periodo ? <p className="text-sm text-on-surface-variant">Selecciona un período para ver sus borradores.</p> : borradores.length === 0 ? <p className="text-sm text-on-surface-variant">No hay borradores activos disponibles en {trimestreNombre}.</p> : (
+            <legend className="mb-2 text-sm font-semibold text-on-surface dark:text-slate-200">Paso 2 · Seleccionar borradores activos del período académico <span className="font-normal text-on-surface-variant">({seleccion.length} seleccionados)</span></legend>
+            {!periodo ? <p className="text-sm text-on-surface-variant">Selecciona un período académico para ver sus borradores.</p> : borradores.length === 0 ? <p className="text-sm text-on-surface-variant">No hay borradores activos disponibles en {trimestreNombre}.</p> : (
               <div className="max-h-64 space-y-1 overflow-y-auto rounded-xl border border-outline-variant p-2 dark:border-slate-700">
                 {borradores.map((horario) => <label key={horario.idHorario} className="flex cursor-pointer items-start gap-2 rounded-lg p-2 text-sm hover:bg-surface-container dark:hover:bg-slate-700"><input type="checkbox" checked={seleccion.includes(horario.idHorario)} onChange={() => alternarHorario(horario.idHorario)} className="mt-1 accent-emerald-700" /><span>{horarioResumen(horario)}</span></label>)}
               </div>
@@ -239,7 +239,7 @@ export function PublicacionesProgramadas() {
           </fieldset>
           <div className="rounded-xl bg-surface-container-low p-3 text-sm dark:bg-slate-900" aria-label="Vista previa de publicación">
             <h3 className="mb-1 font-semibold text-on-surface dark:text-slate-100">Paso 3 · Revisar antes de confirmar</h3>
-            <p>Período: {trimestreNombre}</p>
+            <p>Período académico: {trimestreNombre}</p>
             <p>Fecha y hora: {fechaLocal ? `${fechaLocal.replace('T', ' ')} (America/Bogota)` : 'Sin seleccionar'}</p>
             <ul className="mt-1 list-inside list-disc text-on-surface-variant dark:text-slate-300">
               {horariosSeleccionados.length ? horariosSeleccionados.map((horario) => <li key={horario.idHorario}>{horarioResumen(horario)}</li>) : <li>No hay horarios seleccionados.</li>}
@@ -262,7 +262,7 @@ export function PublicacionesProgramadas() {
               const periodoPub = trimestres.find((item) => item.idTrimestre === publicacion.idTrimestre)
               return <article key={publicacion.idPublicacion} className="rounded-xl border border-outline-variant p-3 dark:border-slate-700">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-on-surface dark:text-slate-100">Publicación #{publicacion.idPublicacion}</h3><span title={`Estado backend: ${publicacion.estado}`} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estadoEstilo(publicacion.estado)}`}>{ETIQUETAS[publicacion.estado]}</span></div><p className="mt-1 text-sm text-on-surface-variant">{periodoPub?.nombre ?? `Período ${publicacion.idTrimestre}`} · revisión {publicacion.revision} · {publicacion.idHorarios.length} horario(s)</p><p className="text-sm text-on-surface-variant">Ejecución: {new Date(publicacion.fechaEjecucion).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'short' })} (Bogotá)</p></div>
+                  <div><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-on-surface dark:text-slate-100">Publicación #{publicacion.idPublicacion}</h3><span title={`Estado backend: ${publicacion.estado}`} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estadoEstilo(publicacion.estado)}`}>{ETIQUETAS[publicacion.estado]}</span></div><p className="mt-1 text-sm text-on-surface-variant">{periodoPub?.nombre ?? `Período académico ${publicacion.idTrimestre}`} · revisión {publicacion.revision} · {publicacion.idHorarios.length} horario(s)</p><p className="text-sm text-on-surface-variant">Ejecución: {new Date(publicacion.fechaEjecucion).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'short' })} (Bogotá)</p></div>
                   {permiteGestion && <div className="flex gap-2">{programacionActiva && <button type="button" onClick={() => iniciarReprogramacion(publicacion)} disabled={ocupado} className="rounded-lg border border-outline px-3 py-1.5 text-sm font-semibold">Reprogramar</button>}<button type="button" onClick={() => void cancelar(publicacion.idPublicacion)} disabled={ocupado} className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 disabled:opacity-50 dark:border-red-800 dark:text-red-300">Cancelar</button></div>}
                 </div>
                 {requiereRevision && <p className="mt-2 rounded-lg bg-amber-100 p-2 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-100">Una edición invalidó la aprobación. Revisa nuevamente el conjunto y programa una nueva revisión antes de publicar.</p>}

@@ -258,7 +258,7 @@ export function MiHorario() {
         <ExportarPdfButton etiqueta="Descargar Horario PDF" className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container" />
       </div>
 
-      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
       {perfil && (
         <div className="mb-4 flex flex-wrap items-center gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
@@ -462,7 +462,7 @@ export function MiHorario() {
           ) : (horariosFiltrados ?? []).length === 0 ? (
             <p className="py-16 text-center text-sm text-on-surface-variant">
               {filtroJornada === 'todas'
-                ? 'Todavía no tenés clases publicadas en este trimestre.'
+                ? 'Todavía no tenés clases publicadas en este período académico.'
                 : 'No tenés clases publicadas en esa jornada.'}
             </p>
           ) : (
@@ -515,7 +515,7 @@ export function MiHorario() {
             {!horarios ? (
               <p className="text-sm text-on-surface-variant">Cargando…</p>
             ) : fichasActivasCompletas.length === 0 ? (
-              <p className="text-sm text-on-surface-variant">Sin fichas asignadas este trimestre.</p>
+              <p className="text-sm text-on-surface-variant">Sin fichas asignadas en este período académico.</p>
             ) : (
               <ul className="space-y-3">
                 {fichasActivasCompletas.map((ficha) => (

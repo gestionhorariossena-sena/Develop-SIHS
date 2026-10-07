@@ -1,6 +1,17 @@
 from sqlalchemy.orm import Session
 
+from sqlalchemy.orm import joinedload
+
+from app.models.horario import Horario
 from app.models.solicitud_cambio_horario import SolicitudCambioHorario
+
+
+def _relaciones_respuesta():
+    return (
+        joinedload(SolicitudCambioHorario.instructor),
+        joinedload(SolicitudCambioHorario.horarioOrigen).joinedload(Horario.ficha),
+        joinedload(SolicitudCambioHorario.horarioOrigen).joinedload(Horario.ambiente),
+    )
 
 
 class SolicitudCambioHorarioRepository:
@@ -15,6 +26,7 @@ class SolicitudCambioHorarioRepository:
     def obtener_por_id(db: Session, id_solicitud: int) -> SolicitudCambioHorario | None:
         return (
             db.query(SolicitudCambioHorario)
+            .options(*_relaciones_respuesta())
             .filter(SolicitudCambioHorario.idSolicitud == id_solicitud)
             .first()
         )
@@ -23,6 +35,7 @@ class SolicitudCambioHorarioRepository:
     def obtener_por_instructor(db: Session, id_instructor) -> list[SolicitudCambioHorario]:
         return (
             db.query(SolicitudCambioHorario)
+            .options(*_relaciones_respuesta())
             .filter(SolicitudCambioHorario.idInstructor == id_instructor)
             .order_by(SolicitudCambioHorario.fechaSolicitud.desc())
             .all()
@@ -30,7 +43,7 @@ class SolicitudCambioHorarioRepository:
 
     @staticmethod
     def obtener_todas(db: Session, estado: str | None = None) -> list[SolicitudCambioHorario]:
-        consulta = db.query(SolicitudCambioHorario)
+        consulta = db.query(SolicitudCambioHorario).options(*_relaciones_respuesta())
         if estado:
             consulta = consulta.filter(SolicitudCambioHorario.estado == estado)
         return consulta.order_by(SolicitudCambioHorario.fechaSolicitud.desc()).all()

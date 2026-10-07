@@ -30,16 +30,16 @@ import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
 import { PanelAdministracion } from '../pages/PanelAdministracion'
 import { ProtectedRoute } from './ProtectedRoute'
 import { Programas } from '../pages/Programas'
+import { Tematicas } from '../pages/Tematicas'
 import { CambiosHorario } from '../pages/CambiosHorario'
 import { Avisos } from '../pages/Avisos'
 import { MensajesAprendiz } from '../pages/MensajesAprendiz'
-// T-23 (SCRUM-141): import sin usar mientras las rutas de Asistencia
-// están comentadas más abajo -- destapar junto con las rutas.
-// import { AsistenciaInstructor } from '../pages/AsistenciaInstructor'
-// import { MiAsistencia } from '../pages/MiAsistencia'
+import { AsistenciaInstructor } from '../pages/AsistenciaInstructor'
+import { MiAsistencia } from '../pages/MiAsistencia'
 import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
 import { Notificaciones } from '../pages/Notificaciones'
 import { PublicacionesProgramadas } from '../pages/PublicacionesProgramadas'
+import { MisSolicitudesCambioHorario } from '../pages/MisSolicitudesCambioHorario'
 
 /**
  * Quién puede abrir cada pantalla. Mismo criterio que usa el navbar para
@@ -166,9 +166,8 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
-      {/* T-23 (SCRUM-141): Asistencia desactivada temporalmente para la
-          presentación -- destapar estas 2 rutas para reactivarla. */}
-      {/* <Route
+      {/* Pasar lista es del Instructor; el Aprendiz solo lee la suya. */}
+      <Route
         path="/asistencia"
         element={
           <ProtectedRoute roles={INSTRUCTOR}>
@@ -183,12 +182,20 @@ export function AppRouter() {
             <MiAsistencia />
           </ProtectedRoute>
         }
-      /> */}
+      />
       <Route
         path="/mensajes"
         element={
           <ProtectedRoute roles={APRENDIZ}>
             <MensajesAprendiz />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mis-solicitudes-cambio"
+        element={
+          <ProtectedRoute roles={INSTRUCTOR}>
+            <MisSolicitudesCambioHorario />
           </ProtectedRoute>
         }
       />
@@ -273,6 +280,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={GESTION}>
             <Programas />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/tematicas"
+        element={
+          <ProtectedRoute roles={GESTION}>
+            <Tematicas />
           </ProtectedRoute>
         }
       />

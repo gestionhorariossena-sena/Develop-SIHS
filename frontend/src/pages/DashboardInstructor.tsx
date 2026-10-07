@@ -212,7 +212,7 @@ export function DashboardInstructor() {
   return (
     <AppShell activo="Inicio">
       {error && (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</div>
       )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
@@ -236,7 +236,13 @@ export function DashboardInstructor() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* T-23 (SCRUM-141): Asistencia desactivada temporalmente. */}
+          <Link
+            to="/asistencia"
+            className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
+          >
+            <span className="material-symbols-outlined text-[18px]">fact_check</span>
+            Pasar asistencia
+          </Link>
           <Link
             to="/mi-horario"
             className="flex items-center gap-1.5 rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high"
@@ -428,7 +434,12 @@ export function DashboardInstructor() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {/* T-23 (SCRUM-141): Asistencia desactivada temporalmente. */}
+                        <Link
+                          to={`/asistencia?horario=${horario.idHorario}`}
+                          className="rounded-lg border border-outline px-2.5 py-1 text-xs font-semibold text-on-surface-variant hover:bg-surface-container"
+                        >
+                          Ver lista de asistencia
+                        </Link>
                         {/* INS-04: abre el detalle acá mismo, sin navegar a otra pantalla. */}
                         <button
                           type="button"

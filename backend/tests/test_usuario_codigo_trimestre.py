@@ -1,15 +1,15 @@
 """Historia "Código de instructor: completar el flujo frontend y vincularlo
 a un trimestre". codigoInstructor sigue siendo fijo una vez creado
-(UsuarioService.generar_codigo_instructor ya era idempotente) — lo nuevo es
+(InstructorService.generar_codigo, antes en UsuarioService, ya era idempotente) — lo nuevo es
 que, al generarse, se anota en qué trimestre activo se emitió."""
 
 from datetime import date
 
 from app.models.trimestre import Trimestre
-from app.services.usuario_service import UsuarioService
+from app.services.instructor_service import InstructorService
 
 
-def test_generar_codigo_instructor_asigna_el_trimestre_activo(db_session, crear_usuario):
+def test_generar_codigo_instructor_asigna_el_trimestre_activo(db_session, crear_usuario, crear_rol):
     trimestre = Trimestre(
         nombre="2026-3",
         fechaInicio=date(2026, 9, 1),
@@ -19,9 +19,9 @@ def test_generar_codigo_instructor_asigna_el_trimestre_activo(db_session, crear_
     db_session.add(trimestre)
     db_session.commit()
 
-    instructor = crear_usuario(nombre="Sergio")
+    instructor = crear_usuario(nombre="Sergio", roles=[crear_rol("Instructor")])
 
-    resultado = UsuarioService.generar_codigo_instructor(db_session, instructor.idUsuario)
+    resultado = InstructorService.generar_codigo(db_session, instructor.idUsuario)
 
     assert resultado["codigo"].startswith("INS-")
     assert resultado["idTrimestre"] == trimestre.idTrimestre
@@ -29,27 +29,27 @@ def test_generar_codigo_instructor_asigna_el_trimestre_activo(db_session, crear_
     assert instructor.idTrimestre == trimestre.idTrimestre
 
 
-def test_generar_codigo_instructor_sin_trimestre_activo_deja_idtrimestre_en_null(db_session, crear_usuario):
+def test_generar_codigo_instructor_sin_trimestre_activo_deja_idtrimestre_en_null(db_session, crear_usuario, crear_rol):
     db_session.add(
         Trimestre(nombre="2026-4", fechaInicio=date(2027, 1, 1), fechaFin=date(2027, 3, 31), estado="planeado")
     )
     db_session.commit()
 
-    instructor = crear_usuario(nombre="Laura")
+    instructor = crear_usuario(nombre="Laura", roles=[crear_rol("Instructor")])
 
-    resultado = UsuarioService.generar_codigo_instructor(db_session, instructor.idUsuario)
+    resultado = InstructorService.generar_codigo(db_session, instructor.idUsuario)
 
     assert resultado["codigo"].startswith("INS-")
     assert resultado["idTrimestre"] is None
 
 
-def test_generar_codigo_instructor_es_idempotente_no_cambia_codigo_ni_trimestre(db_session, crear_usuario):
+def test_generar_codigo_instructor_es_idempotente_no_cambia_codigo_ni_trimestre(db_session, crear_usuario, crear_rol):
     trimestre_1 = Trimestre(nombre="2026-3", fechaInicio=date(2026, 9, 1), fechaFin=date(2026, 12, 15), estado="activo")
     db_session.add(trimestre_1)
     db_session.commit()
 
-    instructor = crear_usuario(nombre="Marcela")
-    primero = UsuarioService.generar_codigo_instructor(db_session, instructor.idUsuario)
+    instructor = crear_usuario(nombre="Marcela", roles=[crear_rol("Instructor")])
+    primero = InstructorService.generar_codigo(db_session, instructor.idUsuario)
 
     # Cambia el trimestre activo antes de "regenerar" — el código y el
     # trimestre anotado no deben moverse, es fijo desde la primera vez.
@@ -58,7 +58,7 @@ def test_generar_codigo_instructor_es_idempotente_no_cambia_codigo_ni_trimestre(
     db_session.add(trimestre_2)
     db_session.commit()
 
-    segundo = UsuarioService.generar_codigo_instructor(db_session, instructor.idUsuario)
+    segundo = InstructorService.generar_codigo(db_session, instructor.idUsuario)
 
     assert segundo["codigo"] == primero["codigo"]
     assert segundo["idTrimestre"] == trimestre_1.idTrimestre

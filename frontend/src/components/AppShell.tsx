@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import senaLogo from '../assets/sena-logo.jpeg'
 import { useAuth } from '../hooks/useAuth'
+import { useTheme } from '../hooks/useTheme'
 import { apiGet } from '../services/api'
-import { getPerfil } from '../services/perfil'
+import { getPerfil, guardarPreferenciaTema } from '../services/perfil'
 import type { Notificacion, Usuario } from '../types/api'
 import { NotificacionesPanel } from './NotificacionesPanel'
 import { ThemeSelector } from './ThemeSelector'
@@ -56,14 +57,13 @@ const NAV: GrupoNav[] = [
     grupo: 'Mi trabajo',
     items: [
       { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
-      // T-23 (SCRUM-141): Asistencia desactivada temporalmente para la
-      // presentación -- destapar junto con las rutas en AppRouter.tsx.
-      // { etiqueta: 'Asistencia', ruta: '/asistencia', soloInstructor: true },
+      // Pasar lista: solo el instructor, y solo de sus propias clases.
+      { etiqueta: 'Asistencia', ruta: '/asistencia', soloInstructor: true },
       { etiqueta: 'Mi horario', ruta: '/mi-horario-aprendiz', soloAprendiz: true },
       // Solo el Aprendiz abre conversaciones (lo valida el backend), así
       // que por ahora el ítem es suyo; la bandeja del Instructor es otra
       // pantalla pendiente de diseño.
-      // { etiqueta: 'Mi asistencia', ruta: '/mi-asistencia', soloAprendiz: true },
+      { etiqueta: 'Mi asistencia', ruta: '/mi-asistencia', soloAprendiz: true },
       { etiqueta: 'Mensajes', ruta: '/mensajes', soloAprendiz: true },
       // Centro de notificaciones del Aprendiz (pantalla propia, distinta
       // de la campana del navbar: ahí caben el historial y el detalle).
@@ -91,7 +91,7 @@ const NAV: GrupoNav[] = [
       // T-22 (SCRUM-141): Directorio de fichas desactivado temporalmente.
       // { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
       { etiqueta: 'Programas', ruta: '/programas', soloGestion: true },
-      { etiqueta: 'Temáticas', soloGestion: true },
+      { etiqueta: 'Temáticas', ruta: '/tematicas', soloGestion: true },
     ],
   },
   {
@@ -103,17 +103,11 @@ const NAV: GrupoNav[] = [
     ],
   },
   {
-    grupo: 'Operación',
+    grupo: 'Comunicaciones',
     items: [
-      // H-4: la bandeja de lo que reportan los instructores. Estuvo en
-      // gris desde siempre aunque su backend estaba completo.
-      { etiqueta: 'Cambios', ruta: '/cambios', soloGestion: true },
-      // El tablón de comunicados (`GET /avisos/`) lo lee CUALQUIER sesión,
-      // así que este ítem no lleva restricción: es el mismo destino para
-      // aprendiz, instructor y coordinación. Ocupa el lugar del ítem
-      // "Notificaciones" que vivía en gris acá (H-11) — la campana ya
-      // cubre lo personal, esto es el canal oficial del centro.
-      { etiqueta: 'Avisos', ruta: '/avisos' },
+      { etiqueta: 'Solicitudes de cambio', ruta: '/cambios', soloGestion: true },
+      { etiqueta: 'Mis solicitudes', ruta: '/mis-solicitudes-cambio', soloInstructor: true },
+      { etiqueta: 'Comunicados', ruta: '/avisos' },
     ],
   },
   {
@@ -162,6 +156,7 @@ interface AppShellProps {
  */
 export function AppShell({ activo, children }: AppShellProps) {
   const { signOut, session } = useAuth()
+  const { setTema } = useTheme()
   const idUsuario = session?.user?.id ?? ''
 
   const [miPerfil, setMiPerfil] = useState<Usuario | null>(null)
@@ -218,6 +213,10 @@ export function AppShell({ activo, children }: AppShellProps) {
       .then((perfil) => {
         setMiPerfil(perfil)
         setErrorPerfil(null)
+        // T-9: el tema guardado en el backend manda sobre el del
+        // localStorage, para que la elección siga a la persona entre
+        // navegadores y dispositivos.
+        if (perfil.preferenciaTema) setTema(perfil.preferenciaTema)
       })
       .catch((err) => {
         const mensaje =
@@ -227,7 +226,7 @@ export function AppShell({ activo, children }: AppShellProps) {
 
         setErrorPerfil(mensaje)
       })
-  }, [idUsuario])
+  }, [idUsuario, setTema])
 
   useEffect(() => {
     apiGet<Notificacion[]>('/notificaciones/')
@@ -237,6 +236,19 @@ export function AppShell({ activo, children }: AppShellProps) {
       .catch(() => {
         setNotificaciones([])
       })
+
+    // Los avisos nacen en el backend (publicaciones, cruces forzados,
+    // solicitudes) mientras la persona sigue con la pestaña abierta: sin
+    // este refresco el globo rojo solo se enteraba al recargar. Se salta
+    // si la pestaña está oculta para no gastar peticiones en segundo plano.
+    const intervalo = window.setInterval(() => {
+      if (document.visibilityState !== 'visible') return
+      apiGet<Notificacion[]>('/notificaciones/')
+        .then(setNotificaciones)
+        .catch(() => {})
+    }, 60_000)
+
+    return () => window.clearInterval(intervalo)
   }, [])
 
   useEffect(() => {
@@ -444,7 +456,11 @@ export function AppShell({ activo, children }: AppShellProps) {
           </nav>
 
           <div className="flex shrink-0 items-center gap-2">
-            <ThemeSelector />
+            <ThemeSelector
+              alCambiar={(nuevo) => {
+                if (idUsuario) guardarPreferenciaTema(idUsuario, nuevo).catch(() => {})
+              }}
+            />
 
             <div className="relative" ref={notifRef}>
               <button
@@ -542,7 +558,7 @@ export function AppShell({ activo, children }: AppShellProps) {
       </header>
 
       {errorPerfil && (
-        <div className="fixed top-16 z-40 w-full border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 print:hidden">
+        <div className="fixed top-16 z-40 w-full border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 print:hidden">
           {errorPerfil}
         </div>
       )}

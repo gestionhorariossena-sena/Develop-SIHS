@@ -39,10 +39,7 @@ const PERFIL: Usuario = {
 }
 
 describe('DashboardInstructor', () => {
-  // T-23 (SCRUM-141): Asistencia desactivada temporalmente -- el botón
-  // "Pasar asistencia" no se renderiza mientras tanto. Destapar este test
-  // (y quitar el .skip) junto con el resto de T-23 en AppShell/AppRouter.
-  it.skip('mantiene visible el acceso a pasar asistencia aunque hoy no tenga clases', () => {
+  it('mantiene visible el acceso a pasar asistencia aunque hoy no tenga clases', () => {
     apiGetMock.mockRejectedValue(new Error('Sin datos para esta prueba'))
     renderConProviders(<DashboardInstructor />)
 

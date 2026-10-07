@@ -21,9 +21,9 @@ const ETIQUETA_ESTADO_SOLICITUD: Record<SolicitudCambioHorario['estado'], string
 }
 
 const ESTILO_ESTADO_SOLICITUD: Record<SolicitudCambioHorario['estado'], string> = {
-  pendiente: 'bg-amber-50 text-amber-800 border-amber-200',
-  aprobada: 'bg-emerald-50 text-emerald-800 border-emerald-200',
-  rechazada: 'bg-red-50 text-red-700 border-red-200',
+  pendiente: 'bg-amber-50 text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200',
+  aprobada: 'bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200',
+  rechazada: 'bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 border-red-200',
 }
 
 const ETIQUETA_CONTRATO: Record<string, string> = {
@@ -202,7 +202,7 @@ export function DetalleFranjaAmbiente({ idHorario: idHorarioProp, dia: diaProp, 
 
   const contenido = (
     <>
-      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
       {!horarios && !error ? (
         <p className="py-16 text-center text-sm text-on-surface-variant">Cargando el detalle de la franja…</p>

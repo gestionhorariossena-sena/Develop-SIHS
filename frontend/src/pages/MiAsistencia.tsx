@@ -152,7 +152,7 @@ export function MiAsistencia() {
 
             <p className="mt-3 text-xs text-on-surface-variant dark:text-slate-400">
               El porcentaje se calcula sobre las clases a las que ya te pasaron lista, no sobre el
-              total del trimestre. Las excusas no cuentan en contra.
+              total del período académico. Las excusas no cuentan en contra.
             </p>
           </div>
         )}

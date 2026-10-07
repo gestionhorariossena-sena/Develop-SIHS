@@ -153,7 +153,7 @@ def descargar_ficha_pdf(
             titulo="Datos generales",
             lineas=[
                 f"Programa: {ficha.programa.nombrePrograma if ficha.programa else '—'}",
-                f"Trimestre: {ficha.trimestre.nombre if ficha.trimestre else '—'}",
+                f"Período académico: {ficha.trimestre.nombre if ficha.trimestre else '—'}",
                 f"Sede: {ficha.sede.nombre if ficha.sede else '—'}",
             ],
         ),
@@ -178,7 +178,7 @@ def descargar_ficha_pdf(
 
     contenido = PdfService.generar(
         titulo=f"Ficha {ficha.codigoFicha}",
-        subtitulo=f"{ficha.programa.nombrePrograma if ficha.programa else '—'} · Trimestre {ficha.trimestre.nombre if ficha.trimestre else '—'}",
+        subtitulo=f"{ficha.programa.nombrePrograma if ficha.programa else '—'} · Período académico {ficha.trimestre.nombre if ficha.trimestre else '—'}",
         secciones=secciones,
     )
 

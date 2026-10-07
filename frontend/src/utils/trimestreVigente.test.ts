@@ -12,7 +12,7 @@ const vigente: Trimestre = {
 describe('selección de período académico', () => {
   it('no interpreta el estado activo de un período vencido como vigencia actual', () => {
     expect(trimestreVigente([historico], '2026-09-28')).toBeNull()
-    expect(avisoTrimestres([historico], '2026-09-28')).toMatch(/No existe un período activo/)
+    expect(avisoTrimestres([historico], '2026-09-28')).toMatch(/No hay un período académico activo/)
   })
 
   it('elige únicamente el período activo cuyas fechas incluyen el día', () => {

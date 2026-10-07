@@ -3,12 +3,37 @@ from datetime import datetime, timezone
 from app.repositories.horario_repository import HorarioRepository
 from app.repositories.solicitud_cambio_horario_repository import SolicitudCambioHorarioRepository
 from app.models.solicitud_cambio_horario import SolicitudCambioHorario
-from app.services.notificacion_service import NotificacionService, TIPO_HORARIO
+from app.services.notificacion_service import (
+    ROLES_GESTION,
+    TIPO_HORARIO,
+    TIPO_SISTEMA,
+    NotificacionService,
+)
 
 ESTADOS_RESOLUCION_VALIDOS = {"aprobada", "rechazada"}
 
 
 class SolicitudCambioHorarioService:
+    @staticmethod
+    def _a_response(solicitud):
+        horario = solicitud.horarioOrigen
+        return {
+            "idSolicitud": solicitud.idSolicitud,
+            "idInstructor": solicitud.idInstructor,
+            "idHorarioOrigen": solicitud.idHorarioOrigen,
+            "tipo": solicitud.tipo,
+            "motivo": solicitud.motivo,
+            "estado": solicitud.estado,
+            "fechaSolicitud": solicitud.fechaSolicitud,
+            "fechaResolucion": solicitud.fechaResolucion,
+            "idAdminResolvio": solicitud.idAdminResolvio,
+            "instructorNombre": solicitud.instructor.nombre if solicitud.instructor else None,
+            "fichaCodigo": horario.ficha.codigoFicha if horario and horario.ficha else None,
+            "horaInicio": horario.horaInicio if horario else None,
+            "horaFin": horario.horaFin if horario else None,
+            "ambienteNombre": horario.ambiente.nombre if horario and horario.ambiente else None,
+        }
+
     @staticmethod
     def crear(db, id_instructor, data):
         horario = HorarioRepository.obtener_por_id(db, data.idHorarioOrigen)
@@ -21,15 +46,38 @@ class SolicitudCambioHorarioService:
             tipo=data.tipo,
             motivo=data.motivo,
         )
-        return SolicitudCambioHorarioRepository.crear(db, solicitud)
+        solicitud = SolicitudCambioHorarioRepository.crear(db, solicitud)
+        respuesta = SolicitudCambioHorarioService._a_response(solicitud)
+
+        # La ida del circuito: sin esto coordinación solo se enteraba del
+        # reporte si entraba por su cuenta a "Solicitudes de cambio".
+        quien = respuesta["instructorNombre"] or "Un instructor"
+        ficha = f" de la ficha {respuesta['fichaCodigo']}" if respuesta["fichaCodigo"] else ""
+        NotificacionService.notificar_roles_transaccional(
+            db,
+            roles=ROLES_GESTION,
+            tipo=TIPO_SISTEMA,
+            mensaje=f"{quien} envió una solicitud de cambio ({solicitud.tipo}) sobre un bloque{ficha}.",
+            entidad_relacionada="solicitudes_cambio_horario",
+            id_entidad_relacionada=solicitud.idSolicitud,
+            excluir=id_instructor,
+        )
+        db.commit()
+        return respuesta
 
     @staticmethod
     def obtener_mias(db, id_instructor):
-        return SolicitudCambioHorarioRepository.obtener_por_instructor(db, id_instructor)
+        return [
+            SolicitudCambioHorarioService._a_response(solicitud)
+            for solicitud in SolicitudCambioHorarioRepository.obtener_por_instructor(db, id_instructor)
+        ]
 
     @staticmethod
     def obtener_todas(db, estado: str | None = None):
-        return SolicitudCambioHorarioRepository.obtener_todas(db, estado)
+        return [
+            SolicitudCambioHorarioService._a_response(solicitud)
+            for solicitud in SolicitudCambioHorarioRepository.obtener_todas(db, estado)
+        ]
 
     @staticmethod
     def resolver(db, id_solicitud: int, id_admin, estado: str):
@@ -75,4 +123,4 @@ class SolicitudCambioHorarioService:
             id_entidad_relacionada=resuelta.idSolicitud,
         )
 
-        return resuelta
+        return SolicitudCambioHorarioService._a_response(resuelta)

@@ -1,4 +1,6 @@
 import logging
+from contextlib import asynccontextmanager
+from threading import Event, Thread
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,6 +11,7 @@ from app.api.v1.roles import router as roles_router
 from app.api.v1.usuario_rol import router as usuario_rol_router
 from app.api.v1.usuarios import router as usuarios_router
 from app.core.config import settings
+from app.workers.publicacion_programada_worker import run_worker
 from app.api.v1.dias_semana import router as dias_semana_router
 from app.api.v1.especialidades import router as especialidades_router
 from app.api.v1.jornadas import router as jornadas_router
@@ -23,12 +26,10 @@ from app.api.v1.ficha_usuario import router as ficha_usuario_router
 from app.api.v1.guias import router as guias_router
 from app.api.v1.competencias_formacion import router as competencias_formacion_router
 from app.api.v1.resultados_aprendizaje import router as resultados_aprendizaje_router
+from app.api.v1.tematicas import router as tematicas_router
 from app.api.v1.horarios import router as horarios_router
 from app.api.v1.actividades_aprendizaje import router as actividades_aprendizaje_router
-# T-23 (SCRUM-141): deshabilitado temporalmente para la presentación -- no
-# se borra, solo se deja de registrar. Para reactivar, destapar esta línea
-# y la de app.include_router(asistencias_router, ...) más abajo.
-# from app.api.v1.asistencias import router as asistencias_router
+from app.api.v1.asistencias import router as asistencias_router
 from app.api.v1.auditoria import router as auditoria_router
 from app.api.v1.notificaciones import router as notificaciones_router
 from app.api.v1.mensajeria import router as mensajeria_router
@@ -40,7 +41,44 @@ from app.api.v1.solicitudes_cambio_horario import router as solicitudes_cambio_h
 from app.api.v1.solicitudes_acceso import router as solicitudes_acceso_router
 
 
-app = FastAPI(title=settings.app_name)
+_worker_stop_event = Event()
+
+
+def _run_embedded_publication_worker() -> None:
+    logger = logging.getLogger("sihs.publicacion_worker")
+    while not _worker_stop_event.is_set():
+        try:
+            run_worker(stop_event=_worker_stop_event)
+        except Exception:
+            logger.exception("El worker embebido se detuvo inesperadamente; reintentando en 5 s")
+            if _worker_stop_event.wait(5):
+                return
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    worker_thread = None
+    if settings.embedded_publication_worker:
+        _worker_stop_event.clear()
+        worker_thread = Thread(
+            target=_run_embedded_publication_worker,
+            name="sihs-publicacion-worker",
+            daemon=True,
+        )
+        worker_thread.start()
+        logging.getLogger("uvicorn.error").info(
+            "Worker embebido de publicaciones programadas habilitado"
+        )
+
+    try:
+        yield
+    finally:
+        if worker_thread is not None:
+            _worker_stop_event.set()
+            worker_thread.join(timeout=10)
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 # La capa de IA es opcional: sin clave el sistema funciona completo, pero el
 # asistente de programación no puede importar un Excel. Avisarlo al arrancar
@@ -99,7 +137,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origin_regex=(
         r"http://(localhost|127\.0\.0\.1):\d+"
-        r"|https://proyectosihs(?:-[a-z0-9-]+-sihs)?\.vercel\.app"
+        r"|https://(?:proyectosihs|proyecto-sihs)(?:-[a-z0-9-]+)?\.vercel\.app"
     ),
     allow_origins=[settings.frontend_url] if settings.frontend_url else [],
     allow_credentials=True,
@@ -125,9 +163,10 @@ app.include_router(ficha_usuario_router, prefix="/api/v1")
 app.include_router(guias_router, prefix="/api/v1")
 app.include_router(competencias_formacion_router, prefix="/api/v1")
 app.include_router(resultados_aprendizaje_router, prefix="/api/v1")
+app.include_router(tematicas_router, prefix="/api/v1")
 app.include_router(horarios_router, prefix="/api/v1")
 app.include_router(actividades_aprendizaje_router, prefix="/api/v1")
-# app.include_router(asistencias_router, prefix="/api/v1")  # T-23: ver import comentado arriba
+app.include_router(asistencias_router, prefix="/api/v1")
 app.include_router(auditoria_router, prefix="/api/v1")
 app.include_router(notificaciones_router, prefix="/api/v1")
 app.include_router(mensajeria_router, prefix="/api/v1")

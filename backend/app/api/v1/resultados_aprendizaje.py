@@ -9,6 +9,7 @@ from app.schemas.resultado_aprendizaje import (
     ResultadoAprendizajeUpdate,
 )
 from app.services.resultado_aprendizaje_service import ResultadoAprendizajeService
+from app.services.tematica_service import ReferenciaInexistenteError, TematicaEnUsoError, TematicaService
 
 router = APIRouter(prefix="/resultados-aprendizaje", tags=["resultados-aprendizaje"])
 
@@ -19,6 +20,10 @@ def crear_resultado(
     db: Session = Depends(get_db),
     usuario=Depends(require_admin),
 ):
+    try:
+        TematicaService.validar_competencia(db, data.idCompetencia)
+    except ReferenciaInexistenteError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from None
     return ResultadoAprendizajeService.crear(db, data)
 
 
@@ -51,6 +56,10 @@ def actualizar_resultado(
     db: Session = Depends(get_db),
     usuario=Depends(require_admin),
 ):
+    try:
+        TematicaService.validar_competencia(db, data.idCompetencia)
+    except ReferenciaInexistenteError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from None
     resultado = ResultadoAprendizajeService.actualizar(db, id_resultado, data)
 
     if not resultado:
@@ -65,6 +74,10 @@ def eliminar_resultado(
     db: Session = Depends(get_db),
     usuario=Depends(require_admin),
 ):
+    try:
+        TematicaService.verificar_resultado_borrable(db, id_resultado)
+    except TematicaEnUsoError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from None
     eliminado = ResultadoAprendizajeService.eliminar(db, id_resultado)
 
     if not eliminado:

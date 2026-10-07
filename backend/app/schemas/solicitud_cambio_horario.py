@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -26,3 +26,8 @@ class SolicitudCambioHorarioResponse(BaseModel):
     fechaSolicitud: datetime
     fechaResolucion: datetime | None = None
     idAdminResolvio: UUID | None = None
+    instructorNombre: str | None = None
+    fichaCodigo: str | None = None
+    horaInicio: time | None = None
+    horaFin: time | None = None
+    ambienteNombre: str | None = None

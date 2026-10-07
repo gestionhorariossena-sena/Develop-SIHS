@@ -184,11 +184,10 @@ class _TarjetaResumen extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _Cifra(etiqueta: 'Presente', valor: resumen.presente, color: tema.colorScheme.primary),
-                _Cifra(etiqueta: 'Tarde', valor: resumen.tardanza, color: tema.colorScheme.tertiary),
-                _Cifra(etiqueta: 'Ausente', valor: resumen.ausente, color: tema.colorScheme.error),
+                Expanded(child: _Cifra(etiqueta: 'Presente', valor: resumen.presente, color: tema.colorScheme.primary)),
+                Expanded(child: _Cifra(etiqueta: 'Tarde', valor: resumen.tardanza, color: tema.colorScheme.tertiary)),
+                Expanded(child: _Cifra(etiqueta: 'Ausente', valor: resumen.ausente, color: tema.colorScheme.error)),
               ],
             ),
             if (bajoUmbral) ...[
@@ -211,7 +210,7 @@ class _TarjetaResumen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               'Se calcula sobre las clases a las que ya te pasaron lista, no sobre el total del '
-              'trimestre. Las excusas no cuentan en contra.',
+              'período académico. Las excusas no cuentan en contra.',
               style: tema.textTheme.bodySmall?.copyWith(color: tema.colorScheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),

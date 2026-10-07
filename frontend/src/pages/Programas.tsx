@@ -169,7 +169,7 @@ export function Programas() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Programas</h1>
-          <p className="text-sm text-on-surface-variant dark:text-slate-400">Programas de formación registrados, con sus fichas y trimestre.</p>
+          <p className="text-sm text-on-surface-variant dark:text-slate-400">Programas de formación registrados, con sus fichas y período académico.</p>
         </div>
         <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {programas.length} programas</p>
       </div>
@@ -218,7 +218,7 @@ export function Programas() {
         </div>
       </section>
 
-      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
       {cargando ? (
         <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando programas...</p>
@@ -324,7 +324,7 @@ export function Programas() {
             />
             {subiendoCurriculo && <p className="mt-2 text-sm text-on-surface-variant dark:text-slate-400">Leyendo el archivo…</p>}
             {errorCurriculo && (
-              <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorCurriculo}</p>
+              <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{errorCurriculo}</p>
             )}
             {resultadoImportacion && (
               <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
@@ -368,7 +368,7 @@ export function Programas() {
             )}
           </SeccionDrawer>
 
-          <SeccionDrawer titulo="Fichas y trimestres">
+          <SeccionDrawer titulo="Fichas y períodos académicos">
             {fichasDelSeleccionado.length === 0 ? (
               <p className="text-sm text-on-surface-variant dark:text-slate-400">Este programa todavía no tiene fichas asociadas.</p>
             ) : (
@@ -378,7 +378,7 @@ export function Programas() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-semibold text-on-surface dark:text-slate-100">{ficha.codigoFicha}</p>
-                        <p className="mt-1 text-sm text-on-surface-variant dark:text-slate-400">Trimestre: {ficha.trimestre.nombre}</p>
+                        <p className="mt-1 text-sm text-on-surface-variant dark:text-slate-400">Período académico: {ficha.trimestre.nombre}</p>
                       </div>
                       <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300">{ficha.trimestre.estado}</span>
                     </div>

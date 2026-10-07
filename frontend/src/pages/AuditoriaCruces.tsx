@@ -14,6 +14,7 @@ const TITULO_POR_TIPO: Record<TipoConflictoHorario, string> = {
   resultado_repetido: 'Resultado repetido',
   regla_instructor: 'Regla institucional (RF-011)',
   fortaleza_instructor: 'Fortaleza del instructor',
+  ficha_trimestre: 'Ficha fuera de su trimestre',
 }
 
 // Mismo texto explicativo real de cada regla — panel "Tipología de
@@ -23,11 +24,12 @@ const DESCRIPCION_POR_TIPO: Record<TipoConflictoHorario, string> = {
   cruce_ambiente: 'Dos o más fichas programadas en el mismo ambiente en franja idéntica.',
   cruce_instructor: 'Un instructor asignado simultáneamente a dos sesiones.',
   cruce_ficha: 'El mismo grupo de aprendices tiene doble franja lectiva solapada.',
-  resultado_repetido: 'Resultado de aprendizaje ya evaluado o duplicado en el mismo trimestre.',
-  regla_instructor: 'Exceso del tope de horas lectivas semanales (32-40 hrs según contrato).',
+  resultado_repetido: 'Resultado de aprendizaje ya evaluado o duplicado en el mismo período académico.',
+  regla_instructor: 'Exceso del tope de horas semanales (32-40 h según contrato) o instructor de planta en jornada Noche.',
   fortaleza_instructor: 'El instructor no tiene la especialidad que exige la competencia del resultado.',
+  ficha_trimestre: 'El horario está en un trimestre distinto al de la ficha.',
 }
-const ORDEN_TIPOS: TipoConflictoHorario[] = ['cruce_ambiente', 'cruce_instructor', 'cruce_ficha', 'resultado_repetido', 'regla_instructor', 'fortaleza_instructor']
+const ORDEN_TIPOS: TipoConflictoHorario[] = ['cruce_ambiente', 'cruce_instructor', 'cruce_ficha', 'resultado_repetido', 'regla_instructor', 'fortaleza_instructor', 'ficha_trimestre']
 
 function construirQuery(idTrimestre: string, idSede: string) {
   const params = new URLSearchParams()
@@ -42,7 +44,7 @@ function construirQuery(idTrimestre: string, idSede: string) {
  * guardados (a diferencia del Constructor, que valida un candidato nuevo
  * antes de guardarlo). Consume GET /horarios/auditoria-cruces
  * (HorarioService.auditar_conflictos), que reutiliza la misma lógica y
- * las mismas 5 categorías que ya se usan en /horarios/validar y
+ * las mismas categorías que ya se usan en /horarios/validar y
  * ModalCruce.tsx — no hay una taxonomía nueva acá.
  *
  * "Resolver conflicto" no es un botón de un clic: no existe (todavía) un
@@ -183,7 +185,7 @@ export function AuditoriaCruces() {
       <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de auditoría">
         <div className="grid gap-3 sm:grid-cols-3">
           <div>
-            <label htmlFor="filtro-trimestre-auditoria" className="mb-1.5 block text-xs font-medium text-on-surface-variant">Trimestre</label>
+            <label htmlFor="filtro-trimestre-auditoria" className="mb-1.5 block text-xs font-medium text-on-surface-variant">Período académico</label>
             <select
               id="filtro-trimestre-auditoria"
               value={filtroTrimestre}
@@ -234,6 +236,10 @@ export function AuditoriaCruces() {
           <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-2.5 py-1 text-on-tertiary-container">
             <span aria-hidden="true" className="material-symbols-outlined text-[14px]">warning</span>
             {conflictos.length} conflicto{conflictos.length === 1 ? '' : 's'} crítico{conflictos.length === 1 ? '' : 's'} activo{conflictos.length === 1 ? '' : 's'}
+            {/* El resumen del backend es del filtro completo, sin la búsqueda de texto. */}
+            {!busqueda.trim() && datosVigentes?.resumen.horariosAfectados != null && (
+              <> · {datosVigentes.resumen.horariosAfectados} horario{datosVigentes.resumen.horariosAfectados === 1 ? '' : 's'} afectado{datosVigentes.resumen.horariosAfectados === 1 ? '' : 's'}</>
+            )}
           </span>
         )}
       </div>

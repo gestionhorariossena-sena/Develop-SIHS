@@ -110,7 +110,7 @@ describe('VistaFichas', () => {
 
     await usuario.click(screen.getByText('3228973 B'))
 
-    expect(await screen.findByText('Sin horario asignado en el trimestre actual.')).toBeInTheDocument()
+    expect(await screen.findByText('Sin horario asignado en el período académico actual.')).toBeInTheDocument()
   })
 
   it('con ?id= en la URL, selecciona esa ficha directo (deep link desde el drawer de Fichas.tsx)', async () => {

@@ -82,12 +82,13 @@ export function Registro() {
     if (rol === 'Instructor') {
       setLoading(true)
       try {
-        const validacion = await apiPost<{ valido: boolean; codigo: string | null; idUsuario: string | null }>(
+        // Endpoint público: solo dice si el código sirve, no a quién pertenece.
+        const validacion = await apiPost<{ valido: boolean; codigo: string | null }>(
           '/usuarios/instructor/codigo/validar',
           { codigo: codigoInstructor.trim() },
         )
 
-        if (!validacion.valido || !validacion.idUsuario) {
+        if (!validacion.valido) {
           setLoading(false)
           setErrorCodigoInstructor('El código de instructor no es válido o no existe.')
           return

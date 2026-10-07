@@ -45,6 +45,9 @@ class Usuario(Base):
     # ambas coordinaciones en sus horarios reales, distinto de
     # codigoInstructor (el código de registro que ya existía).
     sigla = Column(String(10), nullable=True)
+    # Tema de la interfaz elegido por la persona ("claro", "oscuro" o
+    # "sistema"). NULL = nunca eligió; el cliente usa su valor local.
+    preferenciaTema = Column(String(10), nullable=True)
 
     roles = relationship(
         "Rol",

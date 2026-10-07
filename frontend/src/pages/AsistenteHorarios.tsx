@@ -31,7 +31,7 @@ import type {
  * Asistente de programación -- wizard de 4 pasos, separado de
  * NuevoHorario.tsx (el "Constructor" manual de un horario a la vez, que
  * sigue existiendo tal cual). Este es el flujo de "tengo un Excel de
- * planeación del trimestre, ayúdame a armar la propuesta completa":
+ * planeación del período académico, ayúdame a armar la propuesta completa":
  *
  *   1. Subir archivo  -> POST /horarios/asistente/importar (IA clasifica columnas)
  *   2. Así lo entendimos -> revisión, nada se guarda todavía
@@ -498,7 +498,7 @@ export function AsistenteHorarios() {
     setRespuestaPregunta(null)
     try {
       const contexto = propuesta
-        ? `Propuesta con ${propuesta.bloques.length} bloques para el trimestre ${idTrimestre}, jornada ${jornada}.`
+        ? `Propuesta con ${propuesta.bloques.length} bloques para el período académico ${idTrimestre}, jornada ${jornada}.`
         : `Archivo ${previsualizacion?.nombreArchivo ?? ''} con ${previsualizacion?.totalFilas ?? 0} filas, ${previsualizacion?.filasConAdvertencia ?? 0} con advertencia.`
       const resultado = await apiPost<RespuestaPreguntaHorario>(
         '/horarios/asistente/preguntar',
@@ -603,7 +603,7 @@ export function AsistenteHorarios() {
         )}
         {idTrimestre !== null && trimestreVigente(trimestres)?.idTrimestre !== idTrimestre && (
           <p role="status" className="mb-4 rounded-xl border border-tertiary bg-tertiary-container px-4 py-3 text-sm text-on-tertiary-container">
-            Estás trabajando con un período que no está vigente hoy. Comprueba el período y las fichas seleccionadas antes de guardar.
+            Estás trabajando con un período que no está vigente hoy. Comprueba el período académico y las fichas seleccionadas antes de guardar.
           </p>
         )}
 
@@ -668,8 +668,37 @@ export function AsistenteHorarios() {
               </div>
             ) : (
               <>
+                <div className="mb-5 rounded-xl border border-outline-variant bg-surface p-4 dark:border-slate-700 dark:bg-slate-900">
+                  <label htmlFor="periodo-asistente-importacion" className="mb-1 block text-sm font-semibold text-on-surface dark:text-slate-200">
+                    Período académico para estos horarios
+                  </label>
+                  <select
+                    id="periodo-asistente-importacion"
+                    value={idTrimestre ?? ''}
+                    onChange={(e) => setIdTrimestre(e.target.value ? Number(e.target.value) : null)}
+                    disabled={subiendo || errorTrimestres}
+                    required
+                    className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800"
+                  >
+                    <option value="">Selecciona un período académico</option>
+                    {trimestres.map((t) => (
+                      <option key={t.idTrimestre} value={t.idTrimestre}>
+                        {t.nombre} · {t.fechaInicio} a {t.fechaFin} ({t.estado})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-xs text-on-surface-variant dark:text-slate-400">
+                    El período elegido se usará para crear las fichas que falten, generar la propuesta y guardar todo el lote.
+                  </p>
+                  {trimestresCargados && trimestres.length === 0 && !errorTrimestres && (
+                    <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+                      No hay períodos académicos registrados. Crea uno antes de importar el archivo maestro.
+                    </p>
+                  )}
+                </div>
+
                 <p className="mb-1 text-sm text-on-surface-variant dark:text-slate-300">
-                  Sube el Excel de planeación del trimestre. Revisamos lo que trae antes de tocar nada.
+                  Sube el Excel maestro de planeación. Revisamos lo que trae antes de tocar nada.
                 </p>
                 <input
                   type="file"
@@ -695,14 +724,14 @@ export function AsistenteHorarios() {
 
                 <button
                   type="button"
-                  disabled={!archivoPrincipal || subiendo}
+                  disabled={!archivoPrincipal || !idTrimestre || subiendo}
                   onClick={() => void importarArchivos()}
                   className="mt-5 rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {subiendo ? 'Leyendo…' : 'Continuar'}
                 </button>
                 {errorImportar && (
-                  <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorImportar}</p>
+                  <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{errorImportar}</p>
                 )}
               </>
             )}
@@ -948,7 +977,7 @@ export function AsistenteHorarios() {
                                   resultado/horario (una ficha puede tener clases en
                                   sedes distintas), no acá. */}
                               <span className="text-xs text-on-surface-variant dark:text-slate-400">
-                                Trimestre: <strong className="text-on-surface dark:text-slate-200">{trimestres.find((t) => t.idTrimestre === idTrimestre)?.nombre ?? '—'}</strong>
+                                Período académico: <strong className="text-on-surface dark:text-slate-200">{trimestres.find((t) => t.idTrimestre === idTrimestre)?.nombre ?? '—'}</strong>
                               </span>
 
                               <button
@@ -981,22 +1010,20 @@ export function AsistenteHorarios() {
               </table>
             </div>
 
-            <div className="flex items-center gap-3">
-              <label className="text-sm text-on-surface-variant dark:text-slate-300">
-                Trimestre
-                <select
-                  value={idTrimestre ?? ''}
-                  onChange={(e) => setIdTrimestre(e.target.value ? Number(e.target.value) : null)}
-                  className="ml-2 rounded-lg border border-outline-variant bg-surface px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-800"
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="rounded-lg border border-outline-variant bg-surface px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                Período académico del lote:{' '}
+                <strong className="text-on-surface dark:text-slate-100">
+                  {trimestres.find((t) => t.idTrimestre === idTrimestre)?.nombre ?? 'Sin seleccionar'}
+                </strong>
+                <button
+                  type="button"
+                  onClick={() => setPaso(1)}
+                  className="ml-2 font-semibold text-primary hover:underline dark:text-sena-400"
                 >
-                  <option value="">Selecciona un período</option>
-                  {trimestres.map((t) => (
-                    <option key={t.idTrimestre} value={t.idTrimestre}>
-                      {t.nombre} · {t.fechaInicio} a {t.fechaFin} ({t.estado})
-                    </option>
-                  ))}
-                </select>
-              </label>
+                  Cambiar
+                </button>
+              </div>
               <label className="text-sm text-on-surface-variant dark:text-slate-300">
                 Jornada
                 <select
@@ -1059,9 +1086,9 @@ export function AsistenteHorarios() {
             </div>
 
             {generando && <p className="text-sm text-on-surface-variant dark:text-slate-400">Armando tu horario…</p>}
-            {errorPropuesta && <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{errorPropuesta}</p>}
+            {errorPropuesta && <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{errorPropuesta}</p>}
             {propuesta && propuesta.bloques.length === 0 && (
-              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{propuesta.mensaje}</p>
+              <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">{propuesta.mensaje}</p>
             )}
             {propuesta && propuesta.bloques.length > 0 && propuesta.fichasSinProgramar.length > 0 && (
               <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-300">

@@ -12,7 +12,7 @@ const NOTIFICACIONES: Notificacion[] = [
   {
     idNotificacion: 1,
     idUsuario: 'u1',
-    tipo: 'Cambios de Aula & Horario',
+    tipo: 'ambiente',
     mensaje: 'Tu sesión de mañana cambia de ambiente.',
     leida: false,
     fechaCreacion: new Date().toISOString(),
@@ -22,8 +22,8 @@ const NOTIFICACIONES: Notificacion[] = [
   {
     idNotificacion: 2,
     idUsuario: 'u1',
-    tipo: 'Recordatorios de Tareas',
-    mensaje: 'Entrega del proyecto formativo en 24 horas.',
+    tipo: 'cruce',
+    mensaje: 'Tu bloque del lunes quedó con un cruce autorizado.',
     leida: false,
     fechaCreacion: HACE_3_DIAS,
     entidadRelacionada: null,
@@ -32,7 +32,7 @@ const NOTIFICACIONES: Notificacion[] = [
   {
     idNotificacion: 3,
     idUsuario: 'u1',
-    tipo: 'Sistema & Coordinación',
+    tipo: 'sistema',
     mensaje: 'Jornada pedagógica el viernes.',
     leida: true,
     fechaCreacion: HACE_MUCHO,
@@ -43,9 +43,11 @@ const NOTIFICACIONES: Notificacion[] = [
 
 const apiGetMock = vi.fn()
 const apiPatchMock = vi.fn()
+const apiDeleteMock = vi.fn()
 vi.mock('../services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
   apiPatch: (...args: unknown[]) => apiPatchMock(...args),
+  apiDelete: (...args: unknown[]) => apiDeleteMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -76,10 +78,51 @@ describe('Notificaciones', () => {
     renderConProviders(<Notificaciones />)
     await screen.findByText('Tu sesión de mañana cambia de ambiente.')
 
-    await usuario.click(screen.getByRole('button', { name: 'Recordatorios de Tareas' }))
+    await usuario.click(screen.getByRole('button', { name: 'Cruces' }))
 
-    expect(screen.getByText('Entrega del proyecto formativo en 24 horas.')).toBeInTheDocument()
+    expect(screen.getByText('Tu bloque del lunes quedó con un cruce autorizado.')).toBeInTheDocument()
     expect(screen.queryByText('Tu sesión de mañana cambia de ambiente.')).not.toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Cambios de horario y ambiente' }))
+
+    expect(screen.getByText('Tu sesión de mañana cambia de ambiente.')).toBeInTheDocument()
+    expect(screen.queryByText('Jornada pedagógica el viernes.')).not.toBeInTheDocument()
+  })
+
+  it('muestra el tipo del backend con una etiqueta legible', async () => {
+    mockearNotificacionesYPerfil(NOTIFICACIONES)
+    renderConProviders(<Notificaciones />)
+    await screen.findByText('Tu sesión de mañana cambia de ambiente.')
+
+    expect(screen.getByText('Ambiente')).toBeInTheDocument()
+    expect(screen.getByText('Cruce')).toBeInTheDocument()
+    expect(screen.getByText('Sistema')).toBeInTheDocument()
+  })
+
+  it('sigue clasificando los tipos largos antiguos que queden en BD', async () => {
+    mockearNotificacionesYPerfil([{ ...NOTIFICACIONES[0], tipo: 'Cambios de Aula & Horario' }])
+    const usuario = userEvent.setup()
+    renderConProviders(<Notificaciones />)
+    await screen.findByText('Tu sesión de mañana cambia de ambiente.')
+
+    await usuario.click(screen.getByRole('button', { name: 'Cambios de horario y ambiente' }))
+
+    expect(screen.getByText('Tu sesión de mañana cambia de ambiente.')).toBeInTheDocument()
+  })
+
+  it('elimina una notificación', async () => {
+    mockearNotificacionesYPerfil(NOTIFICACIONES)
+    apiDeleteMock.mockResolvedValue(undefined)
+    const usuario = userEvent.setup()
+    renderConProviders(<Notificaciones />)
+    await screen.findByText('Jornada pedagógica el viernes.')
+
+    await usuario.click(screen.getByRole('button', { name: 'Eliminar notificación: Jornada pedagógica el viernes.' }))
+
+    expect(apiDeleteMock).toHaveBeenCalledWith('/notificaciones/3')
+    await waitFor(() => {
+      expect(screen.queryByText('Jornada pedagógica el viernes.')).not.toBeInTheDocument()
+    })
   })
 
   it('marca una notificación individual como leída', async () => {
@@ -112,14 +155,14 @@ describe('Notificaciones', () => {
     })
   })
 
-  it('el botón "Ver en mi horario" está deshabilitado (Mi Horario del Aprendiz es otro ticket)', async () => {
+  it('"Ver en mi horario" lleva a Mi horario solo en avisos ligados a un horario', async () => {
     mockearNotificacionesYPerfil(NOTIFICACIONES)
     renderConProviders(<Notificaciones />)
     await screen.findByText('Tu sesión de mañana cambia de ambiente.')
 
-    const botones = screen.getAllByRole('button', { name: 'Ver en mi horario' })
-    expect(botones.length).toBeGreaterThan(0)
-    botones.forEach((boton) => expect(boton).toBeDisabled())
+    const enlaces = screen.getAllByRole('link', { name: 'Ver en mi horario' })
+    expect(enlaces).toHaveLength(1)
+    expect(enlaces[0]).toHaveAttribute('href', '/mi-horario-aprendiz')
   })
 
   it('muestra el error del backend si la carga falla', async () => {

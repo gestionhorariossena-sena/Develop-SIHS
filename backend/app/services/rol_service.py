@@ -1,8 +1,8 @@
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError
 
 from app.models.rol import Rol
 from app.repositories.rol_repository import RolRepository
+from app.repositories.usuario_rol_repository import UsuarioRolRepository
 
 NOMBRE_ROL_ADMINISTRADOR = "Administrador"
 
@@ -48,15 +48,15 @@ class RolService:
         if rol.nombre == NOMBRE_ROL_ADMINISTRADOR:
             return "ROL_PROTEGIDO"
 
-        try:
-            RolRepository.eliminar(db, rol)
-        except IntegrityError:
-            # Mismo criterio que AmbienteService/SedeService: FK sin
-            # ondelete cascade -- hay usuarios con este rol asignado.
-            db.rollback()
+        # T-10: en la BD real usuario_rol.idRol tiene ON DELETE CASCADE.
+        # Esperar un IntegrityError no protege nada: Postgres podría borrar
+        # automáticamente las asignaciones. Se valida explícitamente antes
+        # del DELETE para que el rol y sus relaciones queden intactos.
+        if UsuarioRolRepository.contar_usuarios_con_rol(db, id_rol) > 0:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="No se puede eliminar un rol que tiene usuarios asignados.",
-            ) from None
+            )
 
+        RolRepository.eliminar(db, rol)
         return True

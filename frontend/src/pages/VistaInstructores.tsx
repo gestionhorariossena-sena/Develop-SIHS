@@ -40,9 +40,9 @@ export function VistaInstructores() {
   const [todosLosHorarios, setTodosLosHorarios] = useState<Horario[]>([])
 
   useEffect(() => {
-    apiGet<Usuario[]>('/usuarios/')
-      .then((usuarios) => {
-        const soloInstructores = usuarios.filter((usuario) => usuario.roles.some((rol) => rol.nombre === 'Instructor'))
+    // El backend ya devuelve solo rol Instructor y ordenados por nombre.
+    apiGet<Usuario[]>('/usuarios/instructores')
+      .then((soloInstructores) => {
         setInstructores(soloInstructores)
 
         // Deep link desde el drawer de Instructores.tsx ("Ver horario
@@ -102,7 +102,7 @@ export function VistaInstructores() {
         </p>
       </div>
 
-      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
       <div className="grid gap-4 lg:grid-cols-[20rem_1fr]">
         <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtro de instructores">
@@ -185,7 +185,7 @@ export function VistaInstructores() {
                             ? 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-400'
                             : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
                         }`}
-                        title={cantidadFichas === 0 ? 'Sin fichas asignadas este trimestre' : `${cantidadFichas} ficha${cantidadFichas === 1 ? '' : 's'} asignada${cantidadFichas === 1 ? '' : 's'}`}
+                        title={cantidadFichas === 0 ? 'Sin fichas asignadas en este período académico' : `${cantidadFichas} ficha${cantidadFichas === 1 ? '' : 's'} asignada${cantidadFichas === 1 ? '' : 's'}`}
                       >
                         {cantidadFichas}
                       </span>
@@ -230,7 +230,7 @@ export function VistaInstructores() {
               ) : errorHorarios ? (
                 <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">No se pudo cargar el horario de este instructor.</p>
               ) : horariosVigentes?.length === 0 ? (
-                <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">Sin horario asignado en el trimestre actual.</p>
+                <p className="py-8 text-center text-sm text-on-surface-variant dark:text-slate-400">Sin horario asignado en el período académico actual.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <div className="min-w-[760px]">

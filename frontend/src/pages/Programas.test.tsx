@@ -86,7 +86,7 @@ describe('Programas', () => {
 
     const panel = screen.getByRole('dialog', { name: 'Análisis y Desarrollo de Software' })
     expect(within(panel).getByText('3228973 B')).toBeInTheDocument()
-    expect(within(panel).getByText('Trimestre: Trimestre 3')).toBeInTheDocument()
+    expect(within(panel).getByText('Período académico: Trimestre 3')).toBeInTheDocument()
   })
 
   it('un programa sin fichas asociadas muestra el mensaje correspondiente en el drawer', async () => {

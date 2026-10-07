@@ -25,7 +25,14 @@ def obtener_avisos(
     db: Session = Depends(get_db),
     usuario=Depends(get_current_user),
 ):
-    return AvisoService.obtener_todos(db, categoria=categoria, id_ficha=idFicha)
+    puede_ver_todos = any(rol.nombre in {"Administrador", "Coordinador"} for rol in usuario.roles)
+    return AvisoService.obtener_todos(
+        db,
+        categoria=categoria,
+        id_ficha=idFicha,
+        id_usuario=usuario.idUsuario,
+        ver_todos=puede_ver_todos,
+    )
 
 
 @router.put("/{id_aviso}", response_model=AvisoResponse)

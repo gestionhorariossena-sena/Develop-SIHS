@@ -98,7 +98,7 @@ describe('MiHorario', () => {
     renderConProviders(<MiHorario />)
     await screen.findByText('Gestión de inventarios')
     await usuario.click(screen.getByRole('button', { name: 'Actualizar horario' }))
-    expect(await screen.findByText('Todavía no tenés clases publicadas en este trimestre.')).toBeInTheDocument()
+    expect(await screen.findByText('Todavía no tenés clases publicadas en este período académico.')).toBeInTheDocument()
     expect(solicitudes).toBe(2)
   })
 
@@ -218,7 +218,7 @@ describe('MiHorario', () => {
     )
     renderConProviders(<MiHorario />)
 
-    expect(await screen.findByText('Todavía no tenés clases publicadas en este trimestre.')).toBeInTheDocument()
+    expect(await screen.findByText('Todavía no tenés clases publicadas en este período académico.')).toBeInTheDocument()
   })
 
   it('muestra el error del backend si la carga falla', async () => {
@@ -240,12 +240,10 @@ describe('MiHorario', () => {
       if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([])
       return Promise.reject(new Error('no mockeado'))
     })
+    const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
 
-    // T-23 (SCRUM-141): con "Asistencia" oculta, "Mi trabajo" le queda un
-    // solo ítem a un Instructor puro ("Mi horario") -- AppShell ya estaba
-    // preparado para ese caso y lo renderiza plano, sin desplegable (ver
-    // el comentario sobre grupo.items.length === 1 en AppShell.tsx).
+    await usuario.click(await screen.findByRole('button', { name: 'Mi trabajo' }))
     expect(await screen.findByRole('link', { name: 'Mi horario' })).toHaveAttribute('href', '/mi-horario')
     // Ni siquiera debe aparecer el link — no es solo un tema de que falle
     // al hacer clic, la herramienta de coordinación no debe ser visible.
@@ -265,7 +263,7 @@ describe('MiHorario', () => {
     const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
 
-    await screen.findByText('Todavía no tenés clases publicadas en este trimestre.')
+    await screen.findByText('Todavía no tenés clases publicadas en este período académico.')
     expect(screen.queryByRole('link', { name: 'Mi horario' })).not.toBeInTheDocument()
 
     // "Programas" e "Instructores" ahora viven en desplegables del navbar
@@ -294,8 +292,7 @@ describe('MiHorario', () => {
     const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
 
-    // T-23 (SCRUM-141): con "Asistencia" oculta, "Mi trabajo" le queda un
-    // solo ítem ("Mi horario") y se renderiza plano, sin desplegable.
+    await usuario.click(await screen.findByRole('button', { name: 'Mi trabajo' }))
     expect(await screen.findByRole('link', { name: 'Mi horario' })).toBeInTheDocument()
 
     // T-22 (SCRUM-141): "Fichas" está oculto temporalmente, se verifica
