@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, time
+from datetime import date, time, timedelta
 
 from app.models.ambiente import Ambiente
 from app.models.coordinacion import Coordinacion
@@ -40,7 +40,14 @@ def _catalogos_base(db_session):
         idPrograma=1, codigoPrograma="TEC-01", nombrePrograma="Tecnología",
         nivelFormacion="Técnico", activo=True, idCoordinacion=1,
     )
-    trimestre = Trimestre(idTrimestre=1, nombre="2026-1", fechaInicio=date(2026, 1, 5), fechaFin=date(2026, 4, 30), estado="activo")
+    hoy = date.today()
+    trimestre = Trimestre(
+        idTrimestre=1,
+        nombre="Periodo vigente",
+        fechaInicio=hoy - timedelta(days=30),
+        fechaFin=hoy + timedelta(days=60),
+        estado="activo",
+    )
     sede = Sede(id=1, nombre="Sede Norte", direccion="Calle 1", tipo="principal")
     ambiente = Ambiente(id=1, numero_ambiente=101, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1)
     jornada = Jornada(idJornada=1, nombreJornada="Mañana")
