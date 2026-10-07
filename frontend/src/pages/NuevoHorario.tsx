@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { HorarioEditor } from '../components/horario/HorarioEditor'
 import type { CatalogosBloque } from '../components/horario/ModalBloque'
 import { ModalCruce } from '../components/horario/ModalCruce'
+import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { apiGet, apiPost, apiPut, ApiError } from '../services/api'
 import { BLOQUES, DIAS } from './horario/tipos'
 import type { BloqueClase, GridAsignaciones, Jornada as JornadaGrid } from './horario/tipos'
@@ -29,6 +29,9 @@ const SEDES = [
   { nombre: 'Sede Unigermana', direccion: 'AK 14 # 63 – 87' },
   { nombre: 'Sede Fontibón', direccion: 'Cl 19A # 96c - 40' },
 ]
+
+const FILTROS_JORNADA = ['Todas', 'Mañana', 'Tarde', 'Noche'] as const
+type FiltroJornada = (typeof FILTROS_JORNADA)[number]
 
 interface Catalogos extends CatalogosBloque {
   jornadaIdPorNombre: Record<JornadaGrid, number>
@@ -110,9 +113,25 @@ export function NuevoHorario() {
   const [guardarComoBorrador, setGuardarComoBorrador] = useState(true)
   const [erroresGuardar, setErroresGuardar] = useState<string[]>([])
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
+  const [busquedaFicha, setBusquedaFicha] = useState('')
+  const [filtroJornada, setFiltroJornada] = useState<FiltroJornada>('Todas')
+  const [fichaSeleccionada, setFichaSeleccionada] = useState<Ficha | null>(null)
+  const [fichaPendiente, setFichaPendiente] = useState<Ficha | null>(null)
+  const [horariosFicha, setHorariosFicha] = useState<{ idFicha: number; datos: Horario[] } | null>(null)
+  const [asignacionesPendientes, setAsignacionesPendientes] = useState<{
+    idFicha: number
+    bloques: BloqueClase[]
+    grid: GridAsignaciones
+  } | null>(null)
+  const [cargandoHorarioFicha, setCargandoHorarioFicha] = useState(false)
+  const [errorHorarioFicha, setErrorHorarioFicha] = useState<string | null>(null)
+  const [recargaHorarioFicha, setRecargaHorarioFicha] = useState(0)
+  const [versionEditor, setVersionEditor] = useState(0)
+  const [hayCambiosPendientes, setHayCambiosPendientes] = useState(false)
 
   const [catalogos, setCatalogos] = useState<Catalogos | null>(null)
   const [errorCatalogos, setErrorCatalogos] = useState<string | null>(null)
+  const idFichaSeleccionada = fichaSeleccionada?.idFicha ?? null
 
   // La edición se habilita solo cuando el snapshot tiene todos sus vínculos
   // relacionales, para reemplazarlo de forma atómica en el backend.
@@ -155,7 +174,26 @@ export function NuevoHorario() {
   const estadoActualRef = useRef<{ bloques: BloqueClase[]; grid: GridAsignaciones }>({ bloques: [], grid: gridVacio() })
   const capturarEstadoActual = useCallback((estado: { bloques: BloqueClase[]; grid: GridAsignaciones }) => {
     estadoActualRef.current = estado
+    setHayCambiosPendientes(estado.bloques.some((bloque) => bloque.idHorarioOriginal === undefined))
   }, [])
+
+  function aplicarSeleccionFicha(item: Ficha) {
+    setFichaSeleccionada(item)
+    setFicha(item.codigoFicha)
+    setFichaPendiente(null)
+    setHayCambiosPendientes(false)
+    setAsignacionesPendientes(null)
+    setHorariosFicha(null)
+    setErrorHorarioFicha(null)
+    setCargandoHorarioFicha(true)
+    estadoActualRef.current = { bloques: [], grid: gridVacio() }
+  }
+
+  function reintentarCargaHorarioFicha() {
+    setErrorHorarioFicha(null)
+    setCargandoHorarioFicha(true)
+    setRecargaHorarioFicha((valor) => valor + 1)
+  }
 
   useEffect(() => {
     Promise.all([
@@ -236,16 +274,56 @@ export function NuevoHorario() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idEditar no cambia en la vida del componente.
   }, [])
 
+  useEffect(() => {
+    if (idEditar || idFichaSeleccionada === null) return
+
+    let vigente = true
+    apiGet<Horario[]>(`/fichas/${idFichaSeleccionada}/horarios`)
+      .then((datos) => {
+        if (vigente) {
+          setHorariosFicha({ idFicha: idFichaSeleccionada, datos })
+          setVersionEditor((version) => version + 1)
+        }
+      })
+      .catch((err: unknown) => {
+        if (vigente) {
+          setErrorHorarioFicha(
+            err instanceof ApiError ? err.message : 'No se pudo cargar el horario de esta ficha.',
+          )
+        }
+      })
+      .finally(() => {
+        if (vigente) setCargandoHorarioFicha(false)
+      })
+
+    return () => {
+      vigente = false
+    }
+  }, [idEditar, idFichaSeleccionada, recargaHorarioFicha])
+
   async function guardarHorario() {
-    if (!catalogos || (idEditar !== null && !edicionSegura)) return
+    if (
+      !catalogos ||
+      (idEditar !== null && !edicionSegura) ||
+      (idEditar === null && (!fichaSeleccionada || cargandoHorarioFicha || errorHorarioFicha !== null))
+    ) return
 
     setGuardando(true)
     setErroresGuardar([])
     setMensajeExito(null)
 
     const { bloques: bloquesActuales, grid: gridActual } = estadoActualRef.current
-    const grupos = agruparCeldas(gridActual)
+    const grupos = agruparCeldas(gridActual).filter((grupo) => {
+      if (idEditar !== null) return true
+      return bloquesActuales.find((bloque) => bloque.id === grupo.bloqueId)?.idHorarioOriginal === undefined
+    })
     const errores: string[] = []
+
+    if (idEditar === null && grupos.length === 0) {
+      setErroresGuardar(['Agrega al menos una nueva asignación antes de guardar.'])
+      setGuardando(false)
+      return
+    }
 
     if (idEditar !== null) {
       const horarios: (HorarioCreate & {
@@ -316,6 +394,7 @@ export function NuevoHorario() {
     // sí habían quedado guardadas en `horarios`.
     const gridExitoso: GridAsignaciones = gridVacio()
     const idsBloquesExitosos = new Set<string>()
+    const gruposFallidos = new Set<string>()
     // idHorario real (tabla `horarios`) de cada bloque que sí se creó — se
     // manda junto con el snapshot para que borrar el "Horario completo" en
     // Historial de horarios también libere estas clases reales, no solo
@@ -335,6 +414,7 @@ export function NuevoHorario() {
         bloque.idAmbiente === undefined
       ) {
         errores.push(`"${bloque?.tematica ?? 'una celda'}" no tiene todos los datos — vuelve a editarla.`)
+        gruposFallidos.add(`${grupo.bloqueIdx}-${grupo.bloqueId}`)
         continue
       }
 
@@ -370,6 +450,7 @@ export function NuevoHorario() {
           // es "imposible de programar", el coordinador simplemente
           // decidió no forzarlo.
           errores.push(`${etiquetaBloque}: cruce detectado — no se guardó (cancelado).`)
+          gruposFallidos.add(`${grupo.bloqueIdx}-${grupo.bloqueId}`)
           continue
         }
 
@@ -384,6 +465,7 @@ export function NuevoHorario() {
           gridExitoso[grupo.bloqueIdx][diaIdx] = grupo.bloqueId
         }
       } catch (err) {
+        gruposFallidos.add(`${grupo.bloqueIdx}-${grupo.bloqueId}`)
         if (err instanceof ApiError && err.status === 409) {
           const detalle = err.detail as { mensajes?: string[] } | null
           const mensajes = detalle?.mensajes ?? [err.message]
@@ -405,10 +487,6 @@ export function NuevoHorario() {
       try {
         await apiPost('/horarios-guardados/', {
           ficha,
-          aprendices,
-          horasTrimestre,
-          fechaInicio: fechaInicio || null,
-          fechaFin: fechaFin || null,
           bloques: bloquesActuales.filter((b) => idsBloquesExitosos.has(b.id)),
           grid: gridExitoso,
           idsHorarios: idsHorariosCreados,
@@ -429,8 +507,43 @@ export function NuevoHorario() {
     }
 
     setErroresGuardar(errores)
+    if (creados > 0 && fichaSeleccionada) {
+      const gruposPendientes = grupos.filter((grupo) =>
+        gruposFallidos.has(`${grupo.bloqueIdx}-${grupo.bloqueId}`),
+      )
+      const idsFallidos = new Set(gruposPendientes.map((grupo) => grupo.bloqueId))
+      const bloquesFallidos = bloquesActuales.filter((bloque) => idsFallidos.has(bloque.id))
+      const gridFallido = gridVacio()
+      for (const grupo of gruposPendientes) {
+        for (const diaIdx of grupo.diasIdx) {
+          gridFallido[grupo.bloqueIdx][diaIdx] = grupo.bloqueId
+        }
+      }
+      setAsignacionesPendientes({ idFicha: fichaSeleccionada.idFicha, bloques: bloquesFallidos, grid: gridFallido })
+      setCargandoHorarioFicha(true)
+      setRecargaHorarioFicha((valor) => valor + 1)
+    }
     setGuardando(false)
   }
+
+  const horariosFichaActual = horariosFicha?.idFicha === idFichaSeleccionada ? horariosFicha.datos : null
+  const horarioConvertido = horariosFichaActual ? convertirHorariosAGrid(horariosFichaActual) : null
+  const borradorFichaActual = asignacionesPendientes?.idFicha === idFichaSeleccionada ? asignacionesPendientes : null
+  const bloquesInicialesFicha = [...(horarioConvertido?.bloques ?? []), ...(borradorFichaActual?.bloques ?? [])]
+  const gridInicialFicha = (horarioConvertido?.grid ?? gridVacio()).map((fila, bloqueIdx) =>
+    fila.map((bloqueId, diaIdx) => bloqueId ?? borradorFichaActual?.grid[bloqueIdx]?.[diaIdx] ?? null),
+  )
+  const horariosNoRepresentados = horariosFichaActual && horarioConvertido
+    ? horariosFichaActual.length - new Set(horarioConvertido.grid.flat().filter(Boolean)).size
+    : 0
+  const fichasVisibles = (catalogos?.fichas ?? []).filter((item) => {
+    const texto = `${item.codigoFicha} ${item.programa.nombrePrograma}`.toLocaleLowerCase('es-CO')
+    const coincideTexto = texto.includes(busquedaFicha.trim().toLocaleLowerCase('es-CO'))
+    const coincideJornada =
+      filtroJornada === 'Todas' ||
+      item.jornadas.some((jornada) => jornada.toLocaleLowerCase('es-CO').includes(filtroJornada.toLocaleLowerCase('es-CO')))
+    return coincideTexto && coincideJornada
+  })
 
   return (
     <AppShell activo="Horarios">
@@ -455,7 +568,7 @@ export function NuevoHorario() {
               ? edicionSegura
                 ? 'Los cambios se validan y reemplazan juntos en el servidor; si alguno falla, se conserva el horario original.'
                 : 'Este snapshot no dispone de vínculos completos con las clases originales y no puede editarse de forma segura.'
-              : 'Define un bloque de clase eligiendo de los catálogos reales y reutilízalo en el grid — al guardar, el sistema revisa cruces de ficha, instructor, ambiente y resultado repetido antes de crear cada clase.'}
+              : 'Selecciona una ficha para consultar lo que ya tiene asignado y completar su horario sin duplicar las clases existentes.'}
           </p>
           {catalogos && (
             <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
@@ -481,8 +594,8 @@ export function NuevoHorario() {
           <button
             type="button"
             onClick={() => void guardarHorario()}
-            disabled={guardando || !catalogos || cargandoEdicion || (idEditar !== null && !edicionSegura)}
-            title={idEditar !== null && !edicionSegura ? 'Snapshot incompleto: no se puede editar de forma segura' : !catalogos ? 'Cargando catálogos…' : cargandoEdicion ? 'Cargando horario a modificar…' : undefined}
+            disabled={guardando || !catalogos || cargandoEdicion || (idEditar !== null && !edicionSegura) || (idEditar === null && (!fichaSeleccionada || cargandoHorarioFicha || errorHorarioFicha !== null))}
+            title={idEditar !== null && !edicionSegura ? 'Snapshot incompleto: no se puede editar de forma segura' : !catalogos ? 'Cargando catálogos…' : cargandoEdicion ? 'Cargando horario a modificar…' : !fichaSeleccionada ? 'Selecciona una ficha antes de guardar' : cargandoHorarioFicha ? 'Cargando asignaciones de la ficha…' : errorHorarioFicha ? 'Reintenta la carga del horario antes de guardar' : undefined}
             className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
           >
             {guardando ? 'Guardando…' : idEditar !== null ? 'Guardar cambios' : guardarComoBorrador ? 'Guardar borrador' : 'Guardar y publicar'}
@@ -504,7 +617,7 @@ export function NuevoHorario() {
 
       {erroresGuardar.length > 0 && (
         <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 print:hidden dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-          <p className="mb-1 font-semibold">El sistema encontró cruces — esto no se guardó:</p>
+          <p className="mb-1 font-semibold">No se pudo completar el guardado:</p>
           <ul className="list-disc space-y-0.5 pl-5">
             {erroresGuardar.map((e) => (
               <li key={e}>{e}</li>
@@ -519,62 +632,196 @@ export function NuevoHorario() {
         </p>
       )}
 
-      <div className="grid gap-4 xl:grid-cols-[1fr_280px]">
-        <div className="min-w-0">
-          <div className="mb-4 flex flex-wrap items-end gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-            <Campo etiqueta="Ficha (referencia del formulario)">
-              <input
-                value={ficha}
-                onChange={(e) => setFicha(e.target.value)}
-                placeholder="Ej. 3228973 B"
-                className="w-40 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-              />
-            </Campo>
-            <Campo etiqueta="Aprendices en formación a la fecha">
-              <input
-                value={aprendices}
-                onChange={(e) => setAprendices(e.target.value)}
-                className="w-24 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-              />
-            </Campo>
-            <Campo etiqueta="Horas asignadas del período académico">
-              <input
-                value={horasTrimestre}
-                onChange={(e) => setHorasTrimestre(e.target.value)}
-                className="w-24 rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-              />
-            </Campo>
-            <Campo etiqueta="Inicio / fin del período académico">
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="date"
-                  value={fechaInicio}
-                  onChange={(e) => setFechaInicio(e.target.value)}
-                  className="rounded-xl border border-outline-variant bg-surface-container-lowest px-2 py-2 text-xs text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                />
-                <input
-                  type="date"
-                  value={fechaFin}
-                  onChange={(e) => setFechaFin(e.target.value)}
-                  className="rounded-xl border border-outline-variant bg-surface-container-lowest px-2 py-2 text-xs text-on-surface dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                />
-              </div>
-            </Campo>
-          </div>
+      <div className={`grid gap-4 ${idEditar ? 'xl:grid-cols-[minmax(0,1fr)_280px]' : 'xl:grid-cols-[18rem_minmax(0,1fr)_17rem]'}`}>
+        {!idEditar && (
+          <section
+            className="flex h-[38rem] max-h-[calc(100vh-10rem)] min-h-0 min-w-0 flex-col rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800"
+            aria-label="Selección de ficha"
+          >
+            <h2 className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-on-surface dark:text-slate-100">
+              <span className="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">layers</span>
+              Selección de Ficha
+            </h2>
+            <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
+              Elige una ficha para consultar y completar su horario.
+            </p>
+            <label htmlFor="buscar-ficha-constructor" className="sr-only">Buscar ficha o programa</label>
+            <input
+              id="buscar-ficha-constructor"
+              value={busquedaFicha}
+              onChange={(evento) => setBusquedaFicha(evento.target.value)}
+              placeholder="Buscar ficha o programa"
+              className="mb-3 w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant/70 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+            />
+            <div className="mb-3 flex flex-wrap gap-1.5" aria-label="Filtrar fichas por jornada">
+              {FILTROS_JORNADA.map((jornada) => (
+                <button
+                  key={jornada}
+                  type="button"
+                  aria-pressed={filtroJornada === jornada}
+                  onClick={() => setFiltroJornada(jornada)}
+                  className={`rounded-full px-2.5 py-1 text-xs font-medium ${
+                    filtroJornada === jornada
+                      ? 'bg-primary-container text-on-primary-container'
+                      : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high dark:bg-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  {jornada}
+                </button>
+              ))}
+            </div>
+            {catalogos ? (
+              <ul className="min-h-0 flex-1 space-y-1.5 overflow-y-auto">
+                {fichasVisibles.map((item) => {
+                    const activa = item.idFicha === fichaSeleccionada?.idFicha
+                    const jornadaPrincipal = item.jornadas[0]
+                    return (
+                      <li key={item.idFicha}>
+                        <button
+                          type="button"
+                          aria-pressed={activa}
+                          disabled={guardando || cargandoHorarioFicha}
+                          onClick={() => {
+                            if (idFichaSeleccionada === item.idFicha) return
+                            if (hayCambiosPendientes && idFichaSeleccionada !== item.idFicha) {
+                              setFichaPendiente(item)
+                              return
+                            }
+                            aplicarSeleccionFicha(item)
+                          }}
+                          className={`w-full rounded-xl border px-3 py-3 text-left transition ${
+                            activa
+                              ? 'border-primary bg-primary-container/60 ring-1 ring-primary dark:bg-sena-950/40'
+                              : 'border-outline-variant hover:bg-surface dark:border-slate-700 dark:hover:bg-slate-700'
+                          }`}
+                        >
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="truncate text-sm font-semibold text-on-surface dark:text-slate-100">
+                              Ficha {item.codigoFicha}
+                            </span>
+                            {jornadaPrincipal && (
+                              <span className="shrink-0 rounded-full bg-secondary-container px-2 py-0.5 text-[10px] font-semibold text-on-secondary-container">
+                                {jornadaPrincipal}
+                              </span>
+                            )}
+                          </span>
+                          <span className="mt-1 block truncate text-xs text-on-surface-variant dark:text-slate-400">
+                            {item.programa.nombrePrograma}
+                          </span>
+                          {activa && horariosFicha?.idFicha === item.idFicha && (
+                            <span className="mt-1 block text-[11px] font-medium text-primary">
+                              {horariosFicha.datos.length === 0
+                                ? 'Sin horario asignado'
+                                : `${horariosFicha.datos.length} asignaciones existentes`}
+                            </span>
+                          )}
+                        </button>
+                      </li>
+                    )
+                  })}
+                {fichaPendiente && (
+                  <li className="rounded-xl border border-tertiary bg-tertiary-container p-3 text-xs text-on-tertiary-container">
+                    <p>Hay bloques nuevos sin guardar. Si cambias de ficha, se descartarán.</p>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fichaPendiente && aplicarSeleccionFicha(fichaPendiente)}
+                        className="rounded-lg bg-primary px-2.5 py-1.5 font-semibold text-on-primary"
+                      >
+                        Cambiar ficha
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFichaPendiente(null)}
+                        className="rounded-lg border border-outline px-2.5 py-1.5 font-semibold text-on-surface-variant"
+                      >
+                        Seguir aquí
+                      </button>
+                    </div>
+                  </li>
+                )}
+                {fichasVisibles.length === 0 && (
+                  <li className="py-6 text-center text-sm text-on-surface-variant">
+                    {catalogos.fichas.length === 0 ? 'No hay fichas disponibles.' : 'Sin resultados.'}
+                  </li>
+                )}
+              </ul>
+            ) : (
+              <p className="py-6 text-center text-sm text-on-surface-variant">Cargando fichas…</p>
+            )}
+          </section>
+        )}
 
-          {catalogos && !cargandoEdicion ? (
+        <main className="min-w-0">
+          {!catalogos || cargandoEdicion ? (
+            !errorCatalogos && !errorEdicion && <p className="text-sm text-on-surface-variant">Cargando…</p>
+          ) : idEditar ? (
             <HorarioEditor
               bloquesIniciales={datosEdicion?.bloques ?? []}
               gridInicial={datosEdicion?.grid ?? gridVacio()}
               onCambiarEstado={capturarEstadoActual}
               catalogos={catalogos}
             />
-          ) : (
-            !errorCatalogos && !errorEdicion && <p className="text-sm text-on-surface-variant">Cargando…</p>
-          )}
-        </div>
+          ) : !fichaSeleccionada ? (
+            <div className="rounded-xl border border-outline-variant bg-surface-container-lowest px-6 py-20 text-center dark:border-slate-700 dark:bg-slate-800">
+              <span className="material-symbols-outlined mb-3 text-4xl text-primary" aria-hidden="true">calendar_month</span>
+              <h2 className="font-semibold text-on-surface dark:text-slate-100">Ninguna ficha seleccionada</h2>
+              <p className="mx-auto mt-1 max-w-md text-sm text-on-surface-variant dark:text-slate-400">
+                Selecciona una ficha del panel para consultar su horario y comenzar a asignar bloques.
+              </p>
+            </div>
+          ) : cargandoHorarioFicha ? (
+            <p role="status" className="rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-8 text-center text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800">
+              Cargando horario de la ficha {fichaSeleccionada.codigoFicha}…
+            </p>
+          ) : errorHorarioFicha ? (
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+              <p>{errorHorarioFicha}</p>
+              <button
+                type="button"
+                onClick={reintentarCargaHorarioFicha}
+                className="mt-2 rounded-lg border border-red-300 px-3 py-1.5 font-semibold hover:bg-red-100 dark:border-red-800 dark:hover:bg-red-950"
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : horariosFicha?.idFicha === fichaSeleccionada.idFicha ? (
+            <>
+              {horariosNoRepresentados > 0 && (
+                <p role="status" className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  {horariosNoRepresentados} asignación{horariosNoRepresentados === 1 ? '' : 'es'} no aparece{horariosNoRepresentados === 1 ? '' : 'n'} en la cuadrícula estándar por horario no representable o cruce de celdas. No se modificarán al guardar.
+                </p>
+              )}
+              <HorarioEditor
+                key={`ficha-${fichaSeleccionada.idFicha}-${versionEditor}`}
+                bloquesIniciales={bloquesInicialesFicha}
+                gridInicial={gridInicialFicha}
+                onCambiarEstado={capturarEstadoActual}
+                catalogos={catalogos}
+                fichaFijada={fichaSeleccionada}
+              />
+            </>
+          ) : null}
+        </main>
 
         <aside className="flex flex-col gap-4 print:hidden">
+          {!idEditar && fichaSeleccionada && (
+            <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+              <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-on-surface dark:text-slate-100">
+                <span className="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">assignment</span>
+                Resumen de ficha
+              </h2>
+              <p className="font-semibold text-on-surface dark:text-slate-100">{fichaSeleccionada.codigoFicha}</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">{fichaSeleccionada.programa.nombrePrograma}</p>
+              <div className="mt-3 rounded-lg bg-surface px-3 py-2 text-xs dark:bg-slate-900/60">
+                {cargandoHorarioFicha
+                  ? 'Consultando asignaciones…'
+                  : errorHorarioFicha
+                    ? 'No se pudo consultar el estado del horario.'
+                    : `${horariosFicha?.datos.length ?? 0} asignaciones de horario`}
+              </div>
+            </section>
+          )}
           <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
             <div className="flex items-center gap-2 border-b border-outline-variant bg-error-container/40 px-4 py-3 dark:border-slate-700 dark:bg-red-950/20">
               <span className="material-symbols-outlined text-[18px] text-error dark:text-red-400">shield</span>
@@ -592,57 +839,6 @@ export function NuevoHorario() {
               >
                 Ver auditoría de cruces →
               </Link>
-            </div>
-          </div>
-
-          {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
-              real del backend. No existe un motor de sugerencias algorítmicas
-              ni un endpoint de ocupación agregada por sede: los textos y el
-              87.4% de acá son de vitrina, tal como los muestra el mockup
-              constructor_de_horarios_sihs_sena. No usar como si fuera
-              dinámico sin agregar el fetch/campo correspondiente primero. */}
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wide text-on-surface dark:text-slate-100">Sugerencias del Sistema</p>
-              <span className="material-symbols-outlined text-[16px] text-primary" aria-hidden="true">auto_awesome</span>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <div className="rounded-lg bg-surface p-2 dark:bg-slate-900/60">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1 text-xs font-bold text-primary">
-                    <span className="material-symbols-outlined text-[14px]" aria-hidden="true">bolt</span>
-                    Capacidad Óptima
-                  </span>
-                  <span className="font-mono text-[10px] text-on-surface-variant dark:text-slate-400">+15% eficiencia</span>
-                </div>
-                <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
-                  Mover Ficha 2689104 al Lab 306 permite liberar 12 puestos subutilizados en Bloque Mañana.
-                </p>
-              </div>
-
-              <div className="rounded-lg bg-surface p-2 dark:bg-slate-900/60">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1 text-xs font-bold text-tertiary">
-                    <span className="material-symbols-outlined text-[14px]" aria-hidden="true">timelapse</span>
-                    Ventana de Docente
-                  </span>
-                  <span className="font-mono text-[10px] text-on-surface-variant dark:text-slate-400">Sin huecos</span>
-                </div>
-                <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
-                  Compactar franja de Ing. Sonia Méndez para evitar 2 horas muertas el día Miércoles.
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between rounded-lg bg-secondary-container/50 p-2">
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-on-secondary-container">Ocupación Sede Calle 52</span>
-                  <span className="text-lg font-bold text-primary">87.4%</span>
-                </div>
-                <svg className="h-8 w-20 text-primary" fill="none" viewBox="0 0 100 30" aria-hidden="true">
-                  <path d="M0 25 L20 18 L40 22 L60 8 L80 14 L100 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </div>
             </div>
           </div>
 
@@ -676,16 +872,5 @@ export function NuevoHorario() {
         />
       )}
     </AppShell>
-  )
-}
-
-function Campo({ etiqueta, children }: { etiqueta: string; children: ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-medium uppercase tracking-wide text-on-surface-variant">
-        {etiqueta}
-      </span>
-      {children}
-    </label>
   )
 }

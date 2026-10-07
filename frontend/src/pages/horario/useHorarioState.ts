@@ -53,15 +53,22 @@ export function useHorarioState(inicial: { bloques: BloqueClase[]; grid: GridAsi
   }
 
   function manejarClicCelda(posicion: PosicionCelda, shiftKey: boolean) {
+    const bloqueIdEnCelda = grid[posicion.bloqueIdx][posicion.diaIdx]
+    const bloqueEnCelda = bloques.find((bloque) => bloque.id === bloqueIdEnCelda)
+    if (bloqueEnCelda?.idHorarioOriginal !== undefined) return
+
     if (bloqueActivoId) {
       const celdas =
         shiftKey && ultimaCeldaClic ? rangoRectangular(ultimaCeldaClic, posicion) : [posicion]
-      setGrid((anterior) => asignarRango(anterior, celdas, bloqueActivoId))
+      const celdasEditables = celdas.filter((celda) => {
+        const bloqueId = grid[celda.bloqueIdx][celda.diaIdx]
+        return bloques.find((bloque) => bloque.id === bloqueId)?.idHorarioOriginal === undefined
+      })
+      setGrid((anterior) => asignarRango(anterior, celdasEditables, bloqueActivoId))
       setUltimaCeldaClic(posicion)
       return
     }
 
-    const bloqueIdEnCelda = grid[posicion.bloqueIdx][posicion.diaIdx]
     if (bloqueIdEnCelda) {
       setModal({ tipo: 'editar', bloqueId: bloqueIdEnCelda })
     } else {
@@ -70,10 +77,13 @@ export function useHorarioState(inicial: { bloques: BloqueClase[]; grid: GridAsi
   }
 
   function quitarDeCelda(posicion: PosicionCelda) {
+    const bloqueId = grid[posicion.bloqueIdx][posicion.diaIdx]
+    if (bloques.find((bloque) => bloque.id === bloqueId)?.idHorarioOriginal !== undefined) return
     setGrid((anterior) => quitarCelda(anterior, posicion))
   }
 
   function eliminarBloque(id: string) {
+    if (bloques.find((bloque) => bloque.id === id)?.idHorarioOriginal !== undefined) return
     setBloques((anterior) => anterior.filter((b) => b.id !== id))
     setGrid((anterior) => quitarBloqueDeGrid(anterior, id))
     if (bloqueActivoId === id) setBloqueActivoId(null)
