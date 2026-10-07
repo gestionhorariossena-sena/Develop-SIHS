@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { MiHorario } from './MiHorario'
@@ -39,6 +39,31 @@ describe('MiHorario', () => {
     expect(await screen.findByText('Gestión de inventarios')).toBeInTheDocument()
     expect(screen.getAllByText('3228973 B').length).toBeGreaterThan(0)
     expect(screen.getAllByText('Ambiente 101').length).toBeGreaterThan(0)
+  })
+
+  // INS-04: "al seleccionar un horario, mostrar su información completa en
+  // una vista/modal ahí mismo" -- "Detalle →" abre DetalleFranjaAmbiente
+  // como modal sobre esta misma pantalla, no navega a otra ruta.
+  it('clic en "Detalle →" de un bloque abre el detalle como modal, sin navegar', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([HORARIO])
+      if (path === '/usuarios/me') {
+        return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', roles: [{ idRol: 1, nombre: 'Instructor' }] })
+      }
+      if (path === '/solicitudes-cambio-horario/mias') return Promise.resolve([])
+      return Promise.reject(new Error('no mockeado'))
+    })
+    const usuario = userEvent.setup()
+    renderConProviders(<MiHorario />)
+
+    await usuario.click(await screen.findByRole('button', { name: 'Detalle →' }))
+
+    const dialogo = await screen.findByRole('dialog', { name: /Detalle de Franja/ })
+    // La pantalla de atrás (Mi Horario) se queda montada -- no navegó.
+    expect(screen.getByText('Calendario Semanal de Formación')).toBeInTheDocument()
+
+    await usuario.click(within(dialogo).getByRole('button', { name: 'Cerrar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('cambia de semana y vuelve a consultar el rango; Hoy regresa a la semana actual', async () => {
@@ -93,15 +118,6 @@ describe('MiHorario', () => {
     // Al filtrar por Tarde, el bloque real (que es de Mañana) desaparece
     // del grid y ya no queda nada publicado en esa jornada.
     expect(await screen.findByText('No tenés clases publicadas en esa jornada.')).toBeInTheDocument()
-  })
-
-  it('el botón "Abrir Detalle de Franja y Ambiente" está deshabilitado (pantalla de otro ticket, mismo epic)', async () => {
-    apiGetMock.mockImplementation((path: string) =>
-      path.startsWith('/usuarios/me/horarios') ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
-    )
-    renderConProviders(<MiHorario />)
-
-    expect(await screen.findByRole('button', { name: /Abrir Detalle de Franja y Ambiente/ })).toBeDisabled()
   })
 
   it('el ribbon de KPIs usa GET /usuarios/{id}/carga-semanal para la carga lectiva semanal', async () => {

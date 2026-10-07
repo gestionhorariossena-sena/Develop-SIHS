@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { GridSemanalInstructor } from '../components/horario/GridSemanalInstructor'
+import { DetalleFranjaAmbiente } from './DetalleFranjaAmbiente'
 import { SeccionAmbientesAsignados } from '../components/relacionados/SeccionesInstructor'
 import { apiGet, ApiError } from '../services/api'
 import type { CargaSemanal, Ficha, Horario, Usuario } from '../types/api'
@@ -144,6 +145,9 @@ export function MiHorario() {
   const [semanaInicio, setSemanaInicio] = useState(() => inicioSemana(new Date()))
   const [revisionHorario, setRevisionHorario] = useState(0)
   const [actualizandoHorario, setActualizandoHorario] = useState(false)
+  // INS-04: bloque seleccionado para el modal de Detalle de Franja y
+  // Ambiente -- null significa "cerrado".
+  const [detalleFranja, setDetalleFranja] = useState<{ idHorario: number; dia: string } | null>(null)
 
   const [fichas, setFichas] = useState<Ficha[]>([])
 
@@ -438,18 +442,11 @@ export function MiHorario() {
             Hoy
           </button>
 
-          {/* Pantalla del ticket "[Frontend] Pantalla Detalle de Franja y
-              Ambiente" (mismo epic) todavía no existe — deshabilitado en vez
-              de navegar a una ruta que no resuelve a nada. */}
-          <button
-            type="button"
-            disabled
-            title="Disponible cuando se publique la pantalla de Detalle de Franja y Ambiente (mismo epic)"
-            className="flex cursor-not-allowed items-center gap-1.5 rounded-xl bg-primary/50 px-4 py-2 text-sm font-semibold text-on-primary"
-          >
-            <span className="material-symbols-outlined text-[18px]">meeting_room</span>
-            Abrir Detalle de Franja y Ambiente
-          </button>
+          {/* INS-04: el botón genérico "Abrir Detalle de Franja y Ambiente"
+              que iba acá quedó redundante -- DetalleFranjaAmbiente.tsx ya
+              existe y cada bloque del grid (GridSemanalInstructor.tsx) trae
+              su propio link "Detalle →" hacia ese bloque específico. Un
+              botón suelto en el header no tiene a qué horario apuntar. */}
         </div>
       </div>
 
@@ -473,6 +470,7 @@ export function MiHorario() {
               horarios={horariosFiltrados ?? []}
               jornadasVisibles={jornadasVisibles}
               aprendicesPorFicha={aprendicesPorFicha}
+              onAbrirDetalle={(idHorario, dia) => setDetalleFranja({ idHorario, dia })}
             />
           )}
         </div>
@@ -552,6 +550,14 @@ export function MiHorario() {
           </div>
         </div>
       </div>
+
+      {detalleFranja && (
+        <DetalleFranjaAmbiente
+          idHorario={detalleFranja.idHorario}
+          dia={detalleFranja.dia}
+          onCerrar={() => setDetalleFranja(null)}
+        />
+      )}
     </AppShell>
   )
 }

@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom'
 import type { Horario } from '../../types/api'
 import type { Jornada } from '../../pages/horario/tipos'
 
@@ -30,6 +29,10 @@ interface GridSemanalInstructorProps {
   aprendicesPorFicha: Record<number, number>
   /** La vista de coordinación no enlaza al detalle personal del instructor. */
   mostrarDetalle?: boolean
+  /** INS-04: "Detalle →" abre DetalleFranjaAmbiente como modal sobre esta
+   * misma pantalla en vez de navegar a otra ruta -- quien use este grid
+   * decide el id/día del bloque clickeado y abre su propio modal. */
+  onAbrirDetalle?: (idHorario: number, dia: string) => void
 }
 
 /**
@@ -40,7 +43,7 @@ interface GridSemanalInstructorProps {
  * este es de solo lectura, una celda por jornada×día, pensado para el
  * mockup "Mi Horario Semanal" del instructor.
  */
-export function GridSemanalInstructor({ horarios, jornadasVisibles, aprendicesPorFicha, mostrarDetalle = true }: GridSemanalInstructorProps) {
+export function GridSemanalInstructor({ horarios, jornadasVisibles, aprendicesPorFicha, mostrarDetalle = true, onAbrirDetalle }: GridSemanalInstructorProps) {
   const filas = JORNADAS_GRID.filter((jornada) => jornadasVisibles.includes(jornada.valor))
 
   return (
@@ -90,13 +93,14 @@ export function GridSemanalInstructor({ horarios, jornadasVisibles, aprendicesPo
                         {aprendices != null && (
                           <p className="text-[10px] font-semibold text-on-primary-container">{aprendices} aprendices convocados</p>
                         )}
-                        {mostrarDetalle && (
-                          <Link
-                            to={`/mi-horario/detalle-franja?horario=${bloque.idHorario}&dia=${encodeURIComponent(dia)}`}
+                        {mostrarDetalle && onAbrirDetalle && (
+                          <button
+                            type="button"
+                            onClick={() => onAbrirDetalle(bloque.idHorario, dia)}
                             className="mt-0.5 text-right text-[10px] font-bold text-primary hover:underline"
                           >
                             Detalle →
-                          </Link>
+                          </button>
                         )}
                       </div>
                     )

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { SeccionAmbientesAsignados } from '../components/relacionados/SeccionesInstructor'
+import { DetalleFranjaAmbiente } from './DetalleFranjaAmbiente'
 import { apiGet, ApiError } from '../services/api'
 import type { CargaSemanal, DiaSemana, Ficha, Horario, Usuario } from '../types/api'
 import type { Jornada } from './horario/tipos'
@@ -107,6 +108,9 @@ export function DashboardInstructor() {
 
   const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
   const [errorCarga, setErrorCarga] = useState(false)
+  // INS-04: bloque seleccionado para el modal de Detalle de Franja y
+  // Ambiente -- null significa "cerrado".
+  const [detalleFranja, setDetalleFranja] = useState<{ idHorario: number; dia: string } | null>(null)
 
   useEffect(() => {
     apiGet<Horario[]>('/usuarios/me/horarios')
@@ -425,12 +429,14 @@ export function DashboardInstructor() {
 
                       <div className="flex items-center gap-2">
                         {/* T-23 (SCRUM-141): Asistencia desactivada temporalmente. */}
-                        <Link
-                          to={`/mi-horario/detalle-franja?horario=${horario.idHorario}&dia=${encodeURIComponent(nombreDiaHoy)}`}
+                        {/* INS-04: abre el detalle acá mismo, sin navegar a otra pantalla. */}
+                        <button
+                          type="button"
+                          onClick={() => setDetalleFranja({ idHorario: horario.idHorario, dia: nombreDiaHoy })}
                           className="rounded-lg bg-primary px-2.5 py-1 text-xs font-semibold text-on-primary hover:bg-on-primary-container"
                         >
                           Detalle de ambiente
-                        </Link>
+                        </button>
                       </div>
                     </div>
                   </li>
@@ -553,6 +559,14 @@ export function DashboardInstructor() {
           })}
         </div>
       </div>
+
+      {detalleFranja && (
+        <DetalleFranjaAmbiente
+          idHorario={detalleFranja.idHorario}
+          dia={detalleFranja.dia}
+          onCerrar={() => setDetalleFranja(null)}
+        />
+      )}
     </AppShell>
   )
 }

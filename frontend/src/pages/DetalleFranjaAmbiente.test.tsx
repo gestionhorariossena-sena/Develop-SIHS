@@ -179,4 +179,34 @@ describe('DetalleFranjaAmbiente', () => {
     expect(screen.getByText('Aprobada por coordinación')).toBeInTheDocument()
     expect(screen.queryByText('Otra franja distinta.')).not.toBeInTheDocument()
   })
+
+  // INS-04: "al seleccionar un horario, mostrar su información completa en
+  // una vista/modal ahí mismo" -- con `onCerrar` se abre como diálogo sobre
+  // la pantalla actual en vez de navegar a /mi-horario/detalle-franja.
+  describe('en modo modal (props idHorario/dia/onCerrar)', () => {
+    it('muestra el mismo detalle dentro de un diálogo, sin breadcrumb ni "Volver a Mi Horario"', async () => {
+      mockRespuestasCompletas()
+      renderConProviders(<DetalleFranjaAmbiente idHorario={1} dia="Lunes" onCerrar={() => {}} />)
+
+      const dialogo = await screen.findByRole('dialog', { name: /Detalle de Franja/ })
+      expect(await within(dialogo).findByText('Detalle de Sesión Formativa: Análisis y Desarrollo de Software')).toBeInTheDocument()
+
+      // Esa navegación solo tiene sentido en la ruta propia: en el modal
+      // basta con cerrar, la pantalla de atrás sigue siendo la misma.
+      expect(screen.queryByText('Volver a Mi Horario Semanal')).not.toBeInTheDocument()
+      expect(screen.queryByRole('link', { name: 'Dashboard' })).not.toBeInTheDocument()
+    })
+
+    it('el botón "Cerrar" llama a onCerrar', async () => {
+      mockRespuestasCompletas()
+      const onCerrar = vi.fn()
+      const usuario = userEvent.setup()
+      renderConProviders(<DetalleFranjaAmbiente idHorario={1} dia="Lunes" onCerrar={onCerrar} />)
+
+      await screen.findByRole('dialog', { name: /Detalle de Franja/ })
+      await usuario.click(screen.getByRole('button', { name: 'Cerrar' }))
+
+      expect(onCerrar).toHaveBeenCalledTimes(1)
+    })
+  })
 })

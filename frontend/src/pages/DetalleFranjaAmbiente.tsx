@@ -99,12 +99,36 @@ function formatoHora(hora: string) {
  * "Descargar Ficha" y "Cerrar Sesión de Formación" siguen deshabilitadas
  * con tooltip: no hay exportación de ficha ni concepto de "sesión" que
  * cerrar en el backend, y no fingen funcionar.
+ *
+ * INS-04: "al seleccionar un horario, mostrar su información completa en
+ * una vista/modal ahí mismo" -- este componente sirve en dos modos para no
+ * duplicar los ~450 líneas de JSX/fetch de abajo en dos archivos:
+ *  - Ruta propia `/mi-horario/detalle-franja` (sin `onCerrar`): lee
+ *    `idHorario`/`dia` de la URL, se envuelve en AppShell con
+ *    breadcrumb + "Volver a Mi Horario Semanal" -- sirve para un enlace
+ *    directo/compartible.
+ *  - Modal (con `onCerrar`, abierto desde GridSemanalInstructor.tsx y
+ *    DashboardInstructor.tsx vía "Detalle →"/"Detalle de ambiente"):
+ *    recibe `idHorario`/`dia` por props, no toca la URL ni envuelve en
+ *    AppShell -- la pantalla de atrás (Mi Horario / Dashboard) se queda
+ *    visible detrás del overlay.
  */
-export function DetalleFranjaAmbiente() {
+interface DetalleFranjaAmbienteProps {
+  idHorario?: number
+  dia?: string
+  /** Presente = modo modal (abierto sobre la pantalla actual). Ausente =
+   * modo ruta propia (lee de la URL, ver arriba). */
+  onCerrar?: () => void
+}
+
+export function DetalleFranjaAmbiente({ idHorario: idHorarioProp, dia: diaProp, onCerrar }: DetalleFranjaAmbienteProps = {}) {
+  const esModal = onCerrar != null
+
+  // Se llama siempre (regla de hooks), pero solo se usa en modo ruta --
+  // en modo modal, la pantalla de atrás es la que trae su propia URL.
   const [searchParams] = useSearchParams()
-  const idHorarioParam = searchParams.get('horario')
-  const dia = searchParams.get('dia') ?? ''
-  const idHorario = idHorarioParam ? Number(idHorarioParam) : null
+  const idHorario = esModal ? (idHorarioProp ?? null) : searchParams.get('horario') ? Number(searchParams.get('horario')) : null
+  const dia = esModal ? (diaProp ?? '') : (searchParams.get('dia') ?? '')
 
   const [horarios, setHorarios] = useState<Horario[] | null>(null)
   const [perfil, setPerfil] = useState<Usuario | null>(null)
@@ -174,27 +198,10 @@ export function DetalleFranjaAmbiente() {
   const horasSemanaBloque = horario ? duracionHoras(horario.horaInicio, horario.horaFin) * horario.dias.length : 0
   const horasPorDia = horario ? duracionHoras(horario.horaInicio, horario.horaFin) : 0
 
-  return (
-    <AppShell activo="Mi horario">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-        <nav className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-          <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
-          <span>/</span>
-          <Link to="/mi-horario" className="hover:text-primary">Mi Horario</Link>
-          <span>/</span>
-          <span className="rounded-lg bg-surface-container-low px-2 py-0.5 font-semibold text-on-surface">
-            Detalle de Franja{horario ? `: ${dia} ${formatoHora(horario.horaInicio)} - ${formatoHora(horario.horaFin)} (Ficha ${horario.fichaCodigo ?? horario.idFicha})` : ''}
-          </span>
-        </nav>
-        <Link
-          to="/mi-horario"
-          className="inline-flex items-center gap-1.5 rounded-xl bg-surface-container-low px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high"
-        >
-          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
-          Volver a Mi Horario Semanal
-        </Link>
-      </div>
+  const tituloFranja = `Detalle de Franja${horario ? `: ${dia} ${formatoHora(horario.horaInicio)} - ${formatoHora(horario.horaFin)} (Ficha ${horario.fichaCodigo ?? horario.idFicha})` : ''}`
 
+  const contenido = (
+    <>
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
       {!horarios && !error ? (
@@ -548,6 +555,59 @@ export function DetalleFranjaAmbiente() {
           }}
         />
       )}
+    </>
+  )
+
+  if (esModal) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 px-4 py-8"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="detalle-franja-titulo"
+      >
+        <div className="flex max-h-full w-full max-w-5xl flex-col overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-2xl dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex items-center justify-between gap-3 border-b border-outline-variant px-6 py-4 dark:border-slate-700">
+            <h2 id="detalle-franja-titulo" className="text-lg font-semibold text-on-surface">
+              {tituloFranja}
+            </h2>
+            <button
+              type="button"
+              onClick={onCerrar}
+              aria-label="Cerrar"
+              className="rounded-full p-1.5 text-on-surface-variant hover:bg-surface-container-high"
+            >
+              <span className="material-symbols-outlined">close</span>
+            </button>
+          </div>
+          <div className="overflow-y-auto p-6">{contenido}</div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <AppShell activo="Mi horario">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+        <nav className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-on-surface-variant">
+          <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+          <span>/</span>
+          <Link to="/mi-horario" className="hover:text-primary">Mi Horario</Link>
+          <span>/</span>
+          <span className="rounded-lg bg-surface-container-low px-2 py-0.5 font-semibold text-on-surface">
+            {tituloFranja}
+          </span>
+        </nav>
+        <Link
+          to="/mi-horario"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-surface-container-low px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high"
+        >
+          <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+          Volver a Mi Horario Semanal
+        </Link>
+      </div>
+
+      {contenido}
     </AppShell>
   )
 }
