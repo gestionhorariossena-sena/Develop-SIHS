@@ -488,16 +488,16 @@ class HorarioService:
 
     @staticmethod
     def obtener_publicados_por_instructor(
-        db, id_instructor, fecha_inicio=None, fecha_fin=None
+        db, id_instructor, fecha_inicio=None, fecha_fin=None, id_trimestre=None
     ) -> list[dict]:
         """GET /usuarios/me/horarios — autoservicio del instructor.
 
-        Siempre oculta borradores. Si el cliente no envía rango de fechas
-        (caso móvil), se limita al período académico vigente para no mezclar
-        horarios históricos con el actual.
+        Siempre oculta borradores. ``id_trimestre`` permite filtrar
+        explícitamente un período histórico desde la interfaz. Si el cliente
+        no manda ni período ni rango de fechas (caso móvil), se usa el
+        período académico vigente para no mezclar históricos con el actual.
         """
-        id_trimestre = None
-        if fecha_inicio is None and fecha_fin is None:
+        if id_trimestre is None and fecha_inicio is None and fecha_fin is None:
             vigente = TrimestreRepository.obtener_vigente(db)
             if vigente is None:
                 return []
@@ -514,6 +514,12 @@ class HorarioService:
             )
             if h.publicado
         ]
+
+    @staticmethod
+    def obtener_periodos_publicados_por_instructor(db, id_instructor):
+        return HorarioRepository.obtener_periodos_publicados_por_instructor(
+            db, id_instructor
+        )
 
     @staticmethod
     def _mensaje_ficha_del_periodo(db, data) -> str | None:
