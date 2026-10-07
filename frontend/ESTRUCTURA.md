@@ -1,144 +1,160 @@
-# Estructura del frontend — qué es cada cosa
+# Estructura del frontend — estado actual
 
-Guía para entender el código sin tener que preguntar — misma idea que
-`backend/ESTRUCTURA.md`. Si van a programar una pantalla nueva, este
-documento dice exactamente qué archivos tocar y cómo conectarla al backend.
+Esta guía describe la estructura **actual** del cliente web de SIHS. El
+frontend está desarrollado con React + TypeScript y consume el backend
+FastAPI mediante `src/services/api.ts`.
 
-## Tecnologías usadas
+## Tecnologías
 
-| Pieza | Para qué |
+| Pieza | Uso |
 |---|---|
-| **React 19 + Vite** | Ya venían en el esqueleto del repo |
-| **TypeScript** | Ya venía; los tipos de los datos del backend están en `src/types/api.ts` |
-| **React Router** (`react-router-dom`) | Navegación entre páginas — ver `src/routes/` |
-| **Tailwind CSS v4** (`@tailwindcss/vite`) | Estilos. No hay `tailwind.config.js`: los colores custom (`sena-600`, etc.) se definen directo en `src/index.css` con `@theme` |
-| **`@supabase/supabase-js`** | Login, registro, recuperar contraseña y sesión — habla directo con Supabase Auth, no con nuestro backend |
+| React 19 | Componentes y estado de interfaz |
+| TypeScript | Tipado del frontend y contratos de API |
+| Vite 8 | Servidor de desarrollo y build |
+| React Router | Rutas y navegación |
+| Tailwind CSS 4 | Estilos |
+| Supabase JS | Autenticación y sesión |
+| Vitest + Testing Library | Pruebas de componentes y páginas |
+| ESLint | Validación estática |
 
-**A propósito NO se agregó** ninguna librería de manejo de estado de
-servidor (TanStack Query), formularios (React Hook Form) ni de componentes
-(shadcn/ui) — se decidió mantenerlo simple con `useState`/`useEffect` y
-`fetch` normal. Si en algún punto el proyecto crece tanto que esto empieza a
-doler (muchas pantallas repitiendo el mismo patrón de carga/error), ahí sí
-vale la pena reconsiderarlo — no antes.
-
-## Mapa de carpetas
+## Carpetas principales
 
 ```text
-frontend/
-├── src/
-│   ├── main.tsx              # Punto de entrada — monta <App /> en el DOM. No se toca casi nunca.
-│   ├── App.tsx                 # Envuelve todo en <BrowserRouter> y <AuthProvider>. No se toca casi nunca.
-│   ├── index.css                 # Import de Tailwind + colores institucionales (sena-*)
-│   ├── vite-env.d.ts               # Tipos de las variables de entorno (VITE_*)
-│   │
-│   ├── services/                    # Todo lo que habla con algo externo
-│   │   ├── supabaseClient.ts          # El cliente de Supabase (una sola instancia, se importa donde haga falta)
-│   │   └── api.ts                       # Wrapper de fetch hacia el backend — CONSUME EL BACKEND, ver abajo
-│   │
-│   ├── context/                     # Estado compartido por toda la app
-│   │   └── AuthContext.tsx            # Sesión de Supabase (quién está logueado)
-│   ├── hooks/
-│   │   └── useAuth.ts                 # Atajo para leer el AuthContext: `const { session } = useAuth()`
-│   │
-│   ├── types/
-│   │   └── api.ts                     # Los tipos de datos que devuelve el backend (Usuario, Rol...)
-│   │
-│   ├── routes/
-│   │   ├── AppRouter.tsx              # Todas las rutas de la app viven acá
-│   │   └── ProtectedRoute.tsx           # Envuelve una página que exige sesión iniciada
-│   │
-│   ├── components/                  # Piezas de UI reutilizadas entre páginas
-│   │   ├── AuthLayout.tsx             # Tarjeta blanca + barra verde de Login/Registro/Recuperar
-│   │   └── FormField.tsx              # Un input con su label, estilado
-│   │
-│   ├── pages/                       # Una pantalla completa = una ruta
-│   │   ├── Login.tsx
-│   │   ├── Registro.tsx
-│   │   ├── RecuperarContrasena.tsx
-│   │   └── Dashboard.tsx              # La única pantalla que hoy consume el backend además de Auth
-│   │
-│   └── assets/
-│       └── sena-logo.jpeg             # Logo oficial, lo usa AuthLayout y el sidebar del Dashboard
-│
-├── .env / .env.example        # Credenciales de Supabase + URL del backend
-└── package.json
+frontend/src/
+├── assets/                 # Recursos estáticos
+├── components/             # Componentes reutilizables
+│   └── horario/            # Grid, editor, modal y piezas del constructor
+├── context/                # AuthContext
+├── hooks/                  # Hooks compartidos
+├── pages/                  # Pantallas completas
+│   └── horario/            # Estado y tipos auxiliares del editor
+├── routes/                 # AppRouter y ProtectedRoute
+├── services/               # api.ts y supabaseClient.ts
+├── test/                   # Utilidades para pruebas
+└── types/                  # Tipos compartidos de la API
 ```
 
-## Cómo se conecta cada pantalla
+## Roles y protección de rutas
 
-| Pantalla | Con qué habla | Cómo |
-|---|---|---|
-| `Login.tsx` | Supabase Auth | `supabase.auth.signInWithPassword()` |
-| `Registro.tsx` | Supabase Auth | `supabase.auth.signUp()` — el rol elegido se guarda como metadata (`rol_solicitado`), **no asigna un rol real todavía** (ver más abajo) |
-| `RecuperarContrasena.tsx` | Supabase Auth | `supabase.auth.resetPasswordForEmail()` |
-| `Dashboard.tsx` | **Backend FastAPI** | `apiGet()` — ver la siguiente sección |
+`src/routes/AppRouter.tsx` es la fuente principal de navegación. Las rutas
+privadas se envuelven en `ProtectedRoute` y pueden limitarse por rol.
 
-## Cómo el Dashboard consume el backend (y cómo seguir haciéndolo)
+- **Gestión:** Administrador y Coordinador.
+- **Administración:** Administrador.
+- **Instructor:** Instructor.
+- **Aprendiz:** Aprendiz.
+- Algunas rutas, como dashboard, avisos y notificaciones, requieren sesión
+  pero no un rol único.
 
-`src/services/api.ts` es el único lugar que sabe hablarle al backend. Antes
-de cada petición, toma el token de la sesión actual de Supabase
-(`supabase.auth.getSession()`) y lo manda como
-`Authorization: Bearer <token>` — así es como el backend identifica quién
-está pidiendo qué (ver `backend/app/core/supabase_auth.py`).
+`ProtectedRoute` también controla el cambio obligatorio de contraseña para
+usuarios que ingresan con una credencial temporal.
 
-Para traer datos de un endpoint nuevo, el patrón es siempre el mismo (así
-está hecho en `Dashboard.tsx`):
+## Pantallas funcionales principales
+
+### Gestión de horarios
+
+- `NuevoHorario.tsx`: constructor manual. El flujo actual parte de una ficha
+  seleccionada, carga sus asignaciones existentes y evita recrearlas al
+  guardar nuevas asignaciones.
+- `AsistenteHorarios.tsx`: asistente de programación.
+- `CalendarioGeneral.tsx`: vista general.
+- `HorariosCompletos.tsx`: consulta de horarios completos.
+- `HistorialHorarios.tsx`: historial y snapshots.
+- `AuditoriaCruces.tsx`: revisión de conflictos.
+- `PublicacionesProgramadas.tsx`: programación de publicación de borradores.
+
+### Fichas, recursos y formación
+
+- `Fichas.tsx` / `VistaFichas.tsx`
+- `Ambientes.tsx` / `VistaAmbientes.tsx`
+- `Sedes.tsx`
+- `Instructores.tsx` / `VistaInstructores.tsx`
+- `Programas.tsx`
+- `Tematicas.tsx`
+
+### Instructor
+
+- `MiHorario.tsx`
+- `DetalleFranjaAmbiente.tsx`
+- `AsistenciaInstructor.tsx`
+- `MisSolicitudesCambioHorario.tsx`
+
+La asistencia soporta horarios que ocurren en varios días de la semana: el
+instructor puede escoger el día de la sesión antes de registrar la lista.
+
+### Aprendiz
+
+- `MiHorarioAprendiz.tsx`
+- `MiAsistencia.tsx`
+- `MensajesAprendiz.tsx`
+
+### Administración y comunicación
+
+- `Usuarios.tsx`
+- `Roles.tsx`
+- `CodigoInstructor.tsx`
+- `AprobarlicitarSolicitudes.tsx`
+- `PanelAdministracion.tsx`
+- `Avisos.tsx`
+- `Notificaciones.tsx`
+- `CambiosHorario.tsx`
+
+## Comunicación con el backend
+
+Todas las llamadas HTTP deben pasar por `src/services/api.ts`. El helper
+obtiene la sesión de Supabase y envía el token como:
+
+```text
+Authorization: Bearer <token>
+```
+
+Las funciones principales son `apiGet`, `apiPost`, `apiPut` y
+`apiDelete`. Las rutas se pasan sin repetir `/api/v1`.
+
+Ejemplo:
 
 ```tsx
-import { useEffect, useState } from 'react'
-import { apiGet, ApiError } from '../services/api'
-import type { Usuario } from '../types/api'
-
-const [datos, setDatos] = useState<Usuario[] | null>(null)
-
-useEffect(() => {
-  apiGet<Usuario[]>('/usuarios')
-    .then(setDatos)
-    .catch((err: ApiError) => {
-      // err.status === 403 si el rol del usuario no alcanza
-    })
-}, [])
+const fichas = await apiGet<Ficha[]>('/fichas/')
 ```
 
-`apiGet`/`apiPost`/`apiPut`/`apiDelete` reciben la ruta **sin** `/api/v1`
-(esa parte ya la agrega `VITE_API_URL` del `.env`) — por ejemplo
-`apiGet('/roles')`, no `apiGet('/api/v1/roles')`.
+Los tipos de respuesta reutilizables viven en `src/types/api.ts`.
 
-**Cuando exista un módulo nuevo en el backend** (horarios, ambientes, etc. —
-ver `backend/OBJETIVO_Y_SERVICIOS_FALTANTES.md`), para consumirlo desde el
-frontend:
+## Constructor de horarios
 
-1. Agregar el tipo correspondiente en `src/types/api.ts`.
-2. Llamar `apiGet`/`apiPost`/etc. con la ruta nueva, igual que en el
-   ejemplo de arriba — no hace falta tocar `api.ts`.
-3. Si la pantalla no existe todavía, crearla en `src/pages/` y agregarla a
-   `AppRouter.tsx`.
+Los componentes reutilizables del constructor viven en
+`src/components/horario/`.
 
-## Sobre el registro y los roles (ojo con esto)
+- `HorarioEditor.tsx`: coordina panel, grid y modal.
+- `GridHorario.tsx`: dibuja la grilla institucional.
+- `CeldaHorario.tsx`: representa cada celda.
+- `ModalBloque.tsx`: captura resultado, instructor y ambiente.
+- `convertirHorarios.ts`: transforma horarios reales del backend al formato
+  del editor.
 
-El backend no tiene todavía un flujo de "aprobar solicitud de registro" — el
-`rol_solicitado` que guarda `Registro.tsx` en la metadata del usuario de
-Supabase **no lo lee nadie automáticamente**. Un Administrador tiene que
-asignar el rol real a mano, por ahora vía `POST /usuario-rol/asignar` (con
-Postman/Swagger) o SQL directo. Construir una pantalla de "aprobar
-solicitudes" para que un Administrador lo haga desde la UI es trabajo
-pendiente — ver `backend/OBJETIVO_Y_SERVICIOS_FALTANTES.md`.
+Cuando el constructor se abre para una ficha, los horarios ya persistidos se
+muestran en solo lectura. El guardado crea únicamente las asignaciones nuevas.
 
-## Cómo levantar esto y ver la app de verdad
+## Pruebas y validación
+
+Comandos locales:
 
 ```bash
 cd frontend
-npm install
-cp .env.example .env    # y completar con las credenciales reales
-npm run dev
+npm ci
+npm run lint
+npm run build
+npm run test
 ```
 
-Necesita el backend corriendo en paralelo (`cd backend && uvicorn app.main:app --reload`)
-para que el Dashboard cargue datos — si no, se queda en "Cargando…" y la
-consola del navegador muestra el error real.
+El mismo conjunto se ejecuta automáticamente en GitHub Actions antes de
+integrar cambios.
 
-Usuarios de prueba ya sembrados (ver `database/README.md`), contraseña
-`Prueba123!` para todos: `admin@mail.com` (ve todo), `ana@mail.com`
-(Coordinador), `carlos@mail.com` (Instructor), `juan@mail.com` /
-`maria@mail.com` (Aprendiz) — sirven para probar cómo se ve el Dashboard con
-y sin permisos de Administrador.
+## Agregar una pantalla nueva
+
+1. Crear el componente en `src/pages/`.
+2. Agregar o reutilizar sus tipos en `src/types/api.ts`.
+3. Consumir el backend mediante `src/services/api.ts`.
+4. Registrar la ruta en `src/routes/AppRouter.tsx`.
+5. Definir los roles permitidos con `ProtectedRoute`.
+6. Agregar pruebas para el comportamiento relevante.
+7. Ejecutar lint, build y tests antes del Pull Request.
