@@ -20,10 +20,8 @@ function indiceBloque(horaInicio: string): number {
   return BLOQUES.findIndex((bloque) => bloque.horaInicio24 === horaInicio)
 }
 
-/** Convierte los `Horario[]` que devuelve el backend (GET .../horarios) a
- * lo que espera `GridHorario` en modo solo-lectura — para el mini-grid del
- * drawer de instructor (SCRUM-65) y el grid completo del drawer de ficha
- * (SCRUM-67). */
+/** Convierte los horarios reales al grid institucional, conservando sus IDs
+ * relacionales para mostrar las asignaciones existentes sin recrearlas. */
 export function convertirHorariosAGrid(horarios: Horario[]): { bloques: BloqueClase[]; grid: GridAsignaciones } {
   const bloques: BloqueClase[] = []
   const grid: GridAsignaciones = BLOQUES.map(() => DIAS.map(() => null))
@@ -38,6 +36,12 @@ export function convertirHorariosAGrid(horarios: Horario[]): { bloques: BloqueCl
       instructor: horario.instructorNombre ?? 'Sin instructor',
       ficha: horario.fichaCodigo ?? 'Sin ficha',
       ambiente: horario.ambienteNombre ?? 'Sin ambiente',
+      idResultado: horario.idResultado,
+      idInstructor: horario.idInstructor,
+      idFicha: horario.idFicha,
+      idTrimestre: horario.idTrimestre,
+      idAmbiente: horario.idAmbiente,
+      idHorarioOriginal: horario.idHorario,
     }
     bloques.push(bloqueClase)
 

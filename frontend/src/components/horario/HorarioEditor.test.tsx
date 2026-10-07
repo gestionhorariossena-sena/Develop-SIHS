@@ -163,4 +163,54 @@ describe('HorarioEditor', () => {
       screen.getByRole('button', { name: 'Lunes, 6:15 a.m – 9:00 a.m: Comunicación' }),
     ).toBeInTheDocument()
   })
+
+  it('muestra las asignaciones existentes en solo lectura y no las ofrece para edición o eliminación', () => {
+    const bloques: BloqueClase[] = [
+      {
+        id: 'horario-55',
+        tematica: 'Comunicación',
+        instructor: 'Claudia',
+        ficha: 'F1',
+        ambiente: 'Sala 1',
+        idHorarioOriginal: 55,
+      },
+    ]
+    const grid = gridVacio()
+    grid[0][0] = 'horario-55'
+
+    render(<HorarioEditor bloquesIniciales={bloques} gridInicial={grid} />)
+
+    expect(screen.getByLabelText('Lunes, 6:15 a.m – 9:00 a.m: Comunicación')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Editar Comunicación/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Quitar Comunicación/i })).not.toBeInTheDocument()
+  })
+
+  it('al rellenar un rango conserva intactas las asignaciones ya guardadas', async () => {
+    const usuario = userEvent.setup()
+    const bloques: BloqueClase[] = [
+      {
+        id: 'horario-55',
+        tematica: 'Comunicación',
+        instructor: 'Claudia',
+        ficha: 'F1',
+        ambiente: 'Sala 1',
+        idHorarioOriginal: 55,
+      },
+    ]
+    const grid = gridVacio()
+    grid[1][1] = 'horario-55'
+
+    render(<HorarioEditor bloquesIniciales={bloques} gridInicial={grid} />)
+    await crearBloqueDesdeCelda(usuario, CELDA_LUNES)
+    await usuario.keyboard('{Shift>}')
+    await usuario.click(screen.getByRole('button', { name: /Jueves, 9:00 a\.m/ }))
+    await usuario.keyboard('{/Shift}')
+
+    expect(
+      screen.getByLabelText('Martes, 9:00 a.m – 12:00 p.m: Comunicación'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Jueves, 9:00 a.m – 12:00 p.m: Programación' }),
+    ).toBeInTheDocument()
+  })
 })

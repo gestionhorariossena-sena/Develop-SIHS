@@ -18,6 +18,8 @@ interface CeldaHorarioProps {
   hayBloqueActivo: boolean
   /** Modo historial/exportación: sin interacción, sin botón de quitar. */
   soloLectura?: boolean
+  /** La asignación ya existe en backend: se muestra sin permitir editarla. */
+  bloqueSoloLectura?: boolean
   onClic: (shiftKey: boolean) => void
   onQuitar: () => void
   /** Anotación personal del Aprendiz sobre este bloque (Mi Horario), si existe. */
@@ -41,6 +43,7 @@ export function CeldaHorario({
   fondoVacio,
   hayBloqueActivo,
   soloLectura = false,
+  bloqueSoloLectura = false,
   onClic,
   onQuitar,
   marcador = null,
@@ -51,7 +54,7 @@ export function CeldaHorario({
   }
 
   if (!bloque) {
-    if (soloLectura) {
+    if (soloLectura || bloqueSoloLectura) {
       return <div aria-label={`${etiqueta}, vacía`} className={`h-full min-h-16 w-full ${fondoVacio}`} />
     }
 
@@ -71,7 +74,7 @@ export function CeldaHorario({
 
   const color = colorParaBloque(bloque.id)
 
-  if (soloLectura) {
+  if (soloLectura || bloqueSoloLectura) {
     const contenido = (
       <>
         <p className="truncate font-semibold">{bloque.tematica}</p>
