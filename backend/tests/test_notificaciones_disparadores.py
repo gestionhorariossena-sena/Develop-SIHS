@@ -8,7 +8,7 @@ esperando a que alguien entrara a mirarlo.
 """
 
 import uuid
-from datetime import date, time
+from datetime import date, time, timedelta
 
 from app.models.ambiente import Ambiente
 from app.models.coordinacion import Coordinacion
@@ -56,8 +56,11 @@ def _catalogos(db_session):
                 nivelFormacion="Técnico", activo=True, idCoordinacion=1,
             ),
             Trimestre(
-                idTrimestre=1, nombre="2026-1", fechaInicio=date(2026, 1, 5),
-                fechaFin=date(2026, 4, 30), estado="activo",
+                idTrimestre=1,
+                nombre="Periodo vigente",
+                fechaInicio=date.today() - timedelta(days=30),
+                fechaFin=date.today() + timedelta(days=60),
+                estado="activo",
             ),
             Sede(id=1, nombre="Sede Norte", direccion="Calle 1", tipo="principal"),
             # Especiales a propósito: el CHECK `nombreAmbienteRegular`
