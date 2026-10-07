@@ -91,3 +91,32 @@ def test_actualizar_fase_actual_ficha_inexistente_da_404(client, db_session, aut
     respuesta = client.patch("/api/v1/fichas/9999/fase-actual", json={"faseActual": 1}, headers=headers)
 
     assert respuesta.status_code == 404
+
+
+def test_actualizar_una_ficha_no_modifica_otra(client, db_session, autenticar_como):
+    """ADM-03: cada edición debe quedar aislada por idFicha."""
+    _catalogo(db_session)
+    _, headers = autenticar_como("Administrador")
+
+    ficha_a = client.post(
+        "/api/v1/fichas/",
+        json={"codigoFicha": "100", "idPrograma": 1, "idTrimestre": 1, "faseActual": 1},
+        headers=headers,
+    ).json()
+    ficha_b = client.post(
+        "/api/v1/fichas/",
+        json={"codigoFicha": "200", "idPrograma": 1, "idTrimestre": 1, "faseActual": 2},
+        headers=headers,
+    ).json()
+
+    respuesta = client.put(
+        f"/api/v1/fichas/{ficha_a['idFicha']}",
+        json={"codigoFicha": "100-A", "idPrograma": 1, "idTrimestre": 1, "faseActual": 4},
+        headers=headers,
+    )
+    assert respuesta.status_code == 200
+
+    otra = client.get(f"/api/v1/fichas/{ficha_b['idFicha']}", headers=headers)
+    assert otra.status_code == 200
+    assert otra.json()["codigoFicha"] == "200"
+    assert otra.json()["faseActual"] == 2
