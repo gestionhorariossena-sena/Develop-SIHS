@@ -199,16 +199,22 @@ def test_mis_horarios_filtra_por_rango_de_fechas_del_trimestre(client, db_sessio
     _, ficha = _catalogos_base(db_session)
     _crear_horario(db_session, 100, yo, ficha)
 
+    hoy = date.today()
+    dentro_inicio = hoy
+    dentro_fin = hoy + timedelta(days=4)
+    fuera_inicio = hoy + timedelta(days=120)
+    fuera_fin = fuera_inicio + timedelta(days=4)
+
     dentro = client.get(
-        "/api/v1/usuarios/me/horarios?fechaInicio=2026-02-02&fechaFin=2026-02-06",
+        f"/api/v1/usuarios/me/horarios?fechaInicio={dentro_inicio.isoformat()}&fechaFin={dentro_fin.isoformat()}",
         headers=headers,
     )
     fuera = client.get(
-        "/api/v1/usuarios/me/horarios?fechaInicio=2026-05-04&fechaFin=2026-05-08",
+        f"/api/v1/usuarios/me/horarios?fechaInicio={fuera_inicio.isoformat()}&fechaFin={fuera_fin.isoformat()}",
         headers=headers,
     )
     rango_incompleto = client.get(
-        "/api/v1/usuarios/me/horarios?fechaInicio=2026-02-02",
+        f"/api/v1/usuarios/me/horarios?fechaInicio={dentro_inicio.isoformat()}",
         headers=headers,
     )
 
