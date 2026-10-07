@@ -30,6 +30,7 @@ class FichaRepository:
         for id_ficha, nombre_jornada in (
             db.query(Horario.idFicha, Jornada.nombreJornada)
             .join(Jornada, Jornada.idJornada == Horario.idJornada)
+            .filter(Horario.activo.is_(True))
             .distinct()
             .all()
         ):
@@ -43,6 +44,21 @@ class FichaRepository:
     @staticmethod
     def obtener_por_id(db: Session, id_ficha: int):
         return db.query(Ficha).filter(Ficha.idFicha == id_ficha).first()
+
+    @staticmethod
+    def obtener_por_id_para_actualizar(db: Session, id_ficha: int):
+        """Bloquea únicamente la ficha que se va a editar.
+
+        Evita que dos ediciones concurrentes se pisen y deja explícito que
+        una actualización de ficha nunca debe operar sobre el catálogo
+        completo ni sobre otra ficha.
+        """
+        return (
+            db.query(Ficha)
+            .filter(Ficha.idFicha == id_ficha)
+            .with_for_update()
+            .first()
+        )
 
     @staticmethod
     def obtener_por_codigo(db: Session, codigo_ficha: str):
