@@ -313,6 +313,8 @@ export function NuevoHorario() {
     setMensajeExito(null)
 
     const { bloques: bloquesActuales, grid: gridActual } = estadoActualRef.current
+    // En creación por ficha el grid mezcla asignaciones ya persistidas con
+    // las nuevas; solo estas últimas deben volver a enviarse al backend.
     const grupos = agruparCeldas(gridActual).filter((grupo) => {
       if (idEditar !== null) return true
       return bloquesActuales.find((bloque) => bloque.id === grupo.bloqueId)?.idHorarioOriginal === undefined
