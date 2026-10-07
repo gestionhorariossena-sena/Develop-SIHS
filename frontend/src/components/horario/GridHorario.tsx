@@ -29,6 +29,8 @@ interface GridHorarioProps {
   hayBloqueActivo: boolean
   /** Modo historial/exportación: celdas sin interacción, sin botón de quitar. */
   soloLectura?: boolean
+  /** IDs de asignaciones persistidas que deben mostrarse sin edición. */
+  bloquesSoloLecturaIds?: ReadonlySet<string>
   /** Mini-grid del drawer de relacionados: oculta filas de bloque horario
    * (y la fila "Receso" y el encabezado de jornada) que no tienen ninguna
    * celda asignada en ningún día — para no mostrar toda la plantilla
@@ -51,6 +53,7 @@ export function GridHorario({
   grid,
   hayBloqueActivo,
   soloLectura = false,
+  bloquesSoloLecturaIds,
   ocultarFilasVacias = false,
   onClicCelda,
   onQuitarCelda,
@@ -107,6 +110,7 @@ export function GridHorario({
                         fondoVacio={diaIdx % 2 === 0 ? fondos.celda : fondos.celdaAlt}
                         hayBloqueActivo={hayBloqueActivo}
                         soloLectura={soloLectura}
+                        bloqueSoloLectura={Boolean(bloqueId && bloquesSoloLecturaIds?.has(bloqueId))}
                         onClic={(shiftKey) => onClicCelda?.({ bloqueIdx, diaIdx }, shiftKey)}
                         onQuitar={() => onQuitarCelda?.({ bloqueIdx, diaIdx })}
                         marcador={bloqueCelda ? marcadoresPorBloqueId?.[bloqueCelda.id] ?? null : null}

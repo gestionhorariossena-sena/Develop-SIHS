@@ -28,20 +28,21 @@ interface ModalBloqueProps {
   /** Si viene un bloque existente, el modal edita sus datos; si no, crea uno nuevo. */
   bloqueInicial?: BloqueClase
   catalogos?: CatalogosBloque
+  fichaFijada?: Ficha
   onGuardar: (datos: DatosBloque) => void
   onCancelar: () => void
 }
 
-function datosVacios(bloque?: BloqueClase): DatosBloque {
+function datosVacios(bloque?: BloqueClase, fichaFijada?: Ficha): DatosBloque {
   return {
     tematica: bloque?.tematica ?? '',
     instructor: bloque?.instructor ?? '',
-    ficha: bloque?.ficha ?? '',
+    ficha: bloque?.ficha ?? fichaFijada?.codigoFicha ?? '',
     ambiente: bloque?.ambiente ?? '',
     idResultado: bloque?.idResultado,
     idInstructor: bloque?.idInstructor,
-    idFicha: bloque?.idFicha,
-    idTrimestre: bloque?.idTrimestre,
+    idFicha: bloque?.idFicha ?? fichaFijada?.idFicha,
+    idTrimestre: bloque?.idTrimestre ?? fichaFijada?.idTrimestre,
     idAmbiente: bloque?.idAmbiente,
   }
 }
@@ -56,16 +57,16 @@ function etiquetaResultado(r: ResultadoAprendizaje): string {
 
 /**
  * Formulario modal para crear o editar un bloque de clase. Como los bloques
- * son reutilizables (una definición, muchas celdas asignadas), este es el
- * único lugar donde se eligen resultado/instructor/ficha/ambiente — ver
- * `frontend/ESTRUCTURA.md#pantalla-de-horarios` para el flujo completo.
+ * son reutilizables (una definición, muchas celdas asignadas), aquí se
+ * eligen resultado/instructor/ambiente; la ficha activa se fija desde el
+ * selector del constructor.
  *
  * Con `catalogos` (lo pasa `NuevoHorario.tsx`, ya conectado al backend real)
  * los 4 campos son selects contra datos reales. Sin `catalogos` (el demo de
  * `HorarioEditor` y sus tests) caen en texto libre, sin llamar al backend.
  */
-export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }: ModalBloqueProps) {
-  const [datos, setDatos] = useState<DatosBloque>(() => datosVacios(bloqueInicial))
+export function ModalBloque({ bloqueInicial, catalogos, fichaFijada, onGuardar, onCancelar }: ModalBloqueProps) {
+  const [datos, setDatos] = useState<DatosBloque>(() => datosVacios(bloqueInicial, fichaFijada))
   const esEdicion = bloqueInicial !== undefined
   const contenidoRef = useRef<HTMLDivElement>(null)
 
@@ -184,24 +185,26 @@ export function ModalBloque({ bloqueInicial, catalogos, onGuardar, onCancelar }:
                   ))}
                 </select>
               </CampoModal>
-              <CampoModal etiqueta="Ficha" htmlFor="bloque-ficha">
-                <select
-                  id="bloque-ficha"
-                  value={datos.idFicha ?? ''}
-                  onChange={(e) => elegirFicha(Number(e.target.value))}
-                  required
-                  className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-                >
-                  <option value="" disabled>
-                    Selecciona una ficha…
-                  </option>
-                  {catalogos.fichas.map((f) => (
-                    <option key={f.idFicha} value={f.idFicha}>
-                      {f.codigoFicha}
+              {!fichaFijada && (
+                <CampoModal etiqueta="Ficha" htmlFor="bloque-ficha">
+                  <select
+                    id="bloque-ficha"
+                    value={datos.idFicha ?? ''}
+                    onChange={(e) => elegirFicha(Number(e.target.value))}
+                    required
+                    className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                  >
+                    <option value="" disabled>
+                      Selecciona una ficha…
                     </option>
-                  ))}
-                </select>
-              </CampoModal>
+                    {catalogos.fichas.map((f) => (
+                      <option key={f.idFicha} value={f.idFicha}>
+                        {f.codigoFicha}
+                      </option>
+                    ))}
+                  </select>
+                </CampoModal>
+              )}
               <CampoModal etiqueta="Ambiente" htmlFor="bloque-ambiente">
                 <select
                   id="bloque-ambiente"

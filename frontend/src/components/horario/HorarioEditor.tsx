@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useHorarioState } from '../../pages/horario/useHorarioState'
 import type { BloqueClase, GridAsignaciones } from '../../pages/horario/tipos'
+import type { Ficha } from '../../types/api'
 import { PanelBloques } from './PanelBloques'
 import { GridHorario } from './GridHorario'
 import { ModalBloque } from './ModalBloque'
@@ -16,6 +17,8 @@ interface HorarioEditorProps {
    * vez de texto libre — ver `ModalBloque.tsx`. `NuevoHorario.tsx` lo pasa;
    * el demo/tests de este componente no. */
   catalogos?: CatalogosBloque
+  /** Ficha activa del flujo de programación por ficha. */
+  fichaFijada?: Ficha
 }
 
 /**
@@ -23,10 +26,10 @@ interface HorarioEditorProps {
  * de verdad implementa "define un bloque una vez, reutilízalo en el grid" —
  * no depende de `AppShell` ni de sesión de Supabase, así que se puede
  * renderizar y testear solo (ver `HorarioEditor.test.tsx`). `NuevoHorario.tsx`
- * lo monta dentro del layout de la app junto con los campos de
- * ficha/fechas/sedes.
+ * lo monta dentro del layout de la app junto con el selector de ficha y los
+ * campos del período.
  */
-export function HorarioEditor({ bloquesIniciales, gridInicial, onCambiarEstado, catalogos }: HorarioEditorProps) {
+export function HorarioEditor({ bloquesIniciales, gridInicial, onCambiarEstado, catalogos, fichaFijada }: HorarioEditorProps) {
   const estado = useHorarioState({ bloques: bloquesIniciales, grid: gridInicial })
   const { modal } = estado
   const bloqueEnEdicion =
@@ -36,11 +39,15 @@ export function HorarioEditor({ bloquesIniciales, gridInicial, onCambiarEstado, 
     onCambiarEstado?.({ bloques: estado.bloques, grid: estado.grid })
   }, [estado.bloques, estado.grid, onCambiarEstado])
 
+  const idsBloquesPersistidos = new Set(
+    estado.bloques.filter((bloque) => bloque.idHorarioOriginal !== undefined).map((bloque) => bloque.id),
+  )
+
   return (
-    <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
+    <div className={`grid gap-4 ${fichaFijada ? '' : 'lg:grid-cols-[260px_1fr]'}`}>
       <div className="print:hidden">
         <PanelBloques
-          bloques={estado.bloques}
+          bloques={estado.bloques.filter((bloque) => bloque.idHorarioOriginal === undefined)}
           bloqueActivoId={estado.bloqueActivoId}
           onActivar={estado.activarBloque}
           onNuevo={estado.abrirModalNuevo}
@@ -75,6 +82,7 @@ export function HorarioEditor({ bloquesIniciales, gridInicial, onCambiarEstado, 
           bloques={estado.bloques}
           grid={estado.grid}
           hayBloqueActivo={estado.bloqueActivoId !== null}
+          bloquesSoloLecturaIds={idsBloquesPersistidos}
           onClicCelda={estado.manejarClicCelda}
           onQuitarCelda={estado.quitarDeCelda}
         />
@@ -84,6 +92,7 @@ export function HorarioEditor({ bloquesIniciales, gridInicial, onCambiarEstado, 
         <ModalBloque
           bloqueInicial={bloqueEnEdicion}
           catalogos={catalogos}
+          fichaFijada={fichaFijada}
           onGuardar={estado.guardarDesdeModal}
           onCancelar={estado.cerrarModal}
         />
