@@ -185,6 +185,56 @@ def test_mis_horarios_solo_muestra_lo_publicado_y_propio(client, db_session, aut
     assert ids == [100]
 
 
+def test_mis_horarios_filtra_por_trimestre_explicito(client, db_session, autenticar_como):
+    _crear_tablas_extra(db_session)
+    yo, headers = autenticar_como("Instructor")
+    _, ficha_actual = _catalogos_base(db_session)
+    _crear_horario(db_session, 100, yo, ficha_actual)
+
+    trimestre_anterior = Trimestre(
+        idTrimestre=2,
+        nombre="Periodo anterior",
+        fechaInicio=date.today() - timedelta(days=180),
+        fechaFin=date.today() - timedelta(days=90),
+        estado="finalizado",
+    )
+    ficha_anterior = Ficha(
+        idFicha=2,
+        codigoFicha="FICHA-ANT",
+        idPrograma=1,
+        idTrimestre=2,
+    )
+    db_session.add_all([trimestre_anterior, ficha_anterior])
+    db_session.commit()
+
+    horario_anterior = Horario(
+        idHorario=200,
+        horaInicio=time(10, 0),
+        horaFin=time(12, 0),
+        idJornada=1,
+        idTrimestre=2,
+        idAmbiente=1,
+        idInstructor=yo.idUsuario,
+        idFicha=2,
+        idResultado=9,
+        publicado=True,
+        activo=True,
+    )
+    db_session.add(horario_anterior)
+    db_session.commit()
+    db_session.execute(horario_dia.insert().values(idHorario=200, idDia=1))
+    db_session.commit()
+
+    respuesta = client.get(
+        "/api/v1/usuarios/me/horarios"
+        "?fechaInicio=2000-01-01&fechaFin=2100-12-31&idTrimestre=2",
+        headers=headers,
+    )
+
+    assert respuesta.status_code == 200
+    assert [fila["idHorario"] for fila in respuesta.json()] == [200]
+
+
 def test_mis_horarios_requiere_autenticacion(client, db_session):
     _crear_tablas_extra(db_session)
 
