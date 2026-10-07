@@ -202,6 +202,23 @@ describe('AsistenciaInstructor', () => {
     expect(apiGetMock).not.toHaveBeenCalledWith(expect.stringContaining('idHorario=999'))
   })
 
+
+  it('permite escoger el día cuando una clase se dicta varias veces por semana', async () => {
+    const horarioMultidia: Horario = { ...HORARIO, dias: [1, 3] }
+    mockear(sesion(), [horarioMultidia])
+    const usuario = userEvent.setup()
+    renderConProviders(<AsistenciaInstructor />)
+
+    await screen.findByText('Sara Rodríguez')
+    const selector = screen.getByLabelText('Día de la clase')
+    expect(selector).toHaveValue('1')
+
+    await usuario.selectOptions(selector, '3')
+
+    expect(apiGetMock).toHaveBeenCalledWith(expect.stringMatching(/idHorario=100&fecha=\d{4}-\d{2}-\d{2}/))
+    expect(selector).toHaveValue('3')
+  })
+
   // La nómina sale de ficha_usuario, que hoy está incompleta: la pantalla
   // lo explica en vez de aparentar un curso vacío.
   it('si la ficha no tiene aprendices vinculados, explica por qué', async () => {
