@@ -108,6 +108,7 @@ def test_horarios_por_ficha(client, db_session, autenticar_como):
     horarios = respuesta.json()
     assert len(horarios) == 1
     assert horarios[0]["idInstructor"] == str(catalogos["idInstructor"])
+    assert horarios[0]["ambienteNombre"] == "Ambiente 101"
 
 
 def test_horarios_por_ficha_404_si_no_existe(client, db_session, autenticar_como):

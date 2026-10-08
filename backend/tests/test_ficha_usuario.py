@@ -211,7 +211,7 @@ def test_mi_horario_devuelve_horario_enriquecido_de_la_ficha(
     assert body[0]["idFicha"] == ficha.idFicha
     assert body[0]["dias"] == [1]
     assert body[0]["fichaCodigo"] == ficha.codigoFicha
-    assert body[0]["ambienteNombre"] == "Ambiente"
+    assert body[0]["ambienteNombre"] == "Ambiente 101"
     assert body[0]["resultadoCodigo"] == "RA-1"
     assert body[0]["resultadoDescripcion"] == "Resultado de prueba"
 
