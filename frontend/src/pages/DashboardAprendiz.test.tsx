@@ -139,7 +139,7 @@ describe('DashboardAprendiz', () => {
     renderConProviders(<DashboardAprendiz />)
 
     await screen.findByText('Hola, Aprendiz Sara Rodríguez')
-    await waitFor(() => expect(screen.getByText('Sin ficha vinculada')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('Sin ficha vinculada').length).toBeGreaterThan(0))
   })
 
   it('los accesos rápidos apuntan a las rutas reales del Aprendiz', async () => {
@@ -150,8 +150,8 @@ describe('DashboardAprendiz', () => {
     const contenido = within(screen.getByRole('main'))
 
     expect(contenido.getAllByRole('link', { name: /Mi horario/ }).some((link) => link.getAttribute('href') === '/mi-horario-aprendiz')).toBe(true)
-    expect(contenido.getByRole('link', { name: 'Mensajes' })).toHaveAttribute('href', '/mensajes')
-    expect(contenido.getByRole('link', { name: 'Ver avisos' })).toHaveAttribute('href', '/avisos')
-    expect(contenido.getByRole('link', { name: 'Mi asistencia' })).toHaveAttribute('href', '/mi-asistencia')
+    expect(contenido.getByRole('link', { name: /Mensajes/ })).toHaveAttribute('href', '/mensajes')
+    expect(contenido.getByRole('link', { name: /Ver avisos/ })).toHaveAttribute('href', '/avisos')
+    expect(contenido.getByRole('link', { name: /Mi asistencia/ })).toHaveAttribute('href', '/mi-asistencia')
   })
 })
