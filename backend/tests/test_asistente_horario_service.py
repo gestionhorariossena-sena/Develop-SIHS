@@ -614,6 +614,28 @@ def test_previsualizar_excel_maestro_lee_fichas_por_codigo(db_session, monkeypat
     assert resultado.filas[1].fichaExiste is False
 
 
+def test_previsualizar_excel_maestro_no_oculta_fichas_despues_de_las_primeras_50(db_session, monkeypatch):
+    _crear_tablas_extra(db_session)
+
+    wb = openpyxl.Workbook()
+    fichas = wb.active
+    fichas.title = "FICHAS"
+    fichas.append(["codigo", "programa", "trimestre"])
+    for codigo in range(3407000, 3407200):
+        fichas.append([codigo, "ADSO", "Trimestre 4"])
+    buffer = BytesIO()
+    wb.save(buffer)
+
+    _mock_clasificacion(monkeypatch, {
+        "codigo": ("codigo_programa", 0.95), "programa": ("programa", 1.0), "trimestre": ("trimestre", 1.0),
+    })
+    resultado = previsualizar_excel(db_session, buffer.getvalue(), "maestro-200.xlsx")
+
+    assert resultado.totalFilas == 200
+    assert resultado.filas[50].codigoFicha == "3407050"
+    assert resultado.filas[-1].codigoFicha == "3407199"
+
+
 def test_elegir_hoja_compara_dos_columnas_ficha_en_la_misma_hoja():
     # El bug real: PE-04 trae IDENTIFICADOR_FICHA e
     # IDENTIFICADOR_UNICO_FICHA en la MISMA hoja -- hay que comparar entre

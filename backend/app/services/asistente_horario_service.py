@@ -47,7 +47,12 @@ from app.scheduling.generator import FRANJAS_POR_JORNADA, NecesidadHorario, gene
 _DIAS_HABILES = 5
 
 CONFIANZA_MINIMA = 0.7
-MAX_FILAS_PREVIA = 50
+# El archivo maestro institucional contiene 200 fichas. El tope anterior
+# de 50 ocultaba silenciosamente las fichas que aparecían después de esa
+# posición, por lo que no podían reconocerse ni programarse. Mantenemos
+# un límite para evitar respuestas desproporcionadas de archivos ajenos,
+# pero debe cubrir el maestro completo.
+MAX_FILAS_PREVIA = 250
 
 # Ver app/scheduling/generator.py -- mismo catálogo de 3 jornadas.
 JORNADAS_VALIDAS = ("MAÑANA", "TARDE", "NOCHE")
