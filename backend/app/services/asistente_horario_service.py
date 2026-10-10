@@ -100,12 +100,24 @@ def _elegir_hoja(wb, codigos_objetivo: set[str] | None = None) -> tuple:
     del lote recibían faseActual del complementario porque se estaba
     leyendo la hoja equivocada, no por ningún problema de datos."""
     mejor_ws, mejor_fila_encabezado, mejor_puntaje, mejor_columna_ficha = (
-        wb.worksheets[0], _fila_con_mas_datos(wb.worksheets[0]), -1, None,
+        wb.worksheets[0], _fila_con_mas_datos(wb.worksheets[0]), (-1, -1), None,
     )
     for ws in wb.worksheets:
         fila_encabezado = _fila_con_mas_datos(ws)
         encabezados = [str(c.value).strip() if c.value not in (None, "") else "" for c in ws[fila_encabezado]]
         indices_candidatos = [i for i, h in enumerate(encabezados) if "ficha" in h.lower()]
+        # El maestro institucional tiene una hoja de catálogo explícita
+        # llamada FICHAS, pero su identificador se titula simplemente
+        # "codigo". No ampliamos esta regla a todas las hojas porque
+        # PROGRAMAS, COMPETENCIAS y RESULTADOS también tienen códigos.
+        es_catalogo_fichas = ws.title.strip().casefold() == "fichas"
+        if es_catalogo_fichas:
+            indices_candidatos.extend(
+                i
+                for i, encabezado in enumerate(encabezados)
+                if encabezado.casefold() in {"codigo", "codigo ficha", "codigo_ficha", "cod ficha", "cod_ficha"}
+                and i not in indices_candidatos
+            )
         if not indices_candidatos:
             continue
 
@@ -129,8 +141,11 @@ def _elegir_hoja(wb, codigos_objetivo: set[str] | None = None) -> tuple:
 
         idx_mejor_de_la_hoja = max(puntajes, key=lambda i: puntajes[i])
         puntaje = puntajes[idx_mejor_de_la_hoja]
-        if puntaje > mejor_puntaje:
-            mejor_ws, mejor_fila_encabezado, mejor_puntaje = ws, fila_encabezado, puntaje
+        # La hoja de catálogo debe ganar frente a NECESIDADES aunque esta
+        # última tenga más filas y también contenga una columna "ficha".
+        puntaje_ordenado = (int(es_catalogo_fichas), puntaje)
+        if puntaje_ordenado > mejor_puntaje:
+            mejor_ws, mejor_fila_encabezado, mejor_puntaje = ws, fila_encabezado, puntaje_ordenado
             mejor_columna_ficha = encabezados[idx_mejor_de_la_hoja]
     return mejor_ws, mejor_fila_encabezado, mejor_columna_ficha
 

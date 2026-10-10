@@ -557,6 +557,63 @@ def test_elegir_hoja_prefiere_la_hoja_con_mas_fichas_numericas():
     assert columna == "FICHA"
 
 
+def test_elegir_hoja_maestro_prioriza_catalogo_fichas_con_columna_codigo():
+    # El maestro institucional usa "codigo" (no "ficha") en su hoja
+    # FICHAS y además trae NECESIDADES con muchas más filas.
+    wb = openpyxl.Workbook()
+    leeme = wb.active
+    leeme.title = "LÉEME"
+    leeme.append(["MAESTRO DE PROGRAMACIÓN"])
+
+    fichas = wb.create_sheet("FICHAS")
+    fichas.append(["codigo", "programa", "trimestre"])
+    fichas.append([3407178, "ADSO", "Trimestre 4"])
+    fichas.append([3407179, "ADSO", "Trimestre 4"])
+
+    necesidades = wb.create_sheet("NECESIDADES")
+    necesidades.append(["ficha", "resultado"])
+    for codigo in range(3407178, 3407228):
+        necesidades.append([codigo, "RA-1"])
+
+    ws, _, columna = _elegir_hoja(wb)
+
+    assert ws.title == "FICHAS"
+    assert columna == "codigo"
+
+
+def test_previsualizar_excel_maestro_lee_fichas_por_codigo(db_session, monkeypatch):
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=7, codigo_ficha="3407178")
+
+    wb = openpyxl.Workbook()
+    leeme = wb.active
+    leeme.title = "LÉEME"
+    leeme.append(["MAESTRO DE PROGRAMACIÓN"])
+    fichas = wb.create_sheet("FICHAS")
+    fichas.append(["codigo", "programa", "trimestre"])
+    fichas.append([3407178, "ADSO", "Trimestre 4"])
+    fichas.append([3407179, "ADSO", "Trimestre 4"])
+    necesidades = wb.create_sheet("NECESIDADES")
+    necesidades.append(["ficha", "resultado"])
+    for codigo in range(3407178, 3407228):
+        necesidades.append([codigo, "RA-1"])
+    buffer = BytesIO()
+    wb.save(buffer)
+
+    # Aunque la IA crea que "codigo" es código de programa, el selector
+    # mecánico de la hoja FICHAS debe usarlo como código de ficha.
+    _mock_clasificacion(monkeypatch, {
+        "codigo": ("codigo_programa", 0.95), "programa": ("programa", 1.0), "trimestre": ("trimestre", 1.0),
+    })
+    resultado = previsualizar_excel(db_session, buffer.getvalue(), "maestro.xlsx")
+
+    assert resultado.hoja == "FICHAS"
+    assert resultado.totalFilas == 2
+    assert [fila.codigoFicha for fila in resultado.filas] == ["3407178", "3407179"]
+    assert resultado.filas[0].fichaExiste is True
+    assert resultado.filas[1].fichaExiste is False
+
+
 def test_elegir_hoja_compara_dos_columnas_ficha_en_la_misma_hoja():
     # El bug real: PE-04 trae IDENTIFICADOR_FICHA e
     # IDENTIFICADOR_UNICO_FICHA en la MISMA hoja -- hay que comparar entre
