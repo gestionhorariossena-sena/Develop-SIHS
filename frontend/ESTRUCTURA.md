@@ -128,9 +128,9 @@ pendiente — ver `backend/OBJETIVO_Y_SERVICIOS_FALTANTES.md`.
 
 ```bash
 cd frontend
-npm install
+pnpm install
 cp .env.example .env    # y completar con las credenciales reales
-npm run dev
+pnpm dev
 ```
 
 Necesita el backend corriendo en paralelo (`cd backend && uvicorn app.main:app --reload`)

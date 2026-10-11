@@ -6,9 +6,9 @@ Cliente web construido con React + Vite + TypeScript + Tailwind.
 
 ```bash
 cd frontend
-npm install
+pnpm install
 cp .env.example .env
-npm run dev
+pnpm dev
 ```
 
 Corre en `http://localhost:5173` (o el siguiente puerto libre si ese está
