@@ -31,9 +31,9 @@ Déjala corriendo — queda en `http://127.0.0.1:8000` (probar en
 
 ```bash
 cd frontend
-npm install
+pnpm install
 cp .env.example .env        # y pegar ahí las credenciales reales
-npm run dev
+pnpm dev
 ```
 
 Déjala corriendo también — abre la URL que muestre la consola (normalmente
@@ -222,13 +222,13 @@ cd frontend
 Instalar dependencias de Node:
 
 ```bash
-npm install
+pnpm install
 ```
 
 Iniciar el servidor de desarrollo:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 El frontend estará corriendo en: `http://localhost:5173`
