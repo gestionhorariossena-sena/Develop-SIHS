@@ -8,7 +8,7 @@ esperando a que alguien entrara a mirarlo.
 """
 
 import uuid
-from datetime import date, time
+from datetime import date, time, timedelta
 
 from app.models.ambiente import Ambiente
 from app.models.coordinacion import Coordinacion
@@ -48,6 +48,7 @@ def _crear_tablas_extra(db_session):
 
 
 def _catalogos(db_session):
+    hoy = date.today()
     db_session.add_all(
         [
             Coordinacion(idCoordinacion=1, nombreCoordinacion="Tecnología"),
@@ -56,8 +57,11 @@ def _catalogos(db_session):
                 nivelFormacion="Técnico", activo=True, idCoordinacion=1,
             ),
             Trimestre(
-                idTrimestre=1, nombre="2026-1", fechaInicio=date(2026, 1, 5),
-                fechaFin=date(2026, 4, 30), estado="activo",
+                idTrimestre=1,
+                nombre="Período de prueba",
+                fechaInicio=hoy - timedelta(days=90),
+                fechaFin=hoy + timedelta(days=90),
+                estado="activo",
             ),
             Sede(id=1, nombre="Sede Norte", direccion="Calle 1", tipo="principal"),
             # Especiales a propósito: el CHECK `nombreAmbienteRegular`
