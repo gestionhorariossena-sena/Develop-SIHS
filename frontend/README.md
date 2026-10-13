@@ -2,23 +2,75 @@
 
 Cliente web construido con React + Vite + TypeScript + Tailwind.
 
-## Ejecutar
+## Requisitos y configuración
 
-```bash
-cd frontend
+Se requiere Node.js y npm. Desde PowerShell, en la raíz del repositorio:
+
+```powershell
+Set-Location frontend
 npm install
-cp .env.example .env
+Copy-Item .env.example .env
+```
+
+Completa `frontend/.env` con la URL y la clave pública de Supabase y la URL
+del backend. Consulta [`../database/README.md`](../database/README.md).
+
+## Ejecución
+
+```powershell
 npm run dev
 ```
 
-Corre en `http://localhost:5173` (o el siguiente puerto libre si ese está
-ocupado). Necesita el backend corriendo en paralelo para que el Dashboard
-cargue datos reales — ver [`../backend/README.md`](../backend/README.md).
+Vite muestra la dirección local, normalmente `http://localhost:5173`. Para
+cargar datos reales, inicia también el backend siguiendo
+[`../backend/README.md`](../backend/README.md).
 
-Las variables de `.env` (Supabase + URL del backend) se explican en
-[`../database/README.md`](../database/README.md).
+## Pruebas unitarias y lint
 
-## Para seguir programando
+```powershell
+npm test
+npm run lint
+```
+
+## Pruebas E2E
+
+Playwright ejecuta el flujo de inicio de sesión en Chromium y levanta Vite
+automáticamente. La prueba autentica una cuenta institucional real de prueba
+y verifica que aparezca el panel del rol esperado. El backend y Supabase deben
+estar disponibles según `VITE_API_URL` y las variables de `frontend/.env`.
+Instala el navegador una vez y, desde PowerShell, pasa las credenciales y el
+rol de la cuenta por variables de entorno (no se guardan en el repositorio):
+
+```powershell
+npx playwright install chromium
+$env:E2E_LOGIN_IDENTIFIER = "correo-de-prueba@sena.edu.co"
+$env:E2E_LOGIN_PASSWORD = "contraseña-de-prueba"
+$env:E2E_EXPECTED_ROLE = "Aprendiz"
+npm run test:e2e
+```
+
+`E2E_EXPECTED_ROLE` acepta `Aprendiz`, `Instructor`, `Coordinador` o
+`Administrador`; debe corresponder al rol asignado a la cuenta. La cuenta debe
+poder iniciar sesión en Supabase y no tener cambio obligatorio de contraseña
+pendiente. Los selectores del formulario usan sus etiquetas accesibles
+(`getByLabel`), no placeholders. Para abrir el navegador mientras corre la
+prueba:
+
+```powershell
+npm run test:e2e -- --headed
+```
+
+Los resultados y trazas de fallos se guardan en `test-results/` y el reporte
+HTML en `playwright-report/`; ambos directorios están excluidos de Git.
+
+El test que valida solo la presentación del formulario puede ejecutarse sin
+credenciales ni backend:
+
+```powershell
+npm run test:e2e -- --grep "muestra los campos del formulario"
+```
+
+## Documentación de desarrollo
 
 - [`ESTRUCTURA.md`](./ESTRUCTURA.md) — qué es cada carpeta/archivo, y cómo
   una pantalla consume el backend (con ejemplo copiable).
