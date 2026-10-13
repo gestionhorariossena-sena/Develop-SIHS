@@ -4,11 +4,11 @@ Cliente web construido con React + Vite + TypeScript + Tailwind.
 
 ## Requisitos y configuración
 
-Se requiere Node.js y npm. Desde PowerShell, en la raíz del repositorio:
+Se requiere Node.js y pnpm. Desde PowerShell, en la raíz del repositorio:
 
 ```powershell
 Set-Location frontend
-npm install
+pnpm install
 Copy-Item .env.example .env
 ```
 
@@ -18,7 +18,7 @@ del backend. Consulta [`../database/README.md`](../database/README.md).
 ## Ejecución
 
 ```powershell
-npm run dev
+pnpm dev
 ```
 
 Vite muestra la dirección local, normalmente `http://localhost:5173`. Para
@@ -28,8 +28,8 @@ cargar datos reales, inicia también el backend siguiendo
 ## Pruebas unitarias y lint
 
 ```powershell
-npm test
-npm run lint
+pnpm test
+pnpm lint
 ```
 
 ## Pruebas E2E
@@ -42,11 +42,11 @@ Instala el navegador una vez y, desde PowerShell, pasa las credenciales y el
 rol de la cuenta por variables de entorno (no se guardan en el repositorio):
 
 ```powershell
-npx playwright install chromium
+pnpm exec playwright install chromium
 $env:E2E_LOGIN_IDENTIFIER = "correo-de-prueba@sena.edu.co"
 $env:E2E_LOGIN_PASSWORD = "contraseña-de-prueba"
 $env:E2E_EXPECTED_ROLE = "Aprendiz"
-npm run test:e2e
+pnpm test:e2e
 ```
 
 `E2E_EXPECTED_ROLE` acepta `Aprendiz`, `Instructor`, `Coordinador` o
@@ -57,7 +57,7 @@ pendiente. Los selectores del formulario usan sus etiquetas accesibles
 prueba:
 
 ```powershell
-npm run test:e2e -- --headed
+pnpm test:e2e --headed
 ```
 
 Los resultados y trazas de fallos se guardan en `test-results/` y el reporte
@@ -67,7 +67,7 @@ El test que valida solo la presentación del formulario puede ejecutarse sin
 credenciales ni backend:
 
 ```powershell
-npm run test:e2e -- --grep "muestra los campos del formulario"
+pnpm test:e2e --grep "muestra los campos del formulario"
 ```
 
 ## Documentación de desarrollo

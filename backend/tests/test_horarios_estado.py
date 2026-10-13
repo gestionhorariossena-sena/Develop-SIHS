@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, time
+from datetime import date, time, timedelta
 
 from app.models.ambiente import Ambiente
 from app.models.coordinacion import Coordinacion
@@ -35,12 +35,19 @@ def _crear_tablas_extra(db_session):
 
 
 def _catalogos_base(db_session):
+    hoy = date.today()
     coordinacion = Coordinacion(idCoordinacion=1, nombreCoordinacion="Tecnología")
     programa = Programa(
         idPrograma=1, codigoPrograma="TEC-01", nombrePrograma="Tecnología",
         nivelFormacion="Técnico", activo=True, idCoordinacion=1,
     )
-    trimestre = Trimestre(idTrimestre=1, nombre="2026-1", fechaInicio=date(2026, 1, 5), fechaFin=date(2026, 4, 30), estado="activo")
+    trimestre = Trimestre(
+        idTrimestre=1,
+        nombre="Período de prueba",
+        fechaInicio=hoy - timedelta(days=90),
+        fechaFin=hoy + timedelta(days=90),
+        estado="activo",
+    )
     sede = Sede(id=1, nombre="Sede Norte", direccion="Calle 1", tipo="principal")
     ambiente = Ambiente(id=1, numero_ambiente=101, nombre="Ambiente", tipo_ambiente="regular", estado_ambiente="disponible", sede_id=1)
     jornada = Jornada(idJornada=1, nombreJornada="Mañana")
@@ -192,16 +199,19 @@ def test_mis_horarios_filtra_por_rango_de_fechas_del_trimestre(client, db_sessio
     _, ficha = _catalogos_base(db_session)
     _crear_horario(db_session, 100, yo, ficha)
 
+    hoy = date.today()
     dentro = client.get(
-        "/api/v1/usuarios/me/horarios?fechaInicio=2026-02-02&fechaFin=2026-02-06",
+        f"/api/v1/usuarios/me/horarios?fechaInicio={hoy.isoformat()}&fechaFin={hoy.isoformat()}",
         headers=headers,
     )
+    fuera_inicio = hoy + timedelta(days=91)
+    fuera_fin = hoy + timedelta(days=95)
     fuera = client.get(
-        "/api/v1/usuarios/me/horarios?fechaInicio=2026-05-04&fechaFin=2026-05-08",
+        f"/api/v1/usuarios/me/horarios?fechaInicio={fuera_inicio.isoformat()}&fechaFin={fuera_fin.isoformat()}",
         headers=headers,
     )
     rango_incompleto = client.get(
-        "/api/v1/usuarios/me/horarios?fechaInicio=2026-02-02",
+        f"/api/v1/usuarios/me/horarios?fechaInicio={hoy.isoformat()}",
         headers=headers,
     )
 

@@ -41,9 +41,9 @@ En otra terminal de PowerShell:
 
 ```powershell
 cd frontend
-npm install
+pnpm install
 Copy-Item .env.example .env
-npm run dev
+pnpm dev
 ```
 
 Vite muestra la URL local, normalmente `http://localhost:5173`. Consulta
