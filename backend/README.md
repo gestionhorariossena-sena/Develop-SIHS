@@ -55,3 +55,21 @@ esquema a una base compartida sin autorización.
   módulos pendientes.
 - [`PENDIENTE_MVP.md`](./PENDIENTE_MVP.md): pendientes identificados para el
   MVP.
+### Integración con PostgreSQL desechable
+
+La suite usual usa SQLite en memoria. Para verificar persistencia y endpoints
+contra PostgreSQL real, arranca únicamente la base de pruebas local (no usa
+Supabase ni lee `backend/.env`):
+
+```powershell
+docker compose -f tests/docker-compose.postgres.yml up -d --wait
+$env:SIHS_TEST_DATABASE_URL = "postgresql+psycopg://sihs_test:sihs_test_only@127.0.0.1:55440/sihs_test"
+pytest tests/test_real_postgres.py -v
+docker compose -f tests/docker-compose.postgres.yml down
+Remove-Item Env:SIHS_TEST_DATABASE_URL
+```
+
+La suite rechaza cualquier host, puerto, nombre de base o credenciales que no
+sean los del contenedor desechable. Incluye una prueba de persistencia JSONB en
+`HorarioGuardadoRepository` y una prueba HTTP autenticada que publica un
+horario y verifica que solo el instructor asignado lo recibe en `Mi horario`.
