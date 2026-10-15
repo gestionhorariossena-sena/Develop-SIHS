@@ -124,6 +124,23 @@ def test_previsualizar_excel_marca_ficha_inexistente(db_session, monkeypatch):
     assert "no existe" in resultado.filas[0].advertencia
 
 
+def test_previsualizar_excel_usa_doble_gemini_compartido(db_session, fake_gemini):
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=100, codigo_ficha="2758431")
+    llamadas = fake_gemini({
+        "FICHA": {"campo": "ficha", "confianza": 1.0},
+        "PROGRAMA": {"campo": "programa", "confianza": 1.0},
+    })
+    contenido = _xlsx_con_encabezado([["FICHA", "PROGRAMA"], ["2758431", "ADSO"]])
+
+    resultado = previsualizar_excel(db_session, contenido, "horario-prueba.xlsx")
+
+    assert resultado.totalFilas == 1
+    assert resultado.filas[0].codigoFicha == "2758431"
+    assert resultado.filas[0].fichaExiste is True
+    assert len(llamadas) == 1
+
+
 def test_previsualizar_excel_ficha_unificada_con_guion_usa_el_codigo_de_la_izquierda(db_session, monkeypatch):
     # Caso real: dos fichas se unifican físicamente en un solo grupo y el
     # Excel lo anota con guiones -- "3171645-65-668" (unificada con

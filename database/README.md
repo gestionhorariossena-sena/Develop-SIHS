@@ -1,139 +1,79 @@
-# Base de datos — guía paso a paso
+# Base de datos SIHS
 
-Usamos **Supabase**: es un PostgreSQL ya instalado y funcionando en internet.
-Nadie del equipo tiene que instalar PostgreSQL en su computador ni usar
-Docker para la base de datos. Solo necesitas las credenciales del proyecto.
+SIHS usa PostgreSQL administrado por Supabase. Las aplicaciones se conectan
+a la misma instancia: el backend accede a PostgreSQL y Supabase Auth; los
+clientes web y móvil usan Supabase Auth y consumen la API del backend.
 
-## 1. Consigue las credenciales
+## Credenciales y archivos `.env`
 
-Pídele a quien creó el proyecto en [supabase.com](https://supabase.com) que
-te comparta (por un canal privado, no en un grupo público):
+Solicita las credenciales de desarrollo a una persona autorizada del equipo
+y compártelas únicamente por un canal privado. Nunca publiques ni agregues
+archivos `.env` al repositorio.
 
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY` (solo si vas a tocar backend)
-- `DATABASE_URL` y `ALEMBIC_DATABASE_URL` (las dos cadenas de conexión)
+Desde PowerShell, en la raíz del repositorio, crea los archivos locales:
 
-Estas credenciales salen del panel de Supabase en **Project Settings → API**
-y **Project Settings → Database**.
-
-## 2. Ponlas en tu `.env`
-
-En `backend/`, copia el archivo de ejemplo y pega ahí los valores reales:
-
-```bash
-cd backend
-cp .env.example .env
+```powershell
+Copy-Item backend\.env.example backend\.env
+Copy-Item frontend\.env.example frontend\.env
+Copy-Item mobile\.env.example mobile\.env
 ```
 
-Abre `backend/.env` y reemplaza cada valor vacío con lo que te compartieron.
+Completa solo los valores necesarios para el componente que vas a ejecutar:
 
-Si vas a tocar frontend, haz lo mismo en `frontend/`:
+- Backend: `backend/.env` contiene las conexiones PostgreSQL y la
+  configuración de Supabase. `SUPABASE_SERVICE_ROLE_KEY` es secreta y solo
+  debe estar en el backend cuando una función administrativa la requiera.
+- Frontend: `frontend/.env` usa las variables `VITE_SUPABASE_URL`,
+  `VITE_SUPABASE_ANON_KEY` y `VITE_API_URL`. No pongas claves secretas en el
+  cliente web.
+- Móvil: `mobile/.env` usa `SUPABASE_URL`, `SUPABASE_ANON_KEY` y
+  `API_BASE_URL`.
 
-```bash
-cd frontend
-cp .env.example .env
+Para ejecutar cada aplicación, consulta el
+[README principal](../README.md) y las guías de
+[backend](../backend/README.md), [frontend](../frontend/README.md) y
+[móvil](../mobile/README.md).
+
+## Esquema y datos de desarrollo
+
+- [`01_creacion.sql`](./01_creacion.sql) contiene el esquema SQL inicial.
+- [`02_datos_prueba.sql`](./02_datos_prueba.sql) contiene datos de ejemplo
+  para desarrollo.
+- [`migrations/`](./migrations/) conserva scripts históricos de cambios
+  manuales.
+- [`backend/alembic/versions/`](../backend/alembic/versions/) contiene las
+  migraciones Alembic que se mantienen actualmente.
+
+No ejecutes el esquema inicial, los datos de prueba ni una migración contra
+una base compartida o productiva sin revisar el SQL, confirmar el destino y
+obtener autorización. Los datos de prueba pueden crear o modificar usuarios
+y registros; úsalos únicamente en una instancia aislada destinada a pruebas.
+
+## Crear y aplicar migraciones
+
+Los cambios de esquema deben partir del modelo correspondiente en
+`backend/app/models/`. Desde PowerShell:
+
+```powershell
+Set-Location backend
+.\.venv\Scripts\Activate.ps1
+alembic revision --autogenerate -m "descripcion-corta"
 ```
 
-**Nunca subas tu `.env` a GitHub.** Ya está en `.gitignore`, así que con
-`git status` no debería aparecer — si aparece, algo está mal, avisa antes de
-hacer commit.
+Revisa manualmente el archivo que Alembic genera en
+`backend/alembic/versions/`; la generación automática puede requerir ajustes.
+Aplica migraciones solo después de verificar el destino de la conexión y con
+aprobación para cualquier base compartida:
 
-## 3. Crea las tablas (solo la primera vez, alguien ya lo hizo)
-
-El archivo [`01_creacion.sql`](./01_creacion.sql) de esta carpeta crea todas
-las tablas del sistema (usuarios, roles, horarios, fichas, ambientes, etc.).
-**No necesitas correrlo tú** salvo que estén armando un proyecto de Supabase
-nuevo desde cero — ya se corrió una vez contra el proyecto compartido del
-equipo.
-
-Si en algún momento sí necesitas correrlo (por ejemplo, en un proyecto de
-pruebas propio), la forma más simple es:
-
-1. Entra al proyecto en [supabase.com](https://supabase.com).
-2. Ve a **SQL Editor** (en el menú de la izquierda).
-3. Abre `01_creacion.sql` de esta carpeta, copia todo el contenido, pégalo
-   en el editor de Supabase y dale "Run".
-
-## 4. ¿Y ahora qué?
-
-Con el `.env` configurado, ya puedes seguir las instrucciones normales del
-[README general](../README.md) para levantar el backend y el frontend — ellos
-se conectan solos a la base de datos usando esas variables.
-
-## Sobre `02_datos_prueba.sql` y por qué no hay Docker aquí
-
-**No usamos Docker para la base de datos** — es Supabase, nadie necesita
-levantar nada local. Si en algún momento vuelve a aparecer un
-`docker-compose.yml`, avisen antes de usarlo, seguimos con Supabase.
-
-**`02_datos_prueba.sql`** ya está adaptado a Supabase Auth y probado en vivo
-contra el proyecto del equipo: crea coordinaciones, programas, fichas,
-sedes, ambientes, horarios (con su consulta de detección de cruces incluida
-al final) y **4 usuarios de prueba que sí pueden iniciar sesión de
-verdad**, porque se crean primero en `auth.users` (con contraseña real,
-usando `pgcrypto`) y recién ahí se les crea la fila de perfil en
-`usuarios` con el mismo UUID — no un `INSERT` directo con contraseña
-inventada, que ya no funciona con Supabase Auth.
-
-Los 4 usuarios de prueba, todos con contraseña `Prueba123!`:
-
-| Email | Rol |
-|---|---|
-| `ana@mail.com` | Coordinador |
-| `carlos@mail.com` | Instructor |
-| `juan@mail.com` | Aprendiz |
-| `maria@mail.com` | Aprendiz |
-
-Úsenlos para probar el backend con un token real sin tener que registrar un
-usuario nuevo cada vez (`POST {SUPABASE_URL}/auth/v1/token?grant_type=password`
-con cualquiera de esos emails).
-
-## Qué es cada carpeta aquí
-
-- `01_creacion.sql` — el esquema completo (todas las tablas), listo para
-  correr una sola vez.
-- `02_datos_prueba.sql` — datos de ejemplo para desarrollo, ya corrido
-  contra el proyecto del equipo (ver tabla de usuarios arriba).
-- `migrations/` — cambios de esquema aplicados a mano **antes** de que
-  Alembic existiera en el proyecto (2026-08 a 2026-09). Quedan como
-  historial, no se vuelven a correr. **Los cambios de esquema nuevos van en
-  `backend/alembic/versions/`** (ver más abajo), no acá.
-
-### Alembic (cambios de esquema desde 2026-09-01)
-
-Ya configurado — `backend/alembic/env.py` usa `ALEMBIC_DATABASE_URL` (el
-pooler de sesión, puerto 5432, necesario para DDL) y conoce todos los
-modelos de `backend/app/models/`.
-
-Flujo para un cambio de esquema nuevo:
-
-```bash
-cd backend
-source .venv/bin/activate
-# 1. Cambia el modelo en app/models/ primero.
-# 2. Genera la migración comparando modelos vs. la BD real:
-alembic revision --autogenerate -m "descripción corta"
-# 3. ABRE el archivo generado en alembic/versions/ y revísalo a mano —
-#    autogenerate no siempre acierta (ver el comentario en la migración
-#    baseline sobre por qué el ON DELETE CASCADE hay que vigilarlo).
+```powershell
+alembic upgrade head
 ```
 
-Aplicar la migración contra la base compartida de Supabase es un cambio de
-esquema, así que sigue la misma regla que cualquier otro: no lo corre
-Claude por su cuenta, lo corre quien esté en la sesión con `!`:
+## Resolución de problemas
 
-```
-!cd backend && source .venv/bin/activate && alembic upgrade head
-```
-- `seeds/` — carpeta original del esqueleto, sin usar todavía (los datos de
-  prueba quedaron en `02_datos_prueba.sql` en su lugar).
-
-## Si algo no conecta
-
-- Revisa que copiaste el `.env` completo, sin espacios de más ni comillas.
-- Revisa que la contraseña dentro de `DATABASE_URL`/`ALEMBIC_DATABASE_URL`
-  sea la actual — si alguien la reseteó en Supabase, hay que actualizarla en
-  tu `.env` local.
-- Si nada de esto funciona, pregunta en el grupo del equipo antes de cambiar
-  nada en Supabase — es un proyecto compartido.
+- Comprueba que cada componente tenga su `.env` local y que las variables
+  coincidan con los nombres de su archivo `.env.example`.
+- Verifica `DATABASE_URL` para la conexión de la aplicación y
+  `ALEMBIC_DATABASE_URL` para Alembic.
+- Si se rotó una contraseña o clave, solicita el valor actualizado por un
+  canal privado; no lo pegues en incidencias públicas o commits.
