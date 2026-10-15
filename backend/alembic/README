@@ -1,1 +1,7 @@
-Generic single-database configuration.
+Las migraciones de la base de datos de SIHS se mantienen en `versions/`.
+
+Antes de crear o aplicar migraciones, consulta
+[`../../database/README.md`](../../database/README.md) y
+[`../README.md`](../README.md). Este directorio se configura desde
+`alembic.ini` y `env.py`; no ejecutes migraciones contra una base compartida
+sin autorización.
