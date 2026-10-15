@@ -56,7 +56,8 @@ lista, corrige —queda **una sola fila** y dos entradas de auditoría
 suyo. Los permisos cruzados responden 403 en ambos sentidos.
 
 - Migración **`c9d4e1f70a33`** (`fechaSesion`) **ya está aplicada** en la base.
-- Móvil: solo lectura para el Aprendiz. `ARQUITECTURA_MOBILE.md` sigue
+- Móvil: solo lectura para el Aprendiz.
+  [`ARQUITECTURA_MOBILE.md`](../Arquitectura/ARQUITECTURA_MOBILE.md) sigue
   valiendo tal cual, el cliente Flutter no escribe.
 - **Falta decidir**: coordinación no tiene ninguna vista de asistencia. Hoy
   el instructor registra y el aprendiz consulta, y ahí se acaba — nadie
