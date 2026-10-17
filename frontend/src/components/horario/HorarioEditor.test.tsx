@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HorarioEditor } from './HorarioEditor'
@@ -256,5 +256,58 @@ describe('HorarioEditor', () => {
     expect(
       screen.getByRole('button', { name: 'Jueves, 9:00 a.m – 12:00 p.m: Programación' }),
     ).toBeInTheDocument()
+  })
+
+  // --- Semana 3 (Edith) — capa Interfaz visual: lo que ve la persona en el
+  // formulario, no el estado interno (useState/props).
+
+  it('con fichaFijada (flujo real de NuevoHorario.tsx por ficha), el modal no pide elegir Ficha porque ya viene fijada', async () => {
+    const usuario = userEvent.setup()
+    render(
+      <HorarioEditor
+        bloquesIniciales={[]}
+        gridInicial={gridVacio()}
+        catalogos={CATALOGOS}
+        fichaFijada={CATALOGOS.fichas[0]}
+      />,
+    )
+
+    await usuario.click(screen.getByRole('button', { name: CELDA_LUNES }))
+
+    expect(screen.getByLabelText('Resultado de aprendizaje')).toBeInTheDocument()
+    expect(screen.getByLabelText('Instructor')).toBeInTheDocument()
+    expect(screen.getByLabelText('Ambiente')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Ficha')).not.toBeInTheDocument()
+  })
+
+  it('intentar guardar el modal con los campos obligatorios vacíos no crea el bloque ni cierra el modal', async () => {
+    const usuario = userEvent.setup()
+    renderVacio()
+
+    await usuario.click(screen.getByRole('button', { name: CELDA_LUNES }))
+    await usuario.click(screen.getByRole('button', { name: 'Guardar bloque' }))
+
+    // La validación nativa (required) del navegador bloquea el submit antes
+    // de que llegue a onGuardar — el modal sigue abierto y la celda sigue vacía.
+    expect(screen.getByRole('dialog')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: CELDA_LUNES })).toBeInTheDocument()
+    expect(screen.getByText(/Todavía no hay bloques/i)).toBeInTheDocument()
+  })
+
+  it('onCambiarEstado (la función que NuevoHorario.tsx usa para capturar el estado) se llama con el bloque y la celda recién guardados', async () => {
+    const usuario = userEvent.setup()
+    const onCambiarEstado = vi.fn()
+    render(
+      <HorarioEditor bloquesIniciales={[]} gridInicial={gridVacio()} onCambiarEstado={onCambiarEstado} />,
+    )
+    onCambiarEstado.mockClear() // descarta la llamada del montaje inicial (estado vacío)
+
+    await crearBloqueDesdeCelda(usuario, CELDA_LUNES)
+
+    expect(onCambiarEstado).toHaveBeenCalled()
+    const ultimoEstado = onCambiarEstado.mock.calls.at(-1)?.[0]
+    expect(ultimoEstado.bloques).toHaveLength(1)
+    expect(ultimoEstado.bloques[0]).toMatchObject({ tematica: 'Programación', instructor: 'Ana Ríos' })
+    expect(ultimoEstado.grid[0][0]).toBe(ultimoEstado.bloques[0].id)
   })
 })
