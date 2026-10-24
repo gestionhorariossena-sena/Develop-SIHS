@@ -13,7 +13,7 @@ su PR — no se marca "hecho" hasta que el PR está abierto y pasando.
 | David | E2E — Login con panel por rol | `test/e2e-login-panel-por-rol` | ✅ Hecho, mergeado a `develop`. Moviendo de `frontend/e2e/` a `e2e/tests/` en `fix/semana-1-cierre` | [commit dd4bcd8](../../commit/dd4bcd8) |
 | Dayana | E2E — Publicar horario | `test/semana-1-publicar-horario` | ✅ Hecho, mergeado a `develop` | [`e2e/tests/publicar-horario.spec.ts`](../e2e/tests/publicar-horario.spec.ts) |
 | Edith | E2E — Validación de login vacío + 4 unitarias de `formatearTiempoRestante` | `test/semana-1-login-validacion` | ✅ Hecho, mergeado a `develop` | [`e2e/tests/login-validacion.spec.ts`](../e2e/tests/login-validacion.spec.ts) |
-| Nicol | E2E — Asistente de horarios (IA) | `test/semana-1-e2e-asistente-ia` | 🔶 En progreso — la versión en `develop` está en Vitest, no en Playwright; se está rehaciendo en `fix/semana-1-cierre` | — |
+| Nicol | E2E — Asistente de horarios (IA) | `test/semana-1-e2e-asistente-ia` | ✅ Hecho en Playwright (3 tests, en verde) en `fix/semana-1-cierre` | [`e2e/tests/asistente-ia.spec.ts`](../e2e/tests/asistente-ia.spec.ts) |
 
 ### Entregables grupales S1
 
@@ -60,6 +60,6 @@ David + Dayana.
 | Dato | Valor |
 |---|---|
 | Tests E2E en `develop` | 4 (`e2e/tests/login-validacion.spec.ts`, `publicar-horario.spec.ts`, `horarios-flujos.spec.ts` + el de David pendiente de mover desde `frontend/e2e/`) |
-| Test E2E de Nicol (asistente IA) | Vitest en `develop`, Playwright en progreso en `fix/semana-1-cierre` |
+| Test E2E de Nicol (asistente IA) | Playwright en `e2e/tests/asistente-ia.spec.ts` (3 tests); la versión Vitest sigue como test de componente |
 | Umbral de cobertura en CI | ninguno todavía |
 | Rama de cierre de Semana 1 | `fix/semana-1-cierre` (creada 2026-10-24 desde `develop`) |
