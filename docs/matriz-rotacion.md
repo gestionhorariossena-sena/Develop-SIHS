@@ -10,22 +10,22 @@ su PR — no se marca "hecho" hasta que el PR está abierto y pasando.
 
 | Integrante | Entregable individual | Rama | Estado | Evidencia |
 |---|---|---|---|---|
-| David | E2E — Login exitoso | — | Pendiente | — |
-| Dayana | E2E — Publicar horario | — | Pendiente | — |
-| Edith | E2E — Validación de login vacío + 4 unitarias de `formatearTiempoRestante` | `test/semana-1-login-validacion` | ✅ Listo, push hecho, PR sin abrir | [commit 988fe6b](../../commit/988fe6b) |
-| Nicol | E2E — Asistente de horarios (IA) | `test/semana-1-e2e-asistente-ia` | Código en rama, push hecho, PR sin abrir | — |
+| David | E2E — Login con panel por rol | `test/e2e-login-panel-por-rol` | ✅ Hecho, mergeado a `develop`. Moviendo de `frontend/e2e/` a `e2e/tests/` en `fix/semana-1-cierre` | [commit dd4bcd8](../../commit/dd4bcd8) |
+| Dayana | E2E — Publicar horario | `test/semana-1-publicar-horario` | ✅ Hecho, mergeado a `develop` | [`e2e/tests/publicar-horario.spec.ts`](../e2e/tests/publicar-horario.spec.ts) |
+| Edith | E2E — Validación de login vacío + 4 unitarias de `formatearTiempoRestante` | `test/semana-1-login-validacion` | ✅ Hecho, mergeado a `develop` | [`e2e/tests/login-validacion.spec.ts`](../e2e/tests/login-validacion.spec.ts) |
+| Nicol | E2E — Asistente de horarios (IA) | `test/semana-1-e2e-asistente-ia` | 🔶 En progreso — la versión en `develop` está en Vitest, no en Playwright; se está rehaciendo en `fix/semana-1-cierre` | — |
 
 ### Entregables grupales S1
 
 | Entregable | Responsable | Estado |
 |---|---|---|
 | Migración npm → pnpm | David | ✅ Mergeado a `develop` (PR #137) |
-| Postgres de pruebas en Docker — local | Dayana | Pendiente |
-| Carpeta `e2e/` con Playwright | Los 4 | ✅ Creada (en `test/semana-1-login-validacion`, pendiente de integrar a `semana-1`) |
-| `docs/matriz-rotacion.md` | Edith | ✅ Este archivo |
-| `.github/pull_request_template.md` | Nicol | Pendiente |
-| Línea base de cobertura (back + front) | David + Dayana | Pendiente |
-| `ci.yml` con umbral 30% bloqueante | Los 4 | Pendiente |
+| Postgres de pruebas en Docker — local | Dayana | ✅ Hecho (`backend/tests/docker-compose.postgres.yml`) |
+| Carpeta `e2e/` con Playwright | Los 4 | ✅ Integrada a `develop`. Queda por consolidar el duplicado de `frontend/e2e/` (en `fix/semana-1-cierre`) |
+| `docs/matriz-rotacion.md` | Edith | ✅ Actualizado hoy (24 oct) en `fix/semana-1-cierre` |
+| `.github/pull_request_template.md` | Dayana | 🔶 En progreso en `fix/semana-1-cierre` |
+| Línea base de cobertura (back + front) | David + Dayana | ❌ Pendiente — todavía no está instalada la herramienta de cobertura: falta `@vitest/coverage-v8` en frontend y `pytest-cov` en backend. Sin eso no hay número real que registrar |
+| `ci.yml` con umbral 30% bloqueante | Los 4 | ❌ Pendiente — depende de que primero se registre la línea base |
 
 ## Semana 2 (18–25 oct) — Rotación en paralelo + CI completo + cierre
 
@@ -51,14 +51,15 @@ su PR — no se marca "hecho" hasta que el PR está abierto y pasando.
 |---|---|
 | 30% | 60% |
 
-Línea base real: **aún no registrada** (pendiente del entregable "Línea
-base de cobertura" de David + Dayana).
+Línea base real: **aún no registrada** — falta instalar `@vitest/coverage-v8`
+(frontend) y `pytest-cov` (backend) antes de poder correrla. Pendiente de
+David + Dayana.
 
-## Estado real verificado del repo (2026-10-11)
+## Estado real verificado del repo (2026-10-24)
 
 | Dato | Valor |
 |---|---|
-| Archivos de test — backend | 55 |
-| Archivos de test — frontend | 48 (ahora 49 con `tiempoRestante.test.ts`) |
-| Tests E2E en `main`/`develop` | 0 (2 en rama `test/semana-1-login-validacion`, pendientes de integrar) |
+| Tests E2E en `develop` | 4 (`e2e/tests/login-validacion.spec.ts`, `publicar-horario.spec.ts`, `horarios-flujos.spec.ts` + el de David pendiente de mover desde `frontend/e2e/`) |
+| Test E2E de Nicol (asistente IA) | Vitest en `develop`, Playwright en progreso en `fix/semana-1-cierre` |
 | Umbral de cobertura en CI | ninguno todavía |
+| Rama de cierre de Semana 1 | `fix/semana-1-cierre` (creada 2026-10-24 desde `develop`) |
