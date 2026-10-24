@@ -27,6 +27,7 @@ export default defineConfig({
     command: `pnpm dev --host 127.0.0.1 --port ${BASE_PORT} --strictPort`,
     cwd: FRONTEND_DIR,
     url: BASE_URL,
+    env: process.env.E2E_API_URL ? { VITE_API_URL: process.env.E2E_API_URL } : {},
     reuseExistingServer: !process.env.CI && !process.env.E2E_FORCE_SERVER,
     timeout: 60_000,
   },

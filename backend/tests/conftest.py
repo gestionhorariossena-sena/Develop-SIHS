@@ -1,6 +1,8 @@
+import json
 import uuid
 from datetime import date, timedelta
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, types
@@ -163,6 +165,37 @@ def fake_supabase(monkeypatch):
         usuarios_por_token[token] = {"id": id, "email": email, "user_metadata": user_metadata or {}}
 
     return registrar
+
+
+@pytest.fixture()
+def fake_gemini(monkeypatch):
+    """Instala un responder Gemini estructurado sin salir a la red."""
+
+    def instalar(payload: dict) -> list[dict]:
+        llamadas: list[dict] = []
+        cuerpo = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": json.dumps(payload, ensure_ascii=False)}],
+                    },
+                },
+            ],
+        }
+
+        def fake_post(url, **kwargs):
+            llamadas.append({"url": str(url), **kwargs})
+            return httpx.Response(
+                200,
+                json=cuerpo,
+                request=httpx.Request("POST", str(url)),
+            )
+
+        monkeypatch.setattr("app.ai.client.settings.gemini_api_key", "gemini-test-key")
+        monkeypatch.setattr("app.ai.client.httpx.post", fake_post)
+        return llamadas
+
+    return instalar
 
 
 @pytest.fixture()

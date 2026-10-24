@@ -2,8 +2,28 @@ import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { HorarioEditor } from './HorarioEditor'
+import type { CatalogosBloque } from './ModalBloque'
 import { gridVacio } from '../../pages/horario/useHorarioState'
 import type { BloqueClase } from '../../pages/horario/tipos'
+
+/** Catálogos mínimos — en producción (NuevoHorario.tsx) el modal usa estos
+ * selects en vez de texto libre; ningún test de este archivo lo cubría. */
+const CATALOGOS: CatalogosBloque = {
+  fichas: [{
+    idFicha: 1, codigoFicha: '3228973', idPrograma: 1, idTrimestre: 1, idSede: null,
+    programa: { idPrograma: 1, codigoPrograma: 'ADSO', nombrePrograma: 'Análisis y Desarrollo de Software', nivelFormacion: 'Tecnólogo', activo: true, idCoordinacion: 1 },
+    trimestre: { idTrimestre: 1, nombre: 'Trimestre 1', fechaInicio: '2026-01-01', fechaFin: '2026-03-31', estado: 'activo' },
+    sede: null,
+    aprendicesTotales: 25,
+    jornadas: ['Mañana'],
+  }],
+  ambientes: [{ idAmbiente: 1, numeroAmbiente: 101, nombreAmbiente: 'Ambiente 101', tipoAmbiente: 'regular', estadoAmbiente: 'disponible', idSede: 1 }],
+  instructores: [{
+    idUsuario: 'u1', nombre: 'Ana Ríos', email: 'ana@example.com', estado: 'activo',
+    fechaRegistro: '2026-01-01', roles: [], especialidades: [], debeCambiarClave: false,
+  }],
+  resultados: [{ idResultado: 9, codigo: 'RA9', descripcion: 'Programación básica', idCompetencia: 1, idGuia: null, horasAsignadas: 40 }],
+}
 
 // Coinciden con la celda de Lunes/Martes/Miércoles, jornada Mañana, 6:15-9:00,
 // esté vacía ("...vacía") o con un bloque activo ("Asignar bloque activo a...").
@@ -183,6 +203,30 @@ describe('HorarioEditor', () => {
     expect(screen.getByLabelText('Lunes, 6:15 a.m – 9:00 a.m: Comunicación')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Editar Comunicación/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Quitar Comunicación/i })).not.toBeInTheDocument()
+  })
+
+  it('con catálogos reales, el modal usa selects (no texto libre) y guarda el bloque con sus IDs relacionales', async () => {
+    // Arrange (semana 2 - Edith): modo real de producción — NuevoHorario.tsx
+    // siempre pasa `catalogos`; el modo de texto libre de arriba solo lo usan
+    // estos tests. Nunca se había probado este camino a nivel de componente.
+    const usuario = userEvent.setup()
+    render(<HorarioEditor bloquesIniciales={[]} gridInicial={gridVacio()} catalogos={CATALOGOS} />)
+
+    // Act
+    await usuario.click(screen.getByRole('button', { name: CELDA_LUNES }))
+    expect(screen.queryByLabelText('Temática')).not.toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Resultado de aprendizaje'), 'RA9 — Programación básica')
+    await usuario.selectOptions(screen.getByLabelText('Instructor'), 'Ana Ríos')
+    await usuario.selectOptions(screen.getByLabelText('Ficha'), '3228973')
+    await usuario.selectOptions(screen.getByLabelText('Ambiente'), 'Ambiente 101')
+    await usuario.click(screen.getByRole('button', { name: 'Guardar bloque' }))
+
+    // Assert — la celda queda asignada con la etiqueta armada desde el catálogo.
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Lunes, 6:15 a.m – 9:00 a.m: RA9 — Programación básica' }),
+    ).toBeInTheDocument()
   })
 
   it('al rellenar un rango conserva intactas las asignaciones ya guardadas', async () => {
