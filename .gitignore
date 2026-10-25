@@ -10,6 +10,8 @@ backend/**/__pycache__/
 backend/**/*.pyc
 backend/.env
 backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
 backend/*.log
 backend/_tok.txt
 backend/package-lock.json

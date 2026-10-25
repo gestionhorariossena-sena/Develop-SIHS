@@ -39,6 +39,15 @@ Desde `backend/`, con el entorno virtual activo:
 pytest
 ```
 
+Para generar la línea base de cobertura del paquete `app`:
+
+```powershell
+pytest --cov=app --cov-report=term-missing --cov-report=html
+```
+
+El reporte HTML queda en `backend/htmlcov/`; no se configura un umbral de
+cobertura en esta etapa.
+
 ## Migraciones
 
 Las migraciones del proyecto se administran con Alembic en
