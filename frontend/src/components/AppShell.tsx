@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import senaLogo from '../assets/sena-logo.jpeg'
 import { useAuth } from '../hooks/useAuth'
@@ -9,22 +9,17 @@ import { getPerfil, guardarPreferenciaTema } from '../services/perfil'
 import type { Notificacion, Usuario } from '../types/api'
 import { NotificacionesPanel } from './NotificacionesPanel'
 import { ThemeSelector } from './ThemeSelector'
+import type { Tema } from '../context/theme-context'
 
 interface ItemNav {
   etiqueta: string
   ruta?: string
   /** Solo Administrador/Coordinador — mismo criterio que ya tenía "Usuarios". */
   soloGestion?: boolean
+  soloAdmin?: boolean
   /** Solo para quien tenga el rol Instructor — pantallas de autoservicio
    * ("Mi horario"), no tiene sentido que las vea un Coordinador/Aprendiz. */
   soloInstructor?: boolean
-  /** Espejo de `soloInstructor` para el autoservicio del Aprendiz. */
-  soloAprendiz?: boolean
-  /** Solo Administrador — más estricto que `soloGestion` (que también deja
-   * pasar a Coordinador). Panel de Administración de solicitudes de acceso
-   * (SCRUM-121): "Ni Coordinador ni ningún otro rol la ve" es regla de
-   * negocio explícita, un Coordinador no debe aprobar otros Coordinadores. */
-  soloAdmin?: boolean
 }
 
 interface GrupoNav {
@@ -33,13 +28,12 @@ interface GrupoNav {
 }
 
 /**
- * Navbar superior con menús desplegables por grupo — rediseño 2026-09-06
- * siguiendo los mockups Stitch al pie de la letra (ver GUIA_DE_MARCA.md).
- * Los grupos (Programación/Formación/Recursos/Operación/Administración) son
- * los mismos de siempre, solo que ahora cada uno es un desplegable del
- * navbar en vez de una sección del sidebar — la lista de rutas/roles no
- * cambió. Los ítems sin `ruta` son módulos que todavía no existen (misma
+ * Reorganizado en grupos (ver _Docs/Diseño/sidebar.png, mockup de
+ * referencia) — antes era una lista plana bajo un único rótulo "GESTIÓN".
+ * Los ítems sin `ruta` son módulos que todavía no existen (misma
  * convención que ya había: se muestran deshabilitados con tooltip).
+ * "Horarios" es el "Constructor" del mockup — se dejó ese nombre para no
+ * tocar NuevoHorario.tsx en este cambio, es solo una etiqueta.
  *
  * Todo el set de herramientas de coordinación (Programación/Formación/
  * Recursos/Operación, no solo Administración) es `soloGestion: true`
@@ -50,6 +44,9 @@ interface GrupoNav {
  * evita la confusión de "por qué me deja hacer clic y después falla", no
  * reemplaza esa protección.
  */
+/** Fuera de los grupos, arriba de todo — igual que antes, es el punto de
+ * regreso rápido, el mockup lo da por implícito en el logo pero se deja
+ * explícito para no perder la forma actual de volver al dashboard. */
 const INICIO: ItemNav = { etiqueta: 'Inicio', ruta: '/dashboard' }
 
 const NAV: GrupoNav[] = [
@@ -57,40 +54,26 @@ const NAV: GrupoNav[] = [
     grupo: 'Mi trabajo',
     items: [
       { etiqueta: 'Mi horario', ruta: '/mi-horario', soloInstructor: true },
-      // Pasar lista: solo el instructor, y solo de sus propias clases.
-      { etiqueta: 'Asistencia', ruta: '/asistencia', soloInstructor: true },
-      { etiqueta: 'Mi horario', ruta: '/mi-horario-aprendiz', soloAprendiz: true },
-      // Solo el Aprendiz abre conversaciones (lo valida el backend), así
-      // que por ahora el ítem es suyo; la bandeja del Instructor es otra
-      // pantalla pendiente de diseño.
-      { etiqueta: 'Mi asistencia', ruta: '/mi-asistencia', soloAprendiz: true },
-      { etiqueta: 'Mensajes', ruta: '/mensajes', soloAprendiz: true },
-      // Centro de notificaciones del Aprendiz (pantalla propia, distinta
-      // de la campana del navbar: ahí caben el historial y el detalle).
-      { etiqueta: 'Notificaciones', ruta: '/notificaciones', soloAprendiz: true },
     ],
   },
   {
     grupo: 'Programación',
     items: [
       { etiqueta: 'Horarios', ruta: '/horarios/nuevo', soloGestion: true },
-      { etiqueta: 'Asistente IA', ruta: '/horarios/asistente-ia', soloGestion: true },
       { etiqueta: 'Horarios completos', ruta: '/horarios/completos', soloGestion: true },
-      { etiqueta: 'Publicaciones programadas', ruta: '/horarios/publicaciones-programadas', soloGestion: true },
       { etiqueta: 'Historial de horarios', ruta: '/horarios/historial', soloGestion: true },
       { etiqueta: 'Vista por fichas', ruta: '/vista-fichas', soloGestion: true },
       { etiqueta: 'Vista por instructores', ruta: '/vista-instructores', soloGestion: true },
       { etiqueta: 'Vista por ambientes', ruta: '/vista-ambientes', soloGestion: true },
       { etiqueta: 'Calendario general', ruta: '/calendario', soloGestion: true },
-      { etiqueta: 'Auditoría de cruces', ruta: '/horarios/auditoria', soloGestion: true },
     ],
   },
   {
     grupo: 'Formación',
     items: [
       { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
-      { etiqueta: 'Programas', ruta: '/programas', soloGestion: true },
-      { etiqueta: 'Temáticas', ruta: '/tematicas', soloGestion: true },
+      { etiqueta: 'Programas', soloGestion: true },
+      { etiqueta: 'Temáticas', soloGestion: true },
     ],
   },
   {
@@ -98,36 +81,22 @@ const NAV: GrupoNav[] = [
     items: [
       { etiqueta: 'Instructores', ruta: '/instructores', soloGestion: true },
       { etiqueta: 'Ambientes', ruta: '/ambientes', soloGestion: true },
-      { etiqueta: 'Sedes', ruta: '/sedes', soloGestion: true },
+      { etiqueta: 'Sedes', soloGestion: true },
     ],
   },
   {
-    grupo: 'Comunicaciones',
+    grupo: 'Operación',
     items: [
-      { etiqueta: 'Solicitudes de cambio', ruta: '/cambios', soloGestion: true },
-      { etiqueta: 'Mis solicitudes', ruta: '/mis-solicitudes-cambio', soloInstructor: true },
-      { etiqueta: 'Comunicados', ruta: '/avisos' },
+      { etiqueta: 'Aprobar solicitudes de registro', ruta: '/aprobar-solicitudes', soloAdmin: true },
+      { etiqueta: 'Cambios', soloGestion: true },
+      { etiqueta: 'Notificaciones', soloGestion: true },
     ],
   },
   {
     grupo: 'Administración',
     items: [
-      // H-6: asignar y quitar roles exige Administrador en el backend
-      // (`usuario_rol.py`), así que un Coordinador entraba a las dos
-      // pantallas, veía los botones y se comía un 403 al usarlos. La regla
-      // real es que repartir roles es del Administrador, y el menú ahora
-      // dice lo mismo que el backend.
-      { etiqueta: 'Usuarios', ruta: '/usuarios', soloAdmin: true },
-      { etiqueta: 'Código de instructor', ruta: '/codigo-instructor', soloGestion: true },
-      { etiqueta: 'Roles', ruta: '/roles', soloAdmin: true },
-      // Dos caminos de alta, cada uno con su caso (H-7):
-      //  - "Solicitudes de acceso": gente SIN cuenta, que la pidió desde el
-      //    registro. Aprobar crea la cuenta (`/solicitudes-acceso`).
-      //  - "Usuarios sin rol": gente que YA se registró por el formulario
-      //    normal (Instructor/Aprendiz) y quedó sin ningún rol, así que no
-      //    puede usar nada. El Panel no los ve: no hay solicitud detrás.
-      { etiqueta: 'Solicitudes de acceso', ruta: '/panel-administracion', soloAdmin: true },
-      { etiqueta: 'Usuarios sin rol', ruta: '/aprobar-solicitudes', soloAdmin: true },
+      { etiqueta: 'Usuarios', ruta: '/usuarios', soloGestion: true },
+      { etiqueta: 'Roles', ruta: '/roles', soloGestion: true },
       { etiqueta: 'Configuración', soloGestion: true },
     ],
   },
@@ -137,6 +106,13 @@ function letraInicial(nombre: string) {
   return nombre.trim().charAt(0).toUpperCase()
 }
 
+// El menú flota sobre el contenido (position: fixed) en vez de empujarlo —
+// así el grid de horarios (mínimo 1100px, ver GridHorario.tsx) siempre
+// tiene el ancho completo del viewport disponible y nunca necesita scroll
+// lateral, esté el menú abierto o cerrado.
+const RETRASO_APERTURA_HOVER_MS = 1500
+const RETRASO_CIERRE_HOVER_MS = 300
+
 interface AppShellProps {
   /** Etiqueta del ítem de NAV que debe verse activo (debe matchear `etiqueta` arriba). */
   activo: string
@@ -144,9 +120,11 @@ interface AppShellProps {
 }
 
 /**
- * Navbar superior + contenido, compartido por toda pantalla autenticada.
- * Réplica de los mockups Stitch (stitch_sena_schedule_management_mockups)
- * — ver _Docs/Diseño/GUIA_DE_MARCA.md para tokens de color/tipografía.
+ * Sidebar (overlay) + header institucional, compartido por Dashboard.tsx y
+ * cualquier pantalla nueva bajo /dashboard. Réplica de
+ * _Docs/Diseño/mockups-institucionales/03-dashboard.png — ver
+ * _Docs/Diseño/GUIA_DE_MARCA.md para las reglas de color/tipografía que
+ * sigue este componente.
  *
  * Los ítems de NAV sin `ruta` son módulos que todavía no existen en el
  * backend (ver backend/OBJETIVO_Y_SERVICIOS_FALTANTES.md) — se muestran
@@ -156,185 +134,178 @@ interface AppShellProps {
 export function AppShell({ activo, children }: AppShellProps) {
   const { signOut, session } = useAuth()
   const { setTema } = useTheme()
-  const idUsuario = session?.user?.id ?? ''
-
   const [miPerfil, setMiPerfil] = useState<Usuario | null>(null)
   const [errorPerfil, setErrorPerfil] = useState<string | null>(null)
-
-  const [grupoAbierto, setGrupoAbierto] = useState<string | null>(null)
-  // En ventanas estrechas, los grupos pasan al menú compacto para que no
-  // se superpongan con el logo ni con las acciones de la derecha. El menú
-  // central aparece a partir de xl para dejar espacio suficiente a los grupos.
-  const [menuCompactoAbierto, setMenuCompactoAbierto] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-
+  const [navAbierta, setNavAbierta] = useState(false)
+  const abiertaPorHoverRef = useRef(false)
+  const temporizadorAperturaRef = useRef<number | null>(null)
+  const temporizadorCierreRef = useRef<number | null>(null)
   const [notifAbiertas, setNotifAbiertas] = useState(false)
-  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([])
   const notifRef = useRef<HTMLDivElement>(null)
-
-  const hayNoLeidas = notificaciones.some((n) => !n.leida)
-
+  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([])
+  const [errorNotificaciones, setErrorNotificaciones] = useState<string | null>(null)
+  const hayNoLeidas = notificaciones.some((notificacion) => !notificacion.leida)
   const puedeGestionarUsuarios =
     miPerfil?.roles.some(
       (rol) => rol.nombre === 'Administrador' || rol.nombre === 'Coordinador',
     ) ?? false
-
-  const esInstructor =
-    miPerfil?.roles.some((rol) => rol.nombre === 'Instructor') ?? false
-
-  const esAprendiz =
-    miPerfil?.roles.some((rol) => rol.nombre === 'Aprendiz') ?? false
-
-  const esAdministrador =
-    miPerfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
-
-  // Los ítems marcados soloGestion solo tienen sentido para un
-  // Administrador o Coordinador — mismo criterio que antes tenía "Usuarios".
-  // soloInstructor es el espejo para el grupo "Mi trabajo". soloAdmin es más
-  // estricto: ni Coordinador la ve (Panel de Administración, SCRUM-121).
+  const esAdministrador = miPerfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
+  const esInstructor = miPerfil?.roles.some((rol) => rol.nombre === 'Instructor') ?? false
+  // La navegación acompaña los permisos de cada pantalla; soloInstructor
+  // filtra las herramientas personales del grupo "Mi trabajo".
   const nav = NAV.map((grupo) => ({
     ...grupo,
     items: grupo.items.filter(
       (item) =>
         (!item.soloGestion || puedeGestionarUsuarios) &&
-        (!item.soloInstructor || esInstructor) &&
-        (!item.soloAprendiz || esAprendiz) &&
-        (!item.soloAdmin || esAdministrador),
+        (!item.soloAdmin || esAdministrador) &&
+        (!item.soloInstructor || esInstructor),
     ),
   })).filter((grupo) => grupo.items.length > 0)
 
-  // Mismo perfil cacheado que consulta ProtectedRoute al entrar a la
-  // pantalla: los dos corren siempre juntos, así que comparten el request.
-  useEffect(() => {
-    if (!idUsuario) return
+  const cargarNotificaciones = useCallback(async () => {
+    try {
+      const datos = await apiGet<Notificacion[]>('/notificaciones/')
+      setNotificaciones(datos)
+      setErrorNotificaciones(null)
+    } catch (err) {
+      const mensaje = err instanceof Error ? err.message : 'No se pudieron cargar las notificaciones.'
+      setErrorNotificaciones(mensaje)
+    }
+  }, [])
 
-    getPerfil(idUsuario)
+  useEffect(() => {
+    if (!session) return
+
+    let cancelado = false
+
+    getPerfil(session.user.id)
       .then((perfil) => {
+        if (cancelado) return
         setMiPerfil(perfil)
         setErrorPerfil(null)
-        // T-9: el tema guardado en el backend manda sobre el del
-        // localStorage, para que la elección siga a la persona entre
-        // navegadores y dispositivos.
         if (perfil.preferenciaTema) setTema(perfil.preferenciaTema)
       })
       .catch((err) => {
-        const mensaje =
-          err instanceof Error
-            ? err.message
-            : 'No se pudo cargar tu perfil.'
-
+        if (cancelado) return
+        const mensaje = err instanceof Error ? err.message : 'No se pudo cargar tu perfil.'
         setErrorPerfil(mensaje)
       })
-  }, [idUsuario, setTema])
+
+    return () => {
+      cancelado = true
+    }
+  }, [session, setTema])
 
   useEffect(() => {
-    apiGet<Notificacion[]>('/notificaciones/')
-      .then((datos) => {
-        setNotificaciones(datos)
-      })
-      .catch(() => {
-        setNotificaciones([])
-      })
+    const inicio = window.setTimeout(() => void cargarNotificaciones(), 0)
 
-    // Los avisos nacen en el backend (publicaciones, cruces forzados,
-    // solicitudes) mientras la persona sigue con la pestaña abierta: sin
-    // este refresco el globo rojo solo se enteraba al recargar. Se salta
-    // si la pestaña está oculta para no gastar peticiones en segundo plano.
     const intervalo = window.setInterval(() => {
-      if (document.visibilityState !== 'visible') return
-      apiGet<Notificacion[]>('/notificaciones/')
-        .then(setNotificaciones)
-        .catch(() => {})
+      if (document.visibilityState === 'visible') void cargarNotificaciones()
     }, 60_000)
 
-    return () => window.clearInterval(intervalo)
+    return () => {
+      window.clearTimeout(inicio)
+      window.clearInterval(intervalo)
+    }
+  }, [cargarNotificaciones])
+
+  async function guardarTema(tema: Tema) {
+    if (!session) {
+      setErrorPerfil('No se pudo guardar la preferencia de tema: no hay una sesión activa.')
+      return
+    }
+
+    try {
+      const perfilActualizado = await guardarPreferenciaTema(session.user.id, tema)
+      setMiPerfil(perfilActualizado)
+      setErrorPerfil(null)
+    } catch (err) {
+      const mensaje = err instanceof Error ? err.message : 'No se pudo guardar la preferencia de tema.'
+      setErrorPerfil(mensaje)
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (temporizadorAperturaRef.current) window.clearTimeout(temporizadorAperturaRef.current)
+      if (temporizadorCierreRef.current) window.clearTimeout(temporizadorCierreRef.current)
+    }
   }, [])
 
   useEffect(() => {
     if (!notifAbiertas) return
 
     function alClicFuera(evento: MouseEvent) {
-      if (
-        notifRef.current &&
-        !notifRef.current.contains(evento.target as Node)
-      ) {
+      if (notifRef.current && !notifRef.current.contains(evento.target as Node)) {
         setNotifAbiertas(false)
       }
     }
 
     function alPresionarTecla(evento: KeyboardEvent) {
-      if (evento.key === 'Escape') {
-        setNotifAbiertas(false)
-      }
+      if (evento.key === 'Escape') setNotifAbiertas(false)
     }
 
     document.addEventListener('mousedown', alClicFuera)
     document.addEventListener('keydown', alPresionarTecla)
-
     return () => {
       document.removeEventListener('mousedown', alClicFuera)
       document.removeEventListener('keydown', alPresionarTecla)
     }
   }, [notifAbiertas])
 
-  useEffect(() => {
-    if (!grupoAbierto) return
-
-    function alClicFuera(evento: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(evento.target as Node)
-      ) {
-        setGrupoAbierto(null)
-      }
+  function cancelarTemporizadores() {
+    if (temporizadorAperturaRef.current) {
+      window.clearTimeout(temporizadorAperturaRef.current)
+      temporizadorAperturaRef.current = null
     }
-
-    function alPresionarTecla(evento: KeyboardEvent) {
-      if (evento.key === 'Escape') {
-        setGrupoAbierto(null)
-      }
+    if (temporizadorCierreRef.current) {
+      window.clearTimeout(temporizadorCierreRef.current)
+      temporizadorCierreRef.current = null
     }
-
-    document.addEventListener('mousedown', alClicFuera)
-    document.addEventListener('keydown', alPresionarTecla)
-
-    return () => {
-      document.removeEventListener('mousedown', alClicFuera)
-      document.removeEventListener('keydown', alPresionarTecla)
-    }
-  }, [grupoAbierto])
-
-  function renderItemNavFlat(item: ItemNav) {
-    const esActivo = item.etiqueta === activo
-
-    if (!item.ruta) {
-      return (
-        <span
-          key={item.etiqueta}
-          title="Módulo aún no implementado en el backend"
-          className="cursor-not-allowed rounded-full px-3.5 py-1.5 text-sm font-semibold text-on-surface-variant/50"
-        >
-          {item.etiqueta}
-        </span>
-      )
-    }
-
-    return (
-      <Link
-        key={item.etiqueta}
-        to={item.ruta}
-        className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all ${
-          esActivo
-            ? 'bg-primary-container text-on-primary-container'
-            : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
-        }`}
-      >
-        {item.etiqueta}
-      </Link>
-    )
   }
 
-  function renderItemNavDropdown(item: ItemNav) {
+  function abrirManual() {
+    cancelarTemporizadores()
+    abiertaPorHoverRef.current = false
+    setNavAbierta(true)
+  }
+
+  function cerrarManual() {
+    cancelarTemporizadores()
+    abiertaPorHoverRef.current = false
+    setNavAbierta(false)
+  }
+
+  /** Borde izquierdo de la pantalla: dejar el cursor ~1.5s la abre solo. */
+  function alEntrarBordeHover() {
+    if (navAbierta || temporizadorAperturaRef.current) return
+    temporizadorAperturaRef.current = window.setTimeout(() => {
+      abiertaPorHoverRef.current = true
+      setNavAbierta(true)
+      temporizadorAperturaRef.current = null
+    }, RETRASO_APERTURA_HOVER_MS)
+  }
+
+  function alSalirBordeHover() {
+    if (temporizadorAperturaRef.current) {
+      window.clearTimeout(temporizadorAperturaRef.current)
+      temporizadorAperturaRef.current = null
+    }
+  }
+
+  /** Si se abrió por hover, alejar el cursor del panel vuelve a cerrarlo. */
+  function alEntrarPanel() {
+    if (temporizadorCierreRef.current) {
+      window.clearTimeout(temporizadorCierreRef.current)
+      temporizadorCierreRef.current = null
+    }
+  }
+
+  /** Un ítem de nav: link si ya tiene pantalla, deshabilitado si no —
+   * misma convención de siempre, ahora compartida entre "Inicio" (fuera
+   * de los grupos) y cada ítem dentro de un grupo. */
+  function renderItemNav(item: ItemNav) {
     const esActivo = item.etiqueta === activo
 
     if (item.ruta) {
@@ -342,13 +313,18 @@ export function AppShell({ activo, children }: AppShellProps) {
         <Link
           key={item.etiqueta}
           to={item.ruta}
-          onClick={() => setGrupoAbierto(null)}
+          onClick={cerrarManual}
           className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
             esActivo
-              ? 'bg-primary-container text-on-primary-container font-bold'
-              : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+              ? 'bg-sena-50 text-sena-700 dark:bg-sena-950/50'
+              : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700'
           }`}
         >
+          <span
+            className={`h-3.5 w-3.5 shrink-0 rounded ${
+              esActivo ? 'bg-sena-600' : 'border border-slate-300 dark:border-slate-600'
+            }`}
+          />
           {item.etiqueta}
         </Link>
       )
@@ -358,108 +334,160 @@ export function AppShell({ activo, children }: AppShellProps) {
       <span
         key={item.etiqueta}
         title="Módulo aún no implementado en el backend"
-        className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-on-surface-variant/50"
+        className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-400 dark:text-slate-500"
       >
+        <span className="h-3.5 w-3.5 shrink-0 rounded border border-slate-300 dark:border-slate-600" />
         {item.etiqueta}
       </span>
     )
   }
 
-  const grupoTieneActivo = (grupo: GrupoNav) => grupo.items.some((item) => item.etiqueta === activo)
+  function alSalirPanel() {
+    if (!abiertaPorHoverRef.current) return
+    temporizadorCierreRef.current = window.setTimeout(() => {
+      setNavAbierta(false)
+      abiertaPorHoverRef.current = false
+      temporizadorCierreRef.current = null
+    }, RETRASO_CIERRE_HOVER_MS)
+  }
 
   return (
-    <div className="min-h-screen bg-surface">
-      <header className="fixed top-0 z-50 w-full border-b border-outline-variant/60 bg-surface-container-lowest/90 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl print:hidden">
-        <div className="flex h-16 w-full items-center justify-between gap-3 px-4 md:px-6">
-          <div className="flex shrink-0 items-center gap-3">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+      {!navAbierta && (
+        <div
+          onMouseEnter={alEntrarBordeHover}
+          onMouseLeave={alSalirBordeHover}
+          className="fixed left-0 top-0 z-40 hidden h-screen w-4 print:hidden sm:block"
+          aria-hidden="true"
+        />
+      )}
+
+      <div
+        className={`fixed inset-0 z-40 bg-slate-900/40 transition-opacity duration-200 sm:hidden ${
+          navAbierta ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        aria-hidden="true"
+        onClick={cerrarManual}
+      />
+
+      <aside
+        onMouseEnter={alEntrarPanel}
+        onMouseLeave={alSalirPanel}
+        className={`fixed left-0 top-0 z-50 flex h-screen w-60 shrink-0 flex-col border-r border-slate-200 bg-white p-5 shadow-2xl transition-transform duration-200 print:hidden dark:border-slate-700 dark:bg-slate-800 ${
+          navAbierta ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <div className="mb-8 flex shrink-0 items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <img src={senaLogo} alt="SENA" className="h-9 w-9 rounded-lg object-cover" />
+            <div>
+              <p className="text-sm font-bold text-slate-900 dark:text-slate-100">SIHS</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400">CGMLTI</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={cerrarManual}
+            title="Ocultar menú"
+            aria-label="Ocultar menú"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7M4 12h16" />
+            </svg>
+          </button>
+        </div>
+
+        {/* min-h-0 es necesario para que un hijo flex con overflow-y-auto
+         * pueda encogerse por debajo de la altura de su contenido — sin
+         * eso el nav empuja el alto del <aside> en vez de scrollear, y con
+         * más de ~8 ítems (ver NAV arriba) el grupo Administración quedaba
+         * cortado fuera de la pantalla sin forma de llegar a él. */}
+        <nav className="scroll-sidebar min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
+          <div className="space-y-1">{renderItemNav(INICIO)}</div>
+
+          {nav.map((grupo) => (
+            <div key={grupo.grupo}>
+              <p className="mb-2 text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400">
+                {grupo.grupo.toUpperCase()}
+              </p>
+              <div className="space-y-1">{grupo.items.map((item) => renderItemNav(item))}</div>
+            </div>
+          ))}
+        </nav>
+
+        <div className="mt-4 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900">
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Trimestre 3 · 2026</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Programación abierta hasta el 12 de septiembre.</p>
+        </div>
+      </aside>
+
+      <div>
+        {errorPerfil && (
+          <div className="border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 print:hidden">
+            {errorPerfil}
+          </div>
+        )}
+        {errorNotificaciones && (
+          <div role="alert" className="border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 print:hidden">
+            {errorNotificaciones}
+          </div>
+        )}
+
+        <header className="flex items-center justify-between gap-4 border-b border-slate-200 bg-white px-6 py-3 print:hidden dark:border-slate-700 dark:bg-slate-800">
+          <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setMenuCompactoAbierto((abierto) => !abierto)}
-              aria-label="Menú de navegación"
-              aria-expanded={menuCompactoAbierto}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-outline text-on-surface-variant transition hover:bg-surface-container-high hover:text-on-surface xl:hidden dark:border-slate-700"
+              onClick={() => (navAbierta ? cerrarManual() : abrirManual())}
+              title={navAbierta ? 'Ocultar menú' : 'Mostrar menú (o deja el cursor en el borde izquierdo)'}
+              aria-label={navAbierta ? 'Ocultar menú' : 'Mostrar menú'}
+              aria-expanded={navAbierta}
+              className="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 sm:flex"
             >
-              <span className="material-symbols-outlined text-[20px]">
-                {menuCompactoAbierto ? 'close' : 'menu'}
-              </span>
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
             </button>
 
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <img src={senaLogo} alt="SENA" className="h-9 w-9 rounded-xl object-cover shadow-sm" />
-              <div className="hidden flex-col sm:flex">
-                <div className="flex items-center gap-1.5 leading-tight">
-                  <span className="font-display text-base font-bold tracking-tight text-primary">SENA</span>
-                  <span className="font-display text-base font-semibold tracking-tight text-on-surface">SIHS</span>
-                </div>
-                <span className="text-[11px] font-semibold tracking-wide text-on-surface-variant">CGMLTI Calle 52</span>
-              </div>
-            </Link>
+            <button
+              type="button"
+              onClick={() => (navAbierta ? cerrarManual() : abrirManual())}
+              title={navAbierta ? 'Ocultar menú' : 'Abrir menú'}
+              aria-label={navAbierta ? 'Ocultar menú' : 'Abrir menú'}
+              aria-expanded={navAbierta}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 sm:hidden"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
 
+            <div className="relative w-full max-w-sm">
+              <svg
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <circle cx="11" cy="11" r="7" strokeWidth={2} />
+                <path strokeLinecap="round" strokeWidth={2} d="m20 20-3-3" />
+              </svg>
+              <input
+                type="search"
+                aria-label="Buscar ficha, instructor o ambiente"
+                placeholder="Buscar ficha, instructor o ambiente…"
+                disabled
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500"
+              />
+            </div>
           </div>
 
-          {/* `min-w-0` es lo que mantiene visible el bloque de la derecha:
-            * un item flex tiene `min-width: auto` por defecto, así que sin
-            * esto la nav se niega a encogerse por debajo del ancho de sus
-            * botones y empuja las acciones (shrink-0) fuera de la pantalla.
-            * Con los roles que abren más grupos de menú — Coordinador,
-            * Administrador — eso dejaba "Cerrar sesión" cortado al borde
-            * derecho en casi todas las vistas. */}
-          {/* Sin `overflow-hidden`: los desplegables se abren debajo de la barra. */}
-          <nav
-            ref={dropdownRef}
-            className="hidden min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap xl:flex"
-          >
-            <Link
-              to={INICIO.ruta!}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all ${
-                activo === INICIO.etiqueta
-                  ? 'bg-primary-container text-on-primary-container'
-                  : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
-              }`}
-            >
-              {INICIO.etiqueta}
-            </Link>
+          <div className="flex items-center gap-3">
+            <ThemeSelector alCambiar={(tema) => void guardarTema(tema)} />
 
-            {nav.map((grupo) =>
-              /* Un grupo con un solo ítem (ej. "Mi trabajo" → "Mi horario")
-               * no necesita desplegable: se renderiza plano, igual que
-               * "Inicio". Evita un clic extra para llegar a un destino
-               * único y mantiene ese ítem alcanzable sin abrir nada — lo
-               * que además esperan los tests de MiHorario.test.tsx. */
-              grupo.items.length === 1 ? (
-                <div key={grupo.grupo}>{renderItemNavFlat(grupo.items[0])}</div>
-              ) : (
-              <div key={grupo.grupo} className="relative">
-                <button
-                  type="button"
-                  onClick={() => setGrupoAbierto((actual) => (actual === grupo.grupo ? null : grupo.grupo))}
-                  aria-haspopup="true"
-                  aria-expanded={grupoAbierto === grupo.grupo}
-                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all ${
-                    grupoTieneActivo(grupo)
-                      ? 'bg-primary-container text-on-primary-container'
-                      : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
-                  }`}
-                >
-                  {grupo.grupo}
-                </button>
-
-                {grupoAbierto === grupo.grupo && (
-                  <div className="absolute left-1/2 top-full z-50 mt-2 w-64 -translate-x-1/2 rounded-xl border border-outline-variant bg-surface-container-lowest p-2 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                    {grupo.items.map((item) => renderItemNavDropdown(item))}
-                  </div>
-                )}
-              </div>
-              ),
-            )}
-          </nav>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <ThemeSelector
-              alCambiar={(nuevo) => {
-                if (idUsuario) guardarPreferenciaTema(idUsuario, nuevo).catch(() => {})
-              }}
-            />
+            <span className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 dark:border-slate-700 dark:text-slate-300">
+              Trimestre 3 · 2026
+            </span>
 
             <div className="relative" ref={notifRef}>
               <button
@@ -467,24 +495,24 @@ export function AppShell({ activo, children }: AppShellProps) {
                 onClick={() => {
                   const abrir = !notifAbiertas
                   setNotifAbiertas(abrir)
-                  if (abrir) {
-                    // El worker puede publicar mientras esta pestaña sigue
-                    // abierta: refresca las notificaciones persistidas al
-                    // abrir el panel, sin fabricar eventos en el cliente.
-                    apiGet<Notificacion[]>('/notificaciones/')
-                      .then(setNotificaciones)
-                      .catch(() => {})
-                  }
+                  if (abrir) void cargarNotificaciones()
                 }}
                 title="Notificaciones"
                 aria-label="Notificaciones"
                 aria-haspopup="true"
                 aria-expanded={notifAbiertas}
-                className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-on-surface-variant transition-all hover:bg-surface-container-high hover:text-on-surface dark:bg-slate-700"
+                className="relative flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-600 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-300"
               >
-                <span className="material-symbols-outlined text-[20px]">notifications</span>
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2c0 .5-.2 1-.6 1.4L4 17h5m6 0v1a3 3 0 1 1-6 0v-1m6 0H9"
+                  />
+                </svg>
                 {hayNoLeidas && (
-                  <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-tertiary ring-2 ring-surface-container-lowest" />
+                  <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-orange-500" />
                 )}
               </button>
 
@@ -497,74 +525,29 @@ export function AppShell({ activo, children }: AppShellProps) {
               )}
             </div>
 
-            <div className="hidden items-center gap-2 pl-1 2xl:flex">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-on-primary">
+            <div className="flex items-center gap-2.5">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-sena-700 text-xs font-semibold text-white">
                 {miPerfil ? letraInicial(miPerfil.nombre) : '·'}
               </span>
-              <div className="text-right leading-tight">
-                <p className="text-sm font-semibold text-on-surface">
+              <div className="text-right">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {miPerfil ? miPerfil.nombre : 'Cargando…'}
                 </p>
-                <p className="text-[11px] text-on-surface-variant">{miPerfil?.email ?? ''}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">{miPerfil?.email ?? ''}</p>
               </div>
             </div>
 
-            {/* Botón de icono (h-9 w-9, como notificaciones) y no uno con
-              * texto: el de antes medía ~120px y era lo primero que se
-              * salía de la barra cuando la nav crecía. El texto vive en
-              * aria-label/title, así que sigue siendo alcanzable por
-              * lectores de pantalla y por getByRole(..., { name }). */}
             <button
               onClick={() => void signOut()}
-              title="Cerrar sesión"
-              aria-label="Cerrar sesión"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-outline text-on-surface-variant transition-all hover:bg-surface-container-high hover:text-on-surface dark:border-slate-700"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
             >
-              <span className="material-symbols-outlined text-[20px]">logout</span>
+              Cerrar sesión
             </button>
           </div>
-        </div>
+        </header>
 
-        {menuCompactoAbierto && (
-          <nav
-            aria-label="Navegación principal"
-            className="max-h-[70vh] overflow-y-auto border-t border-outline-variant bg-surface-container-lowest px-4 py-3 xl:hidden"
-          >
-            <Link
-              to={INICIO.ruta!}
-              onClick={() => setMenuCompactoAbierto(false)}
-              className={`block rounded-lg px-3 py-2 text-sm font-semibold ${
-                activo === INICIO.etiqueta
-                  ? 'bg-primary-container text-on-primary-container'
-                  : 'text-on-surface-variant hover:bg-surface-container-high'
-              }`}
-            >
-              {INICIO.etiqueta}
-            </Link>
-
-            {nav.map((grupo) => (
-              <div key={grupo.grupo} className="mt-3">
-                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
-                  {grupo.grupo}
-                </p>
-                <div onClick={() => setMenuCompactoAbierto(false)}>
-                  {grupo.items.map((item) => renderItemNavDropdown(item))}
-                </div>
-              </div>
-            ))}
-          </nav>
-        )}
-      </header>
-
-      {errorPerfil && (
-        <div className="fixed top-16 z-40 w-full border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 print:hidden">
-          {errorPerfil}
-        </div>
-      )}
-
-      <main className="w-full bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_60%,_#faf8ff_100%)] pt-16 dark:bg-none">
-        <div className="p-6">{children}</div>
-      </main>
+        <main className="p-6">{children}</main>
+      </div>
     </div>
   )
 }

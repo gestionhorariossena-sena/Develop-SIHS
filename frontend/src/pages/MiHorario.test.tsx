@@ -224,10 +224,8 @@ describe('MiHorario', () => {
       if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([])
       return Promise.reject(new Error('no mockeado'))
     })
-    const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
 
-    await usuario.click(await screen.findByRole('button', { name: 'Mi trabajo' }))
     expect(await screen.findByRole('link', { name: 'Mi horario' })).toHaveAttribute('href', '/mi-horario')
     // Ni siquiera debe aparecer el link — no es solo un tema de que falle
     // al hacer clic, la herramienta de coordinación no debe ser visible.
@@ -244,19 +242,11 @@ describe('MiHorario', () => {
       if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([])
       return Promise.reject(new Error('no mockeado'))
     })
-    const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
 
     await screen.findByText('Todavía no tenés clases publicadas en este período académico.')
     expect(screen.queryByRole('link', { name: 'Mi horario' })).not.toBeInTheDocument()
-
-    // "Fichas" e "Instructores" ahora viven en desplegables del navbar
-    // ("Formación"/"Recursos") — hay que abrirlos para que el link exista
-    // en el DOM.
-    await usuario.click(await screen.findByRole('button', { name: 'Formación' }))
     expect(await screen.findByRole('link', { name: 'Fichas' })).toBeInTheDocument()
-
-    await usuario.click(await screen.findByRole('button', { name: 'Recursos' }))
     expect(await screen.findByRole('link', { name: 'Instructores' })).toBeInTheDocument()
   })
 
@@ -271,13 +261,9 @@ describe('MiHorario', () => {
       if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([])
       return Promise.reject(new Error('no mockeado'))
     })
-    const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
 
-    await usuario.click(await screen.findByRole('button', { name: 'Mi trabajo' }))
     expect(await screen.findByRole('link', { name: 'Mi horario' })).toBeInTheDocument()
-
-    await usuario.click(await screen.findByRole('button', { name: 'Formación' }))
     expect(await screen.findByRole('link', { name: 'Fichas' })).toBeInTheDocument()
   })
 })

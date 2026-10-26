@@ -35,7 +35,9 @@ pnpm lint
 
 `pnpm test:coverage` ejecuta la suite Vitest, genera el reporte en `coverage/`
 y aplica el piso de 30% en sentencias, ramas, funciones y líneas configurado
-en `vite.config.ts`. CI usa este mismo comando.
+en `vite.config.ts`. CI usa este mismo comando. El umbral está configurado en
+la rama remota; el equipo debe confirmar si se conserva en S1 o se difiere a
+S2, como se había acordado previamente.
 
 ## Pruebas E2E
 

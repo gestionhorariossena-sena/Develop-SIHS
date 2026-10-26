@@ -93,9 +93,22 @@ describe('AppRouter · roles por ruta', () => {
 
     renderRuta('/horarios/asistente-ia')
 
-    expect(await screen.findByText(/^Hola/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dashboard — Panel de Programación' })).toBeInTheDocument()
     expect(screen.queryByText('Asistente de Programación')).not.toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalledWith(expect.stringContaining('/asistente'))
+  })
+
+  it('un Aprendiz no puede abrir el constructor de horarios', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/me') return Promise.resolve(PERFIL_APRENDIZ)
+      if (path === '/notificaciones/') return Promise.resolve([])
+      return Promise.reject(new ApiError(404, 'No encontrado', null))
+    })
+
+    renderRuta('/horarios/nuevo')
+
+    expect(await screen.findByRole('heading', { name: 'Dashboard — Panel de Programación' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Nuevo horario' })).not.toBeInTheDocument()
   })
 
   it('un Aprendiz no puede abrir la gestión de publicaciones programadas', async () => {
@@ -107,7 +120,7 @@ describe('AppRouter · roles por ruta', () => {
 
     renderRuta('/horarios/publicaciones-programadas')
 
-    expect(await screen.findByText(/^Hola/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dashboard — Panel de Programación' })).toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalledWith('/publicaciones-programadas/')
   })
 
@@ -120,7 +133,7 @@ describe('AppRouter · roles por ruta', () => {
 
     renderRuta('/panel-administracion')
 
-    expect(await screen.findByText(/^Hola/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Dashboard — Panel de Programación' })).toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalledWith('/solicitudes-acceso/')
   })
 
