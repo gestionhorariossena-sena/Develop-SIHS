@@ -33,8 +33,9 @@ pnpm test:coverage
 pnpm lint
 ```
 
-`pnpm test:coverage` ejecuta la suite Vitest y genera el reporte de cobertura
-en `coverage/` sin imponer un umbral.
+`pnpm test:coverage` ejecuta la suite Vitest, genera el reporte en `coverage/`
+y aplica el piso de 30% en sentencias, ramas, funciones y líneas configurado
+en `vite.config.ts`. CI usa este mismo comando.
 
 ## Pruebas E2E
 

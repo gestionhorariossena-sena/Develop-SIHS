@@ -12,5 +12,14 @@ export default defineConfig({
     globals: false,
     include: ['src/**/*.test.{ts,tsx}'],
     pool: 'threads',
+    coverage: {
+      provider: 'v8',
+      thresholds: {
+        statements: 30,
+        branches: 30,
+        functions: 30,
+        lines: 30,
+      },
+    },
   },
 })

@@ -42,11 +42,11 @@ pytest
 Para generar la línea base de cobertura del paquete `app`:
 
 ```powershell
-pytest --cov=app --cov-report=term-missing --cov-report=html
+pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=30
 ```
 
-El reporte HTML queda en `backend/htmlcov/`; no se configura un umbral de
-cobertura en esta etapa.
+El reporte HTML queda en `backend/htmlcov/`. CI aplica un piso de 30% de
+cobertura de sentencias sobre `app`.
 
 ## Migraciones
 
