@@ -24,8 +24,8 @@ su PR — no se marca "hecho" hasta que el PR está abierto y pasando.
 | Carpeta `e2e/` con Playwright | Los 4 | ✅ Consolidada en `e2e/`; el test de David está en `e2e/tests/` |
 | `docs/matriz-rotacion.md` | Edith | ✅ Actualizado hoy (24 oct) en `fix/semana-1-cierre` |
 | `.github/pull_request_template.md` | Dayana | 🔶 Copiada desde la plantilla del bootcamp; incluida en el PR #153, pendiente de revisión |
-| Línea base de cobertura (back + front) | David + Dayana | ✅ Medida — backend: 84,40% local y 84,07% en CI (412 pasaron, 10 omitidas); frontend: 79,59% líneas, 76,73% sentencias, 64,89% ramas y 73,89% funciones en CI (363 pasaron) |
-| Umbral de cobertura en CI | Los 4 | ✅ Línea base de S1 configurada: backend 84%; frontend 76,73% sentencias, 64,89% ramas, 73,89% funciones y 79,59% líneas |
+| Línea base de cobertura (back + front) | David + Dayana | ✅ Medida — backend: 84,40% local y 84,07% en CI (412 pasaron, 10 omitidas); frontend: 79,59% líneas, 76,73% sentencias, 64,86–64,89% ramas y 73,89% funciones en CI (363 pasaron) |
+| Umbral de cobertura en CI | Los 4 | ✅ Línea base de S1 configurada: backend 84%; frontend 76,73% sentencias, 64,85% ramas, 73,89% funciones y 79,59% líneas |
 
 ## Semana 2 (18–25 oct) — Rotación en paralelo + CI completo + cierre
 
@@ -54,9 +54,11 @@ su PR — no se marca "hecho" hasta que el PR está abierto y pasando.
 Línea base registrada en CI: **backend 84,07%** (`pytest --cov=app`; 412
 pasaron, 10 omitidas) y **frontend 79,59% de líneas** (`pnpm test:coverage`;
 363 pasaron). CI fija como umbral backend **84%** y, en frontend, **76,73%**
-de sentencias, **64,89%** de ramas, **73,89%** de funciones y **79,59%** de
-líneas. Los umbrales de frontend son específicos por métrica porque Vitest
-informa porcentajes distintos para cada una.
+de sentencias, **64,85%** de ramas, **73,89%** de funciones y **79,59%** de
+líneas. La cobertura de ramas varió entre 64,86% y 64,89% en ejecuciones del
+mismo commit; el piso se fija justo por debajo del mínimo observado para
+absorber esa variación pequeña. Los umbrales de frontend son específicos por
+métrica porque Vitest informa porcentajes distintos para cada una.
 
 El umbral genérico del **30%** se había configurado por error en el commit
 `94f71d0`: ese piso no representaba la línea base de S1. Se reemplaza con los
@@ -70,5 +72,5 @@ el objetivo correspondiente del plan.
 | Archivos E2E en la rama de cierre | 4 tras separar el test de asistente IA para su PR: `login.spec.ts`, `login-validacion.spec.ts`, `publicar-horario.spec.ts`, `horarios-flujos.spec.ts` |
 | Test E2E de Nicol (asistente IA) | En PR separado; la versión Vitest sigue como test de componente |
 | Herramientas de cobertura | `@vitest/coverage-v8` y `pytest-cov` instaladas en sus respectivos proyectos |
-| Umbral de cobertura en CI | Línea base S1 configurada: backend 84%; frontend 76,73% sentencias, 64,89% ramas, 73,89% funciones y 79,59% líneas |
+| Umbral de cobertura en CI | Línea base S1 configurada: backend 84%; frontend 76,73% sentencias, 64,85% ramas, 73,89% funciones y 79,59% líneas |
 | Rama de cierre de Semana 1 | `fix/semana-1-cierre` (creada 2026-10-24 desde `develop`) |

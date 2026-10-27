@@ -35,7 +35,9 @@ pnpm lint
 
 `pnpm test:coverage` ejecuta la suite Vitest, genera el reporte en `coverage/`
 y aplica como umbrales de S1 la línea base medida en CI: 76,73% en sentencias,
-64,89% en ramas, 73,89% en funciones y 79,59% en líneas. Los valores están
+64,85% en ramas, 73,89% en funciones y 79,59% en líneas. La cobertura de ramas
+ha variado entre 64,86% y 64,89% en ejecuciones del mismo commit; por eso su
+piso queda apenas por debajo del menor valor observado. Los valores están
 configurados en `vite.config.ts` y CI ejecuta este mismo comando. Cada métrica
 tiene su propio valor; no se debe usar el porcentaje de líneas para todas.
 
