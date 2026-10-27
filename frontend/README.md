@@ -34,10 +34,10 @@ pnpm lint
 ```
 
 `pnpm test:coverage` ejecuta la suite Vitest, genera el reporte en `coverage/`
-y aplica el piso de 30% en sentencias, ramas, funciones y líneas configurado
-en `vite.config.ts`. CI usa este mismo comando. El umbral está configurado en
-la rama remota; el equipo debe confirmar si se conserva en S1 o se difiere a
-S2, como se había acordado previamente.
+y aplica como umbrales de S1 la línea base medida en CI: 76,73% en sentencias,
+64,89% en ramas, 73,89% en funciones y 79,59% en líneas. Los valores están
+configurados en `vite.config.ts` y CI ejecuta este mismo comando. Cada métrica
+tiene su propio valor; no se debe usar el porcentaje de líneas para todas.
 
 ## Pruebas E2E
 

@@ -42,13 +42,12 @@ pytest
 Para generar la línea base de cobertura del paquete `app`:
 
 ```powershell
-pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=30
+pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=84
 ```
 
-El reporte HTML queda en `backend/htmlcov/`. CI aplica un piso de 30% de
-cobertura de sentencias sobre `app`. Este umbral está configurado en la rama
-remota; el equipo debe confirmar si se conserva en S1 o se difiere a S2, como
-se había acordado previamente.
+El reporte HTML queda en `backend/htmlcov/`. CI aplica el umbral de línea base
+de S1: 84% de cobertura de sentencias sobre `app` (84,07% en la última corrida
+de CI aprobada). Usa `--cov-fail-under=84` al repetir la validación local.
 
 ## Migraciones
 
