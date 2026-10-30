@@ -57,6 +57,34 @@ def registrar_sesion(
     return resultado
 
 
+@router.delete("/sesion")
+def eliminar_sesion(
+    idHorario: int = Query(...),
+    fecha: date = Query(...),
+    db: Session = Depends(get_db),
+    usuario=Depends(require_instructor),
+):
+    """Elimina la lista completa de una clase propia y deja la traza.
+
+    Es la operación Delete del CRUD de asistencia; las filas no se borran
+    desde el cliente una por una porque la lista es una unidad de negocio.
+    """
+    try:
+        eliminadas = AsistenciaService.eliminar_sesion(db, idHorario, fecha, usuario.idUsuario)
+    except AsistenciaError as exc:
+        raise HTTPException(status_code=exc.estado_http, detail=str(exc)) from exc
+
+    AuditoriaService.registrar(
+        db,
+        usuario=usuario,
+        accion="ELIMINAR_ASISTENCIA",
+        entidad="asistencias",
+        id_entidad=idHorario,
+        detalle=f"sesión {fecha} · {eliminadas} marcas eliminadas",
+    )
+    return {"eliminadas": eliminadas}
+
+
 @router.get("/mias", response_model=MiAsistencia)
 def obtener_mi_asistencia(
     desde: date | None = Query(default=None),

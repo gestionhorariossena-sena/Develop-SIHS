@@ -63,6 +63,15 @@ class ApiClient {
     }
   }
 
+  Future<T> delete<T>(String path, {Map<String, dynamic>? queryParameters}) async {
+    try {
+      final respuesta = await _dio.delete<T>(path, queryParameters: queryParameters);
+      return respuesta.data as T;
+    } on DioException catch (e) {
+      throw traducirError(e);
+    }
+  }
+
   /// Público porque los tests del cliente lo ejercitan directamente.
   static ApiException traducirError(DioException e) {
     final codigo = e.response?.statusCode;

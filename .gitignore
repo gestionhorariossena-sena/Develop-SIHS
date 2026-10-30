@@ -9,6 +9,7 @@ backend/.venv/
 backend/**/__pycache__/
 backend/**/*.pyc
 backend/.env
+backend/.env.bak-*
 backend/.pytest_cache/
 backend/*.log
 backend/_tok.txt
@@ -36,3 +37,4 @@ mobile/.flutter-plugins-dependencies
 *.xls
 *.jpeg
 *.jpg
+*.dump
