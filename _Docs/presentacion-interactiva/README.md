@@ -39,7 +39,7 @@ restricciones de `file://` en algunos navegadores.
 ## Estructura
 
 ```
-docs/presentacion-interactiva/
+_Docs/presentacion-interactiva/
   AUDITORIA_SIHS.md   Informe de auditoría completo (Artifact F)
   index.html           Shell de la app (sidebar + topbar + overlay expositor)
   styles.css            Tema oscuro, componentes compartidos
