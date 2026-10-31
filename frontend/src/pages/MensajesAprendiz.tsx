@@ -82,7 +82,13 @@ export function MensajesAprendiz() {
   const puedeEscribir = rolEnFicha === 'vocero' || rolEnFicha === 'subvocero'
   const [correoCopiado, setCorreoCopiado] = useState<string | null>(null)
 
-  const [elegido, setElegido] = useState<InstructorDisponible | null>(null)
+  const [elegidoSeleccionado, setElegido] = useState<InstructorDisponible | null>(null)
+  const idDesdeDirectorio = (location.state as { idInstructor?: string } | null)?.idInstructor
+  const elegido = elegidoSeleccionado ?? (
+    vistaChat && idDesdeDirectorio
+      ? instructores.find((instructor) => instructor.idInstructor === idDesdeDirectorio) ?? null
+      : null
+  )
   // El hilo guarda a QUÉ conversación pertenece: así, al cambiar de
   // instructor, lo que se pinta nunca es lo del anterior mientras carga
   // el nuevo (y no hace falta vaciarlo a mano dentro de un efecto).
@@ -283,16 +289,7 @@ export function MensajesAprendiz() {
     return mapa
   }, [noLeidosBase, elegido, perfil, hiloCargado, mensajes])
 
-  // Si se llega a la bandeja desde la tarjeta de un instructor (botón
-  // "Escribir" del directorio), ese es el que se abre -- sin esto, la
-  // bandeja siempre aterrizaría vacía y habría que elegir de nuevo.
-  useEffect(() => {
-    if (!vistaChat || elegido) return
-    const idDesdeDirectorio = (location.state as { idInstructor?: string } | null)?.idInstructor
-    if (!idDesdeDirectorio) return
-    const encontrado = instructores.find((i) => i.idInstructor === idDesdeDirectorio)
-    if (encontrado) setElegido(encontrado)
-  }, [vistaChat, elegido, location.state, instructores])
+  // Selección derivada del estado de navegación (sin efecto que actualice estado).
 
   async function copiarCorreo(email: string) {
     try {
