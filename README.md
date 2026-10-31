@@ -300,3 +300,13 @@ repositorio.
 ## 📝 Licencia y Autores
 
 Proyecto desarrollado como parte del programa de formación Tecnológica en Análisis y Desarrollo de Software (ADSO) - SENA.
+
+
+## Organización del repositorio
+
+- [Documentación general del proyecto](./docs-sihs/README.md)
+- [Documentación de pruebas](./docs-testing/README.md)
+- [Archivos de respaldo institucional en Drive](./docs-sihs/ARCHIVOS_EN_DRIVE.md)
+- Código backend: `backend/app/`; pruebas Python: `backend/tests/`.
+- Código frontend: `frontend/src/`; pruebas Vitest: `frontend/tests/`.
+- Pruebas end-to-end: `e2e/tests/`.
