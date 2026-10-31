@@ -25,22 +25,84 @@
 
 ## 🔄 Flujo de ramas y revisiones — exactamente 4 PR personales
 
-```text
-semana-2
-   ├─ test/s2-api-nicol      → PR 1 → revisa David  ┐
-   ├─ test/s2-ci-david       → PR 2 → revisa Dayana │
-   ├─ test/s2-bd-dayana      → PR 3 → revisa Edith  ├→ semana-2
-   └─ test/s2-front-edith    → PR 4 → revisa Nicol  ┘
-                                                  ↓
-                                     un único merge → develop
+> **Regla principal:** todos parten de `semana-2`, **ningún PR individual apunta a `develop`**, y solo después de integrar los cuatro se hace **un único merge de `semana-2` a `develop`**. `main` y `semana-1` no se modifican durante este proceso.
+
+### Diagrama visual (Mermaid)
+
+```mermaid
+flowchart TB
+    BASE["🌱 RAMA BASE: semana-2<br/>De aquí nacen las 4 ramas personales"]
+
+    N["👩‍💻 Nicol<br/>test/s2-api-nicol<br/>API: ≥3 tests + mutante"]
+    D["👨‍💻 David<br/>test/s2-ci-david<br/>CI + ≥3 tests + mutante"]
+    Y["👩‍💻 Dayana<br/>test/s2-bd-dayana<br/>BD: ≥3 tests + mutante"]
+    E["👩‍💻 Edith<br/>test/s2-front-edith<br/>Front: ≥3 tests + mutante + docs"]
+
+    PN{"PR 1 → semana-2<br/>Revisor: David<br/>¿Aprobado y CI verde?"}
+    PD{"PR 2 → semana-2<br/>Revisora: Dayana<br/>¿Aprobado y CI verde?"}
+    PY{"PR 3 → semana-2<br/>Revisora: Edith<br/>¿Aprobado y CI verde?"}
+    PE{"PR 4 → semana-2<br/>Revisor: Nicol<br/>¿Aprobado y CI verde?"}
+
+    DONE["✅ semana-2<br/>Los 4 PR revisados y fusionados<br/>12+ tests y 4 mutantes documentados"]
+    FINAL["🔀 ÚNICO MERGE FINAL<br/>semana-2 → develop"]
+    DEVELOP["✅ develop<br/>Semana 2 integrada"]
+    UNTOUCHED["🔒 main y semana-1<br/>No se modifican en esta fase"]
+
+    BASE -->|"1. Crear rama desde semana-2"| N
+    BASE -->|"1. Crear rama desde semana-2"| D
+    BASE -->|"1. Crear rama desde semana-2"| Y
+    BASE -->|"1. Crear rama desde semana-2"| E
+
+    N -->|"2. Abrir PR"| PN
+    D -->|"2. Abrir PR"| PD
+    Y -->|"2. Abrir PR"| PY
+    E -->|"2. Abrir PR"| PE
+
+    PN -->|"3. Aprobar y fusionar"| DONE
+    PD -->|"3. Aprobar y fusionar"| DONE
+    PY -->|"3. Aprobar y fusionar"| DONE
+    PE -->|"3. Aprobar y fusionar"| DONE
+
+    DONE -->|"4. Cierre grupal"| FINAL
+    FINAL --> DEVELOP
+    BASE -.-|"No enviar PR individual aquí"| UNTOUCHED
+
+    classDef base fill:#dbeafe,stroke:#2563eb,color:#1e3a8a,stroke-width:2px;
+    classDef work fill:#f8fafc,stroke:#64748b,color:#0f172a;
+    classDef review fill:#fef3c7,stroke:#d97706,color:#78350f;
+    classDef done fill:#dcfce7,stroke:#16a34a,color:#14532d,stroke-width:2px;
+    classDef protected fill:#f1f5f9,stroke:#94a3b8,color:#475569;
+    class BASE base;
+    class N,D,Y,E work;
+    class PN,PD,PY,PE review;
+    class DONE,FINAL,DEVELOP done;
+    class UNTOUCHED protected;
 ```
 
-1. **Antes de comenzar:** `git fetch origin && git switch semana-2 && git pull origin semana-2`.
-2. **Cada persona crea su rama:** `git switch -c test/s2-<capa>-<integrante>` (usar el nombre exacto de la tabla).
-3. **PR individuales:** todos apuntan a **`semana-2`**, no a `develop` ni a `main`.
-4. **Revisión cruzada:** autor ≠ revisor. El revisor comprueba los tests, el caso límite, la mutación, el PR y las verificaciones de CI.
-5. **Merge a `semana-2`:** solo después de revisión aprobada y CI verde. Actualizar la rama personal si la base cambió.
-6. **Cierre:** una vez fusionados los cuatro PR y verificados los entregables, realizar **una sola integración de `semana-2` hacia `develop`**. No abrir un quinto PR para cobertura ni documentación.
+### Cómo leer el diagrama
+
+| Paso | ¿Qué sucede? | ¿Dónde queda el código? |
+|---|---|---|
+| **1. Crear rama** | Cada integrante se cambia a `semana-2`, trae sus últimos cambios y crea su rama personal. | En su propia `test/s2-...` |
+| **2. Trabajar y abrir PR** | Cada persona desarrolla ≥3 tests unitarios, documenta un mutante y envía **un solo PR**. David agrega CI; Edith agrega documentación. | **PR: rama personal → `semana-2`** |
+| **3. Revisión cruzada** | David revisa a Nicol; Dayana a David; Edith a Dayana; Nicol a Edith. Si falta algo o falla CI, **se corrige en la misma rama y el mismo PR**. | PR abierto hasta aprobación y CI verde |
+| **4. Integrar los cuatro** | Cada PR aprobado se fusiona individualmente. El equipo comprueba matriz, cobertura y evidencia. | Todo reunido en `semana-2` |
+| **5. Único cierre** | Se realiza **un solo merge de `semana-2` a `develop`**. No se abre un quinto PR individual para cobertura o docs. | `develop` recibe la Semana 2 |
+
+**Ejemplo de comandos que ejecuta cada integrante (sustituir solo el nombre de rama):**
+
+```bash
+git fetch origin
+git switch semana-2
+git pull origin semana-2
+git switch -c test/s2-api-nicol
+# Trabajar, ejecutar tests y documentar mutación...
+git add .
+git commit -m "test(s2): pruebas unitarias de reglas API"
+git push -u origin test/s2-api-nicol
+```
+
+Al abrir el PR en GitHub, verificar **base: `semana-2` ← compare: `test/s2-api-nicol`**. Si no está verde o no tiene aprobación cruzada, **no fusionar**. Los demás usan el nombre exacto de su rama indicado en la tabla de responsabilidades.
 
 ## 🛡️ CI, cobertura y reglas del reto
 
