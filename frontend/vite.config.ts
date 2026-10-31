@@ -12,6 +12,5 @@ export default defineConfig({
     globals: false,
     include: ['tests/**/*.test.{ts,tsx}'],
     pool: 'threads',
-    include: ['tests/**/*.test.{ts,tsx}'],
   },
 })
