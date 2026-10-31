@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { fechaLocalISO } from '../../../src/utils/trimestreVigente'
 import { AsistenteHorarios } from '../../../src/pages/AsistenteHorarios'
 import type { ImportarExcelPreviewResponse, Trimestre, Usuario } from '../../../src/types/api'
