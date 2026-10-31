@@ -69,13 +69,13 @@ La configuración de red para emuladores y dispositivos físicos está en
 | [`frontend/`](./frontend/) | Cliente web React, TypeScript y Vite |
 | [`mobile/`](./mobile/) | Aplicación Flutter |
 | [`database/`](./database/) | Esquema SQL y guía de Supabase |
-| [`_Docs/`](./_Docs/) | Documentación funcional, técnica y de diseño |
+| [`docs-sihs/`](./docs-sihs/) | Documentación funcional, técnica y de diseño |
 
 Guías de referencia:
 
-- [Arquitectura móvil](./_Docs/Arquitectura/ARQUITECTURA_MOBILE.md)
-- [Flujo de trabajo del monorepo](./_Docs/Documentación%20general/GUIA_MONOREPO.md)
-- [Índice de informes de pruebas](./_Docs/Informes%20de%20pruebas/README.md)
+- [Arquitectura móvil](./docs-sihs/Arquitectura/ARQUITECTURA_MOBILE.md)
+- [Flujo de trabajo del monorepo](./docs-sihs/Documentación%20general/GUIA_MONOREPO.md)
+- [Índice de informes de pruebas](./docs-testing/informes-historicos/README.md)
 
 Cada componente mantiene su propia guía de ejecución. Para cambios de esquema
 de base de datos, revisa primero
