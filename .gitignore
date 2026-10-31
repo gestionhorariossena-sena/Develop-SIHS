@@ -11,6 +11,8 @@ backend/**/*.pyc
 backend/.env
 backend/.env.bak-*
 backend/.pytest_cache/
+backend/.coverage
+backend/htmlcov/
 backend/*.log
 backend/_tok.txt
 backend/package-lock.json

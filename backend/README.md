@@ -39,6 +39,16 @@ Desde `backend/`, con el entorno virtual activo:
 pytest
 ```
 
+Para generar la línea base de cobertura del paquete `app`:
+
+```powershell
+pytest --cov=app --cov-report=term-missing --cov-report=html --cov-fail-under=84
+```
+
+El reporte HTML queda en `backend/htmlcov/`. CI aplica el umbral de línea base
+de S1: 84% de cobertura de sentencias sobre `app` (84,07% en la última corrida
+de CI aprobada). Usa `--cov-fail-under=84` al repetir la validación local.
+
 ## Migraciones
 
 Las migraciones del proyecto se administran con Alembic en

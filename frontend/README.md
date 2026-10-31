@@ -29,17 +29,27 @@ cargar datos reales, inicia también el backend siguiendo
 
 ```powershell
 pnpm test
+pnpm test:coverage
 pnpm lint
 ```
 
+`pnpm test:coverage` ejecuta la suite Vitest, genera el reporte en `coverage/`
+y aplica como umbrales de S1 la línea base medida en CI: 76,73% en sentencias,
+64,85% en ramas, 73,89% en funciones y 79,59% en líneas. La cobertura de ramas
+ha variado entre 64,86% y 64,89% en ejecuciones del mismo commit; por eso su
+piso queda apenas por debajo del menor valor observado. Los valores están
+configurados en `vite.config.ts` y CI ejecuta este mismo comando. Cada métrica
+tiene su propio valor; no se debe usar el porcentaje de líneas para todas.
+
 ## Pruebas E2E
 
-Playwright ejecuta el flujo de inicio de sesión en Chromium y levanta Vite
-automáticamente. La prueba autentica una cuenta institucional real de prueba
-y verifica que aparezca el panel del rol esperado. El backend y Supabase deben
-estar disponibles según `VITE_API_URL` y las variables de `frontend/.env`.
-Instala el navegador una vez y, desde PowerShell, pasa las credenciales y el
-rol de la cuenta por variables de entorno (no se guardan en el repositorio):
+La suite Playwright compartida está en [`../e2e/`](../e2e/) y ejecuta los
+flujos en Chromium, levantando Vite automáticamente. La prueba de login
+autentica una cuenta institucional de prueba y verifica que aparezca el panel
+del rol esperado. El backend y Supabase deben estar disponibles según
+`VITE_API_URL` y las variables de `frontend/.env`. Instala el navegador una
+vez y, desde PowerShell, pasa las credenciales y el rol por variables de
+entorno (no se guardan en el repositorio):
 
 ```powershell
 pnpm exec playwright install chromium

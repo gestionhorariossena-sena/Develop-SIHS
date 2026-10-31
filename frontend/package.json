@@ -9,8 +9,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:e2e": "playwright test",
+    "test:e2e": "pnpm --dir ../e2e test",
     "test": "vitest run --no-file-parallelism",
+    "test:coverage": "vitest run --coverage --no-file-parallelism",
     "test:watch": "vitest"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "@vitest/coverage-v8": "4.1.11",
     "@vitest/ui": "^4.1.11",
     "eslint": "^10.8.0",
     "eslint-plugin-react-hooks": "^7.1.1",

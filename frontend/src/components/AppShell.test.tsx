@@ -57,7 +57,6 @@ describe('AppShell', () => {
         <p>contenido</p>
       </AppShell>,
     )
-    await screen.findByRole('button', { name: 'Mi trabajo' })
 
     fireEvent.click(screen.getByRole('button', { name: 'Tema oscuro' }))
 
@@ -65,7 +64,7 @@ describe('AppShell', () => {
     expect(document.documentElement).toHaveClass('dark')
   })
 
-  it('un Aprendiz ve el grupo "Mi trabajo" con sus pantallas, en un desplegable propio del navbar', async () => {
+  it('un Aprendiz no ve herramientas restringidas a instructores ni a coordinación', async () => {
     mockearApiGet(crearPerfil(['Aprendiz']))
     renderConProviders(
       <AppShell activo="Inicio">
@@ -73,18 +72,13 @@ describe('AppShell', () => {
       </AppShell>,
     )
 
-    const botonGrupo = await screen.findByRole('button', { name: 'Mi trabajo' })
-    fireEvent.click(botonGrupo)
-
-    for (const etiqueta of ['Mi horario', 'Mensajes', 'Notificaciones']) {
-      expect(screen.getByText(etiqueta)).toBeInTheDocument()
-    }
+    await screen.findByText('Ana')
+    expect(screen.queryByRole('link', { name: 'Mi horario' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Fichas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Aprobar solicitudes de registro' })).not.toBeInTheDocument()
   })
 
-  // Desde que pasar lista es suyo, el Instructor tiene dos pantallas en
-  // "Mi trabajo" (horario y asistencia), así que el grupo ya no se
-  // renderiza como link plano sino como desplegable.
-  it('un Instructor ve su horario y su asistencia en el grupo "Mi trabajo"', async () => {
+  it('un Instructor ve su enlace de autoservicio y no las herramientas de coordinación', async () => {
     mockearApiGet(crearPerfil(['Instructor']))
     renderConProviders(
       <AppShell activo="Inicio">
@@ -92,11 +86,9 @@ describe('AppShell', () => {
       </AppShell>,
     )
 
-    const botonGrupo = await screen.findByRole('button', { name: 'Mi trabajo' })
-    fireEvent.click(botonGrupo)
-
-    expect(screen.getByText('Mi horario')).toBeInTheDocument()
-    expect(screen.getByText('Asistencia')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Mi horario' })).toHaveAttribute('href', '/mi-horario')
+    expect(screen.queryByRole('link', { name: 'Fichas' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Instructores' })).not.toBeInTheDocument()
   })
 
   it('un Coordinador no ve el grupo "Mi trabajo" ni sus pantallas exclusivas de Aprendiz/Instructor', async () => {
@@ -107,17 +99,13 @@ describe('AppShell', () => {
       </AppShell>,
     )
 
-    await screen.findByRole('button', { name: 'Programación' })
-
-    expect(screen.queryByRole('button', { name: 'Mi trabajo' })).not.toBeInTheDocument()
-    expect(screen.queryByText('Mi horario')).not.toBeInTheDocument()
-    expect(screen.queryByText('Mensajes Docentes')).not.toBeInTheDocument()
-    // "Notificaciones" (Centro de Notificaciones del Aprendiz) y "Avisos y
-    // Eventos" son exclusivas de Aprendiz -- ocultas para Coordinador.
-    expect(screen.queryByText('Avisos y Eventos')).not.toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Fichas' })).toHaveAttribute('href', '/fichas')
+    expect(screen.getByRole('link', { name: 'Instructores' })).toHaveAttribute('href', '/instructores')
+    expect(screen.queryByRole('link', { name: 'Mi horario' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Aprobar solicitudes de registro' })).not.toBeInTheDocument()
   })
 
-  it('un Administrador ve "Solicitudes de acceso" dentro de Administración', async () => {
+  it('un Administrador ve el enlace para aprobar solicitudes', async () => {
     mockearApiGet(crearPerfil(['Administrador']))
     renderConProviders(
       <AppShell activo="Inicio">
@@ -125,13 +113,11 @@ describe('AppShell', () => {
       </AppShell>,
     )
 
-    const botonGrupo = await screen.findByRole('button', { name: 'Administración' })
-    fireEvent.click(botonGrupo)
-
-    expect(screen.getByText('Solicitudes de acceso')).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Aprobar solicitudes de registro' }))
+      .toHaveAttribute('href', '/aprobar-solicitudes')
   })
 
-  it('un Coordinador no ve "Solicitudes de acceso" (soloAdmin)', async () => {
+  it('un Coordinador no ve el enlace para aprobar solicitudes', async () => {
     mockearApiGet(crearPerfil(['Coordinador']))
     renderConProviders(
       <AppShell activo="Inicio">
@@ -139,19 +125,17 @@ describe('AppShell', () => {
       </AppShell>,
     )
 
-    const botonGrupo = await screen.findByRole('button', { name: 'Administración' })
-    fireEvent.click(botonGrupo)
-
-    expect(screen.queryByText('Solicitudes de acceso')).not.toBeInTheDocument()
+    await screen.findByRole('link', { name: 'Fichas' })
+    expect(screen.queryByRole('link', { name: 'Aprobar solicitudes de registro' })).not.toBeInTheDocument()
   })
 
   it('consulta de nuevo las notificaciones persistidas al abrir la campana', async () => {
     mockearApiGet(crearPerfil(['Coordinador']))
     renderConProviders(<AppShell activo="Inicio"><p>contenido</p></AppShell>)
-    await screen.findByRole('button', { name: 'Programación' })
+    const botonNotificaciones = await screen.findByRole('button', { name: 'Notificaciones' })
     await waitFor(() => expect(apiGetMock).toHaveBeenCalledWith('/notificaciones/'))
     const llamadasAntesDeAbrir = apiGetMock.mock.calls.filter(([ruta]) => ruta === '/notificaciones/').length
-    fireEvent.click(screen.getByRole('button', { name: 'Notificaciones' }))
+    fireEvent.click(botonNotificaciones)
     await waitFor(() => expect(apiGetMock.mock.calls.filter(([ruta]) => ruta === '/notificaciones/').length).toBeGreaterThan(llamadasAntesDeAbrir))
   })
 })
