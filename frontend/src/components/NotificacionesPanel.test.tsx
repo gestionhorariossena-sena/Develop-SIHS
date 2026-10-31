@@ -42,7 +42,7 @@ describe('NotificacionesPanel — comportamiento visible', () => {
     // Assert
     expect(screen.getByText('No tienes notificaciones.')).toBeInTheDocument()
     expect(screen.getByText('Al día')).toBeInTheDocument()
-    expect(screen.getByTitle('Marcar todas como leídas')).toBeDisabled()
+    expect(screen.getByTitle('No hay notificaciones sin leer')).toBeDisabled()
 
     // Act
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar notificaciones' }))
