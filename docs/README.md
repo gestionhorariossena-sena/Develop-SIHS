@@ -1,10 +1,5 @@
-# Documentación de SIHS — Testing
+# Compatibilidad con el reto ADSO
 
-Esta carpeta **`docs/` se reserva para el trabajo de pruebas**: guías, matriz de rotación, reportes, evidencia y el bootcamp ADSO.
+La documentación de testing ahora se encuentra en **[`docs-testing/`](../docs-testing/README.md)**. La documentación general de SIHS está en **[`docs-sihs/`](../docs-sihs/README.md)**.
 
-- [Matriz de rotación ADSO](./matriz-rotacion.md) — **permanece aquí** porque la rúbrica del instructor exige exactamente `docs/matriz-rotacion.md`.
-- [Inicio e índice de testing](./testing/README.md) — bootcamp, reportes y archivo histórico.
-
-**Documentación general** de arquitectura, requisitos, diseño y diagramas: [`_Docs/`](../_Docs/README.md).
-
-Los tests que se ejecutan siguen en `backend/tests/`, `frontend/src/` y `e2e/`; no se trasladan a `docs/` porque pytest, Vitest y Playwright dependen de esas rutas.
+**Excepción obligatoria del bootcamp:** [`matriz-rotacion.md`](./matriz-rotacion.md) debe permanecer en la ruta exacta `docs/matriz-rotacion.md` exigida por el instructor. Es el único documento canónico aquí; no crear una segunda matriz divergente.

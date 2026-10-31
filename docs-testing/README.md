@@ -4,7 +4,7 @@ Esta carpeta es la **fuente de documentación de testing del repositorio**. No c
 
 ## Semana 1 y semana 2
 
-- [Matriz oficial de rotación](../matriz-rotacion.md) — responsables, capa S1/S2, seguimiento y umbrales.
+- [Matriz oficial de rotación](../docs/matriz-rotacion.md) — responsables, capa S1/S2, seguimiento y umbrales.
 - [Resumen del bootcamp ADSO](./bootcamp/RESUMEN_BOOTCAMP_NOTEBOOKLM.md) — guion histórico; contrastar cualquier dato antiguo con CI actual.
 - [Reporte E2E de semana 1](./reportes/TESTS_SEMANA_1_E2E.md).
 - [Reporte PostgreSQL de pruebas](./reportes/TESTS_SEMANA_2_POSTGRES.md).
@@ -14,7 +14,7 @@ Esta carpeta es la **fuente de documentación de testing del repositorio**. No c
 
 | Tipo | Ubicación | Herramienta |
 |---|---|---|
-| Unitarias frontend | `frontend/src/**/*.test.ts(x)` | Vitest |
+| Unitarias frontend | `frontend/tests/unit/**/*.test.ts(x)` | Vitest |
 | Unitarias/API/backend | `backend/tests/` | pytest |
 | E2E navegador | `e2e/tests/` | Playwright |
 | Workflows | `.github/workflows/` | GitHub Actions |
