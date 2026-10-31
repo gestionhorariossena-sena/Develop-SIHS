@@ -1,64 +1,42 @@
-# Matriz de rotación — Sprint de Testing SIHS (2 semanas)
+# Matriz de rotación — Testing SIHS
 
-Equipo: Nicol, Dayana, Edith, David · ADSO SENA · cierra 2026-10-25
+Equipo: Nicol, David, Dayana y Edith.
 
-Fuente de verdad del estado real del sprint (ver `_Docs/` para el resto de
-documentación del proyecto). Cada quien actualiza su propia fila al abrir
-su PR — no se marca "hecho" hasta que el PR está abierto y pasando.
+## Semana 1 — Primer E2E con Playwright
 
-## Semana 1 (11–18 oct) — Fundamentos: E2E + unitarias + CI con umbral
+| Integrante | Flujo E2E | Evidencia | Capa S1 |
+|---|---|---|---|
+| Nicol | Asistente de horarios: preguntar a IA, respuesta visible, timeout y pregunta vacía | `e2e/tests/asistente-ia.spec.ts` — PR #152 | E2E |
+| David | Inicio de sesión institucional y panel por rol | `e2e/tests/login.spec.ts` — PR #142 | E2E |
+| Dayana | Publicación de horario y visibilidad por instructor | `e2e/tests/publicar-horario.spec.ts` — PR #143 | E2E |
+| Edith | Validaciones del formulario de login vacío | `e2e/tests/login-validacion.spec.ts` — PR #140 | E2E |
 
-| Integrante | Entregable individual | Rama | Estado | Evidencia |
-|---|---|---|---|---|
-| David | E2E — Login exitoso | — | Pendiente | — |
-| Dayana | E2E — Publicar horario | — | Pendiente | — |
-| Edith | E2E — Validación de login vacío + 4 unitarias de `formatearTiempoRestante` | `test/semana-1-login-validacion` | ✅ Listo, push hecho, PR sin abrir | [commit 988fe6b](../../commit/988fe6b) |
-| Nicol | E2E — Asistente de horarios (IA) | `test/semana-1-e2e-asistente-ia` | Código en rama, push hecho, PR sin abrir | — |
+Los cuatro flujos son diferentes. Los PR #140, #142 y #143 ya se habían integrado; el caso de Nicol proviene del PR #152. Cada integrante debe poder explicar el test de otro y registrar su revisión cruzada. Los tests que requieren credenciales deben ejecutarse usando **un entorno de pruebas**, no producción. No se consideran aprobados hasta ejecutar Playwright y registrar el resultado.
 
-### Entregables grupales S1
+## Entregables grupales
 
-| Entregable | Responsable | Estado |
-|---|---|---|
-| Migración npm → pnpm | David | ✅ Mergeado a `develop` (PR #137) |
-| Postgres de pruebas en Docker — local | Dayana | Pendiente |
-| Carpeta `e2e/` con Playwright | Los 4 | ✅ Creada (en `test/semana-1-login-validacion`, pendiente de integrar a `semana-1`) |
-| `docs/matriz-rotacion.md` | Edith | ✅ Este archivo |
-| `.github/pull_request_template.md` | Nicol | Pendiente |
-| Línea base de cobertura (back + front) | David + Dayana | Pendiente |
-| `ci.yml` con umbral 30% bloqueante | Los 4 | Pendiente |
+- [x] Carpeta `e2e/` y configuración de Playwright.
+- [x] Cuatro flujos individuales identificados, con aserciones sobre comportamiento observable.
+- [x] Matriz S1 y plantilla de PR en `.github/pull_request_template.md`.
+- [x] Línea base de cobertura en frontend y backend, con umbrales en CI.
+- [ ] Verificar en un mismo entorno la ejecución verde de los cuatro flujos E2E.
+- [ ] Registrar prueba de fallo intencional de cada flujo, revisión cruzada y evidencia de commits individuales.
 
-## Semana 2 (18–25 oct) — Rotación en paralelo + CI completo + cierre
+## Línea base de cobertura S1
 
-| Integrante | Capa | Estado |
-|---|---|---|
-| David | Dobles de prueba (Gemini + Supabase) + Playwright a fondo | Sin empezar |
-| Dayana | Integración con Postgres real en Docker | Sin empezar |
-| Edith | Componentes React (RTL) — `HorarioEditor.tsx` / `GridHorario.tsx` | Sin empezar |
-| Nicol | Pruebas de API (contrato HTTP) — `/api/v1/asistencias` | Sin empezar |
+| Paquete | Sentencias | Ramas | Funciones | Líneas |
+|---|---:|---:|---:|---:|
+| Frontend (Vitest/V8) | 76,73 % | 64,85 % | 73,89 % | 79,59 % |
+| Backend (pytest-cov) | 84 % (umbral global) | — | — | — |
 
-### Revisión cruzada — semana 2
+Las cifras frontend son umbrales bloqueantes configurados en `frontend/vite.config.ts`. La línea base registrada en la rama de cierre fue: backend 84,07 % en CI (412 tests pasaron, 10 omitidos) y frontend 79,59 % de líneas en CI (363 pasaron). Los números históricos no sustituyen la comprobación de la ejecución actual.
 
-| Autor | → Revisor |
-|---|---|
-| David | → Dayana |
-| Dayana | → Edith |
-| Edith | → Nicol |
-| Nicol | → David |
+## Ejecución
 
-## Cobertura — piso por semana (regla de trinquete, nunca baja)
+```bash
+cd frontend && pnpm install --frozen-lockfile && pnpm test:coverage
+cd ../backend && pip install -r requirements.txt && pytest -v --cov=app --cov-report=term --cov-fail-under=84
+cd ../e2e && pnpm install --frozen-lockfile && pnpm exec playwright install chromium && pnpm test
+```
 
-| Semana 1 | Semana 2 |
-|---|---|
-| 30% | 60% |
-
-Línea base real: **aún no registrada** (pendiente del entregable "Línea
-base de cobertura" de David + Dayana).
-
-## Estado real verificado del repo (2026-10-11)
-
-| Dato | Valor |
-|---|---|
-| Archivos de test — backend | 55 |
-| Archivos de test — frontend | 48 (ahora 49 con `tiempoRestante.test.ts`) |
-| Tests E2E en `main`/`develop` | 0 (2 en rama `test/semana-1-login-validacion`, pendientes de integrar) |
-| Umbral de cobertura en CI | ninguno todavía |
+La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_LOGIN_PASSWORD` y `E2E_EXPECTED_ROLE`; nunca incluir secretos en Git. El E2E del asistente de Nicol usa red simulada.

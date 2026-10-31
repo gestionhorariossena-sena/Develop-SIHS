@@ -208,7 +208,7 @@ def test_ruta_inexistente_bajo_asistencias_es_404(client, escenario):
 
 
 def test_metodo_no_permitido_es_405(client, escenario):
-    assert client.delete(f"{URL}/sesion", headers=escenario["headers"]).status_code == 405
+    assert client.delete(f"{URL}/mias", headers=escenario["headers"]).status_code == 405
 
 
 # --- 401 / 403: autenticación y rol ------------------------------------

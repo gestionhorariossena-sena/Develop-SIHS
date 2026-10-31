@@ -29,11 +29,15 @@ def test_listar_instructores_filtra_por_busqueda_y_especialidad(
     redes = Especialidad(nombre="Redes")
     db_session.add(redes)
     db_session.commit()
-    con_redes = crear_usuario(nombre="Diana Castro", roles=[rol_instructor])
+    con_redes = crear_usuario(
+        nombre="Diana Castro",
+        email="diana.castro@example.com",
+        roles=[rol_instructor],
+    )
     con_redes.especialidades = [redes]
     con_redes.sigla = "DC"
     db_session.commit()
-    crear_usuario(nombre="Luis Mora", roles=[rol_instructor])
+    crear_usuario(nombre="Luis Mora", email="luis.mora@example.com", roles=[rol_instructor])
 
     por_sigla = client.get("/api/v1/usuarios/instructores?busqueda=dc", headers=headers).json()
     assert [u["nombre"] for u in por_sigla] == ["Diana Castro"]
