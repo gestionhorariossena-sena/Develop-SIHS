@@ -87,6 +87,7 @@ class HorarioService:
             "publicado": horario.publicado,
             "dias": dias if dias is not None else HorarioRepository.obtener_dias(db, horario.idHorario),
             "instructorNombre": horario.instructor.nombre if horario.instructor else None,
+            "instructorEmail": horario.instructor.email if horario.instructor else None,
             "fichaCodigo": horario.ficha.codigoFicha if horario.ficha else None,
             "ambienteNombre": (
                 horario.ambiente.nombre

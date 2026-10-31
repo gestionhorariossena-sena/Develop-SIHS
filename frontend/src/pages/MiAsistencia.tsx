@@ -4,6 +4,23 @@ import { apiGet, ApiError } from '../services/api'
 import type { AsistenciaDeAprendiz, EstadoAsistencia, MiAsistencia as MiAsistenciaDatos } from '../types/api'
 
 type Filtro = EstadoAsistencia | 'todas'
+type Periodo = '0' | '7' | '20' | 'todo'
+
+const PERIODOS: { valor: Periodo; etiqueta: string }[] = [
+  { valor: '0', etiqueta: 'Hoy' },
+  { valor: '7', etiqueta: 'Últimos 7 días' },
+  { valor: '20', etiqueta: 'Últimos 20 días' },
+  { valor: 'todo', etiqueta: 'Mostrar todo' },
+]
+
+/** Días calendario entre una fecha "YYYY-MM-DD" y hoy (0 = hoy, 1 = ayer...). */
+function diasDesde(fechaSesion: string): number {
+  const [anio, mes, dia] = fechaSesion.split('-').map(Number)
+  const sesion = new Date(anio, mes - 1, dia)
+  const hoy = new Date()
+  hoy.setHours(0, 0, 0, 0)
+  return Math.round((hoy.getTime() - sesion.getTime()) / 86_400_000)
+}
 
 const ETIQUETA: Record<EstadoAsistencia, string> = {
   presente: 'Presente',
@@ -57,6 +74,7 @@ export function MiAsistencia() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [filtro, setFiltro] = useState<Filtro>('todas')
+  const [periodo, setPeriodo] = useState<Periodo>('todo')
 
   useEffect(() => {
     apiGet<MiAsistenciaDatos>('/asistencias/mias')
@@ -71,8 +89,13 @@ export function MiAsistencia() {
   }, [])
 
   const visibles = useMemo(
-    () => (datos?.sesiones ?? []).filter((s) => filtro === 'todas' || s.estado === filtro),
-    [datos, filtro],
+    () =>
+      (datos?.sesiones ?? []).filter((s) => {
+        const okEstado = filtro === 'todas' || s.estado === filtro
+        const okPeriodo = periodo === 'todo' || diasDesde(s.fechaSesion) <= Number(periodo)
+        return okEstado && okPeriodo
+      }),
+    [datos, filtro, periodo],
   )
 
   const porMes = useMemo(() => {
@@ -111,36 +134,41 @@ export function MiAsistencia() {
 
         {resumen && resumen.registradas > 0 && (
           <div className="mb-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
-            <div className="flex flex-wrap items-center gap-6">
-              <div>
-                <p className="text-4xl font-bold text-primary">{resumen.porcentaje}%</p>
-                <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                  Asistencia
-                </p>
-              </div>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <p className="text-4xl font-bold text-on-surface">{resumen.porcentaje}%</p>
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-bold ${
+                  bajoUmbral ? 'bg-error-container text-on-error-container' : 'bg-primary-container text-on-primary-container'
+                }`}
+              >
+                {bajoUmbral ? 'Por debajo del mínimo' : 'Al día'} · mínimo {UMBRAL}%
+              </span>
+            </div>
 
-              <dl className="flex flex-wrap gap-5 text-sm">
-                <div>
-                  <dt className="text-xs text-on-surface-variant">Sesiones registradas</dt>
-                  <dd className="text-lg font-bold text-on-surface dark:text-slate-100">{resumen.registradas}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-on-surface-variant">Presente</dt>
-                  <dd className="text-lg font-bold text-primary">{resumen.presente}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-on-surface-variant">Tarde</dt>
-                  <dd className="text-lg font-bold text-tertiary">{resumen.tardanza}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-on-surface-variant">Ausente</dt>
-                  <dd className="text-lg font-bold text-error">{resumen.ausente}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-on-surface-variant">Con excusa</dt>
-                  <dd className="text-lg font-bold text-on-surface-variant">{resumen.excusa}</dd>
-                </div>
-              </dl>
+            <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-surface-container">
+              <span
+                className={`block h-full rounded-full ${bajoUmbral ? 'bg-error' : 'bg-primary'}`}
+                style={{ width: `${Math.min(100, resumen.porcentaje)}%` }}
+              />
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
+              <div>
+                <dt className="text-xs text-on-surface-variant">Presente</dt>
+                <dd className="text-lg font-bold text-primary">{resumen.presente}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-on-surface-variant">Tardanza</dt>
+                <dd className="text-lg font-bold text-tertiary">{resumen.tardanza}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-on-surface-variant">Excusa</dt>
+                <dd className="text-lg font-bold text-on-surface-variant">{resumen.excusa}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-on-surface-variant">Ausente</dt>
+                <dd className="text-lg font-bold text-error">{resumen.ausente}</dd>
+              </div>
             </div>
 
             {bajoUmbral && (
@@ -151,10 +179,34 @@ export function MiAsistencia() {
             )}
 
             <p className="mt-3 text-xs text-on-surface-variant dark:text-slate-400">
-              El porcentaje se calcula sobre las clases a las que ya te pasaron lista, no sobre el
-              total del período académico. Las excusas no cuentan en contra.
+              Sobre {resumen.registradas} sesiones registradas (no sobre el total programado del
+              trimestre). Las excusas no cuentan en contra.
             </p>
           </div>
+        )}
+
+        {datos && datos.sesiones.length > 0 && (
+          <>
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Periodo</p>
+            <div className="mb-4 flex flex-wrap gap-2">
+              {PERIODOS.map(({ valor, etiqueta }) => (
+                <button
+                  key={valor}
+                  type="button"
+                  onClick={() => setPeriodo(valor)}
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition ${
+                    periodo === valor
+                      ? 'bg-primary text-on-primary'
+                      : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
+                  }`}
+                >
+                  {etiqueta}
+                </button>
+              ))}
+            </div>
+
+            <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Estado</p>
+          </>
         )}
 
         {datos && datos.sesiones.length > 0 && (

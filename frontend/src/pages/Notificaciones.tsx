@@ -35,9 +35,9 @@ function categoriaDe(tipo: string): Exclude<FiltroTipo, 'all'> {
 }
 
 const CLASE_BADGE: Record<Exclude<FiltroTipo, 'all'>, string> = {
-  cambios: 'bg-sena-50 text-sena-700 dark:bg-sena-950/50 dark:text-sena-300',
-  cruces: 'bg-orange-50 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300',
-  sistema: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
+  cambios: 'bg-primary-container text-on-primary-container',
+  cruces: 'bg-tertiary-container text-on-tertiary-container',
+  sistema: 'bg-surface-container text-on-surface-variant',
 }
 
 function inicioDelDia(fecha: Date) {
@@ -63,16 +63,6 @@ function tiempoRelativo(iso: string) {
   const horas = Math.round(minutos / 60)
   if (horas < 24) return `Hace ${horas} h`
   return `Hace ${Math.round(horas / 24)} d`
-}
-
-/** Insignia reutilizable para marcar contenido de vitrina (sin backend
- * real todavía) -- mismo criterio que Avisos.tsx. */
-function InsigniaVitrina() {
-  return (
-    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500 dark:bg-slate-700 dark:text-slate-400">
-      Vitrina · sin datos reales aún
-    </span>
-  )
 }
 
 export function Notificaciones() {
@@ -135,12 +125,14 @@ export function Notificaciones() {
     }
   }
 
+  const sinPendientes = noLeidas === 0 && cambiosEstaSemana === 0 && avisosSistema === 0
+
   return (
     <AppShell activo="Notificaciones">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Centro de Notificaciones</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="mb-1 text-2xl font-bold text-on-surface">Centro de Notificaciones</h1>
+          <p className="text-sm text-on-surface-variant">
             {noLeidas === 0
               ? 'Sin notificaciones pendientes.'
               : `${noLeidas} ${noLeidas === 1 ? 'notificación no leída' : 'notificaciones no leídas'}.`}
@@ -150,37 +142,37 @@ export function Notificaciones() {
           type="button"
           onClick={() => void marcarTodasLeidas()}
           disabled={procesandoTodas || noLeidas === 0}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-outline bg-surface-container-lowest px-3.5 py-2 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-50"
         >
           {procesandoTodas ? 'Marcando…' : 'Marcar todas como leídas'}
         </button>
       </div>
 
-      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Pendientes por revisar</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{noLeidas}</p>
+      <section className={`mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3 ${sinPendientes ? 'opacity-55' : ''}`}>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Pendientes por revisar</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface">{noLeidas}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Cambios de horario esta semana</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{cambiosEstaSemana}</p>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Cambios de horario esta semana</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface">{cambiosEstaSemana}</p>
         </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Avisos de coordinación</p>
-          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{avisosSistema}</p>
+        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Avisos de coordinación</p>
+          <p className="mt-1 text-2xl font-bold text-on-surface">{avisosSistema}</p>
         </div>
       </section>
 
-      <div className="mb-6 flex flex-wrap items-center gap-1.5 rounded-xl border border-slate-200 bg-white p-1.5 dark:border-slate-700 dark:bg-slate-800">
+      <div className="mb-6 flex flex-wrap items-center gap-1.5 rounded-xl border border-outline-variant bg-surface-container-low p-1.5">
         {PILLS.map((pill) => (
           <button
             key={pill.id}
             type="button"
             onClick={() => setFiltro(pill.id)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition-colors ${
               filtro === pill.id
-                ? 'bg-sena-600 text-white'
-                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-700'
+                ? 'bg-primary text-on-primary'
+                : 'text-on-surface-variant hover:bg-surface-container-high'
             }`}
           >
             {pill.etiqueta}
@@ -189,20 +181,20 @@ export function Notificaciones() {
       </div>
 
       {error && (
-        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
+        <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
           {error}
         </p>
       )}
 
       {cargando ? (
-        <p className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Cargando notificaciones...</p>
+        <p className="py-12 text-center text-sm text-on-surface-variant">Cargando notificaciones...</p>
       ) : (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
           <div className="flex flex-col gap-6 lg:col-span-8">
             {(['Hoy', 'Esta semana', 'Anteriores'] as Grupo[]).map((grupo) =>
               grupos[grupo].length === 0 ? null : (
                 <div key={grupo} className="flex flex-col gap-3">
-                  <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">{grupo}</h2>
+                  <h2 className="text-sm font-bold text-on-surface">{grupo}</h2>
                   {grupos[grupo].map((notificacion) => {
                     const categoria = categoriaDe(notificacion.tipo)
                     const esDeHorario =
@@ -212,23 +204,25 @@ export function Notificaciones() {
                     return (
                       <article
                         key={notificacion.idNotificacion}
-                        className={`rounded-xl border p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 ${
-                          notificacion.leida ? 'border-slate-200 bg-white/70 dark:bg-slate-800/70' : 'border-sena-200 bg-white'
+                        className={`rounded-xl border p-4 ${
+                          notificacion.leida
+                            ? 'border-outline-variant bg-surface-container-lowest/70'
+                            : 'border-primary/40 bg-surface-container-lowest'
                         }`}
                       >
                         <div className="mb-2 flex flex-wrap items-center gap-2">
                           <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${CLASE_BADGE[categoria]}`}>
                             {ETIQUETA_TIPO[notificacion.tipo] ?? notificacion.tipo}
                           </span>
-                          <span className="text-xs text-slate-500 dark:text-slate-400">{tiempoRelativo(notificacion.fechaCreacion)}</span>
-                          {!notificacion.leida && <span className="h-1.5 w-1.5 rounded-full bg-sena-600" aria-hidden="true" />}
+                          <span className="text-xs text-on-surface-variant">{tiempoRelativo(notificacion.fechaCreacion)}</span>
+                          {!notificacion.leida && <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />}
                         </div>
-                        <p className="text-sm text-slate-700 dark:text-slate-300">{notificacion.mensaje}</p>
+                        <p className="text-sm text-on-surface">{notificacion.mensaje}</p>
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           {esDeHorario && (
                             <Link
                               to="/mi-horario-aprendiz"
-                              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+                              className="rounded-lg border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface-container-high"
                             >
                               Ver en mi horario
                             </Link>
@@ -237,7 +231,7 @@ export function Notificaciones() {
                             <button
                               type="button"
                               onClick={() => void marcarLeida(notificacion.idNotificacion)}
-                              className="rounded-lg bg-sena-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sena-700"
+                              className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-on-primary-container"
                             >
                               Marcar como leída
                             </button>
@@ -246,7 +240,7 @@ export function Notificaciones() {
                             type="button"
                             onClick={() => void eliminar(notificacion.idNotificacion)}
                             aria-label={`Eliminar notificación: ${notificacion.mensaje}`}
-                            className="ml-auto rounded-lg px-2 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-100 hover:text-red-700 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-red-300"
+                            className="ml-auto rounded-lg px-2 py-1.5 text-xs font-medium text-on-surface-variant hover:bg-surface-container-high hover:text-error"
                           >
                             Eliminar
                           </button>
@@ -259,62 +253,26 @@ export function Notificaciones() {
             )}
 
             {filtradas.length === 0 && (
-              <p className="rounded-xl border border-slate-200 bg-white px-4 py-12 text-center text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400">
-                No hay notificaciones que coincidan con este filtro.
-              </p>
+              <div className="flex flex-col items-center gap-2 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-11 text-center">
+                <span aria-hidden="true" className="material-symbols-outlined text-[32px] text-on-surface-variant">
+                  notifications_off
+                </span>
+                <p className="text-sm font-semibold text-on-surface">
+                  {notificaciones.length === 0 ? 'Sin notificaciones por ahora' : 'No hay notificaciones de este tipo'}
+                </p>
+                <p className="max-w-xs text-sm text-on-surface-variant">
+                  {notificaciones.length === 0
+                    ? 'Te avisamos acá apenas haya un cambio de horario, un cruce detectado o un comunicado de Coordinación.'
+                    : 'Prueba con otro filtro, arriba, para ver el resto de tus notificaciones.'}
+                </p>
+              </div>
             )}
           </div>
 
           <aside className="flex flex-col gap-6 lg:col-span-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Canales de Entrega</p>
-                <InsigniaVitrina />
-              </div>
-              <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">
-                No hay backend de preferencias de canal por usuario todavía (push en navegador / correo institucional).
-                Si se decide implementar, sería un campo nuevo en usuarios o una tabla de preferencias -- fuera de
-                alcance de este ticket.
-              </p>
-              <div className="flex flex-col gap-2 opacity-60">
-                <label className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-900">
-                  Alertas en pantalla
-                  <input type="checkbox" checked disabled className="h-4 w-4 cursor-not-allowed" />
-                </label>
-                <label className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-sm dark:bg-slate-900">
-                  Correo institucional
-                  <input type="checkbox" checked disabled className="h-4 w-4 cursor-not-allowed" />
-                </label>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Anticipación de Alerta</p>
-                <InsigniaVitrina />
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                "Recordar 30 min antes" se resuelve cuando exista el ticket de anotaciones de horario (mismo Epic) --
-                no forma parte de este ticket.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Instructores de la Ficha</p>
-                <InsigniaVitrina />
-              </div>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Se revisó si había un endpoint accesible para Aprendiz que listara los instructores de su ficha (
-                GET /fichas/{'{id}'}/vocero solo trae vocero/subvocero; GET /horarios/ exige rol Coordinador o
-                Administrador). No hay dato real accesible hoy, así que queda como vitrina hasta que exista un
-                endpoint de solo lectura para Aprendiz.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
-              <p className="mb-2 text-sm font-semibold text-slate-900 dark:text-slate-100">¿Inconsistencia en horario?</p>
-              <p className="mb-4 text-sm text-slate-500 dark:text-slate-400">
+            <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+              <p className="mb-2 text-sm font-semibold text-on-surface">¿Inconsistencia en horario?</p>
+              <p className="mb-4 text-sm text-on-surface-variant">
                 Si notas un choque entre ambientes asignados o una ausencia no reportada, radica el caso en la Mesa
                 de Ayuda institucional.
               </p>
@@ -322,9 +280,9 @@ export function Notificaciones() {
                 href="https://mesadeayuda.sena.edu.co"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700"
+                className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
               >
-                Crear Radicado en Mesa de Ayuda
+                Crear radicado
               </a>
             </div>
           </aside>

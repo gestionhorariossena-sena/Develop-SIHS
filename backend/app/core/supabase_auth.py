@@ -217,3 +217,9 @@ require_lectura_catalogo = require_roles("Coordinador", "Administrador")
 # sigue siendo solo Coordinador/Administrador) — solo datos de catálogo
 # (nombre, código, descripción) que no son sensibles.
 require_lectura_catalogo_o_instructor = require_roles("Coordinador", "Administrador", "Instructor")
+
+# Catálogo de trimestres (nombre, fechas, estado) es el único que además
+# necesita el Aprendiz, para el selector de Trimestre de Mi Horario
+# (MiHorarioAprendiz.tsx) -- no amplía el resto de require_lectura_catalogo
+# (fichas, ambientes, instructores siguen sin ser visibles para él).
+require_lectura_trimestres = require_roles("Coordinador", "Administrador", "Instructor", "Aprendiz")

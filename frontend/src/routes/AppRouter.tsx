@@ -189,6 +189,19 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
+      {/* Mismo componente, otra vista: la lista de conversaciones con
+        * contador de no leídos en vez del directorio de solo lectura.
+        * Solo el vocero/subvocero la ve en el subnav (AppShell.tsx), pero
+        * la ruta en sí no es más permisiva -- MensajesAprendiz.tsx ya
+        * esconde "Escribir" si no puede, y el backend lo exige igual. */}
+      <Route
+        path="/mensajes/chat"
+        element={
+          <ProtectedRoute roles={APRENDIZ}>
+            <MensajesAprendiz />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/mis-solicitudes-cambio"
         element={

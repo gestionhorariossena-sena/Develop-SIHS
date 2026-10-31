@@ -9,7 +9,11 @@ from app.schemas.mensajeria import (
     MensajeCrear,
     MensajeResponse,
 )
-from app.services.mensajeria_service import ConversacionNoPermitidaError, MensajeriaService
+from app.services.mensajeria_service import (
+    ConversacionNoPermitidaError,
+    MensajeriaService,
+    RemitenteNoAutorizadoError,
+)
 
 router = APIRouter(prefix="/mensajeria", tags=["mensajeria"])
 
@@ -34,6 +38,11 @@ def crear_conversacion(
         raise HTTPException(
             status_code=403,
             detail="Ese instructor no dicta clase a tu ficha — no podés iniciar una conversación con él.",
+        )
+    except RemitenteNoAutorizadoError:
+        raise HTTPException(
+            status_code=403,
+            detail="Solo el vocero o subvocero de la ficha puede escribirle a un instructor.",
         )
 
 

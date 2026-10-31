@@ -12,7 +12,7 @@ import { CeldaHorario } from './CeldaHorario'
 // texto negro fijo tenga buen contraste en cualquier tema.
 const colorFondoJornada: Record<Jornada, { celda: string; celdaAlt: string }> = {
   Mañana: { celda: 'bg-emerald-200', celdaAlt: 'bg-emerald-300/70' },
-  Tarde: { celda: 'bg-blue-200', celdaAlt: 'bg-blue-300/70' },
+  Tarde: { celda: 'bg-sky-200', celdaAlt: 'bg-sky-300/70' },
   Noche: { celda: 'bg-emerald-200', celdaAlt: 'bg-emerald-300/70' },
 }
 

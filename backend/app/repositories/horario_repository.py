@@ -251,22 +251,24 @@ class HorarioRepository:
         )
 
     @staticmethod
-    def obtener_publicados_por_ficha(db: Session, id_ficha: int) -> list[Horario]:
+    def obtener_publicados_por_ficha(db: Session, id_ficha: int, id_trimestre: int | None = None) -> list[Horario]:
         """Consulta personal: solo horarios activos y publicados.
 
         No sustituye obtener_por_ficha: coordinación sigue necesitando
         consultar los borradores en sus vistas de gestión.
+
+        `id_trimestre` opcional -- selector de Trimestre del Aprendiz
+        (GET /ficha-usuario/mi-horario?idTrimestre=): filtra por el
+        trimestre propio de cada Horario, no por el de la ficha.
         """
-        return (
-            db.query(Horario)
-            .options(*_relaciones_para_respuesta())
-            .filter(
-                Horario.idFicha == id_ficha,
-                Horario.activo.is_(True),
-                Horario.publicado.is_(True),
-            )
-            .all()
+        consulta = db.query(Horario).options(*_relaciones_para_respuesta()).filter(
+            Horario.idFicha == id_ficha,
+            Horario.activo.is_(True),
+            Horario.publicado.is_(True),
         )
+        if id_trimestre is not None:
+            consulta = consulta.filter(Horario.idTrimestre == id_trimestre)
+        return consulta.all()
 
     @staticmethod
     def obtener_por_ambiente(db: Session, id_ambiente: int) -> list[Horario]:

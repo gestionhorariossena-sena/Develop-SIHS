@@ -80,7 +80,7 @@ def test_crear_conversacion_ok_cuando_instructor_dicta_a_la_ficha_del_aprendiz(c
     aprendiz, headers = autenticar_como("Aprendiz")
     instructor = crear_usuario(nombre="Erick")
 
-    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario))
+    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario, rolEnFicha="vocero"))
     db_session.commit()
     _crear_horario(db_session, catalogos, instructor.idUsuario)
 
@@ -98,13 +98,54 @@ def test_crear_conversacion_rechaza_instructor_que_no_dicta_a_la_ficha(client, d
     aprendiz, headers = autenticar_como("Aprendiz")
     instructor_ajeno = crear_usuario(nombre="Sergio")
 
-    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario))
+    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario, rolEnFicha="vocero"))
     db_session.commit()
     # instructor_ajeno no dicta ninguna clase a esa ficha.
 
     respuesta = client.post("/api/v1/mensajeria/conversaciones", json={"idInstructor": str(instructor_ajeno.idUsuario)}, headers=headers)
 
     assert respuesta.status_code == 403
+
+
+def test_crear_conversacion_rechaza_aprendiz_que_no_es_vocero(client, db_session, autenticar_como, crear_usuario):
+    """Pedido explícito: si cualquier aprendiz pudiera abrirle conversación
+    al instructor, sería imposible de atender -- solo el vocero/subvocero
+    de la ficha puede. El instructor SÍ dicta a la ficha (no es el caso de
+    arriba), pero el aprendiz no tiene ningún rolEnFicha."""
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar_catalogos_basicos(db_session)
+
+    aprendiz, headers = autenticar_como("Aprendiz")
+    instructor = crear_usuario(nombre="Erick")
+
+    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario, rolEnFicha=None))
+    db_session.commit()
+    _crear_horario(db_session, catalogos, instructor.idUsuario)
+
+    respuesta = client.post(
+        "/api/v1/mensajeria/conversaciones", json={"idInstructor": str(instructor.idUsuario)}, headers=headers
+    )
+
+    assert respuesta.status_code == 403
+    assert "vocero" in respuesta.json()["detail"].lower()
+
+
+def test_subvocero_tambien_puede_crear_conversacion(client, db_session, autenticar_como, crear_usuario):
+    _crear_tablas_extra(db_session)
+    catalogos = _poblar_catalogos_basicos(db_session)
+
+    aprendiz, headers = autenticar_como("Aprendiz")
+    instructor = crear_usuario(nombre="Erick")
+
+    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario, rolEnFicha="subvocero"))
+    db_session.commit()
+    _crear_horario(db_session, catalogos, instructor.idUsuario)
+
+    respuesta = client.post(
+        "/api/v1/mensajeria/conversaciones", json={"idInstructor": str(instructor.idUsuario)}, headers=headers
+    )
+
+    assert respuesta.status_code == 201
 
 
 def test_enviar_y_listar_mensajes(client, db_session, autenticar_como, crear_usuario):
@@ -114,7 +155,7 @@ def test_enviar_y_listar_mensajes(client, db_session, autenticar_como, crear_usu
     aprendiz, headers_aprendiz = autenticar_como("Aprendiz")
     instructor = crear_usuario(nombre="Erick")
 
-    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario))
+    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario, rolEnFicha="vocero"))
     db_session.commit()
     _crear_horario(db_session, catalogos, instructor.idUsuario)
 
@@ -146,7 +187,7 @@ def test_usuario_ajeno_no_puede_ver_ni_escribir_en_conversacion_de_otros(client,
     instructor = crear_usuario(nombre="Erick")
     _, headers_ajeno = autenticar_como("Aprendiz")
 
-    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario))
+    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario, rolEnFicha="vocero"))
     db_session.commit()
     _crear_horario(db_session, catalogos, instructor.idUsuario)
 
@@ -175,7 +216,7 @@ def test_la_conversacion_trae_los_nombres_y_no_solo_los_uuid(client, db_session,
     aprendiz, headers_aprendiz = autenticar_como("Aprendiz")
     instructor = crear_usuario(nombre="Erick Granados")
 
-    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario))
+    db_session.add(FichaUsuario(idFicha=catalogos["idFicha"], idUsuario=aprendiz.idUsuario, rolEnFicha="vocero"))
     db_session.commit()
     _crear_horario(db_session, catalogos, instructor.idUsuario)
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { MensajesAprendiz } from './MensajesAprendiz'
@@ -64,10 +64,12 @@ function mockear({
   conversaciones = [] as Conversacion[],
   horarios = [HORARIO],
   mensajes = [] as Mensaje[],
+  rolEnFicha = 'vocero' as string | null,
 } = {}) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/mensajeria/conversaciones') return Promise.resolve(conversaciones)
     if (path === '/ficha-usuario/mi-horario') return Promise.resolve(horarios)
+    if (path === '/ficha-usuario/mi-rol') return Promise.resolve({ rolEnFicha })
     if (path === '/usuarios/me') return Promise.resolve(APRENDIZ)
     if (path.endsWith('/mensajes')) return Promise.resolve(mensajes)
     if (path === '/notificaciones/') return Promise.resolve([])
@@ -88,7 +90,7 @@ describe('MensajesAprendiz', () => {
     renderConProviders(<MensajesAprendiz />)
 
     expect(await screen.findByText('Carlos Morales')).toBeInTheDocument()
-    expect(screen.getByText('Arquitectura de software')).toBeInTheDocument()
+    expect(screen.getByText(/Arquitectura de software/)).toBeInTheDocument()
   })
 
   it('el primer mensaje crea la conversación y después la reutiliza', async () => {
@@ -104,6 +106,7 @@ describe('MensajesAprendiz', () => {
     apiGetMock.mockImplementation((path: string) => {
       if (path === '/mensajeria/conversaciones') return Promise.resolve([])
       if (path === '/ficha-usuario/mi-horario') return Promise.resolve([HORARIO])
+      if (path === '/ficha-usuario/mi-rol') return Promise.resolve({ rolEnFicha: 'vocero' })
       if (path === '/usuarios/me') return Promise.resolve(APRENDIZ)
       if (path.endsWith('/mensajes')) return Promise.resolve([...yaEnServidor])
       return Promise.resolve([])
@@ -117,7 +120,7 @@ describe('MensajesAprendiz', () => {
     const usuario = userEvent.setup()
     renderConProviders(<MensajesAprendiz />)
 
-    await usuario.click(await screen.findByText('Carlos Morales'))
+    await usuario.click(await screen.findByRole('button', { name: 'Escribir' }))
     await usuario.type(screen.getByLabelText('Escribe tu consulta'), '¿Podemos revisar el taller?')
     await usuario.click(screen.getByRole('button', { name: 'Enviar' }))
 
@@ -138,7 +141,7 @@ describe('MensajesAprendiz', () => {
     const usuario = userEvent.setup()
     renderConProviders(<MensajesAprendiz />)
 
-    await usuario.click(await screen.findByText('Carlos Morales'))
+    await usuario.click(await screen.findByRole('button', { name: 'Escribir' }))
     await usuario.type(screen.getByLabelText('Escribe tu consulta'), 'Gracias')
     await usuario.click(screen.getByRole('button', { name: 'Enviar' }))
 
@@ -153,7 +156,7 @@ describe('MensajesAprendiz', () => {
     const usuario = userEvent.setup()
     renderConProviders(<MensajesAprendiz />)
 
-    await usuario.click(await screen.findByText('Carlos Morales'))
+    await usuario.click(await screen.findByRole('button', { name: 'Escribir' }))
 
     expect(await screen.findByText('Revisa el capítulo 4 antes de la sesión.')).toBeInTheDocument()
     expect(apiPatchMock).toHaveBeenCalledWith('/mensajeria/mensajes/1/leido')
@@ -164,5 +167,52 @@ describe('MensajesAprendiz', () => {
     renderConProviders(<MensajesAprendiz />)
 
     expect(await screen.findByText('Todavía no tienes instructores a quién escribirle')).toBeInTheDocument()
+  })
+
+  it('muestra el correo del instructor en la tarjeta', async () => {
+    mockear({ horarios: [{ ...HORARIO, instructorEmail: 'carlos.morales@sena.edu.co' }] })
+    renderConProviders(<MensajesAprendiz />)
+
+    expect(await screen.findByRole('link', { name: /carlos\.morales@sena\.edu\.co/ })).toHaveAttribute(
+      'href',
+      'mailto:carlos.morales@sena.edu.co',
+    )
+  })
+
+  // Pedido explícito: no todo aprendiz debe poder escribirle al instructor
+  // (sería imposible de atender) -- solo el vocero/subvocero de la ficha.
+  it('si no es vocero ni subvocero, solo ve el directorio de solo lectura', async () => {
+    mockear({ rolEnFicha: null })
+    renderConProviders(<MensajesAprendiz />)
+
+    expect(await screen.findByText('Carlos Morales')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Escribir' })).not.toBeInTheDocument()
+  })
+
+  it('el subvocero también puede escribirle al instructor', async () => {
+    mockear({ rolEnFicha: 'subvocero' })
+    renderConProviders(<MensajesAprendiz />)
+
+    expect(await screen.findByRole('button', { name: 'Escribir' })).toBeInTheDocument()
+  })
+
+  // "/mensajes/chat" es la pestaña que solo ve el vocero/subvocero en el
+  // subnav (AppShell.tsx) -- pero la ruta en sí no lo exige, así que la
+  // pantalla misma tiene que negarse si alguien la abre directamente.
+  it('quien no es vocero ni subvocero no puede abrir la bandeja por url directa', async () => {
+    mockear({ rolEnFicha: null })
+    renderConProviders(<MensajesAprendiz />, ['/mensajes/chat'])
+
+    expect(await screen.findByText('Esta bandeja es solo para el vocero o subvocero de tu ficha')).toBeInTheDocument()
+    expect(screen.queryByText('Carlos Morales')).not.toBeInTheDocument()
+  })
+
+  it('la bandeja del vocero lista a los instructores con su contador de no leídos', async () => {
+    mockear({ conversaciones: [CONVERSACION], mensajes: [MENSAJE_DEL_INSTRUCTOR] })
+    renderConProviders(<MensajesAprendiz />, ['/mensajes/chat'])
+
+    expect(await screen.findByRole('heading', { name: 'Mensajes' })).toBeInTheDocument()
+    const fila = await screen.findByRole('button', { name: /Carlos Morales/ })
+    expect(await within(fila).findByText('1')).toBeInTheDocument()
   })
 })

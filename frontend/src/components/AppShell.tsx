@@ -64,7 +64,11 @@ const NAV: GrupoNav[] = [
       // que por ahora el ítem es suyo; la bandeja del Instructor es otra
       // pantalla pendiente de diseño.
       { etiqueta: 'Mi asistencia', ruta: '/mi-asistencia', soloAprendiz: true },
-      { etiqueta: 'Mensajes', ruta: '/mensajes', soloAprendiz: true },
+      // Antes se llamaba "Mensajes", pero la pantalla es un directorio de
+      // instructores -- solo el vocero/subvocero de la ficha puede además
+      // escribirles (ver puedeEscribir en MensajesAprendiz.tsx). El nombre
+      // ya no prometía algo que la mayoría no puede usar.
+      { etiqueta: 'Mis instructores', ruta: '/mensajes', soloAprendiz: true },
       // Centro de notificaciones del Aprendiz (pantalla propia, distinta
       // de la campana del navbar: ahí caben el historial y el detalle).
       { etiqueta: 'Notificaciones', ruta: '/notificaciones', soloAprendiz: true },
@@ -137,6 +141,22 @@ function letraInicial(nombre: string) {
   return nombre.trim().charAt(0).toUpperCase()
 }
 
+/**
+ * Pestañas de "Mi trabajo" para el Aprendiz, visibles solo mientras está en
+ * una de estas 4 pantallas (igual que el menú desplegable de arriba, pero
+ * siempre a la vista en vez de un clic extra). `etiqueta` debe matchear
+ * exactamente el `activo` que pasa cada página (MiHorarioAprendiz.tsx,
+ * MensajesAprendiz.tsx, MiAsistencia.tsx, Notificaciones.tsx).
+ */
+const APRENDIZ_SUBNAV = [
+  { etiqueta: 'Mi Horario', ruta: '/mi-horario-aprendiz', icono: 'calendar_month' },
+  { etiqueta: 'Mis instructores', ruta: '/mensajes', icono: 'forum' },
+  // Solo vocero/subvocero: ver dónde se arma esta lista más abajo (esVocero).
+  { etiqueta: 'Mensajes', ruta: '/mensajes/chat', icono: 'chat', soloVocero: true },
+  { etiqueta: 'Mi asistencia', ruta: '/mi-asistencia', icono: 'fact_check' },
+  { etiqueta: 'Notificaciones', ruta: '/notificaciones', icono: 'notifications' },
+]
+
 interface AppShellProps {
   /** Etiqueta del ítem de NAV que debe verse activo (debe matchear `etiqueta` arriba). */
   activo: string
@@ -184,6 +204,19 @@ export function AppShell({ activo, children }: AppShellProps) {
 
   const esAprendiz =
     miPerfil?.roles.some((rol) => rol.nombre === 'Aprendiz') ?? false
+
+  // Solo para mostrar (o no) la pestaña "Mensajes" del subnav -- quien de
+  // verdad hace cumplir "solo vocero/subvocero escribe" es el backend
+  // (RemitenteNoAutorizadoError en mensajeria_service.py).
+  const [rolEnFicha, setRolEnFicha] = useState<string | null>(null)
+  const esVocero = rolEnFicha === 'vocero' || rolEnFicha === 'subvocero'
+
+  useEffect(() => {
+    if (!esAprendiz) return
+    apiGet<{ rolEnFicha: string | null }>('/ficha-usuario/mi-rol')
+      .then((r) => setRolEnFicha(r.rolEnFicha))
+      .catch(() => setRolEnFicha(null))
+  }, [esAprendiz])
 
   const esAdministrador =
     miPerfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
@@ -366,6 +399,10 @@ export function AppShell({ activo, children }: AppShellProps) {
   }
 
   const grupoTieneActivo = (grupo: GrupoNav) => grupo.items.some((item) => item.etiqueta === activo)
+
+  const subnavAprendiz = APRENDIZ_SUBNAV.filter((item) => !item.soloVocero || esVocero)
+  const mostrarSubnavAprendiz = esAprendiz && subnavAprendiz.some((item) => item.etiqueta === activo)
+  const notificacionesSinLeer = notificaciones.filter((n) => !n.leida).length
 
   return (
     <div className="min-h-screen bg-surface">
@@ -556,13 +593,57 @@ export function AppShell({ activo, children }: AppShellProps) {
         )}
       </header>
 
+      {mostrarSubnavAprendiz && (
+        <nav
+          aria-label="Mi trabajo"
+          className="fixed top-16 z-40 flex w-full gap-1.5 overflow-x-auto border-b border-outline-variant bg-surface-container-low px-4 py-2.5 md:px-6 print:hidden"
+        >
+          {subnavAprendiz.map((item) => {
+            const esActivo = item.etiqueta === activo
+            return (
+              <Link
+                key={item.ruta}
+                to={item.ruta}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all ${
+                  esActivo
+                    ? 'bg-primary text-on-primary'
+                    : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+                  {item.icono}
+                </span>
+                {item.etiqueta}
+                {item.etiqueta === 'Notificaciones' && notificacionesSinLeer > 0 && (
+                  <span
+                    className={`ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold ${
+                      esActivo ? 'bg-white/30 text-on-primary' : 'bg-error text-white'
+                    }`}
+                  >
+                    {notificacionesSinLeer}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
+        </nav>
+      )}
+
       {errorPerfil && (
-        <div className="fixed top-16 z-40 w-full border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 print:hidden">
+        <div
+          className={`fixed z-40 w-full border-b border-red-200 bg-red-50 px-6 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 print:hidden ${
+            mostrarSubnavAprendiz ? 'top-28' : 'top-16'
+          }`}
+        >
           {errorPerfil}
         </div>
       )}
 
-      <main className="w-full bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_60%,_#faf8ff_100%)] pt-16 dark:bg-none">
+      <main
+        className={`w-full bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_60%,_#faf8ff_100%)] dark:bg-none ${
+          mostrarSubnavAprendiz ? 'pt-28' : 'pt-16'
+        }`}
+      >
         <div className="p-6">{children}</div>
       </main>
     </div>

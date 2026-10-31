@@ -3,7 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../test/renderConProviders'
 import { MiHorarioAprendiz } from './MiHorarioAprendiz'
-import type { AnotacionHorario, Ficha, Horario } from '../types/api'
+import type { AnotacionHorario, Ficha, Horario, Trimestre } from '../types/api'
 
 const { ApiErrorMock, apiGetMock, apiPostMock, apiPutMock, apiDeleteMock } = vi.hoisted(() => {
   class ApiErrorMock extends Error {
@@ -83,16 +83,37 @@ function crearAnotacion(overrides: Partial<AnotacionHorario> = {}): AnotacionHor
 }
 
 /** AppShell también llama a apiGet('/usuarios/me') al montar. */
+const TRIMESTRE_ACTUAL: Trimestre = {
+  idTrimestre: 1,
+  nombre: 'Trimestre IV',
+  fechaInicio: '2025-12-01',
+  fechaFin: '2026-02-28',
+  estado: 'activo',
+}
+
+const TRIMESTRE_HISTORICO: Trimestre = {
+  idTrimestre: 2,
+  nombre: 'Trimestre III',
+  fechaInicio: '2025-09-01',
+  fechaFin: '2025-11-30',
+  estado: 'finalizado',
+}
+
 function mockearRespuestas({
   ficha = FICHA,
   fichaError,
   horarios = [],
   anotaciones = [],
+  trimestres = [TRIMESTRE_ACTUAL, TRIMESTRE_HISTORICO],
+  horarioPorTrimestre,
 }: {
   ficha?: Ficha
   fichaError?: InstanceType<typeof ApiErrorMock>
   horarios?: Horario[]
   anotaciones?: AnotacionHorario[]
+  trimestres?: Trimestre[]
+  /** Mapa idTrimestre -> horarios, para la respuesta de GET ?idTrimestre=X. */
+  horarioPorTrimestre?: Record<number, Horario[]>
 }) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/usuarios/me') return Promise.reject(new ApiErrorMock(401, 'no mockeado'))
@@ -100,7 +121,12 @@ function mockearRespuestas({
       return fichaError ? Promise.reject(fichaError) : Promise.resolve(ficha)
     }
     if (path === '/ficha-usuario/mi-horario') return Promise.resolve(horarios)
+    if (path.startsWith('/ficha-usuario/mi-horario?idTrimestre=')) {
+      const id = Number(path.split('=')[1])
+      return Promise.resolve(horarioPorTrimestre?.[id] ?? [])
+    }
     if (path === '/anotaciones-horario/mias') return Promise.resolve(anotaciones)
+    if (path === '/trimestres/') return Promise.resolve(trimestres)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -140,6 +166,37 @@ describe('MiHorarioAprendiz', () => {
     expect(screen.getByText('Análisis y Desarrollo de Software')).toBeInTheDocument()
     expect(screen.getByText('Trimestre IV')).toBeInTheDocument()
     expect(apiGetMock).toHaveBeenCalledWith('/ficha-usuario/mi-horario')
+  })
+
+  describe('Selector de Trimestre', () => {
+    it('muestra una pestaña por trimestre, marca la vigente y arranca en el de la ficha', async () => {
+      mockearRespuestas({ horarios: [crearHorario()] })
+      renderConProviders(<MiHorarioAprendiz />)
+
+      const pestañaActual = await screen.findByRole('button', { name: /Trimestre IV · Actual/ })
+      expect(pestañaActual).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Trimestre III' })).toBeInTheDocument()
+      expect(screen.getByText(/Trimestre actual/)).toBeInTheDocument()
+    })
+
+    it('al elegir otro trimestre, pide ese idTrimestre y repinta la grilla', async () => {
+      const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      mockearRespuestas({
+        horarios: [crearHorario()],
+        horarioPorTrimestre: {
+          2: [crearHorario({ idHorario: 200, idTrimestre: 2, resultadoCodigo: 'RA-2', resultadoDescripcion: 'Redes' })],
+        },
+      })
+      renderConProviders(<MiHorarioAprendiz />)
+
+      await screen.findByText('Ficha 2874521')
+      await usuario.click(screen.getByRole('button', { name: 'Trimestre III' }))
+
+      await waitFor(() =>
+        expect(apiGetMock).toHaveBeenCalledWith('/ficha-usuario/mi-horario?idTrimestre=2'),
+      )
+      expect(await screen.findByText(/Horario histórico/)).toBeInTheDocument()
+    })
   })
 
   it('pinta la clase en la grilla con instructor y ambiente', async () => {
