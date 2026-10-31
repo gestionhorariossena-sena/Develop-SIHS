@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { AuditoriaCruces } from '../../../src/pages/AuditoriaCruces'
 import type { AuditoriaCrucesResponse } from '../../../src/types/api'
 

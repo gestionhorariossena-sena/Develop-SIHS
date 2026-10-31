@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen, within } from '@testing-library/react'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { DashboardInstructor } from '../../../src/pages/DashboardInstructor'
 
 const { apiGetMock } = vi.hoisted(() => ({ apiGetMock: vi.fn() }))

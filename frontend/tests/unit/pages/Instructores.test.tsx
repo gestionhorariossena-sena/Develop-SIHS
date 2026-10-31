@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { Instructores } from '../../../src/pages/Instructores'
 import type { CargaSemanal, DiaSemana, Horario, Usuario } from '../../../src/types/api'
 

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { AprobarlicitarSolicitudes } from '../../../src/pages/AprobarlicitarSolicitudes'
 import type { Rol, Usuario } from '../../../src/types/api'
 

@@ -3,7 +3,7 @@ import { useEffect, useMemo } from 'react'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { NuevoHorario } from '../../../src/pages/NuevoHorario'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 
 const mocks = vi.hoisted(() => {
   class ApiErrorMock extends Error {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { DashboardAprendiz } from '../../../src/pages/DashboardAprendiz'
 import type { Ficha, Horario, MiAsistencia, Usuario } from '../../../src/types/api'
 

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { DetalleFranjaAmbiente } from '../../../src/pages/DetalleFranjaAmbiente'
 import type { Ambiente, CompetenciaFormacion, Ficha, Horario, ResultadoAprendizaje, Usuario } from '../../../src/types/api'
 

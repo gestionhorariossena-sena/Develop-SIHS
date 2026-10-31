@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { PanelAdministracion } from '../../../src/pages/PanelAdministracion'
 import { ApiError } from '../../../src/services/api'
 import type { Rol, SolicitudAcceso } from '../../../src/types/api'

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ApiError } from '../../../src/services/api'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { PublicacionesProgramadas } from '../../../src/pages/PublicacionesProgramadas'
 import type { Horario, Trimestre } from '../../../src/types/api'
 

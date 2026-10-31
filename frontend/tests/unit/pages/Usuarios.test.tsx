@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { Usuarios } from '../../../src/pages/Usuarios'
 import type { Rol, Usuario } from '../../../src/types/api'
 

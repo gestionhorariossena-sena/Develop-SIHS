@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
-import { renderConProviders } from '../../../src/test/renderConProviders'
+import { renderConProviders } from '../../helpers/renderConProviders'
 import { MisSolicitudesCambioHorario } from '../../../src/pages/MisSolicitudesCambioHorario'
 import type { SolicitudCambioHorario, Usuario } from '../../../src/types/api'
 
