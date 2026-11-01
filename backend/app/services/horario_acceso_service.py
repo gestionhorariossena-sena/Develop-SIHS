@@ -35,7 +35,7 @@ class HorarioAccesoService:
     def puede_ver_bloque(db, usuario, horario: Horario) -> bool:
         if HorarioAccesoService.es_gestor(usuario):
             return True
-        if not horario.activo or not horario.publicado:
+        if not horario.activo and not horario.publicado:
             return False
         roles = HorarioAccesoService.roles(usuario)
         if "Instructor" in roles and horario.idInstructor == usuario.idUsuario:
