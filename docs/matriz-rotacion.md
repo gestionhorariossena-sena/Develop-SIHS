@@ -50,7 +50,7 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 | Nicol | **Front: Login** | `test/s3-front-nicol` | David | Pendiente | Pendiente | Pendiente |
 | David | **Front: Registro** | `test/s3-front-david` | Dayana | Pendiente | Pendiente | Pendiente |
 | Dayana | **Front: NotificacionesPanel** | `test/s3-front-dayana` | Edith | Pendiente | Pendiente | Pendiente |
-| Edith | **Front: RecuperarContrasena** | `test/s3-front-edith` | Nicol | ✅ Abierto | ✅ Documentada | ✅ 4/4 en verde |
+| Edith | **Front: RecuperarContrasena** | `test/s3-front-edith` | Nicol | ✅ [PR #166](../../pull/166) | ✅ Documentada, con log rojo/verde abajo | ✅ 5/5 en verde |
 
 **Responsable adicional de backend:** Edith, por haber tenido Front en S2. Mínimo del reto: 40 % en ambas capas. Los umbrales heredados superiores no se reducen (backend 84 %; frontend 76,73 % sentencias, 64,85 % ramas, 73,89 % funciones y 79,59 % líneas).
 
@@ -64,7 +64,25 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
   3. Navegación real a `/restablecer-contrasena` con el correo en el `state`, al dar clic en "Ya tengo mi código" (sin mockear `useNavigate`: se renderizan ambas rutas con `MemoryRouter`/`Routes` reales).
 - **Consultas accesibles:** `getByLabelText` y `getByRole`, sin `getByTestId`.
 - **Mutante (sobre un escenario nuevo):** se quitó el `state: { email }` del `navigate(...)` al hacer clic en "Ya tengo mi código". El test nuevo de navegación falló como se esperaba (mostró "sin correo" en vez del email real). Se restauró el `state` y los 5 tests vuelven a pasar.
-- **Evidencia:** `frontend/tests/unit/pages/RecuperarContrasena.test.tsx`, 5/5 tests en verde (2 preexistentes + 3 nuevos) con `pnpm vitest run tests/unit/pages/RecuperarContrasena.test.tsx`.
+- **Evidencia roja (mutante activo: `navigate('/restablecer-contrasena')` sin `state`), comando `pnpm vitest run tests/unit/pages/RecuperarContrasena.test.tsx`, corrida 2026-11-02 13:21:22:**
+  ```
+  <body>
+    <div>
+      <p>Paso del código para: sin correo</p>
+    </div>
+  </body>
+  ❯ tests/unit/pages/RecuperarContrasena.test.tsx:134:25
+     134|     expect(await screen.findByText('Paso del código para: nombre.apell…
+        |                         ^
+   Test Files  1 failed (1)
+        Tests  1 failed | 4 passed (5)
+  ```
+- **Evidencia verde (mutante restaurado), misma corrida 2026-11-02 13:21:44:**
+  ```
+  Test Files  1 passed (1)
+       Tests  5 passed (5)
+  ```
+- **Reproducible por cualquiera:** quitar `{ state: { email } }` del `navigate(...)` en el botón "Ya tengo mi código" (`src/pages/RecuperarContrasena.tsx`) y correr el mismo comando — debe fallar solo el test de navegación.
 
 | Medida de cierre S3 | Cobertura real | Umbral aprobado | PR de umbrales |
 |---|---|---|---|
