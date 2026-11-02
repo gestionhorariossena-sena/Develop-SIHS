@@ -50,9 +50,21 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 | Nicol | **Front: Login** | `test/s3-front-nicol` | David | Pendiente | Pendiente | Pendiente |
 | David | **Front: Registro** | `test/s3-front-david` | Dayana | Pendiente | Pendiente | Pendiente |
 | Dayana | **Front: NotificacionesPanel** | `test/s3-front-dayana` | Edith | Pendiente | Pendiente | Pendiente |
-| Edith | **Front: RecuperarContrasena** | `test/s3-front-edith` | Nicol | Pendiente | Pendiente | Pendiente |
+| Edith | **Front: RecuperarContrasena** | `test/s3-front-edith` | Nicol | ✅ Abierto | ✅ Documentada | ✅ 4/4 en verde |
 
 **Responsable adicional de backend:** Edith, por haber tenido Front en S2. Mínimo del reto: 40 % en ambas capas. Los umbrales heredados superiores no se reducen (backend 84 %; frontend 76,73 % sentencias, 64,85 % ramas, 73,89 % funciones y 79,59 % líneas).
+
+**Verificación de backend (Edith, 2026-11-02):** corrí `pytest -v --cov=app --cov-fail-under=84` sobre el backend actual: **84,87 %** global, 419 tests pasaron, 10 omitidos. Sin retroceso respecto al 84 % heredado — no hicieron falta pruebas unitarias adicionales esta semana.
+
+### Edith — detalle del componente `RecuperarContrasena`
+
+- **El archivo de tests ya existía** (2 pruebas previas: envío exitoso y error de Supabase) — se conservaron tal cual, sin renombrar, y se agregaron **3 escenarios nuevos** encima (cumple el mínimo de 3 nuevas):
+  1. Validación nativa: no llama a Supabase si el campo de correo está vacío.
+  2. Botón deshabilitado y texto "Enviando…" mientras espera la respuesta.
+  3. Navegación real a `/restablecer-contrasena` con el correo en el `state`, al dar clic en "Ya tengo mi código" (sin mockear `useNavigate`: se renderizan ambas rutas con `MemoryRouter`/`Routes` reales).
+- **Consultas accesibles:** `getByLabelText` y `getByRole`, sin `getByTestId`.
+- **Mutante (sobre un escenario nuevo):** se quitó el `state: { email }` del `navigate(...)` al hacer clic en "Ya tengo mi código". El test nuevo de navegación falló como se esperaba (mostró "sin correo" en vez del email real). Se restauró el `state` y los 5 tests vuelven a pasar.
+- **Evidencia:** `frontend/tests/unit/pages/RecuperarContrasena.test.tsx`, 5/5 tests en verde (2 preexistentes + 3 nuevos) con `pnpm vitest run tests/unit/pages/RecuperarContrasena.test.tsx`.
 
 | Medida de cierre S3 | Cobertura real | Umbral aprobado | PR de umbrales |
 |---|---|---|---|
