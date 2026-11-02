@@ -63,3 +63,27 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 | Backend — global | Pendiente | Pendiente | Pendiente |
 
 **Flujo:** cuatro PR individuales hacia `semana-3`, revisados y fusionados; después **quinto PR exclusivo de umbrales** hacia `semana-3`, con GitHub Actions verde. Evidencia individual: al menos 3 tests de componente, uno con `user-event`, uno de estado no feliz y un mutante detectado y restaurado.
+
+
+## Semana 4 — API desde cuatro ángulos (planificación)
+
+> **Estado:** reparto registrado; ningún test, mutación ni revisión de S4 se considera implementado por este documento. Rama base: `semana-4`. Piso 50 % para ambas capas, conservando todos los umbrales anteriores superiores.
+
+| Integrante | Capa S2 | S4 (ángulo) | Endpoints asignados | Rama personal | Revisor | PR | Mutación | Tests |
+|---|---|---|---|---|---|---|---|---|
+| Nicol | API | **Front — contrato** | `/api/v1/notificaciones` | `test/s4-front-contrato-nicol` | David | Pendiente | Pendiente | Pendiente |
+| David | CI (transversal) | **E2E — seguridad** | `/api/v1/fichas` + errores generales | `test/s4-e2e-seguridad-david` | Edith | Pendiente | Pendiente | Pendiente |
+| Dayana | BD | **API — CRUD** | `/api/v1/horarios` | `test/s4-api-horarios-dayana` | Nicol | Pendiente | Pendiente | Pendiente |
+| Edith | Front | **BD — datos** | `/api/v1/solicitudes-acceso` | `test/s4-bd-datos-edith` | Dayana | Pendiente | Pendiente | Pendiente |
+
+**Nota:** David tuvo CI en S2, no una capa API/BD/Front/E2E; se le asigna E2E como nueva especialización de S4. El `409` es un ejemplo del reto, no un código universal; `solicitudes-acceso` actualmente usa `400` para duplicados pendientes. Las correcciones de contratos deberán coordinarse en PR.
+
+| Medida de cierre S4 | Cobertura real | Umbral aprobado | Evidencia/PR |
+|---|---|---|---|
+| Frontend — sentencias | Pendiente | Pendiente | Pendiente |
+| Frontend — ramas | Pendiente | Pendiente | Pendiente |
+| Frontend — funciones | Pendiente | Pendiente | Pendiente |
+| Frontend — líneas | Pendiente | Pendiente | Pendiente |
+| Backend — global | Pendiente | Pendiente | Pendiente |
+
+**Cierre requerido:** ≥4 pruebas nuevas de API y un mutante rojo/verde por integrante; cuatro PR revisados y fusionados a `semana-4`; posterior PR exclusivo de umbrales sin reducir los heredados y CI verde. Véase [README S4](../README.md).
