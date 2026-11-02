@@ -40,3 +40,26 @@ cd ../e2e && pnpm install --frozen-lockfile && pnpm exec playwright install chro
 ```
 
 La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_LOGIN_PASSWORD` y `E2E_EXPECTED_ROLE`; nunca incluir secretos en Git. El E2E del asistente de Nicol usa red simulada.
+
+## Semana 3 — Tests de componentes Front (planificación)
+
+> **Estado:** reparto acordado y registrado en `semana-3`; los tests, mutaciones, revisiones, PR y coberturas reales **todavía no se han ejecutado**. Actualizar esta sección con evidencias al terminar cada entrega.
+
+| Integrante | S3 | Rama personal prevista | Revisor | PR | Evidencia de mutación | Tests ejecutados |
+|---|---|---|---|---|---|---|
+| Nicol | **Front: Login** | `test/s3-front-nicol` | David | Pendiente | Pendiente | Pendiente |
+| David | **Front: Registro** | `test/s3-front-david` | Dayana | Pendiente | Pendiente | Pendiente |
+| Dayana | **Front: NotificacionesPanel** | `test/s3-front-dayana` | Edith | Pendiente | Pendiente | Pendiente |
+| Edith | **Front: RecuperarContrasena** | `test/s3-front-edith` | Nicol | Pendiente | Pendiente | Pendiente |
+
+**Responsable adicional de backend:** Edith, por haber tenido Front en S2. Mínimo del reto: 40 % en ambas capas. Los umbrales heredados superiores no se reducen (backend 84 %; frontend 76,73 % sentencias, 64,85 % ramas, 73,89 % funciones y 79,59 % líneas).
+
+| Medida de cierre S3 | Cobertura real | Umbral aprobado | PR de umbrales |
+|---|---|---|---|
+| Frontend — sentencias | Pendiente | Pendiente | Pendiente |
+| Frontend — ramas | Pendiente | Pendiente | Pendiente |
+| Frontend — funciones | Pendiente | Pendiente | Pendiente |
+| Frontend — líneas | Pendiente | Pendiente | Pendiente |
+| Backend — global | Pendiente | Pendiente | Pendiente |
+
+**Flujo:** cuatro PR individuales hacia `semana-3`, revisados y fusionados; después **quinto PR exclusivo de umbrales** hacia `semana-3`, con GitHub Actions verde. Evidencia individual: al menos 3 tests de componente, uno con `user-event`, uno de estado no feliz y un mutante detectado y restaurado.
