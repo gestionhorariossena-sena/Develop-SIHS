@@ -1,125 +1,153 @@
-# 🧩 SIHS · Semana 3 — Tests de componentes React
+# 🧪 SIHS · Semana 4 — El API desde cuatro ángulos
 
-> **Rama base de trabajo:** `semana-3` · **Equipo:** Nicol, David, Dayana y Edith · **Reto:** tests de componentes del proyecto formativo · **Tiempo estimado:** 3 h · **Piso exigido:** 40 % de cobertura en frontend y backend, sin rebajar los umbrales heredados.
+> **Rama base:** `semana-4` · **Equipo:** Nicol, David, Dayana y Edith · **Reto:** ≥4 tests nuevos de API por persona + 1 mutante detectado por persona · **Tiempo estimado:** 3 h · **Piso de cobertura:** 50 % en frontend y backend, **sin reducir umbrales heredados superiores**.
 
-**Este README es exclusivo de `semana-3`.** No modificar el README de `main`, `develop`, `semana-1` o `semana-2` para preparar este reto. La rama fue creada desde `semana-2`; las cuatro PR personales de S2 aún deben revisarse y cerrarse por separado. Antes del cierre grupal de S3, incorporar por el flujo aprobado los cambios de S2 que procedan, sin sobrescribir trabajo de otras ramas.
+**Este README es exclusivo de `semana-4`.** La rama nace de `semana-3`, como base de planificación: **los PR personales pendientes de S2/S3 no se consideran integrados automáticamente**. Antes del cierre de S4, revisar e incorporar por PR los cambios previos que correspondan; no sobreescribir trabajos paralelos. No modificar el README de `main`, `develop` ni de semanas anteriores para este reto.
 
-## 🎯 Parte 1 — Reparto de componentes (10 min)
+## 🎯 Parte 1 — Rotación de capa (10 min)
 
-**Todos trabajan Front en S3.** En `docs/matriz-rotacion.md`, la columna **S3** debe mostrar `Front: <componente>`, con un componente distinto por persona. La rotación de capas se retoma la próxima semana.
+En S2: **Nicol = API**, **David = CI** (rol transversal), **Dayana = BD**, **Edith = Front**. Como David no tuvo una de las cuatro capas de esta consigna, recibe **E2E/seguridad**, nueva para él. El reparto asigna **una capa distinta por persona**, sin repetir la de S2. Aunque roten los ángulos, **todos escriben pruebas HTTP contra endpoints reales FastAPI**.
 
-| Integrante | Columna S3 | Componente real del proyecto | Rama individual | Pruebas de referencia (≥3) |
-|---|---|---|---|---|
-| **Nicol** | **Front: Login** | `frontend/src/pages/Login.tsx` | `test/s3-front-nicol` | Escribir usuario y clave + enviar; estado de carga/botón deshabilitado; bloqueo o error de autenticación visible |
-| **David** | **Front: Registro** | `frontend/src/pages/Registro.tsx` | `test/s3-front-david` | Completar campos y enviar; validación de formulario; error de solicitud o estado de envío |
-| **Dayana** | **Front: NotificacionesPanel** | `frontend/src/components/NotificacionesPanel.tsx` | `test/s3-front-dayana` | Interacción al seleccionar una notificación; estado vacío; lista con datos y/o error simulado al actualizar |
-| **Edith** | **Front: RecuperarContrasena** | `frontend/src/pages/RecuperarContrasena.tsx` | `test/s3-front-edith` | Escribir correo + enviar; error de Supabase simulado; confirmación de envío y navegación al paso del código |
+| Integrante | Capa S2 | Capa S4 / ángulo | Recurso real de SIHS | Rama personal | Revisor de otra capa |
+|---|---|---|---|---|---|
+| **Nicol** | API | **Front — contrato JSON consumido por React** | `/api/v1/notificaciones`: lista, conteo, lectura individual y error | `test/s4-front-contrato-nicol` | David (E2E) |
+| **David** | CI (transversal) | **E2E — permisos, autenticación y errores API** | `/api/v1/fichas`: creación/listado según rol; peticiones inválidas y errores genéricos | `test/s4-e2e-seguridad-david` | Edith (BD) |
+| **Dayana** | BD | **API — CRUD del recurso central** | `/api/v1/horarios`: crear, consultar, actualizar y eliminar | `test/s4-api-horarios-dayana` | Nicol (Front) |
+| **Edith** | Front | **BD — dependencias de datos** | `/api/v1/solicitudes-acceso`: solicitud duplicada y filtro por estado; relaciones en fichas si aplica | `test/s4-bd-datos-edith` | Dayana (API) |
 
-**Responsable adicional del backend: Edith**, porque tuvo Front en S2. Debe comprobar la cobertura real del backend, mantener como mínimo el 40 % del reto y **no permitir retrocesos respecto del 84 % heredado**. Si se necesitan pruebas unitarias adicionales, Edith las añade y documenta sin duplicar los componentes Front del equipo ni bajar el umbral.
+**No duplicar casos existentes:** revisar `backend/tests/` y añadir al menos cuatro escenarios **nuevos por persona**. Los escenarios siguientes son una propuesta verificable contra los routers actuales, no afirmaciones de tests ya implementados.
 
-Estos escenarios son una **planificación** y no se cuentan como tests implementados hasta existir código y evidencia CI. Se permite ajustar cada caso tras revisar el componente, manteniendo interacción, caso no feliz, mutación y componente único.
+### Nicol — Front / contrato de notificaciones (≥4)
 
-## 🧪 Parte 2 — Pruebas de componentes (2 h)
+Archivo sugerido: `backend/tests/test_s4_contrato_notificaciones_nicol.py`. Router: `backend/app/api/v1/notificaciones.py`. Pantalla consumidora: `frontend/src/components/NotificacionesPanel.tsx`.
 
-Cada integrante debe aportar **al menos tres tests nuevos** sobre su propio componente React con Vitest y React Testing Library:
+1. `GET /api/v1/notificaciones/` autenticado: `200`, JSON array con campos exactos que consume la interfaz (por ejemplo `idNotificacion`, `tipo`, `mensaje`, `leida`, `fechaCreacion`); comparar esquema con `app/schemas/notificacion.py`.
+2. `GET /api/v1/notificaciones/conteo-no-leidas`: `200`, `application/json` y `noLeidas` numérico.
+3. `PATCH /api/v1/notificaciones/{id}/leida`: respuesta JSON actualizada con `leida=true` y los campos usados al refrescar la lista.
+4. `PATCH /api/v1/notificaciones/{id-inexistente}/leida`: `404` con `detail` utilizable por el frontend; comprobar ausencia de stack trace o SQL.
 
-1. **Interacción real:** usar `@testing-library/user-event` (`user.type`, `user.click`, `user.keyboard`, etc.) para escribir, hacer clic o enviar; verificar efecto observable mediante aserciones.
-2. **Estado no feliz:** comprobar al menos uno de validación, carga, vacío, error o falta de permisos; no limitarse al renderizado inicial.
-3. **Consultas accesibles:** preferir `getByRole` y `getByLabelText`; usar `findBy` para esperar contenido asíncrono y `queryBy` para comprobar ausencia. `getByTestId` solo con justificación explícita en comentario.
-4. **Entorno aislado:** para rutas usar `MemoryRouter`, y para contexto **reutilizar** `frontend/tests/helpers/renderConProviders.tsx` (exporta `renderConProviders`). No crear otro helper global equivalente sin consensuarlo.
-5. **Sin red real:** usar `vi.mock` para cliente HTTP y Supabase; datos y fechas controlados. No incluir credenciales reales ni usar producción.
-6. **Accesibilidad:** corregir etiquetas asociadas, nombres accesibles y `role="alert"` donde falten. Los cambios de UI deben ser mínimos y centrados en el componente.
-7. **Lógica separable:** si la lógica y la vista están excesivamente mezcladas, extraer una función pura y probarla adicionalmente, pero los tres tests de componente siguen siendo obligatorios.
-8. **Un mutante por persona:** alterar temporalmente una condición, texto de error o reseteo; correr el test que debe fallar; guardar evidencia roja; **restaurar** código correcto; repetir tests y CI verde. Documentarlo en el mismo PR individual.
+Usar `TestClient`, identidad simulada y servicio/repo aislado; verificar **código, cuerpo y Content-Type** en al menos uno. No sustituir pruebas HTTP por mocks de la interfaz React.
 
-**Ubicación de suites:** `frontend/tests/unit/pages/` para Login, Registro y RecuperarContrasena; `frontend/tests/unit/components/` para NotificacionesPanel. No incorporar tests dentro de `frontend/src/`. Revisar los tests ya existentes y aportar escenarios **nuevos**, no renombrar ni contar pruebas anteriores.
+### David — E2E / seguridad transversal HTTP (≥4)
 
-### Distribución orientativa del tiempo
+Archivo sugerido: `backend/tests/test_s4_seguridad_errores_david.py`. Router: `backend/app/api/v1/fichas.py`, dependencias `app/core/supabase_auth.py` y manejo de errores en `app/main.py`.
 
-- 10 min: confirmar reparto y matriz.
-- 120 min: tests, interacciones, mutantes, ajustes de accesibilidad y PR personales.
-- 20 min: cobertura, PR de umbrales, CI y registro de cierre.
-- 30 min restantes de las 3 h estimadas: margen para revisión cruzada, problemas del entorno y vocero.
+1. `POST /api/v1/fichas/` sin token → `401` y error JSON.
+2. `POST /api/v1/fichas/` con rol sin permiso → `403` y error JSON (crear datos de acceso falsos con fixtures).
+3. `GET /api/v1/fichas/` con rol autorizado → respuesta definida por contrato, sin red real.
+4. Enviar **JSON sintácticamente mal formado** a un endpoint que reciba body: verificar el código **real de FastAPI** (normalmente `422`, no asumir `400`), `application/json` y ausencia de traceback, SQL o secretos.
+5. Caso adicional recomendado: payload con tipos inválidos y respuesta segura, o `500` simulado con `TestClient(..., raise_server_exceptions=False)`.
+
+Los tests deben ejecutarse mediante HTTP simulado contra `app`; **no** llamar entornos productivos ni usar credenciales reales. Para roles, diferenciar no autenticado (`401`) de autenticado sin permisos (`403`).
+
+### Dayana — API / CRUD de horarios (≥4)
+
+Archivo sugerido: `backend/tests/test_s4_crud_horarios_dayana.py`. Router: `backend/app/api/v1/horarios.py`.
+
+1. `POST /api/v1/horarios/` con datos válidos y rol programador → `201`, campos de respuesta.
+2. `GET /api/v1/horarios/{id}` existente → `200`; contrastar identidad y campos esenciales.
+3. `GET /api/v1/horarios/{id-inexistente}` → `404` y `detail`.
+4. `PUT /api/v1/horarios/{id}` o método de actualización que realmente defina el router → validar el cambio; alternativa adicional: `DELETE` según la ruta existente.
+5. Recomendado: `POST` inválido → `422` y estructura de error; o cruce de horario → `409` con estructura de conflictos.
+
+Confirmar las rutas exactas y preparar datos sin dependencias externas; reutilizar fixtures y aislar el servicio/repositorio donde corresponda. El `409` sólo se exige si ese escenario real existe.
+
+### Edith — BD / datos y reglas (≥4)
+
+Archivo sugerido: `backend/tests/test_s4_datos_solicitudes_edith.py`. Router: `backend/app/api/v1/solicitudes_acceso.py`.
+
+1. `POST /api/v1/solicitudes-acceso/` válido → `201` con contrato de respuesta, simulando el servicio.
+2. Solicitud duplicada pendiente → verificar el contrato **actual `400`** y `detail`; el reto propone `409` como ejemplo, pero **no cambiarlo a ciegas**: si se acuerda estandarizar a `409`, documentar y corregir implementación, consumidores y tests.
+3. `GET /api/v1/solicitudes-acceso/?estado=pendiente` con administrador simulado → sólo registros pendientes; otros estados sin contaminación.
+4. `GET /api/v1/solicitudes-acceso/?estado=...` inválido → `422` en JSON, sin acceso a BD real.
+5. Recomendado: recurso relacionado inexistente (rol de solicitud) → `404`; o regla de integridad en `fichas` conforme al servicio existente.
+
+Simular servicio/repositorio con `monkeypatch` y `vi.mock` **no aplica** a Python. Verificar las respuestas HTTP reales, no sólo las funciones Python. Buscar una regla dependiente de datos auténtica y evitar inventar restricciones de borrado.
+
+## 🧪 Parte 2 — Pruebas HTTP y mutantes (2 h)
+
+- Framework existente: **FastAPI + pytest + `fastapi.testclient.TestClient`**. Reutilizar `backend/tests/conftest.py`: fixture `client` sustituye `get_db` por SQLite en memoria; `fake_supabase` y `autenticar_como` simulan autenticación. Si una tabla no está en SQLite, elegir un mock de servicio/repositorio en el endpoint probado o ampliar las fixtures **sólo cuando sea necesario**, sin conectar Supabase/PostgreSQL de producción.
+- Cada integrante agrega **≥4 tests API nuevos**, con `status_code`, contenido JSON y, en al menos uno, encabezado `Content-Type: application/json`. Diferenciar `400`, `401`, `403`, `404`, `409`, `422`, `500` según el contrato implementado; **no forzar valores que el backend no usa**.
+- Un **mutante por integrante**: modificar temporalmente un código de estado, condición, permiso o estructura de error; ejecutar un test que falle, guardar **log rojo**, restaurar código y guardar **log verde**. Nunca subir el mutante final ni presentar la descripción sin evidencia de ejecución.
+- Registrar cada hallazgo de contrato/seguridad en el **PR individual**, con endpoint, reproducción, comportamiento anterior, corrección y test que evita regresión. Corregir el backend en la misma semana cuando corresponda, coordinando si afecta otra capa.
+- No incluir secretos, `.env`, tokens auténticos, migraciones sobre BD compartida ni llamadas a producción. Datos y fechas deterministas; controles de dependencia restaurados entre tests.
+
+### Ejemplo de hallazgo
+
+> 🔎 Hallazgo: `POST /api/v1/...` con JSON inválido devolvía un formato no documentado. Reproducción: petición de TestClient. Corrección: respuesta JSON uniforme con `detail`. Prueba: `test_json_malformado_devuelve_error_json_seguro`. **Sólo registrar si se reproduce realmente.**
 
 ## 🔄 Ramas personales, PR y revisiones cruzadas
 
-Todos los trabajos comienzan desde `semana-3`, no desde `develop` ni desde `main`.
+Partir siempre de `semana-4`, **nunca directamente de `develop` o `main`**:
 
 ```bash
 git fetch origin
-git switch semana-3
-git pull --ff-only origin semana-3
-git switch -c test/s3-front-NOMBRE
-# Implementar, documentar mutación y ejecutar tests...
-git add ruta/de/mis/tests ruta/de/mi/componente
-git commit -m "test(s3): pruebas de componente ..."
-git push -u origin test/s3-front-NOMBRE
+git switch semana-4
+git pull --ff-only origin semana-4
+git switch -c test/s4-<capa>-<nombre>
+# Implementar ≥4 tests, guardar evidencia mutante rojo/verde...
+git add backend/tests/ docs-testing/
+git commit -m "test(s4): pruebas API desde angulo <capa>"
+git push -u origin test/s4-<capa>-<nombre>
 ```
 
-| PR personal | Base obligatoria | Revisor cruzado | Integrar solo cuando... |
+| PR individual | Base | Revisor cruzado | Criterio para fusionar |
 |---|---|---|---|
-| `test/s3-front-nicol` → `semana-3` | `semana-3` | David | 3+ tests, mutante documentado, revisión ejecutada y CI verde |
-| `test/s3-front-david` → `semana-3` | `semana-3` | Dayana | 3+ tests, mutante documentado, revisión ejecutada y CI verde |
-| `test/s3-front-dayana` → `semana-3` | `semana-3` | Edith | 3+ tests, mutante documentado, revisión ejecutada y CI verde |
-| `test/s3-front-edith` → `semana-3` | `semana-3` | Nicol | 3+ tests, mutante documentado, revisión ejecutada y CI verde; revisar backend |
+| Nicol `test/s4-front-contrato-nicol` | `semana-4` | David | ≥4 tests, mutante rojo/verde, CI verde y revisión |
+| David `test/s4-e2e-seguridad-david` | `semana-4` | Edith | ≥4 tests, `401/403` y autorizado, mutante, CI verde y revisión |
+| Dayana `test/s4-api-horarios-dayana` | `semana-4` | Nicol | ≥4 tests CRUD, mutante, CI verde y revisión |
+| Edith `test/s4-bd-datos-edith` | `semana-4` | Dayana | ≥4 tests según datos, mutante, CI verde y revisión |
 
-Los cuatro integrantes deben hacer commits desde **sus propias cuentas de GitHub**. El revisor debe ejecutar los tests del componente ajeno, comprobar las aserciones y verificar el comportamiento del mutante. No simular aprobaciones ni fusionar antes de la revisión. Si falla CI, corregir en la **misma rama y PR**.
+Cada persona hace commits desde **su cuenta de GitHub**. El revisor de otra capa ejecuta los tests propios y comprueba evidencia de mutante; no simular aprobaciones. **No fusionar** con CI fallido ni revisión pendiente. La rama general S4 se incorpora a `develop` por flujo aprobado una vez cerrado el trabajo; no tocar `main` durante las entregas individuales.
 
-## 📈 Parte 3 — Cobertura y PR de umbrales (20 min)
+## 📈 Parte 3 — Cobertura y PR exclusivo de umbrales (20 min)
 
-**Este reto pide un quinto PR específico de umbrales** después de fusionar los cuatro individuales. No incluir prematuramente las modificaciones de umbrales en los PR de componente.
+1. Tras fusionar los cuatro PR personales a `semana-4`, ejecutar la cobertura real del frontend **y** backend, además de lint/build y CI.
+2. Registrar en `docs/matriz-rotacion.md` las métricas de frontend (sentencias, ramas, funciones, líneas), global de backend, los PR y las evidencias.
+3. Crear desde `semana-4` la rama técnica `chore/s4-umbrales-cobertura` y un **quinto PR** a `semana-4`; no mezclar el aumento de umbrales en los PR personales.
+4. Por cada métrica: **umbral nuevo = máximo(50 %, piso de cobertura real, umbral heredado vigente)**. Si la medición no alcanza el umbral heredado, agregar o corregir tests y código; **jamás reducir umbrales** para forzar CI verde.
+5. El frontend no incorpora tareas nuevas de implementación esta semana, pero **sí debe medirse y mantener su cobertura**. Si estuviera por debajo de 50 %, asignar pruebas de componentes adicionales y registrarlo en la matriz.
 
-1. Con los cuatro PR de componentes ya fusionados en `semana-3`, ejecutar Vitest con cobertura y pytest con cobertura.
-2. Registrar en la matriz la cobertura **real** de Front (sentencias, ramas, funciones, líneas) y backend (global).
-3. Abrir una rama técnica `chore/s3-umbrales-cobertura` desde `semana-3` y un **PR independiente** a `semana-3` que establezca para cada métrica el **máximo entre 40 % y la cobertura real redondeada hacia abajo**, conservando siempre cualquier umbral heredado superior.
-4. Exigir CI verde con el umbral nuevo, revisión del PR y ausencia de regresiones. No rebajar el umbral por un error de pruebas.
-
-### Umbrales heredados que NO se pueden reducir
+**Umbrales heredados conocidos (mínimos que no pueden reducirse):**
 
 | Métrica | Umbral anterior |
 |---|---:|
-| Frontend — sentencias | **76,73 %** |
-| Frontend — ramas | **64,85 %** |
-| Frontend — funciones | **73,89 %** |
-| Frontend — líneas | **79,59 %** |
-| Backend — global | **84 %** |
+| Front — sentencias | 76,73 % |
+| Front — ramas | 64,85 % |
+| Front — funciones | 73,89 % |
+| Front — líneas | 79,59 % |
+| Backend — global | 84 % |
 
-La regla por métrica al cierre es: **umbral S3 = máximo(40, piso(cobertura real), umbral previamente vigente)**. Si la cobertura actual cae debajo del umbral heredado, corregir los tests o el código: **no reducir el umbral**. El mínimo del 40 % ya está superado por los umbrales históricos, pero sigue siendo obligatorio medir y evidenciar ambas capas.
-
-Archivos relevantes: `frontend/vite.config.ts` y configuración pytest/CI del backend (revisar ubicación y formato actual antes de editar). Las pruebas deben seguir ejecutándose con la configuración del proyecto y sin exclusiones artificiales.
+Comprobar si S2/S3 aprobadas subieron estas cifras: el valor vigente puede ser mayor. **No confundir pisos del reto (50 %) con los umbrales reales del repositorio.**
 
 ```bash
-cd frontend
+cd backend
+python -m pip install -r requirements.txt
+python -m pytest -v --cov=app --cov-report=term --cov-fail-under=84
+
+cd ../frontend
 pnpm install --frozen-lockfile
 pnpm test:coverage
 pnpm lint
 pnpm build
-
-cd ../backend
-python -m pip install -r requirements.txt
-python -m pytest -v --cov=app --cov-report=term --cov-fail-under=84
 ```
 
-## ✅ Entregables y checklist
+### Entregables y checklist
 
-- [ ] `docs/matriz-rotacion.md`: columna S3 con **Front: Login**, **Front: Registro**, **Front: NotificacionesPanel**, **Front: RecuperarContrasena**, sin repeticiones.
-- [ ] Cuatro suites de componente: ≥3 tests nuevos por persona, con **user-event** y al menos un estado no feliz.
-- [ ] Cuatro mutantes distintos detectados, con CI rojo o log de test fallido, y código correcto restaurado.
-- [ ] Cuatro PR personales revisados por otro integrante **que ejecutó los tests**; CI verde antes de fusionar.
-- [ ] Un solo helper de render con proveedores y mocks aislados de red.
-- [ ] Edith verificó backend, documentó cobertura real y agregó tests si fueran necesarios.
-- [ ] La matriz muestra cobertura real Front y backend, fecha/PR de evidencias y revisores.
-- [ ] Quinto PR de umbrales (después de los cuatro) fusionado con CI verde; pisos ≥40 % y sin retrocesos frente a S2.
-- [ ] Acordar la integración posterior de `semana-3` a `develop` con el equipo; no tocar `main` durante la ejecución individual.
+- [ ] Columna **S4** de la matriz: una capa distinta a S2 para cada integrante.
+- [ ] Cuatro suites personales con **≥4 tests nuevos API** cada una (≥16 total).
+- [ ] Cuerpo, código y Content-Type verificados, errores y datos simulados.
+- [ ] Cuatro mutantes independientes con evidencia **roja y verde** y código restaurado.
+- [ ] Hallazgos de contratos/seguridad registrados y corregidos cuando se reproduzcan.
+- [ ] Seguridad `401`, `403` y autorizado probada en endpoints reales.
+- [ ] Cuatro PR personales revisados por otra capa, CI verde y fusionados en `semana-4`.
+- [ ] Cobertura real de **frontend y backend** en matriz sin retrocesos.
+- [ ] Quinto PR de umbrales cerrado con piso ≥50 % y umbrales heredados conservados; CI verde.
+- [ ] Integración de `semana-4` a `develop` acordada con el equipo.
 
-## 🎙️ Preparación para el vocero aleatorio
+## 🎙️ Vocero aleatorio
 
-Cada integrante prepara **el componente de otra persona**, no solamente el suyo. Debe ser capaz de:
-
-- Explicar por qué se usó `getByRole` o `getByLabelText`, cuándo conviene `findBy` y cuándo `queryBy`.
-- Ejecutar la suite ajena sin credenciales externas.
-- Introducir en vivo un cambio de comportamiento y mostrar el test que lo detecta.
-- Explicar las mejoras de accesibilidad y el efecto en cobertura.
+Cada integrante prepara **un endpoint de otra persona**: explicar códigos HTTP, mostrar aislamiento de BD mediante `client`/`get_db` y mocks, y ejecutar una solicitud mal formada con TestClient o `curl` contra **entorno local**, explicando JSON y código. No depender de credenciales ni servicios reales.
 
 ---
 
