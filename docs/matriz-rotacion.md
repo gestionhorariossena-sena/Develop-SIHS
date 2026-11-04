@@ -43,13 +43,13 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 
 ## Semana 3 — Tests de componentes Front (planificación)
 
-> **Estado:** reparto acordado y registrado en `semana-3`; los tests, mutaciones, revisiones, PR y coberturas reales **todavía no se han ejecutado**. Actualizar esta sección con evidencias al terminar cada entrega.
+> **Estado:** las entregas individuales se registran con sus evidencias reales. Dayana atendió los ajustes de su revisión cruzada; su PR #168 continúa abierto, pendiente de nueva revisión y fusión.
 
 | Integrante | S3 | Rama personal prevista | Revisor | PR | Evidencia de mutación | Tests ejecutados |
 |---|---|---|---|---|---|---|
 | Nicol | **Front: Login** | `test/s3-front-nicol` | David | Pendiente | Pendiente | Pendiente |
 | David | **Front: Registro** | `test/s3-front-david` | Dayana | Pendiente | Pendiente | Pendiente |
-| Dayana | **Front: NotificacionesPanel** | `test/s3-front-dayana` | Edith | Pendiente | Pendiente | Pendiente |
+| Dayana | **Front: NotificacionesPanel** | `test/s3-front-dayana` | Edith | #168 (abierto) | `docs-testing/reportes/S3_DAYANA_MUTACION_NOTIFICACIONES.md` — mutante detectado y restaurado | 7 pasaron |
 | Edith | **Front: RecuperarContrasena** | `test/s3-front-edith` | Nicol | Pendiente | Pendiente | Pendiente |
 
 **Responsable adicional de backend:** Edith, por haber tenido Front en S2. Mínimo del reto: 40 % en ambas capas. Los umbrales heredados superiores no se reducen (backend 84 %; frontend 76,73 % sentencias, 64,85 % ramas, 73,89 % funciones y 79,59 % líneas).
