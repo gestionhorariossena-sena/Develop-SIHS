@@ -71,7 +71,7 @@ export function Login() {
 
     const estadoPrevio = await consultarEstadoLogin(identificador)
 
-    if (!estadoPrevio?.bloqueado) {
+    if (estadoPrevio?.bloqueado) {
       marcarBloqueado(estadoPrevio)
       setLoading(false)
       return
