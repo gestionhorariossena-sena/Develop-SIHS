@@ -43,14 +43,21 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 
 ## Semana 3 — Tests de componentes Front (planificación)
 
-> **Estado:** reparto acordado y registrado en `semana-3`; los tests, mutaciones, revisiones, PR y coberturas reales **todavía no se han ejecutado**. Actualizar esta sección con evidencias al terminar cada entrega.
+> **Estado:** reparto acordado en `semana-3`. Hay PR individuales en preparación. Los resultados de ejecución, mutaciones y revisiones solo se marcan completos cuando exista evidencia verificable.
 
 | Integrante | S3 | Rama personal prevista | Revisor | PR | Evidencia de mutación | Tests ejecutados |
 |---|---|---|---|---|---|---|
-| Nicol | **Front: Login** | `test/s3-front-nicol` | David | Pendiente | Pendiente | Pendiente |
+| Nicol | **Front: Login** | `test/s3-front-nicol` | David | [PR #167](../../pull/167) (borrador) | Procedimiento preparado; falta log rojo/verde verificado | 4 escenarios escritos; falta ejecución verificable |
 | David | **Front: Registro** | `test/s3-front-david` | Dayana | Pendiente | Pendiente | Pendiente |
 | Dayana | **Front: NotificacionesPanel** | `test/s3-front-dayana` | Edith | Pendiente | Pendiente | Pendiente |
 | Edith | **Front: RecuperarContrasena** | `test/s3-front-edith` | Nicol | Pendiente | Pendiente | Pendiente |
+
+### Nicol — pruebas del componente Login (PR #167)
+
+- **Cuatro escenarios nuevos:** acceso por correo y navegación al dashboard, botón deshabilitado durante autenticación pendiente, bloqueo previo por demasiados intentos y mensaje de intentos restantes ante credenciales incorrectas.
+- **Interacciones y aislamiento:** `user-event`, consultas por rol/etiqueta, `renderConProviders`, mocks de API/Supabase y sesión simulada sin credenciales reales. No se modifica código de producción.
+- **Mutación propuesta, pendiente de ejecución:** en `frontend/src/pages/Login.tsx`, cambiar temporalmente `if (estadoPrevio?.bloqueado)` por `if (!estadoPrevio?.bloqueado)`. Ejecutar `pnpm exec vitest run tests/unit/pages/Login.test.tsx` desde `frontend/`; debe fallar la prueba de bloqueo (y posiblemente otras). Guardar la salida roja; **restaurar la condición original** y guardar la salida verde del mismo comando. No guardar ni fusionar el mutante.
+- **Verificación pendiente:** `pnpm test:coverage`, `pnpm lint`, `pnpm build`, resultado de CI del último commit y revisión cruzada de David con ejecución independiente de la suite. La preparación de la mutación **no se cuenta como evidencia roja**.
 
 **Responsable adicional de backend:** Edith, por haber tenido Front en S2. Mínimo del reto: 40 % en ambas capas. Los umbrales heredados superiores no se reducen (backend 84 %; frontend 76,73 % sentencias, 64,85 % ramas, 73,89 % funciones y 79,59 % líneas).
 
