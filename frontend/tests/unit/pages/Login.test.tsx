@@ -36,14 +36,22 @@ function formulario() {
 }
 
 describe('Login — Semana 3 / Nicol', () => {
+  // Datos de sesión ficticios: no contienen credenciales ni tokens utilizables.
+  const sesionSimulada = {
+    data: {
+      user: { id: 'usuario-login-test', email: 'nicol@sena.edu.co' },
+      session: { access_token: 'token-ficticio', user: { id: 'usuario-login-test' } },
+    },
+    error: null,
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
     vi.mocked(apiGet).mockResolvedValue({ bloqueado: false, intentosRestantes: 3 })
     vi.mocked(apiPost).mockResolvedValue({})
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
-      data: { user: null, session: null },
-      error: null,
+      ...sesionSimulada,
     } as never)
   })
 
@@ -63,11 +71,12 @@ describe('Login — Semana 3 / Nicol', () => {
     })
     expect(await screen.findByRole('button', { name: 'Iniciar sesión' })).toBeEnabled()
     expect(navegar).toHaveBeenCalledWith('/dashboard')
+    expect(apiPost).not.toHaveBeenCalledWith('/auditoria/intento-fallido-login', expect.anything())
   })
 
   it('deshabilita el botón y muestra el estado de carga mientras autentica', async () => {
-    let resolver!: (value: { data: { user: null; session: null }; error: null }) => void
-    const pendiente = new Promise<{ data: { user: null; session: null }; error: null }>((resolve) => {
+    let resolver!: (value: typeof sesionSimulada) => void
+    const pendiente = new Promise<typeof sesionSimulada>((resolve) => {
       resolver = resolve
     })
     vi.mocked(supabase.auth.signInWithPassword).mockReturnValue(pendiente as never)
@@ -82,7 +91,7 @@ describe('Login — Semana 3 / Nicol', () => {
     expect(await screen.findByRole('button', { name: 'Ingresando…' })).toBeDisabled()
     expect(navegar).not.toHaveBeenCalled()
 
-    resolver({ data: { user: null, session: null }, error: null })
+    resolver(sesionSimulada)
     expect(await screen.findByRole('button', { name: 'Iniciar sesión' })).toBeEnabled()
     expect(navegar).toHaveBeenCalledWith('/dashboard')
   })
