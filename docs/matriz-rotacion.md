@@ -47,7 +47,7 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 
 | Integrante | S3 | Rama personal prevista | Revisor | PR | Evidencia de mutación | Tests ejecutados |
 |---|---|---|---|---|---|---|
-| Nicol | **Front: Login** | `test/s3-front-nicol` | David | [PR #167](../../pull/167) (borrador) | Procedimiento preparado; falta log rojo/verde verificado | 4 escenarios escritos; falta ejecución verificable |
+| Nicol | **Front: Login** | `test/s3-front-nicol` | David | [PR #167](../../pull/167) (borrador) | ✅ [rojo](../../actions/runs/42426452094) / [verde](../../actions/runs/42426526944) | ✅ 4/4 en verde (suite aislada); CI normal y revisión cruzada pendientes |
 | David | **Front: Registro** | `test/s3-front-david` | Dayana | Pendiente | Pendiente | Pendiente |
 | Dayana | **Front: NotificacionesPanel** | `test/s3-front-dayana` | Edith | Pendiente | Pendiente | Pendiente |
 | Edith | **Front: RecuperarContrasena** | `test/s3-front-edith` | Nicol | Pendiente | Pendiente | Pendiente |
@@ -56,8 +56,10 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 
 - **Cuatro escenarios nuevos:** acceso por correo y navegación al dashboard, botón deshabilitado durante autenticación pendiente, bloqueo previo por demasiados intentos y mensaje de intentos restantes ante credenciales incorrectas.
 - **Interacciones y aislamiento:** `user-event`, consultas por rol/etiqueta, `renderConProviders`, mocks de API/Supabase y sesión simulada sin credenciales reales. No se modifica código de producción.
-- **Mutación propuesta, pendiente de ejecución:** en `frontend/src/pages/Login.tsx`, cambiar temporalmente `if (estadoPrevio?.bloqueado)` por `if (!estadoPrevio?.bloqueado)`. Ejecutar `pnpm exec vitest run tests/unit/pages/Login.test.tsx` desde `frontend/`; debe fallar la prueba de bloqueo (y posiblemente otras). Guardar la salida roja; **restaurar la condición original** y guardar la salida verde del mismo comando. No guardar ni fusionar el mutante.
-- **Verificación pendiente:** `pnpm test:coverage`, `pnpm lint`, `pnpm build`, resultado de CI del último commit y revisión cruzada de David con ejecución independiente de la suite. La preparación de la mutación **no se cuenta como evidencia roja**.
+- **Mutación ejecutada y detectada (2026-11-07):** en una rama aislada de ensayo `test/s3-mutacion-login-nicol-evidencia`, se sustituyó temporalmente `if (estadoPrevio?.bloqueado)` por `if (estadoPrevio?.bloqueado && identificador.length === 0)` en `frontend/src/pages/Login.tsx`. La condición evita indebidamente el bloqueo con un identificador válido y conserva lint/TypeScript. No se alteró el código de producción del PR #167.
+- **Evidencia roja:** [GitHub Actions run 42426452094](../../actions/runs/42426452094) (`pnpm exec vitest run tests/unit/pages/Login.test.tsx`): **1 test falló, 3 pasaron**. Falló `bloquea el envío ante demasiados intentos y muestra una alerta accesible`, con `TestingLibraryElementError: Unable to find role="alert"`. Lint y build aprobaron.
+- **Evidencia verde:** se restauró la condición correcta. [GitHub Actions run 42426526944](../../actions/runs/42426526944): **4 tests pasaron (4/4)**, lint y build aprobaron. Solo el workflow del PR temporal se configuró para ejecutar la suite específica.
+- **Verificación todavía pendiente:** cobertura completa `pnpm test:coverage` y CI normal del último commit del PR #167, y revisión cruzada de David con ejecución independiente. La prueba aislada roja/verde no reemplaza estas verificaciones.
 
 **Responsable adicional de backend:** Edith, por haber tenido Front en S2. Mínimo del reto: 40 % en ambas capas. Los umbrales heredados superiores no se reducen (backend 84 %; frontend 76,73 % sentencias, 64,85 % ramas, 73,89 % funciones y 79,59 % líneas).
 
