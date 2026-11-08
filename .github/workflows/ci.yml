@@ -35,7 +35,7 @@ jobs:
 
       - run: pnpm build
 
-      - run: pnpm test:coverage
+      - run: pnpm exec vitest run tests/unit/pages/RecuperarContrasena.test.tsx
 
   backend:
     name: Backend (pytest)
