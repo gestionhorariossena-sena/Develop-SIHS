@@ -35,6 +35,9 @@ jobs:
 
       - run: pnpm build
 
+      # Typecheck de la suite Login: evita mocks obsoletos frente a EstadoLogin.
+      - run: pnpm exec tsc -p tsconfig.login-tests.json --noEmit
+
       - run: pnpm test:coverage
 
   backend:
