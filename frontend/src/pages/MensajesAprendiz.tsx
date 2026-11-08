@@ -289,9 +289,7 @@ export function MensajesAprendiz() {
     return mapa
   }, [noLeidosBase, elegido, perfil, hiloCargado, mensajes])
 
-  // Si se llega a la bandeja desde la tarjeta de un instructor (botón
-  // "Escribir" del directorio), ese es el que se abre -- sin esto, la
-  // bandeja siempre aterrizaría vacía y habría que elegir de nuevo.
+  // Selección derivada del estado de navegación (sin efecto que actualice estado).
 
   async function copiarCorreo(email: string) {
     try {
