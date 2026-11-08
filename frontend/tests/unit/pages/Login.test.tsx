@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Login } from '../../../src/pages/Login'
+import type { EstadoLogin } from '../../../src/types/api'
 import { apiGet, apiPost } from '../../../src/services/api'
 import { supabase } from '../../../src/services/supabaseClient'
 import { renderConProviders } from '../../helpers/renderConProviders'
@@ -48,7 +49,12 @@ describe('Login — Semana 3 / Nicol', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
-    vi.mocked(apiGet).mockResolvedValue({ bloqueado: false, intentosRestantes: 3 })
+    vi.mocked(apiGet).mockResolvedValue({
+      bloqueado: false,
+      intentos: 0,
+      intentosRestantes: 3,
+      segundosParaDesbloqueo: null,
+    } satisfies EstadoLogin)
     vi.mocked(apiPost).mockResolvedValue({})
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
       ...sesionSimulada,
@@ -71,7 +77,8 @@ describe('Login — Semana 3 / Nicol', () => {
     })
     expect(await screen.findByRole('button', { name: 'Iniciar sesión' })).toBeEnabled()
     expect(navegar).toHaveBeenCalledWith('/dashboard')
-    expect(apiPost).not.toHaveBeenCalledWith('/auditoria/intento-fallido-login', expect.anything())
+    // En un login exitoso por correo no debe hacerse ninguna petición POST a la API.
+    expect(apiPost).not.toHaveBeenCalled()
   })
 
   it('deshabilita el botón y muestra el estado de carga mientras autentica', async () => {
@@ -99,9 +106,10 @@ describe('Login — Semana 3 / Nicol', () => {
   it('bloquea el envío ante demasiados intentos y muestra una alerta accesible', async () => {
     vi.mocked(apiGet).mockResolvedValue({
       bloqueado: true,
+      intentos: 3,
       segundosParaDesbloqueo: 120,
       intentosRestantes: 0,
-    })
+    } satisfies EstadoLogin)
 
     const usuario = userEvent.setup()
     renderConProviders(<Login />)
@@ -122,8 +130,18 @@ describe('Login — Semana 3 / Nicol', () => {
       error: { message: 'Invalid login credentials' },
     } as never)
     vi.mocked(apiGet)
-      .mockResolvedValueOnce({ bloqueado: false, intentosRestantes: 3 })
-      .mockResolvedValueOnce({ bloqueado: false, intentosRestantes: 2 })
+      .mockResolvedValueOnce({
+        bloqueado: false,
+        intentos: 0,
+        intentosRestantes: 3,
+        segundosParaDesbloqueo: null,
+      } satisfies EstadoLogin)
+      .mockResolvedValueOnce({
+        bloqueado: false,
+        intentos: 1,
+        intentosRestantes: 2,
+        segundosParaDesbloqueo: null,
+      } satisfies EstadoLogin)
 
     const usuario = userEvent.setup()
     renderConProviders(<Login />)
