@@ -74,9 +74,18 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 | Nicol | API | **Front — contrato** | `/api/v1/notificaciones` | `test/s4-front-contrato-nicol` | David | Pendiente | Pendiente | Pendiente |
 | David | CI (transversal) | **E2E — seguridad** | `/api/v1/fichas` + errores generales | `test/s4-e2e-seguridad-david` | Edith | Pendiente | Pendiente | Pendiente |
 | Dayana | BD | **API — CRUD** | `/api/v1/horarios` | `test/s4-api-horarios-dayana` | Nicol | Pendiente | Pendiente | Pendiente |
-| Edith | Front | **BD — datos** | `/api/v1/solicitudes-acceso` | `test/s4-bd-datos-edith` | Dayana | Pendiente | Pendiente | Pendiente |
+| Edith | Front | **BD — datos** | `/api/v1/solicitudes-acceso` | `test/s4-bd-datos-edith` | Dayana | [PR #175](../../pull/175) | ✅ rojo 2/4 falló, verde 4/4 (evidencia local, ver detalle abajo) | ✅ 4/4 en verde; suite completa backend 423 passed / 10 skipped, cobertura 84,87 % |
 
 **Nota:** David tuvo CI en S2, no una capa API/BD/Front/E2E; se le asigna E2E como nueva especialización de S4. El `409` es un ejemplo del reto, no un código universal; `solicitudes-acceso` actualmente usa `400` para duplicados pendientes. Las correcciones de contratos deberán coordinarse en PR.
+
+### Edith — detalle de evidencia (BD / datos, `/api/v1/solicitudes-acceso`)
+
+- **Cuatro escenarios nuevos** en `backend/tests/test_s4_datos_solicitudes_edith.py`, sin repetir los casos ya cubiertos por `test_solicitudes_acceso.py`: contrato completo de `SolicitudAccesoResponse` con el servicio aislado (monkeypatch) + `Content-Type` real; dedupe por correo aunque la segunda solicitud pida un rol distinto; `estado=pendiente` sin mezclar aprobada/rechazada (las tres a la vez); `estado` inválido → `422` probando que `SolicitudAccesoService.listar` nunca se invoca (sin acceso a BD real).
+- **Contrato de duplicados verificado, no cambiado a ciegas:** se confirmó que el endpoint real usa `400` con `detail` (no `409`, que era solo el ejemplo del reto) y se documentó así en las pruebas.
+- **Mutación ejecutada y detectada (local, 2026-11-08):** en `backend/app/services/solicitud_acceso_service.py`, se invirtió temporalmente la condición de dedupe: `if SolicitudAccesoRepository.obtener_pendiente_por_email(db, data.email):` → `if not SolicitudAccesoRepository.obtener_pendiente_por_email(db, data.email):`. No se tocó ningún otro archivo ni se subió el mutante en ningún commit.
+- **Evidencia roja:** `pytest tests/test_s4_datos_solicitudes_edith.py -v` con la condición invertida → **2 tests fallaron** (`test_email_duplicado_bloquea_aunque_cambie_el_rol_solicitado`, `test_filtro_estado_pendiente_no_mezcla_aprobadas_ni_rechazadas`), 2 pasaron sin verse afectados.
+- **Evidencia verde:** se restauró la condición original (`git checkout -- app/services/solicitud_acceso_service.py`, diff limpio verificado) y se corrió el mismo comando → **4/4 pasaron**.
+- **Verificación adicional:** suite completa del backend (`pytest -v --cov=app --cov-fail-under=84`) → 423 passed, 10 skipped, cobertura 84,87 % (umbral heredado de 84 % conservado, no reducido).
 
 | Medida de cierre S4 | Cobertura real | Umbral aprobado | Evidencia/PR |
 |---|---|---|---|
