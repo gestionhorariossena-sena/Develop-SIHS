@@ -43,14 +43,14 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 
 ## Semana 3 — Tests de componentes Front (planificación)
 
-> **Estado:** reparto acordado en `semana-3`. Hay PR individuales en preparación. Los resultados de ejecución, mutaciones y revisiones solo se marcan completos cuando exista evidencia verificable.
+> **Estado (2026-11-08):** los cuatro PR individuales de S3 están **fusionados en `semana-3`** (#166 Edith, #170 David, #168 Dayana y #167 Nicol). Todos tenían CI aprobada en sus commits de PR. La ausencia de una aprobación formal en #167 y #170 fue una excepción autorizada expresamente para la fusión; no debe registrarse como revisión completada.
 
 | Integrante | S3 | Rama personal prevista | Revisor | PR | Evidencia de mutación | Tests ejecutados |
 |---|---|---|---|---|---|---|
-| Nicol | **Front: Login** | `test/s3-front-nicol` | David | [PR #167](../../pull/167) (borrador) | ✅ [rojo](../../actions/runs/42426452094) / [verde](../../actions/runs/42426526944) | ✅ 4/4 en verde (suite aislada); CI normal y revisión cruzada pendientes |
-| David | **Front: Registro** | `test/s3-front-david` | Dayana | Pendiente | Pendiente | Pendiente |
-| Dayana | **Front: NotificacionesPanel** | `test/s3-front-dayana` | Edith | Pendiente | Pendiente | Pendiente |
-| Edith | **Front: RecuperarContrasena** | `test/s3-front-edith` | Nicol | ✅ [PR #166](../../pull/166) | ✅ Documentada, con log rojo/verde abajo | ✅ 5/5 en verde |
+| Nicol | **Front: Login** | `test/s3-front-nicol` | David | [PR #167](../../pull/167) ✅ fusionado | ✅ [rojo](../../actions/runs/42426452094) / [verde](../../actions/runs/42426526944) | ✅ 4/4; [CI normal aprobada](../../actions/runs/42495204677); revisión formal de David no registrada |
+| David | **Front: Registro** | `test/s3-front-david` | Dayana | [PR #170](../../pull/170) ✅ fusionado | [`S3_DAVID_MUTACION_REGISTRO.md`](../docs-testing/reportes/S3_DAVID_MUTACION_REGISTRO.md) | ✅ 9 pruebas; [CI aprobada](../../actions/runs/41941349216); revisión formal de Dayana no registrada |
+| Dayana | **Front: NotificacionesPanel** | `test/s3-front-dayana` | Edith | [PR #168](../../pull/168) ✅ fusionado | [`S3_DAYANA_MUTACION_NOTIFICACIONES.md`](../docs-testing/reportes/S3_DAYANA_MUTACION_NOTIFICACIONES.md): rojo 1/7, verde 7/7 | ✅ 7/7; [CI aprobada](../../actions/runs/41854161983); aprobación de Edith |
+| Edith | **Front: RecuperarContrasena** | `test/s3-front-edith` | Nicol | ✅ [PR #166](../../pull/166) fusionado | ✅ Documentada, con log rojo/verde abajo | ✅ 5/5; [CI aprobada](../../actions/runs/41499971501); aprobación de Nicol |
 
 ### Nicol — pruebas del componente Login (PR #167)
 
@@ -59,7 +59,7 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 - **Mutación ejecutada y detectada (2026-11-07):** en una rama aislada de ensayo `test/s3-mutacion-login-nicol-evidencia`, se sustituyó temporalmente `if (estadoPrevio?.bloqueado)` por `if (estadoPrevio?.bloqueado && identificador.length === 0)` en `frontend/src/pages/Login.tsx`. La condición evita indebidamente el bloqueo con un identificador válido y conserva lint/TypeScript. No se alteró el código de producción del PR #167.
 - **Evidencia roja:** [GitHub Actions run 42426452094](../../actions/runs/42426452094) (`pnpm exec vitest run tests/unit/pages/Login.test.tsx`): **1 test falló, 3 pasaron**. Falló `bloquea el envío ante demasiados intentos y muestra una alerta accesible`, con `TestingLibraryElementError: Unable to find role="alert"`. Lint y build aprobaron.
 - **Evidencia verde:** se restauró la condición correcta. [GitHub Actions run 42426526944](../../actions/runs/42426526944): **4 tests pasaron (4/4)**, lint y build aprobaron. Solo el workflow del PR temporal se configuró para ejecutar la suite específica.
-- **Verificación todavía pendiente:** cobertura completa `pnpm test:coverage` y CI normal del último commit del PR #167, y revisión cruzada de David con ejecución independiente. La prueba aislada roja/verde no reemplaza estas verificaciones.
+- **Verificación final del PR #167:** CI normal del último commit [42495204677](../../actions/runs/42495204677) completada con éxito (incluye cobertura completa, lint, build y typecheck específico de Login). La revisión formal independiente de David no quedó registrada antes de la fusión, que se realizó por instrucción expresa; la prueba aislada roja/verde sigue documentada.
 
 **Responsable adicional de backend:** Edith, por haber tenido Front en S2. Mínimo del reto: 40 % en ambas capas. Los umbrales heredados superiores no se reducen (backend 84 %; frontend 76,73 % sentencias, 64,85 % ramas, 73,89 % funciones y 79,59 % líneas).
 
