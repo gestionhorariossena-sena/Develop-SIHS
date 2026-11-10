@@ -71,7 +71,7 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 
 | Integrante | Capa S2 | S4 (ángulo) | Endpoints asignados | Rama personal | Revisor | PR | Mutación | Tests |
 |---|---|---|---|---|---|---|---|---|
-| Nicol | API | **Front — contrato** | `/api/v1/notificaciones` | `test/s4-front-contrato-nicol` | David | Pendiente | Pendiente | Pendiente |
+| Nicol | API | **Front — contrato** | `/api/v1/notificaciones` | `test/s4-front-contrato-nicol` | David | [PR #178](../../pull/178) | ✅ [Rojo: 1/6 falla](../../actions/runs/42853071413) / [Verde: 6/6](../../actions/runs/42853622635) | ✅ 6 HTTP nuevas (CI final y revisión David pendientes) |
 | David | CI (transversal) | **E2E — seguridad** | `/api/v1/fichas` + errores generales | `test/s4-e2e-seguridad-david` | Edith | Pendiente | Pendiente | Pendiente |
 | Dayana | BD | **API — CRUD** | `/api/v1/horarios` | `test/s4-api-horarios-dayana` | Nicol | Pendiente | Pendiente | Pendiente |
 | Edith | Front | **BD — datos** | `/api/v1/solicitudes-acceso` | `test/s4-bd-datos-edith` | Dayana | Pendiente | Pendiente | Pendiente |
