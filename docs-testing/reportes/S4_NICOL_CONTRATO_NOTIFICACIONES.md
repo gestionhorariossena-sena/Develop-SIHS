@@ -25,7 +25,7 @@ Mutante manual **solo en la rama temporal** `test/s4-mutacion-nicol-evidencia` (
              detail="Notificación no encontrada",
 ```
 
-La prueba `test_patch_id_inexistente_devuelve_404_sin_detalles_internos` exige `404` y debe detectar esa regresión; tras restaurar `404` debe aprobar. **No considerar demostrado hasta adjuntar los logs reales rojo/verde de pytest.** El cambio temporal no entra al PR entregable.
+La prueba `test_patch_id_inexistente_devuelve_404_sin_detalles_internos` exige `404` y debe detectar esa regresión; tras restaurar `404` debe aprobar. **Mutación demostrada:** [corrida roja #42853071413](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/42853071413) con `1 failed, 5 passed` (`assert 400 == 404`); [corrida verde #42853622635](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/42853622635) tras restaurar la ruta original, `6 passed`. El mutante no entró al PR entregable; PR temporal #179 cerrado sin fusionar.
 
 Comando de reproducción desde `backend/`:
 
@@ -38,7 +38,7 @@ python -m pytest -q tests/test_s4_contrato_notificaciones_nicol.py
 - [x] Seis pruebas nuevas sobre rutas HTTP reales y contratos de React.
 - [x] Cabeceras Content-Type, estado y cuerpo en escenarios relevantes.
 - [x] Fixtures reutilizadas con autenticación simulada y base en memoria.
-- [ ] Adjuntar evidencia roja real del mutante y verde restaurado.
+- [x] Evidencia roja real del mutante ([1 fallo / 5 pasaron](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/42853071413)) y verde restaurado ([6/6](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/42853622635)).
 - [ ] CI del PR #178 aprobada (backend completo con cobertura >=84%; frontend sin retroceso).
 - [ ] Revisión independiente de David.
 
