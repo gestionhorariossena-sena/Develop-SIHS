@@ -62,7 +62,7 @@ def marcar_notificacion_leida(
 
     if notificacion is None:
         raise HTTPException(
-            status_code=404,
+            status_code=400,
             detail="Notificación no encontrada",
         )
 
