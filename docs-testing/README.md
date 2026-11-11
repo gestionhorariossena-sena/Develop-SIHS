@@ -6,6 +6,7 @@ Guías, metodología, reportes y evidencias del bootcamp. [Documentación genera
 - [Resumen del bootcamp](./bootcamp/RESUMEN_BOOTCAMP_NOTEBOOKLM.md).
 - [Reporte E2E semana 1](./reportes/TESTS_SEMANA_1_E2E.md).
 - [Pruebas con PostgreSQL](./reportes/TESTS_SEMANA_2_POSTGRES.md).
+- [E2E con dobles de red — Semana 5, Dayana](./reportes/TESTS_SEMANA_5_E2E_DAYANA.md).
 - [Informes históricos](./informes-historicos/README.md).
 
 ## Organización de tests ejecutables
