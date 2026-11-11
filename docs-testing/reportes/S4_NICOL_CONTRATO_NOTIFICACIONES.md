@@ -39,8 +39,8 @@ python -m pytest -q tests/test_s4_contrato_notificaciones_nicol.py
 - [x] Cabeceras Content-Type, estado y cuerpo en escenarios relevantes.
 - [x] Fixtures reutilizadas con autenticación simulada y base en memoria.
 - [x] Evidencia roja real del mutante ([1 fallo / 5 pasaron](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/42853071413)) y verde restaurado ([6/6](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/42853622635)).
-- [ ] CI del PR #178 aprobada (backend completo con cobertura >=84%; frontend sin retroceso).
-- [ ] Revisión independiente de David.
+- [x] CI del PR #178 aprobada: [Actions #42853926700](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/42853926700); backend 425 passed, 10 skipped y cobertura 84,21%; frontend 378 tests, lint/build y umbrales vigentes verdes.
+- [x] Revisión independiente de David: [APPROVED, revisión #5852665098](https://github.com/gestionhorariossena-sena/Develop-SIHS/pull/178#pullrequestreview-5852665098); David reportó 10/10 pruebas locales de notificaciones.
 
 ## Hallazgos
 
