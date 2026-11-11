@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 
@@ -30,17 +30,21 @@ vi.mock('../../../src/services/supabaseClient', () => ({
   },
 }))
 
-// Coincide con `VITE_API_URL` de frontend/.env -- api.ts solo cae al
-// 8001 hardcodeado si esa variable no está definida, y en este repo sí lo
-// está.
-const API_URL = 'http://127.0.0.1:8000/api/v1'
+// Fijo por `vi.stubEnv` en cada test, no por el `.env` local (que ni
+// siquiera viaja a git) -- así el test no depende de qué tenga
+// configurado cada máquina ni el runner de CI.
+const API_URL = 'http://test-backend.local/api/v1'
 
 const server = setupServer()
 
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+beforeEach(() => {
+  vi.stubEnv('VITE_API_URL', API_URL)
+})
 afterEach(() => {
   server.resetHandlers()
   vi.resetModules()
+  vi.unstubAllEnvs()
 })
 afterAll(() => server.close())
 
