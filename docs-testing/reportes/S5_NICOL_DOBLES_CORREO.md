@@ -31,7 +31,7 @@ Ensayo en rama temporal `test/s5-mutacion-correo-nicol-evidencia` y [PR temporal
 ```
 
 - 🔴 **[Corrida roja 43065968408](../../actions/runs/43065968408):** `pytest -q tests/test_s5_dobles_correo_nicol.py tests/test_email_service.py`: **3 failed, 3 passed**, detectado por el spy, el fake y el test SMTP anterior.
-- 🟢 La restauración del código original fue subida a la rama temporal. **La ejecución verde se registrará solamente cuando exista el resultado de pytest.**
+- 🟢 **[Corrida verde 43066170950](../../actions/runs/43066170950):** tras restaurar destinatario original, **6 passed, 1 warning** con la misma suite focalizada.
 - El **PR entregable #180 nunca contiene el mutante** ni modificaciones del workflow de CI.
 
 ## Revisión de exceso de mocks
@@ -48,7 +48,7 @@ La señal de riesgo es una prueba que solamente verifica `mock.enviar.assert_cal
 - [x] Verificación de comportamiento, no-interacción y estado/resultado.
 - [x] Interfaz propia ante librería externa; API pública de EmailService conservada.
 - [x] Mutación roja reproducida en GitHub Actions.
-- [ ] Confirmar y registrar ejecución verde tras restaurar el mutante.
+- [x] Restauración y ejecución verde comprobadas: [6/6](../../actions/runs/43066170950).
 - [x] **[CI previa del PR #180](../../actions/runs/43065874229)** completada en verde en backend y frontend.
 - [ ] Revisión cruzada por Dayana y revisión grupal del exceso de mocks.
 - [ ] Integración y medición consolidada con los otros PR de S5.
