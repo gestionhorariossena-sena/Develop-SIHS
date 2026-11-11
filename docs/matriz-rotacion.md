@@ -87,3 +87,36 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 | Backend — global | Pendiente | Pendiente | Pendiente |
 
 **Cierre requerido:** ≥4 pruebas nuevas de API y un mutante rojo/verde por integrante; cuatro PR revisados y fusionados a `semana-4`; posterior PR exclusivo de umbrales sin reducir los heredados y CI verde. Véase [README S4](../README.md).
+
+
+## Semana 5 — Dobles de prueba y aislamiento de dependencias (planificación)
+
+> **Estado:** reparto registrado; rama base `semana-5` (creada desde `semana-4`, sin presuponer los 4 PR de S4 ya integrados). Piso 60 % para ambas capas, conservando todos los umbrales anteriores superiores.
+
+| Integrante | Ángulo S4 | Ángulo S5 | Dependencia aislada | Rama personal | Revisor | PR | Mutación | Tests |
+|---|---|---|---|---|---|---|---|---|
+| Nicol | Front (contrato) | **API — SMTP/correo** | `backend/app/services/email_service.py` | `test/s5-api-correo-nicol` | Dayana | Pendiente | Pendiente | Pendiente |
+| David | E2E (seguridad) | **BD — repositorio** | Servicio de horarios/solicitudes con fake de repositorio | `test/s5-bd-repositorios-david` | Nicol | Pendiente | Pendiente | Pendiente |
+| Dayana | API (CRUD horarios) | **E2E — red simulada** | Pantallas React vía `page.route` de Playwright | `test/s5-e2e-red-dayana` | Edith | Pendiente | Pendiente | Pendiente |
+| Edith | BD (datos) | **Front — cliente HTTP/MSW** | `frontend/src/services/api.ts` | `test/s5-front-msw-edith` | David | [PR #183](../../pull/183) | ✅ rojo 1/5 falló, verde 5/5 (evidencia real, ver detalle abajo) | ✅ 5/5 en verde; suite completa frontend 383 passed, tsc/lint limpios |
+
+**Nota:** regla de selección de dobles — evitan una dependencia externa real (SMTP, Supabase, Postgres, red del navegador, IA, reloj), nunca sustituyen el propio código que se quiere comprobar.
+
+### Edith — detalle de evidencia (Front / cliente HTTP con MSW)
+
+- **Cinco escenarios nuevos** (se pedían ≥3) en `frontend/tests/unit/services/api.msw.test.ts`, sin repetir nada de `tests/unit/services/api.test.ts` (ese cubre `getUserFriendlyApiMessage` puro y un solo `apiGet` con `fetch` mockeado a mano para el cuelgue de sesión): 200 feliz + `Authorization` real; sin sesión no manda `Authorization`; 500 con `detail` → mensaje genérico; 422 con `detail` de negocio → se respeta tal cual; respuesta no-JSON (HTML de un proxy) → no revienta, cae a `ApiError`.
+- **Tipo de doble documentado en el reporte:** MSW como *fake* de red (intercepta `fetch` real sin levantar FastAPI) y, en 2 de los 5 tests, también como *spy* de los encabezados enviados (comportamiento). `supabase.auth.getSession()` se mockea aparte con `vi.fn()` (también dependencia externa).
+- **Sin exclusión de cobertura que retirar:** no existía ningún bloque `coverage.exclude` para `src/services/api.ts` en `vite.config.ts`.
+- **Mutación ejecutada y detectada (2026-11-11):** en `frontend/src/services/api.ts`, se quitó temporalmente `.catch(() => null)` de `response.json()` en el manejo de respuestas no-2xx. **Rojo:** `pnpm exec vitest run tests/unit/services/api.msw.test.ts` → 1 failed, 4 passed (el test de respuesta no-JSON revienta con `SyntaxError` sin capturar). Se restauró la línea (diff limpio confirmado) y **verde:** mismo comando → 5/5.
+- **Autoevaluación de exceso de simulacros:** registrada en el propio reporte (`docs-testing/reportes/TESTS_SEMANA_5_EDITH.md`) — los 5 tests verifican resultado observable (no solo `mock.called`), el doble está en la frontera externa (red/Supabase), y ningún fake sustituye comportamiento propio de `api.ts`.
+- **Verificación adicional:** suite completa frontend 383 passed (55 archivos), `tsc -b` y `pnpm lint` sin errores.
+
+| Medida de cierre S5 | Cobertura real | Umbral aprobado | Evidencia/PR |
+|---|---|---|---|
+| Frontend — sentencias | Pendiente | Pendiente | Pendiente |
+| Frontend — ramas | Pendiente | Pendiente | Pendiente |
+| Frontend — funciones | Pendiente | Pendiente | Pendiente |
+| Frontend — líneas | Pendiente | Pendiente | Pendiente |
+| Backend — global | Pendiente | Pendiente | Pendiente |
+
+**Cierre requerido:** ≥3 pruebas nuevas con dobles y un mutante rojo/verde por integrante; revisión grupal de exceso de simulacros; cuatro PR revisados y fusionados a `semana-5`; posterior PR exclusivo de umbrales (`chore/s5-umbrales-cobertura`) sin reducir los heredados y CI verde; integración final `semana-5` → `develop`.
