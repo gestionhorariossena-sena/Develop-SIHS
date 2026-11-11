@@ -57,8 +57,10 @@ La advertencia es una deprecación de Starlette/httpx en `fastapi.testclient`; n
 
 La verificación anterior cubre los seis casos de mi archivo y los tests relacionados `test_horarios_forzar_rf011.py` y `test_horarios_estado.py`: **16 aprobados, 0 fallidos**. No equivale a ejecutar toda la suite del backend ni a validar PostgreSQL, Supabase o el despliegue.
 
-Los resultados de CI mencionados en la revisión (424 aprobados, 10 omitidos y cobertura 84,26 %) corresponden al commit revisado antes de estos ajustes; la nueva ejecución de CI debe confirmarse en el PR después de actualizar la rama.
+## CI del PR actualizado
+
+Después de subir los ajustes, la ejecución [#43048167381](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43048167381) terminó correctamente. Los dos jobs de backend reportaron **425 aprobados, 10 omitidos, 1 advertencia y cobertura 84,43 %**; los jobs de frontend y la vista previa de Vercel también finalizaron correctamente (**5 checks exitosos** en el PR).
 
 ## Para continuar con la revisión
 
-El informe y los cambios están preparados para actualizar el PR #176. Después de subir el commit, se debe esperar a que finalice la CI y volver a solicitar la revisión de Nicol. El PR permanece abierto: no se hizo merge.
+El PR #176 ya tiene los cambios y la CI terminó correctamente. Falta que Nicol vuelva a revisar y apruebe los ajustes. El PR permanece abierto: no se hizo merge.
