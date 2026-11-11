@@ -1,4 +1,5 @@
 import smtplib
+from typing import Protocol
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -12,6 +13,22 @@ class SmtpNoConfiguradoError(RuntimeError):
     _Docs/Documentación general/DECISION_ENVIO_CREDENCIAL_TEMPORAL.md."""
 
 
+class TransporteCorreo(Protocol):
+    """Puerto del proyecto: el servicio depende del contrato, no de smtplib."""
+
+    def enviar(self, *, remitente: str, destinatario: str, mensaje: str) -> None: ...
+
+
+class TransporteSMTP:
+    """Adaptador real SMTP; los tests del servicio sustituyen este borde."""
+
+    def enviar(self, *, remitente: str, destinatario: str, mensaje: str) -> None:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as servidor:
+            servidor.starttls()
+            servidor.login(settings.smtp_user, settings.smtp_password)
+            servidor.sendmail(remitente, [destinatario], mensaje)
+
+
 class EmailService:
     """Punto único de envío de correo transaccional propio del backend (no
     confundir con los correos nativos de Supabase Auth, ej. recuperación de
@@ -21,6 +38,11 @@ class EmailService:
     El endpoint de aprobación de solicitudes de acceso (otro ticket del
     mismo Epic SCRUM-96) debe invocar este servicio en vez de armar el
     correo inline."""
+
+    @staticmethod
+    def _crear_transporte() -> TransporteCorreo:
+        """Punto de inyección: permite probar sin SMTP real."""
+        return TransporteSMTP()
 
     @staticmethod
     def enviar_credencial_temporal(*, destinatario_email: str, destinatario_nombre: str, password_temporal: str) -> None:
@@ -68,7 +90,8 @@ class EmailService:
         mensaje["Subject"] = asunto
         mensaje.attach(MIMEText(cuerpo_texto_plano, "plain", "utf-8"))
 
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as servidor:
-            servidor.starttls()
-            servidor.login(settings.smtp_user, settings.smtp_password)
-            servidor.sendmail(settings.smtp_user, [destinatario_email], mensaje.as_string())
+        EmailService._crear_transporte().enviar(
+            remitente=settings.smtp_user,
+            destinatario=destinatario_email,
+            mensaje=mensaje.as_string(),
+        )
