@@ -54,4 +54,4 @@ jobs:
 
       - run: pip install -r requirements.txt
 
-      - run: pytest -q tests/test_s5_dobles_correo_nicol.py tests/test_email_service.py
+      - run: pytest -v --cov=app --cov-report=term --cov-fail-under=84
