@@ -4,6 +4,7 @@ Los dobles reemplazan únicamente SMTP; el formateo y la validación del
 EmailService son código real. No accedemos a la red ni a credenciales reales.
 """
 import email
+from email.header import decode_header, make_header
 import smtplib
 from unittest.mock import Mock
 
@@ -45,7 +46,7 @@ def test_credencial_usa_spy_y_entrega_mensaje_con_contrato_real(monkeypatch):
     assert kwargs["destinatario"] == "aprendiz@example.test"
     mensaje = email.message_from_string(kwargs["mensaje"])
     assert mensaje["To"] == "aprendiz@example.test"
-    assert "credencial temporal" in str(mensaje["Subject"]).lower()
+    assert "credencial temporal" in str(make_header(decode_header(mensaje["Subject"]))).lower()
     texto = _texto(kwargs["mensaje"])
     assert "María Prueba" in texto
     assert "temporal-s5-123" in texto
