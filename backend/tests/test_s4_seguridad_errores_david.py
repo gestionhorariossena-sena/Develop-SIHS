@@ -14,10 +14,17 @@ def test_crear_ficha_sin_autenticacion_devuelve_401(client):
     assert respuesta.headers["content-type"].startswith("application/json")
 
 
-def test_crear_ficha_con_rol_sin_permiso_devuelve_403(client, autenticar_como):
+def test_crear_ficha_con_rol_sin_permiso_devuelve_403(
+    client, autenticar_como, crear_ficha
+):
     # Arrange
+    ficha_base = crear_ficha(codigo="S4-BASE")
     _, headers = autenticar_como("Aprendiz")
-    payload = {"codigoFicha": "S4-403", "idPrograma": 1, "idTrimestre": 1}
+    payload = {
+        "codigoFicha": "S4-403",
+        "idPrograma": ficha_base.idPrograma,
+        "idTrimestre": ficha_base.idTrimestre,
+    }
 
     # Act
     respuesta = client.post("/api/v1/fichas/", json=payload, headers=headers)

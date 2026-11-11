@@ -72,7 +72,7 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 | Integrante | Capa S2 | S4 (ángulo) | Endpoints asignados | Rama personal | Revisor | PR | Mutación | Tests |
 |---|---|---|---|---|---|---|---|---|
 | Nicol | API | **Front — contrato** | `/api/v1/notificaciones` | `test/s4-front-contrato-nicol` | David | Pendiente | Pendiente | Pendiente |
-| David | CI (transversal) | **E2E — seguridad** | `/api/v1/fichas` + errores generales | `test/s4-e2e-seguridad-david` | Edith | Pendiente | Pendiente | Pendiente |
+| David | CI (transversal) | **E2E — seguridad** | `/api/v1/fichas` + errores generales | `test/s4-e2e-seguridad-david` | Edith | [#177](https://github.com/gestionhorariossena-sena/Develop-SIHS/pull/177) | Se quitó temporalmente `require_admin` del `POST /fichas/`; el test esperaba `403` y recibió `200` (rojo). Se restauró el control y la prueba volvió a pasar (verde). | 4 pruebas S4 en verde; suite relacionada: 31 passed. |
 | Dayana | BD | **API — CRUD** | `/api/v1/horarios` | `test/s4-api-horarios-dayana` | Nicol | Pendiente | Pendiente | Pendiente |
 | Edith | Front | **BD — datos** | `/api/v1/solicitudes-acceso` | `test/s4-bd-datos-edith` | Dayana | Pendiente | Pendiente | Pendiente |
 
