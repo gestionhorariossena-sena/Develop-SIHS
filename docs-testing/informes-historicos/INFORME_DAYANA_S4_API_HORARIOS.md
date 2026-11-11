@@ -1,47 +1,64 @@
 # Informe personal — Dayana — Pruebas API de horarios S4
 
-**Alcance:** aporte individual de Dayana para el ángulo API / CRUD de horarios.
-**Propósito:** dejarte un resumen claro de lo implementado, cómo probarlo y qué queda pendiente para el flujo del equipo.
+**Propósito:** explicar los ajustes realizados a partir de la revisión del PR #176 y dejar evidencia reproducible para ti y para la persona revisora.
 
-## Qué hice
+## Ajustes realizados
 
-Agregué `backend/tests/test_s4_crud_horarios_dayana.py` con cinco pruebas HTTP nuevas usando `TestClient` y las fixtures existentes del backend. Los datos se crean en SQLite en memoria por prueba; no se usan credenciales reales, Supabase, PostgreSQL compartido ni servicios productivos.
+En `backend/tests/test_s4_crud_horarios_dayana.py`:
 
-Las pruebas cubren:
+- Reemplacé `date.today()` por fechas fijas para el trimestre de prueba: **5 de enero a 30 de abril de 2026**. Así los datos no cambian según el día en que se ejecuten las pruebas y siguen formando un período válido para la relación ficha-trimestre que ejercitan.
+- Agregué una prueba de eliminación: comprueba que `DELETE /api/v1/horarios/100` responde `200`, devuelve el mensaje de confirmación y elimina el registro de la base aislada.
 
-1. **Crear horario:** comprueba `201`, `Content-Type: application/json`, campos principales y persistencia.
-2. **Consultar horario existente:** comprueba `200`, identidad, horas y días.
-3. **Consultar horario inexistente:** comprueba `404` y el texto de `detail`.
-4. **Actualizar horario:** comprueba `200`, horas nuevas en la respuesta y persistencia en la base aislada.
-5. **Crear con un campo requerido ausente:** comprueba `422` y la ubicación del error en `detail`.
+La suite individual ahora cubre los cuatro casos CRUD (crear, consultar, actualizar y eliminar), además de consulta de un horario inexistente y validación de un campo requerido ausente. Usa `TestClient`, autenticación simulada y SQLite aislada; no requiere servicios productivos ni credenciales reales. No se modificó el comportamiento de producción.
 
-El router actual autoriza la escritura a los roles **Coordinador** o **Administrador** (`require_puede_programar`); por eso las pruebas usan Coordinador. No cambié el contrato de producción ni inventé una respuesta `409`.
+## Evidencia roja/verde del mutante
 
-## Validación y evidencia
+Para comprobar que la prueba de creación detecta un cambio de contrato, alteré temporalmente en `backend/app/api/v1/horarios.py` el estado declarado del `POST` de `201` a `202`. La mutación fue restaurada a `201` inmediatamente después del ensayo.
 
-Desde PowerShell, en la raíz del repositorio, ejecuté:
+**Rojo — ruta temporalmente mutada**
+
+Comando, ejecutado desde `backend` con el entorno Python del proyecto:
 
 ```powershell
-Push-Location .\backend
-& '.\.venv\Scripts\python.exe' -m pytest -q tests\test_s4_crud_horarios_dayana.py tests\test_horarios_forzar_rf011.py tests\test_horarios_estado.py
-Pop-Location
+python -m pytest -q tests\test_s4_crud_horarios_dayana.py::test_post_crea_horario_y_devuelve_contrato_json
 ```
 
-**Resultado final:** 15 pruebas aprobadas, 0 fallidas, código de salida `0`. Se mostró una advertencia de deprecación de Starlette/httpx, sin afectar el resultado.
+Salida relevante:
 
-También comprobé que la prueba de creación detecta una regresión:
+```text
+>       assert respuesta.status_code == 201
+E       assert 202 == 201
+E        +  where 202 = <Response [202 Accepted]>()
 
-- **Mutación temporal:** cambié el estado declarado del `POST` de `201` a `202`.
-- **Evidencia roja:** la prueba falló al recibir `202` en vez de `201`; 1 fallida, código de salida `1`.
-- **Restauración y evidencia verde:** restauré `201` y repetí la suite; las 15 pruebas pasaron.
-- La mutación fue temporal; el estado del endpoint quedó restaurado en `201`.
+FAILED tests/test_s4_crud_horarios_dayana.py::test_post_crea_horario_y_devuelve_contrato_json
+1 failed, 1 warning in 16.24s
+PYTEST_EXIT_CODE=1
+```
 
-## Qué demuestra
+**Verde — contrato restaurado a `201`**
 
-Las pruebas verifican los contratos HTTP de creación, consulta, actualización y validación de entrada, junto con persistencia usando la base aislada de pytest. No prueban el despliegue, CI, autenticación real con Supabase ni la base de datos de producción.
+Comando, ejecutado desde `backend`:
 
-## Preparación de la entrega
+```powershell
+python -m pytest -q tests\test_s4_crud_horarios_dayana.py tests\test_horarios_forzar_rf011.py tests\test_horarios_estado.py
+```
 
-La rama `test/s4-api-horarios-dayana` se creó desde `semana-4`, como indica la guía. El workspace original tenía cambios previos sin confirmar, así que preparé este aporte en un worktree separado y mantuve fuera del cambio todos los archivos ajenos a Dayana.
+Salida:
 
-Este aporte cubre únicamente la parte individual de Dayana. No afirma que los otros tres aportes, la cobertura global del frontend/backend, los umbrales, las revisiones ni la integración a `develop` estén terminados.
+```text
+................                                                         [100%]
+16 passed, 1 warning in 3.42s
+PYTEST_EXIT_CODE=0
+```
+
+La advertencia es una deprecación de Starlette/httpx en `fastapi.testclient`; no afectó la ejecución. El código de salida `1` del rojo confirma que la prueba detectó el mutante; el código `0` del verde confirma que las pruebas pasan con la ruta restaurada.
+
+## Alcance y límites
+
+La verificación anterior cubre los seis casos de mi archivo y los tests relacionados `test_horarios_forzar_rf011.py` y `test_horarios_estado.py`: **16 aprobados, 0 fallidos**. No equivale a ejecutar toda la suite del backend ni a validar PostgreSQL, Supabase o el despliegue.
+
+Los resultados de CI mencionados en la revisión (424 aprobados, 10 omitidos y cobertura 84,26 %) corresponden al commit revisado antes de estos ajustes; la nueva ejecución de CI debe confirmarse en el PR después de actualizar la rama.
+
+## Para continuar con la revisión
+
+El informe y los cambios están preparados para actualizar el PR #176. Después de subir el commit, se debe esperar a que finalice la CI y volver a solicitar la revisión de Nicol. El PR permanece abierto: no se hizo merge.

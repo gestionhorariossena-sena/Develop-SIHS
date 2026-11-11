@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, time, timedelta
+from datetime import date, time
 
 from app.core.database import Base
 from app.models.ambiente import Ambiente
@@ -38,7 +38,6 @@ def _crear_tablas_horario(db_session):
 
 
 def _preparar_datos(db_session):
-    hoy = date.today()
     coordinacion = Coordinacion(idCoordinacion=1, nombreCoordinacion="Coordinación de prueba")
     programa = Programa(
         idPrograma=1,
@@ -51,8 +50,8 @@ def _preparar_datos(db_session):
     trimestre = Trimestre(
         idTrimestre=1,
         nombre="Trimestre de prueba",
-        fechaInicio=hoy - timedelta(days=30),
-        fechaFin=hoy + timedelta(days=60),
+        fechaInicio=date(2026, 1, 5),
+        fechaFin=date(2026, 4, 30),
         estado="activo",
     )
     sede = Sede(id=1, nombre="Sede de prueba", direccion="Dirección de prueba", tipo="principal")
@@ -203,6 +202,19 @@ def test_put_actualiza_horario_y_persiste_el_cambio(client, db_session, autentic
     persistido = db_session.query(Horario).filter_by(idHorario=100).one()
     assert persistido.horaInicio == time(10, 0)
     assert persistido.horaFin == time(12, 0)
+
+
+def test_delete_elimina_horario_y_devuelve_confirmacion(client, db_session, autenticar_como):
+    _crear_tablas_horario(db_session)
+    _, headers = autenticar_como("Coordinador")
+    instructor = _preparar_datos(db_session)
+    _crear_horario(db_session, instructor)
+
+    respuesta = client.delete("/api/v1/horarios/100", headers=headers)
+
+    assert respuesta.status_code == 200
+    assert respuesta.json() == {"mensaje": "Horario eliminado"}
+    assert db_session.query(Horario).filter_by(idHorario=100).count() == 0
 
 
 def test_post_horario_con_campo_requerido_ausente_devuelve_422(client, db_session, autenticar_como):
