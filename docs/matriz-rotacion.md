@@ -98,7 +98,7 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 | Nicol | Front (contrato) | **API — SMTP/correo** | `backend/app/services/email_service.py` | `test/s5-api-correo-nicol` | Dayana | Pendiente | Pendiente | Pendiente |
 | David | E2E (seguridad) | **BD — repositorio** | Servicio de horarios/solicitudes con fake de repositorio | `test/s5-bd-repositorios-david` | Nicol | Pendiente | Pendiente | Pendiente |
 | Dayana | API (CRUD horarios) | **E2E — red simulada** | Pantallas React vía `page.route` de Playwright | `test/s5-e2e-red-dayana` | Edith | Pendiente | Pendiente | Pendiente |
-| Edith | BD (datos) | **Front — cliente HTTP/MSW** | `frontend/src/services/api.ts` | `test/s5-front-msw-edith` | David | [PR pendiente de abrir] | ✅ rojo 1/5 falló, verde 5/5 (evidencia real, ver detalle abajo) | ✅ 5/5 en verde; suite completa frontend 383 passed, tsc/lint limpios |
+| Edith | BD (datos) | **Front — cliente HTTP/MSW** | `frontend/src/services/api.ts` | `test/s5-front-msw-edith` | David | [PR #183](../../pull/183) | ✅ rojo 1/5 falló, verde 5/5 (evidencia real, ver detalle abajo) | ✅ 5/5 en verde; suite completa frontend 383 passed, tsc/lint limpios |
 
 **Nota:** regla de selección de dobles — evitan una dependencia externa real (SMTP, Supabase, Postgres, red del navegador, IA, reloj), nunca sustituyen el propio código que se quiere comprobar.
 
