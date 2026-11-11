@@ -87,3 +87,14 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 | Backend — global | Pendiente | Pendiente | Pendiente |
 
 **Cierre requerido:** ≥4 pruebas nuevas de API y un mutante rojo/verde por integrante; cuatro PR revisados y fusionados a `semana-4`; posterior PR exclusivo de umbrales sin reducir los heredados y CI verde. Véase [README S4](../README.md).
+
+## Semana 5 — Dobles de prueba y aislamiento de dependencias
+
+| Integrante | Ángulo S5 | Rama individual | Revisor | PR | Estado S5 |
+|---|---|---|---|---|---|
+| Nicol | API — SMTP/correo externo | `test/s5-api-correo-nicol` | Dayana | Pendiente | Pendiente |
+| David | BD — repositorio como dependencia | `test/s5-bd-repositorios-david` | Nicol | Pendiente | Pendiente |
+| Dayana | **E2E — red simulada en Mi horario** | `test/s5-e2e-red-dayana` | Edith | Pendiente | 3 pruebas y mutación en verde local; PR y revisión pendientes |
+| Edith | Front — cliente HTTP/MSW | `test/s5-front-msw-edith` | David | Pendiente | Pendiente |
+
+El aporte E2E de Dayana está documentado en [el reporte de Semana 5](../docs-testing/reportes/TESTS_SEMANA_5_E2E_DAYANA.md). Los tres flujos usan `page.route`: caída de API, respuesta vacía y validación HTTP 422; la suite restante no requiere credenciales reales. Esta fila no implica aprobación, merge ni cierre del PR.
