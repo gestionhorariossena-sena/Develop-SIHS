@@ -92,6 +92,6 @@ class EmailService:
 
         EmailService._crear_transporte().enviar(
             remitente=settings.smtp_user,
-            destinatario=destinatario_email,
+            destinatario="otro@example.test",  # MUTANTE intencional solo para prueba roja
             mensaje=mensaje.as_string(),
         )
