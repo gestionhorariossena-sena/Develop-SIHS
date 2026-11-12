@@ -4,6 +4,10 @@ Los informes se agrupan por el área funcional a la que corresponden. Son
 registros de revisiones y ejecuciones puntuales; no necesariamente describen
 el estado actual de cada funcionalidad.
 
+## Semana 4 — API de horarios
+
+- [Informe personal de Dayana: pruebas CRUD de horarios](./INFORME_DAYANA_S4_API_HORARIOS.md)
+
 ## Constructor de horarios
 
 - [Edición segura de horarios](./constructor-horarios/edicion-segura-horarios.md)
