@@ -18,6 +18,7 @@ backend/package-lock.json
 # Frontend
 frontend/node_modules/
 frontend/dist/
+frontend/coverage/
 frontend/.env
 frontend/.env.local
 

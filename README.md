@@ -224,8 +224,7 @@ La configuración de red para emuladores y dispositivos físicos está en
 | [`frontend/`](./frontend/) | Cliente web React, TypeScript y Vite |
 | [`mobile/`](./mobile/) | Aplicación Flutter |
 | [`database/`](./database/) | Esquema SQL y guía de Supabase |
-| [`docs-sihs/`](./docs-sihs/) | Documentación general, arquitectura, diseños, diagramas y presentaciones |
-| [`docs-testing/`](./docs-testing/) | Documentación de testing, matriz ADSO, evidencias y bootcamp |
+| [`docs-sihs/`](./docs-sihs/) | Documentación funcional, técnica y de diseño |
 
 Guías de referencia:
 
@@ -260,3 +259,7 @@ git push -u origin feature/nombre-del-cambio
 ## Licencia y autores
 
 Proyecto académico desarrollado en el programa de formación ADSO del SENA.
+
+## Pruebas de Semana 3
+
+Los tests de componentes de la Semana 3 (Login, Registro, NotificacionesPanel y RecuperarContrasena), su evidencia de mutación y la matriz de revisión están documentados en la [guía completa de Semana 3](./docs-testing/SEMANA_3_GUIA.md), los [informes de pruebas](./docs-testing/reportes/) y la [matriz de rotación](./docs/matriz-rotacion.md).

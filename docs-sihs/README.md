@@ -1,17 +1,11 @@
-# SIHS — Documentación general
+# Documentación general de SIHS
 
-Esta carpeta, `docs-sihs/`, contiene **arquitectura, requisitos, diseño, entrevistas, diagramas, planificación y documentación del proyecto**.
+Esta carpeta contiene arquitectura, base de datos, diseños, requisitos, elicitación, historias de usuario, diagramas y documentación funcional del sistema.
 
-- [Arquitectura](./Arquitectura/)
-- [Base de datos](./Base%20de%20datos/)
-- [Diagramas estructurales](./Diagramas%20estructurales/)
-- [Diseño y mockups](./Dise%C3%B1o/)
-- [Documentación general y decisiones](./Documentaci%C3%B3n%20general/)
-- [Elicitación y entrevistas](./Elicitacion/)
-- [Historias de usuario](./Historias%20de%20usuario/)
-- [Informes de requisitos](./Informes%20de%20requisitos/)
-- [Presentación interactiva](./presentacion-interactiva/README.md)
+## Archivos históricos almacenados fuera de Git
 
-**Testing y bootcamp:** [`docs-testing/`](../docs-testing/README.md). Los informes antiguos de pruebas ahora están en [`docs-testing/informes-historicos/`](../docs-testing/informes-historicos/README.md).
+Los 61 archivos de requisitos, entregables, mockups históricos y archivos ZIP seleccionados por la auditoría están en [Google Drive de SIHS](https://drive.google.com/drive/folders/1JR3VQWvDz6b2sKusM6uNUqpWU_Hfm121). [Ver índice de respaldo](./ARCHIVOS_EN_DRIVE.md).
 
-**Materiales para Drive:** archivos de hojas de cálculo, audios, reportes finales PDF/DOCX con datos institucionales u otras evidencias pesadas deben inventariarse y respaldarse primero; no borrarlos del repositorio antes de verificar copia, integridad y dependencias.
+La documentación activa en Markdown y los diagramas editables continúan versionados aquí. Los informes de **testing** están en [docs-testing/](../docs-testing/README.md).
+
+Los archivos institucionales clasificados como sensibles no se incluyeron en la exportación pública: deben revisarse con permisos restringidos.

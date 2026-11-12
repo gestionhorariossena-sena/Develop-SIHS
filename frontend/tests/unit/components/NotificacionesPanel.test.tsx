@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { NotificacionesPanel } from '../../../src/components/NotificacionesPanel'
 import type { Notificacion } from '../../../src/types/api'
 
@@ -126,5 +127,86 @@ describe('NotificacionesPanel — comportamiento visible', () => {
     await waitFor(() => expect(apiPatchMock).toHaveBeenCalledOnce())
     await waitFor(() => expect(screen.getByTitle('Marcar todas como leídas')).toBeEnabled())
     expect(onActualizadas).not.toHaveBeenCalled()
+  })
+
+  it('deshabilita la notificación mientras espera confirmación y luego actualiza la lista', async () => {
+    const user = userEvent.setup()
+    const notificacion = crearNotificacion(31, 'sistema')
+    const actualizada = { ...notificacion, leida: true }
+    let confirmarActualizacion!: (valor: Notificacion) => void
+    const respuesta = new Promise<Notificacion>((resolve) => {
+      confirmarActualizacion = resolve
+    })
+    const onActualizadas = vi.fn()
+    apiPatchMock.mockReturnValue(respuesta)
+
+    render(
+      <NotificacionesPanel
+        notificaciones={[notificacion]}
+        onNotificacionesActualizadas={onActualizadas}
+        onCerrar={vi.fn()}
+      />,
+    )
+
+    const boton = screen.getByRole('button', {
+      name: /Sistema.*Mensaje de prueba 31/,
+    })
+    await user.click(boton)
+
+    expect(apiPatchMock).toHaveBeenCalledWith('/notificaciones/31/leida')
+    expect(boton).toBeDisabled()
+
+    confirmarActualizacion(actualizada)
+
+    await waitFor(() => {
+      expect(onActualizadas).toHaveBeenCalledWith([actualizada])
+      expect(boton).toBeEnabled()
+    })
+  })
+
+  it('conserva una notificación sin leer si falla su actualización individual', async () => {
+    const user = userEvent.setup()
+    const notificacion = crearNotificacion(32, 'sistema')
+    const onActualizadas = vi.fn()
+    apiPatchMock.mockRejectedValue(new Error('Sin conexión'))
+
+    render(
+      <NotificacionesPanel
+        notificaciones={[notificacion]}
+        onNotificacionesActualizadas={onActualizadas}
+        onCerrar={vi.fn()}
+      />,
+    )
+
+    const boton = screen.getByRole('button', {
+      name: /Sistema.*Mensaje de prueba 32/,
+    })
+    await user.click(boton)
+
+    await waitFor(() => expect(boton).toBeEnabled())
+    expect(screen.getByText('Mensaje de prueba 32')).toBeInTheDocument()
+    expect(onActualizadas).not.toHaveBeenCalled()
+  })
+
+  it('no envía una solicitud al seleccionar una notificación ya leída', async () => {
+    const user = userEvent.setup()
+    const notificacion = crearNotificacion(33, 'sistema', true)
+
+    render(
+      <NotificacionesPanel
+        notificaciones={[notificacion]}
+        onNotificacionesActualizadas={vi.fn()}
+        onCerrar={vi.fn()}
+      />,
+    )
+
+    const boton = screen.getByRole('button', {
+      name: /Sistema.*Mensaje de prueba 33/,
+    })
+
+    expect(boton).toBeDisabled()
+    await user.click(boton)
+
+    expect(apiPatchMock).not.toHaveBeenCalled()
   })
 })
