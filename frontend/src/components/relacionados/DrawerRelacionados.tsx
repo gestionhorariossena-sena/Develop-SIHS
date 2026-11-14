@@ -39,7 +39,7 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
         aria-label={titulo}
         onKeyDown={manejarTeclado}
         onClick={(evento) => evento.stopPropagation()}
-        className="flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface-container-lowest p-6 shadow-2xl dark:bg-slate-800"
+        className="flex h-full w-full max-w-[460px] flex-col overflow-y-auto bg-surface-container-lowest p-6 shadow-2xl dark:bg-slate-800"
       >
         <div className="mb-6 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -64,9 +64,9 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
             type="button"
             onClick={onCerrar}
             aria-label="Cerrar"
-            className="text-sm font-medium text-on-surface-variant hover:text-on-surface dark:text-slate-400 dark:hover:text-slate-100"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface hover:text-on-surface focus-visible:outline-2 focus-visible:outline-primary dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100"
           >
-            Cerrar
+            <span className="material-symbols-outlined" aria-hidden="true">close</span>
           </button>
         </div>
 
