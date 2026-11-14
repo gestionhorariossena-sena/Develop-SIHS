@@ -77,7 +77,7 @@ const NAV: GrupoNav[] = [
   {
     grupo: 'Programación',
     items: [
-      { etiqueta: 'Horarios', ruta: '/horarios/nuevo', soloGestion: true },
+      { etiqueta: 'Crear horario', ruta: '/horarios/crear', soloGestion: true },
       { etiqueta: 'Asistente IA', ruta: '/horarios/asistente-ia', soloGestion: true },
       { etiqueta: 'Horarios completos', ruta: '/horarios/completos', soloGestion: true },
       { etiqueta: 'Publicaciones programadas', ruta: '/horarios/publicaciones-programadas', soloGestion: true },
