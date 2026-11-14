@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../../helpers/renderConProviders'
 import { HorariosCompletos } from '../../../src/pages/HorariosCompletos'
@@ -82,15 +82,16 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('1 de 1 horarios')).toBeInTheDocument()
   })
 
-  it('no audita automáticamente un período activo vencido; permite elegirlo expresamente', async () => {
+  it('mantiene las entradas Lista, Calendario y Conflictos sin abrir un drawer', async () => {
     mockeaBase()
-    const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await screen.findByText('3228973 B')
-    expect(await screen.findByText(/No hay un período académico activo para la fecha actual/)).toBeInTheDocument()
-    expect(apiGetMock).not.toHaveBeenCalledWith('/horarios/auditoria-cruces?idTrimestre=1', 60000)
-    await usuario.selectOptions(screen.getByLabelText('Período académico a auditar'), '1')
-    await waitFor(() => expect(apiGetMock).toHaveBeenCalledWith('/horarios/auditoria-cruces?idTrimestre=1', 60000))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Lista' })).toHaveAttribute('href', '/horarios/completos')
+    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', '/calendario')
+    expect(screen.getByRole('link', { name: 'Conflictos' })).toHaveAttribute('href', '/horarios/auditoria')
+    expect(screen.getAllByRole('columnheader')).toHaveLength(8)
   })
 
   it('el buscador filtra por ficha, programa, instructor o ambiente', async () => {
@@ -125,7 +126,7 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
   })
 
-  it('clic en una fila expande debajo una caja con ficha, instructor (+ carga semanal), ambiente, tema y el grid del horario', async () => {
+  it('clic en una fila abre un drawer temporal a la derecha sin retirar la tabla', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
@@ -133,24 +134,23 @@ describe('HorariosCompletos', () => {
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
 
-    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
-    expect(screen.getByText('Análisis y Desarrollo de Software (ADSO)')).toBeInTheDocument()
-    expect(screen.getByText('erick@example.com')).toBeInTheDocument()
-    expect(screen.getByText('Contrato: Planta')).toBeInTheDocument()
-    expect(screen.getByText('Número: 101')).toBeInTheDocument()
-    expect(screen.getByText('Sede: Sede principal')).toBeInTheDocument()
+    const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
+    expect(drawer).toHaveClass('fixed', 'right-0', 'top-0', 'h-screen', 'max-w-[460px]')
+    expect(within(drawer).getByText('Análisis y Desarrollo de Software (ADSO)')).toBeInTheDocument()
+    expect(within(drawer).getByText('erick@example.com')).toBeInTheDocument()
+    expect(within(drawer).getByText('Contrato: Planta')).toBeInTheDocument()
+    expect(within(drawer).getByText('Número: 101')).toBeInTheDocument()
+    expect(within(drawer).getByText('Sede: Sede principal')).toBeInTheDocument()
     // "CPL18" (código) solo en la tarjeta "Tema" del detalle -- el grid
     // muestra la DESCRIPCIÓN del resultado (único dato que también tienen
     // los bloques "nuevos" del asistente, que no traen código), así que
     // "Gestión de inventarios" aparece dos veces: grid + tarjeta.
-    expect(screen.getByText('CPL18')).toBeInTheDocument()
-    expect(screen.getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
-    expect(screen.getByText('Horario semanal')).toBeInTheDocument()
+    expect(within(drawer).getByText('CPL18')).toBeInTheDocument()
+    expect(within(drawer).getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
+    expect(within(drawer).getByText('Horario semanal')).toBeInTheDocument()
 
-    expect(await screen.findByText('10h / 40h')).toBeInTheDocument()
-
-    // No debe abrirse ningún panel/drawer lateral — todo pasa dentro de la tabla.
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(await within(drawer).findByText('10h / 40h')).toBeInTheDocument()
+    expect(screen.getAllByRole('columnheader')).toHaveLength(8)
   })
 
   it('muestra el motivo del error al despublicar en lugar de ignorar el fallo', async () => {
@@ -174,7 +174,7 @@ describe('HorariosCompletos', () => {
     boton.focus()
     await usuario.keyboard('{Enter}')
 
-    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
     expect(boton).toHaveAttribute('aria-expanded', 'true')
   })
 
@@ -185,7 +185,7 @@ describe('HorariosCompletos', () => {
     await screen.findByText('3228973 B')
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    await screen.findByText('Horario #7')
+    await screen.findByRole('dialog', { name: 'Horario #7' })
 
     const masInfo = screen.getAllByRole('link', { name: 'Más info →' })
     expect(masInfo[0]).toHaveAttribute('href', '/fichas?id=1')
@@ -218,24 +218,28 @@ describe('HorariosCompletos', () => {
     expect(screen.getByRole('button', { name: 'Publicar ahora' })).toBeInTheDocument()
   })
 
-  it('clic de nuevo en la misma fila colapsa la caja expandida', async () => {
+  it('cierra el drawer con X y con Escape', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await screen.findByText('3228973 B')
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Cerrar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    expect(screen.queryByText('Horario #7')).not.toBeInTheDocument()
+    await usuario.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('con ?id= en la URL, expande esa fila directo (deep link desde Calendario general)', async () => {
+  it('con ?id= en la URL, abre el drawer directo (deep link desde Calendario general)', async () => {
     mockeaBase()
     renderConProviders(<HorariosCompletos />, ['/horarios/completos?id=7'])
 
-    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
   })
 
   it('muestra el error del backend si la carga falla', async () => {
@@ -271,7 +275,7 @@ describe('HorariosCompletos', () => {
     // en silencio -- "Gestión de inventarios" solo aparecería una vez, en
     // la tarjeta de detalle, si el grid lo hubiera perdido).
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    await screen.findByText('Horario #7')
-    expect(screen.getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
+    const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
+    expect(within(drawer).getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
   })
 })

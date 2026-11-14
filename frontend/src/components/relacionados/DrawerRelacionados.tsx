@@ -66,7 +66,7 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
         aria-label={titulo}
         onKeyDown={manejarTeclado}
         onClick={(evento) => evento.stopPropagation()}
-        className="flex h-full w-full max-w-[460px] flex-col overflow-y-auto bg-surface-container-lowest p-6 shadow-2xl dark:bg-slate-800"
+        className="fixed right-0 top-0 flex h-screen w-full max-w-[460px] flex-col overflow-y-auto bg-surface-container-lowest p-6 shadow-2xl dark:bg-slate-800"
       >
         <div className="mb-6 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
