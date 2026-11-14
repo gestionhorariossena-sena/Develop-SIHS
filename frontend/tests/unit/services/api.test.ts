@@ -107,6 +107,26 @@ describe('getUserFriendlyApiMessage', () => {
   })
 })
 
+describe('resolverApiUrl', () => {
+  it('usa el backend local del puerto 8000 en desarrollo cuando falta la variable', async () => {
+    const { resolverApiUrl } = await import('../../../src/services/api')
+    expect(resolverApiUrl(undefined, false)).toBe('http://127.0.0.1:8000/api/v1')
+  })
+
+  it('normaliza la URL configurada en desarrollo', async () => {
+    const { resolverApiUrl } = await import('../../../src/services/api')
+    expect(resolverApiUrl('http://127.0.0.1:8000/api/v1/', false)).toBe('http://127.0.0.1:8000/api/v1')
+  })
+
+  it('exige una URL HTTPS pública en producción', async () => {
+    const { resolverApiUrl } = await import('../../../src/services/api')
+    expect(() => resolverApiUrl(undefined, true)).toThrow('Falta VITE_API_URL')
+    expect(() => resolverApiUrl('http://127.0.0.1:8000/api/v1', true)).toThrow('no puede apuntar a localhost')
+    expect(() => resolverApiUrl('http://api.example.com/api/v1', true)).toThrow('debe usar HTTPS')
+    expect(resolverApiUrl('https://api.example.com/api/v1/', true)).toBe('https://api.example.com/api/v1')
+  })
+})
+
 describe('apiGet — timeout cuando supabase.auth.getSession() se cuelga', () => {
   beforeEach(() => {
     vi.resetModules()
