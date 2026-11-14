@@ -195,6 +195,26 @@ describe('Fichas', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('mantiene el foco dentro del drawer al navegar con Tab', async () => {
+    mockeaFichasYPerfil(FICHAS)
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    await screen.findByText('3228973 B')
+
+    await usuario.click(screen.getByText('3228973 B'))
+    const panel = screen.getByRole('dialog', { name: '3228973 B' })
+    const cerrar = within(panel).getByRole('button', { name: 'Cerrar' })
+    const ultimaPestana = within(panel).getByRole('tab', { name: 'Acciones' })
+
+    cerrar.focus()
+    await usuario.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(ultimaPestana).toHaveFocus()
+
+    await usuario.keyboard('{Tab}')
+    expect(cerrar).toHaveFocus()
+    expect(panel).toContainElement(document.activeElement)
+  })
+
   it('muestra el grid semanal con los horarios reales de la ficha', async () => {
     mockeaFichasConHorarios(FICHAS)
     const usuario = userEvent.setup()

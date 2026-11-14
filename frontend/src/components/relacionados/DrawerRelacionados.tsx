@@ -1,6 +1,15 @@
 import { useEffect, useRef } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
 
+const SELECTOR_FOCO = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ')
+
 interface DrawerRelacionadosProps {
   iniciales: string
   titulo: string
@@ -28,6 +37,24 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
 
   function manejarTeclado(evento: KeyboardEvent<HTMLDivElement>) {
     if (evento.key === 'Escape') onCerrar()
+    if (evento.key !== 'Tab') return
+
+    const controles = Array.from(evento.currentTarget.querySelectorAll<HTMLElement>(SELECTOR_FOCO))
+      .filter((control) => !control.hasAttribute('disabled') && !control.hidden)
+    if (controles.length === 0) {
+      evento.preventDefault()
+      return
+    }
+
+    const primero = controles[0]
+    const ultimo = controles[controles.length - 1]
+    if (evento.shiftKey && document.activeElement === primero) {
+      evento.preventDefault()
+      ultimo.focus()
+    } else if (!evento.shiftKey && document.activeElement === ultimo) {
+      evento.preventDefault()
+      primero.focus()
+    }
   }
 
   return (
