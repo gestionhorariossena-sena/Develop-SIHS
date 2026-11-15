@@ -2,11 +2,15 @@ import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { DrawerHorario } from '../components/horarios/DrawerHorario'
+import { GridHorario } from '../components/horario/GridHorario'
+import { GridSemanalInstructor } from '../components/horario/GridSemanalInstructor'
+import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { nombresDias } from '../components/relacionados/formatoBloque'
 import { colorParaBloque } from './horario/gridLogic'
 import { useGestionarHorariosData } from '../hooks/useGestionarHorariosData'
 import { filtrarHorarios, jornadaDeHorario } from './horario/filtrosGestionarHorarios'
 import { escribirGestionarHorariosQuery, leerGestionarHorariosQuery, normalizarRutaHorarioLegada, type GestionarHorariosQuery, type JornadaQuery } from './horario/gestionarHorariosQuery'
+import type { Ambiente, Ficha, Usuario } from '../types/api'
 
 // Las tres entradas de gestión conservan la misma fuente de bloques. Las
 // perspectivas por ficha, instructor y ambiente se abren desde el detalle
@@ -23,6 +27,21 @@ function badgeEstadoPublicacion(publicado: boolean) {
   return publicado
     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
     : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+}
+
+function PerspectivaContextual({ perspectiva, query, fichas, instructores, ambientes, horarios, actualizarQuery }: { perspectiva: Exclude<GestionarHorariosQuery['perspectiva'], 'bloques'>; query: GestionarHorariosQuery; fichas: Ficha[]; instructores: Usuario[]; ambientes: Ambiente[]; horarios: import('../types/api').Horario[]; actualizarQuery: (cambios: Partial<GestionarHorariosQuery>) => void }) {
+  const id = perspectiva === 'ficha' ? query.idFicha : perspectiva === 'instructor' ? query.idInstructor : query.idAmbiente
+  const opciones = perspectiva === 'ficha' ? fichas.map((item) => [String(item.idFicha), item.codigoFicha]) : perspectiva === 'instructor' ? instructores.map((item) => [item.idUsuario, item.nombre]) : ambientes.map((item) => [String(item.idAmbiente), item.nombreAmbiente])
+  const clave = perspectiva === 'ficha' ? 'idFicha' : perspectiva === 'instructor' ? 'idInstructor' : 'idAmbiente'
+  const { bloques, grid } = convertirHorariosAGrid(horarios)
+  const aprendicesPorFicha = Object.fromEntries(fichas.map((ficha) => [ficha.idFicha, ficha.aprendicesTotales]))
+  return <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+    <label className="mb-2 block text-sm font-semibold text-on-surface" htmlFor="entidad-perspectiva">Seleccionar {perspectiva === 'ficha' ? 'ficha' : perspectiva === 'instructor' ? 'instructor' : 'ambiente'}</label>
+    <select id="entidad-perspectiva" value={id ?? ''} onChange={(evento) => actualizarQuery({ [clave]: evento.target.value || undefined } as Partial<GestionarHorariosQuery>)} className="mb-4 w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface">
+      <option value="">Selecciona una opción</option>{opciones.map(([valor, etiqueta]) => <option key={valor} value={valor}>{etiqueta}</option>)}
+    </select>
+    {!id ? <p className="py-10 text-center text-sm text-on-surface-variant">Selecciona una entidad para ver su horario.</p> : <><div className="mb-3 flex flex-wrap gap-2">{horarios.map((horario) => <button key={horario.idHorario} type="button" onClick={() => actualizarQuery({ idHorario: String(horario.idHorario) })} className="rounded-lg border border-outline px-2 py-1 text-xs font-semibold text-primary">Abrir bloque #{horario.idHorario}</button>)}</div>{perspectiva === 'instructor' ? <GridSemanalInstructor horarios={horarios} jornadasVisibles={['Mañana', 'Tarde', 'Noche']} aprendicesPorFicha={aprendicesPorFicha} mostrarDetalle={false} /> : <GridHorario bloques={bloques} grid={grid} hayBloqueActivo={false} soloLectura />}</>}
+  </section>
 }
 
 function etiquetaJornada(jornada: JornadaQuery) { return jornada === 'manana' ? 'Mañana' : jornada === 'tarde' ? 'Tarde' : 'Noche' }
@@ -109,6 +128,10 @@ export function HorariosCompletos() {
       </nav>
       </div>
 
+      <nav aria-label="Perspectiva de horarios" className="mb-4 flex flex-wrap gap-2">
+        {([['bloques', 'Bloques'], ['ficha', 'Por ficha'], ['instructor', 'Por instructor'], ['ambiente', 'Por ambiente']] as const).map(([perspectiva, etiqueta]) => <button key={perspectiva} type="button" onClick={() => actualizarQuery({ perspectiva })} className={`rounded-full px-3 py-1.5 text-sm font-semibold ${query.perspectiva === perspectiva ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}`}>{etiqueta}</button>)}
+      </nav>
+
       <div className="min-w-0">
       <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de horarios">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -172,7 +195,7 @@ export function HorariosCompletos() {
 
       {erroresCatalogos.length > 0 && <p role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">La tabla se muestra, pero no se pudieron cargar: {erroresCatalogos.join(', ')}. Los datos relacionados pueden aparecer como “Sin definir”.</p>}
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Período académico</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p> : query.perspectiva !== 'bloques' ? <PerspectivaContextual perspectiva={query.perspectiva} query={query} fichas={fichas} instructores={instructores} ambientes={ambientes} horarios={visibles} actualizarQuery={actualizarQuery} /> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Período académico</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
         const color = colorParaBloque(String(horario.idHorario))
         const expandido = horario.idHorario === Number(query.idHorario)
         const jornada = jornadaDeHorario(horario)
