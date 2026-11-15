@@ -271,6 +271,23 @@ describe('HorariosCompletos', () => {
     })
   })
 
+  it('advierte el catálogo fallido sin ocultar la tabla', async () => {
+    mockeaBase()
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/horarios/') return Promise.resolve([HORARIO])
+      if (path === '/fichas/') return Promise.reject(new Error('falló fichas'))
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE])
+      if (path === '/sedes') return Promise.resolve([SEDE])
+      if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<HorariosCompletos />)
+    expect(await screen.findByText('3228973 B')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('no se pudieron cargar: fichas')
+  })
+
   it('un horario creado por el Asistente (franja propia, no la institucional) sí aparece en el grid y con jornada correcta', async () => {
     // Regresión 2026-09-14: el grid del drawer y la columna Jornada de la
     // tabla solo reconocían las 2 franjas institucionales fijas

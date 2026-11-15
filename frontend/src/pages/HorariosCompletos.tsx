@@ -43,7 +43,7 @@ function formatoHora(hora: string) {
 export function HorariosCompletos() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = normalizarRutaHorarioLegada('/horarios/completos', searchParams) ?? leerGestionarHorariosQuery(searchParams)
-  const { horarios, fichas, instructores, ambientes, sedes, trimestres, diasSemana, cargando, error, actualizarHorario } = useGestionarHorariosData()
+  const { horarios, fichas, instructores, ambientes, sedes, trimestres, diasSemana, cargando, error, erroresCatalogos, actualizarHorario } = useGestionarHorariosData()
   const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false)
   function actualizarQuery(cambios: Partial<GestionarHorariosQuery>, reiniciarPagina = false) { setSearchParams(escribirGestionarHorariosQuery({ ...query, ...cambios, pagina: reiniciarPagina ? 1 : (cambios.pagina ?? query.pagina) })) }
 
@@ -170,6 +170,7 @@ export function HorariosCompletos() {
         </div>}
       </section>
 
+      {erroresCatalogos.length > 0 && <p role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">La tabla se muestra, pero no se pudieron cargar: {erroresCatalogos.join(', ')}. Los datos relacionados pueden aparecer como “Sin definir”.</p>}
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
       {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Período académico</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
         const color = colorParaBloque(String(horario.idHorario))
