@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, waitFor, within } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../../helpers/renderConProviders'
 import { HorariosCompletos } from '../../../src/pages/HorariosCompletos'
-import type { Ambiente, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../../../src/types/api'
+import type { Ambiente, AuditoriaCrucesResponse, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../../../src/types/api'
 
 const FICHA: Ficha = {
   idFicha: 1,
@@ -67,6 +67,7 @@ function mockeaBase(horarios: Horario[] = [HORARIO]) {
     if (path === '/sedes') return Promise.resolve([SEDE])
     if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
+    if (path === '/horarios/auditoria-cruces') return Promise.resolve({ conflictos: [], resumen: { totalCruces: 0, tipos: [] } })
     if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA_SEMANAL)
     return Promise.reject(new Error('no mockeado en este test'))
   })
@@ -92,6 +93,64 @@ describe('HorariosCompletos', () => {
     expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', '/calendario?vista=calendario')
     expect(screen.getByRole('link', { name: 'Conflictos' })).toHaveAttribute('href', '/horarios/auditoria?vista=conflictos')
     expect(screen.getAllByRole('columnheader')).toHaveLength(8)
+  })
+
+  it('cambia entre Bloques y las tres perspectivas sin perder filtros compartidos ni el drawer en la URL', async () => {
+    mockeaBase()
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?q=Erick&jornada=manana&idTrimestre=1&estado=publicado&idHorario=7'])
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+
+    for (const [perspectiva, etiqueta] of [['ficha', 'Por ficha'], ['instructor', 'Por instructor'], ['ambiente', 'Por ambiente']] as const) {
+      await usuario.click(screen.getByRole('button', { name: etiqueta }))
+      expect(screen.getByLabelText(new RegExp(`Seleccionar ${perspectiva}`))).toBeInTheDocument()
+      const calendario = screen.getByRole('link', { name: 'Calendario' })
+      expect(calendario).toHaveAttribute('href', expect.stringContaining(`perspectiva=${perspectiva}`))
+      expect(calendario).toHaveAttribute('href', expect.stringContaining('q=Erick'))
+      expect(calendario).toHaveAttribute('href', expect.stringContaining('idHorario=7'))
+      expect(screen.getByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+    }
+
+    await usuario.click(screen.getByRole('button', { name: 'Bloques' }))
+    expect(screen.getAllByRole('columnheader')).toHaveLength(8)
+    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', expect.stringContaining('q=Erick'))
+  })
+
+  it.each([
+    ['/horarios/completos?idHorario=7', 'Bloques'],
+    ['/horarios/completos?perspectiva=ficha&idFicha=1&idHorario=7', 'Por ficha'],
+    ['/horarios/completos?perspectiva=instructor&idInstructor=u1&idHorario=7', 'Por instructor'],
+    ['/horarios/completos?perspectiva=ambiente&idAmbiente=1&idHorario=7', 'Por ambiente'],
+  ])('abre el drawer desde %s', async (ruta, perspectiva) => {
+    mockeaBase()
+    renderConProviders(<HorariosCompletos />, [ruta])
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: perspectiva })).toBeInTheDocument()
+  })
+
+  it('muestra Conflictos contextuales provenientes de la auditoría real, incluyendo carga y error', async () => {
+    let resolverAuditoria: ((respuesta: AuditoriaCrucesResponse) => void) | undefined
+    mockeaBase()
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/horarios/auditoria-cruces') return new Promise<AuditoriaCrucesResponse>((resolve) => { resolverAuditoria = resolve })
+      if (path === '/horarios/') return Promise.resolve([HORARIO])
+      if (path === '/fichas/') return Promise.resolve([FICHA])
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE])
+      if (path === '/sedes') return Promise.resolve([SEDE])
+      if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?perspectiva=ficha&idFicha=1'])
+    expect(await screen.findByText('Cargando Conflictos del contexto…')).toBeInTheDocument()
+    resolverAuditoria?.({ conflictos: [{ idHorario: 7, idHorarioExistente: null, tipo: 'cruce_ficha', mensaje: 'Cruce real de ficha', idFicha: 1 }], resumen: { totalCruces: 1, tipos: ['cruce_ficha'] } })
+    expect(await screen.findByText('Cruce real de ficha')).toBeInTheDocument()
+
+    cleanup()
+    apiGetMock.mockImplementation((path: string) => path === '/horarios/auditoria-cruces' ? Promise.reject(new Error('falló auditoría')) : path === '/horarios/' ? Promise.resolve([HORARIO]) : path === '/fichas/' ? Promise.resolve([FICHA]) : path === '/usuarios/' ? Promise.resolve([INSTRUCTOR]) : path === '/ambientes' ? Promise.resolve([AMBIENTE]) : path === '/sedes' ? Promise.resolve([SEDE]) : path === '/trimestres/' ? Promise.resolve([TRIMESTRE]) : path === '/dias-semana/' ? Promise.resolve(DIAS) : Promise.reject(new Error('no mockeado')))
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?perspectiva=ambiente&idAmbiente=1'])
+    expect(await screen.findByText(/No se pudo consultar los Conflictos/)).toBeInTheDocument()
   })
 
   it('el buscador filtra por ficha, programa, instructor o ambiente', async () => {
@@ -195,10 +254,10 @@ describe('HorariosCompletos', () => {
     await screen.findByRole('dialog', { name: 'Horario #7' })
     await usuario.click(screen.getByRole('tab', { name: 'Relaciones' }))
 
-    expect(screen.getByRole('link', { name: 'Ver horario por ficha →' })).toHaveAttribute('href', '/vista-fichas?id=1')
-    expect(screen.getByRole('link', { name: 'Ver horario por instructor →' })).toHaveAttribute('href', '/vista-instructores?id=u1')
-    expect(screen.getByRole('link', { name: 'Ver horario por ambiente →' })).toHaveAttribute('href', '/vista-ambientes?id=1')
-    expect(screen.getByText('No se pudo consultar la validación de cruces.')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Ver horario por ficha →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=ficha&idFicha=1&idHorario=7')
+    expect(screen.getByRole('link', { name: 'Ver horario por instructor →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=instructor&idInstructor=u1&idHorario=7')
+    expect(screen.getByRole('link', { name: 'Ver horario por ambiente →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=ambiente&idAmbiente=1&idHorario=7')
+    expect(screen.getByText('Validación de cruces superada.')).toBeInTheDocument()
   })
 
   it('muestra "Publicado" y permite despublicar un horario individual', async () => {

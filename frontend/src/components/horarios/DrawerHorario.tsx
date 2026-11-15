@@ -17,6 +17,9 @@ interface DrawerHorarioProps {
   trimestre?: Trimestre
   diasPorId: Record<number, string>
   jornada: string
+  conflictos?: AuditoriaConflicto[] | null
+  cargandoConflictos?: boolean
+  errorConflictos?: string | null
   onCerrar: () => void
   onActualizar: (horario: Horario) => void
 }
@@ -35,13 +38,13 @@ function periodoLectivo(trimestre?: Trimestre) {
 
 /** Drawer de un bloque de horario. Conserva la lista global visible debajo y
  * concentra las acciones/contexto de ese bloque, sin crear una nueva ruta. */
-export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trimestre, diasPorId, jornada, onCerrar, onActualizar }: DrawerHorarioProps) {
+export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trimestre, diasPorId, jornada, conflictos: conflictosCompartidos, cargandoConflictos = false, errorConflictos: errorConflictosCompartidos = null, onCerrar, onActualizar }: DrawerHorarioProps) {
   const cerrarRef = useRef<HTMLButtonElement>(null)
   const [pestana, setPestana] = useState<Pestana>('informacion')
   const [carga, setCarga] = useState<CargaSemanal | null>(null)
   const [estadoCarga, setEstadoCarga] = useState<'cargando' | 'error' | 'listo'>('cargando')
-  const [conflictos, setConflictos] = useState<AuditoriaConflicto[] | null>(null)
-  const [errorConflictos, setErrorConflictos] = useState(false)
+  const [conflictosLocales, setConflictosLocales] = useState<AuditoriaConflicto[] | null>(null)
+  const [errorConflictosLocales, setErrorConflictosLocales] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [errorPublicacion, setErrorPublicacion] = useState<string | null>(null)
 
@@ -58,13 +61,20 @@ export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trim
   }, [horario.idInstructor])
 
   useEffect(() => {
+    if (conflictosCompartidos !== undefined) return
     let activo = true
     const filtroTrimestre = horario.idTrimestre ? `?idTrimestre=${horario.idTrimestre}` : ''
     apiGet<AuditoriaCrucesResponse>(`/horarios/auditoria-cruces${filtroTrimestre}`)
-      .then((respuesta) => { if (activo) setConflictos(respuesta.conflictos.filter((item) => item.idHorario === horario.idHorario || item.idHorarioExistente === horario.idHorario)) })
-      .catch(() => { if (activo) setErrorConflictos(true) })
+      .then((respuesta) => { if (activo) setConflictosLocales(respuesta.conflictos.filter((item) => item.idHorario === horario.idHorario || item.idHorarioExistente === horario.idHorario)) })
+      .catch(() => { if (activo) setErrorConflictosLocales(true) })
     return () => { activo = false }
-  }, [horario.idHorario, horario.idTrimestre])
+  }, [conflictosCompartidos, horario.idHorario, horario.idTrimestre])
+
+  const conflictos = conflictosCompartidos === undefined
+    ? conflictosLocales
+    : conflictosCompartidos?.filter((item) => item.idHorario === horario.idHorario || item.idHorarioExistente === horario.idHorario) ?? null
+  const errorConflictos = conflictosCompartidos === undefined ? errorConflictosLocales : Boolean(errorConflictosCompartidos)
+  const conflictosPendientes = conflictosCompartidos === undefined ? conflictos === null : cargandoConflictos
 
   async function cambiarPublicacion() {
     setErrorPublicacion(null)
@@ -154,10 +164,10 @@ export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trim
 
           {pestana === 'relaciones' && <section aria-label="Relaciones del bloque" className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Vistas contextuales vinculadas</p>
-            <Relacion titulo={`Ficha ${horario.fichaCodigo ?? 'sin definir'}`} detalle={ficha ? `${ficha.programa.nombrePrograma} · ${ficha.aprendicesTotales} aprendices` : 'Sin información adicional disponible'} href={`/vista-fichas?id=${horario.idFicha}`} enlace="Ver horario por ficha" icono="badge" />
-            <Relacion titulo={horario.instructorNombre ?? 'Instructor sin definir'} detalle={instructor ? `${instructor.tipoContrato ?? 'Sin contrato'} · ${cargaTexto}` : 'Sin información adicional disponible'} href={`/vista-instructores?id=${horario.idInstructor}`} enlace="Ver horario por instructor" icono="person" />
-            <Relacion titulo={horario.ambienteNombre ?? 'Ambiente sin definir'} detalle={ambiente ? `${ambiente.numeroAmbiente} · ${sede?.nombreSede ?? 'Sede sin definir'}` : 'Sin información adicional disponible'} href={`/vista-ambientes?id=${horario.idAmbiente}`} enlace="Ver horario por ambiente" icono="meeting_room" />
-            {errorConflictos ? <p role="status" className="rounded-xl border border-outline-variant p-3 text-sm text-on-surface-variant dark:border-slate-700">No se pudo consultar la validación de cruces.</p> : conflictos === null ? <p role="status" className="rounded-xl border border-outline-variant p-3 text-sm text-on-surface-variant dark:border-slate-700">Consultando validación de cruces…</p> : conflictos.length === 0 ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">Validación de cruces superada.</p> : <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"><p className="font-semibold">{conflictos.length} conflicto{conflictos.length === 1 ? '' : 's'} detectado{conflictos.length === 1 ? '' : 's'}</p>{conflictos.map((conflicto, indice) => <p key={`${conflicto.tipo}-${indice}`} className="mt-1">{conflicto.mensaje}</p>)}<Link to="/horarios/auditoria" className="mt-2 inline-block font-semibold underline">Ver en Conflictos →</Link></div>}
+            <Relacion titulo={`Ficha ${horario.fichaCodigo ?? 'sin definir'}`} detalle={ficha ? `${ficha.programa.nombrePrograma} · ${ficha.aprendicesTotales} aprendices` : 'Sin información adicional disponible'} href={`/horarios/completos?perspectiva=ficha&idFicha=${horario.idFicha}&idHorario=${horario.idHorario}`} enlace="Ver horario por ficha" icono="badge" />
+            <Relacion titulo={horario.instructorNombre ?? 'Instructor sin definir'} detalle={instructor ? `${instructor.tipoContrato ?? 'Sin contrato'} · ${cargaTexto}` : 'Sin información adicional disponible'} href={`/horarios/completos?perspectiva=instructor&idInstructor=${horario.idInstructor}&idHorario=${horario.idHorario}`} enlace="Ver horario por instructor" icono="person" />
+            <Relacion titulo={horario.ambienteNombre ?? 'Ambiente sin definir'} detalle={ambiente ? `${ambiente.numeroAmbiente} · ${sede?.nombreSede ?? 'Sede sin definir'}` : 'Sin información adicional disponible'} href={`/horarios/completos?perspectiva=ambiente&idAmbiente=${horario.idAmbiente}&idHorario=${horario.idHorario}`} enlace="Ver horario por ambiente" icono="meeting_room" />
+            {errorConflictos ? <p role="status" className="rounded-xl border border-outline-variant p-3 text-sm text-on-surface-variant dark:border-slate-700">No se pudo consultar la validación de cruces.</p> : conflictosPendientes ? <p role="status" className="rounded-xl border border-outline-variant p-3 text-sm text-on-surface-variant dark:border-slate-700">Consultando validación de cruces…</p> : conflictos?.length === 0 ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">Validación de cruces superada.</p> : conflictos && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"><p className="font-semibold">{conflictos.length} conflicto{conflictos.length === 1 ? '' : 's'} detectado{conflictos.length === 1 ? '' : 's'}</p>{conflictos.map((conflicto, indice) => <p key={`${conflicto.tipo}-${indice}`} className="mt-1">{conflicto.mensaje}</p>)}<Link to="/horarios/auditoria" className="mt-2 inline-block font-semibold underline">Ver en Conflictos →</Link></div>}
           </section>}
 
           {pestana === 'publicacion' && <section aria-label="Publicación del bloque" className="space-y-4">

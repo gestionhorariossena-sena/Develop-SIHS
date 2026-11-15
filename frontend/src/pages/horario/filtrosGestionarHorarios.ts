@@ -16,8 +16,11 @@ export function filtrarHorarios(horarios: Horario[], query: GestionarHorariosQue
       && (!query.jornada || jornadaDeHorario(horario) === query.jornada)
       && (!query.idTrimestre || horario.idTrimestre === Number(query.idTrimestre))
       && (!query.estado || (query.estado === 'publicado' ? horario.publicado : !horario.publicado))
-      && (!query.idFicha || horario.idFicha === Number(query.idFicha))
-      && (!query.idInstructor || horario.idInstructor === query.idInstructor)
-      && (!query.idAmbiente || horario.idAmbiente === Number(query.idAmbiente))
+      // Los selectores de entidad pertenecen a su propia perspectiva. Se
+      // conservan en la URL al cambiar de perspectiva, pero no convierten
+      // Bloques ni otra perspectiva en una intersección accidental.
+      && (query.perspectiva !== 'ficha' || !query.idFicha || horario.idFicha === Number(query.idFicha))
+      && (query.perspectiva !== 'instructor' || !query.idInstructor || horario.idInstructor === query.idInstructor)
+      && (query.perspectiva !== 'ambiente' || !query.idAmbiente || horario.idAmbiente === Number(query.idAmbiente))
   })
 }
