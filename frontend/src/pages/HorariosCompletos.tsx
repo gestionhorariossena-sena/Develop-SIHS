@@ -92,7 +92,7 @@ export function HorariosCompletos() {
   const horarioSeleccionado = query.idHorario ? horarios.find((horario) => horario.idHorario === Number(query.idHorario)) : undefined
 
   return (
-    <AppShell activo="Horarios completos">
+    <AppShell activo="Gestionar horarios">
       <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant dark:text-slate-400">
         <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
         <span className="text-outline">/</span>
