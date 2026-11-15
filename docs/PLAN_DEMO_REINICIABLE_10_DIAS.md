@@ -1,12 +1,12 @@
 # Plan de demo reiniciable SIHS — 10 días
 
-**Auditoría:** 2026-11-15. **Rama auditada:** `fixes-multiples-nicol` (HEAD `aaa7fcf`, `feat: agregar perspectivas a gestionar horarios`). Este documento describe el estado observable del repositorio; no certifica una base compartida ni un despliegue sin ejecutar las verificaciones indicadas.
+**Auditoría:** 2026-11-15; decisión de entorno demo actualizada después de la auditoría. **Rama auditada:** `fixes-multiples-nicol` (HEAD inicial `aaa7fcf`, `feat: agregar perspectivas a gestionar horarios`). Este documento describe el estado observable del repositorio; no certifica una base compartida ni un despliegue sin ejecutar las verificaciones indicadas.
 
 ## Resultado ejecutivo
 
 SIHS tiene el recorrido técnico central para construir horarios: FastAPI, autenticación Supabase, roles, catálogos, relaciones, creación/edición, detección de cruces, publicación y consulta para instructor/aprendiz. La web contiene las rutas y consumidores principales; Flutter permite login y consulta de horarios publicados.
 
-La demo completa **no está lista todavía**. Los bloqueadores P0 son: no existe un escenario demo aislado ni un endpoint transaccional de reset/seed; no existe creación/importación de instructores como operación de administración; los E2E dependen de credenciales e IDs externos y no cubren reset; y la suite móvil completa no compila. La importación IA existe como previsualización y generación de propuesta, pero requiere configuración real de IA y los bloques se persisten individualmente con `POST /horarios/`.
+La demo completa **no está lista todavía**. La decisión operativa es usar durante estos diez días un proyecto/base de datos **Supabase DEMO aislado**, nunca la base institucional ni la compartida. Los bloqueadores P0, en orden, son: suite móvil roja; confirmar y crear ese entorno con sus cuatro cuentas; inventariar sus FKs reales; implementar reset/seed transaccional de sus tablas de aplicación; alta/importación de instructores; y E2E/ensayos. La importación IA existe como previsualización y generación de propuesta, pero requiere configuración real de IA y los bloques se persisten individualmente con `POST /horarios/`.
 
 La rama tenía antes de esta auditoría cambios locales no relacionados en cinco archivos de `frontend/`; se preservaron. No se modificaron `main`, `develop`, código, rutas, ni base de datos.
 
@@ -35,40 +35,40 @@ La rama tenía antes de esta auditoría cambios locales no relacionados en cinco
 | 7 | **Detectar y resolver cruces: implementado con matiz.** Dry-run devuelve 409 y auditoría lista conflictos; crear/editar rechaza 409 salvo `forzar`; el usuario resuelve editando/eliminando/reasignando. | `POST /horarios/validar`, `GET /horarios/auditoria-cruces`, `PUT/DELETE /horarios/{id}`, `AuditoriaCruces.tsx`, `ModalCruce.tsx`, `HorarioService`. | No hay un endpoint específico de “resolver”; `forzar` permite persistir con auditoría, por lo que no debe usarse como resolución demo normal. El constraint `EXCLUDE` de BD está comentado en `database/01_creacion.sql:254`; la barrera principal es de aplicación. | P0 |
 | 8 | **Publicar: implementado.** Cambia `publicado` sin borrar y deja auditoría; hay publicación programada. | `PATCH /horarios/{id}/estado`, `POST /publicaciones-programadas/`; `HorariosCompletos.tsx`, `PublicacionesProgramadas.tsx`; `horario.py`. | Confirmar worker para publicación programada y no demostrarla si no está operativa. Publicación manual es el camino P0. | P0 |
 | 9 | **Consulta por ficha/instructor/ambiente web y móvil: parcialmente implementada.** Gestión ve relaciones; instructor/aprendiz solo ven publicados propios. | API: `GET /fichas/{id}/horarios`, `/ambientes/{id}/horarios`, `/usuarios/{id}/horarios`, `/usuarios/me/horarios`, `/ficha-usuario/mi-horario`. Web: `MiHorario.tsx`, `MiHorarioAprendiz.tsx`, drawers relacionados. Móvil: `horario_service.dart`. | En móvil no hay consulta administrativa por ficha/ambiente; demostrar consulta móvil como Instructor y Aprendiz. Algunos paneles web son mock: `MiHorario.tsx:481,508`, `MiHorarioAprendiz.tsx:359,380,501`, `Instructores.tsx:333,377,391`. | P1 |
-| 10 | **Reiniciar y repetir: no implementado.** Hay borrados CRUD individuales, no un reset aislado, exclusivo, auditable, transaccional ni seed. | No existe router/servicio/modelo `demo` o `reset` en `backend/app/api/v1`, `services` o `models`; búsqueda de routers confirma ausencia. | Borrar desde UI o SQL genérico puede eliminar datos institucionales, romper FKs o dejar Auth inconsistente. | P0 |
+| 10 | **Reiniciar y repetir: no implementado.** Hay borrados CRUD individuales, no reset/seed aislado. La decisión es limpiar solo las tablas de aplicación del proyecto Supabase DEMO aislado. | No existe router/servicio/modelo `demo` o `reset` en `backend/app/api/v1`, `services` o `models`; búsqueda de routers confirma ausencia. | Sin guarda de entorno, un endpoint podría apuntar por error a una base institucional. Auth no participa en la transacción y sus cuentas demo se conservan. | P0 |
 
-## Relaciones y orden seguro de borrado
+## Relaciones y orden seguro de borrado en la base DEMO aislada
 
-No ejecutar `TRUNCATE`, `CASCADE` indiscriminado ni borrar `auth.users`. El esquema no etiqueta datos demo; por tanto **hoy no permite un reset seguro**.
+Durante estos diez días, el aislamiento de seguridad es el **proyecto Supabase DEMO dedicado**: el reset no se ejecutará contra la base institucional/compartida ni añadirá todavía `demoScenarioId` a todas las tablas. No ejecutar `TRUNCATE`, `CASCADE` indiscriminado ni borrar `auth.users`.
 
-El futuro reset debe seleccionar solo registros con `demoScenarioId` (UUID) y borrar en una única transacción PostgreSQL, en este orden lógico (los `CASCADE` se aceptan solo dentro del filtro del escenario):
+El reset limpiará únicamente las tablas de aplicación de esa base DEMO y ejecutará seed determinista en **una única transacción PostgreSQL**, en este orden lógico (los `CASCADE` se aceptan solo si el inventario de FKs de la base DEMO lo confirma):
 
 1. Dependientes de horarios: `asistencias`, `anotaciones_horario`, filas de `publicacion_programada_horarios` y `horario_dia`; después `horarios`.
 2. Dependientes de fichas/currículo: `ficha_usuario`, avisos demo ligados a ficha, `actividades_aprendizaje`, `resultados_aprendizaje`, `competencias_formacion`, `guias`, después `fichas`.
-3. Dependientes de usuarios demo: conversaciones/mensajes, notificaciones, solicitudes, `usuario_especialidad`, `usuario_rol`, `horarios_guardados` y perfiles `usuarios`; **nunca borrar `auth.users` institucionales**. Las cuentas demo Auth deben ser allow-list explícita, no prefijo inferido.
-4. Catálogos exclusivos demo, solo si fueron creados por el escenario: ambientes antes de sedes; programas antes de coordinaciones; no borrar roles, jornadas, días o trimestres institucionales compartidos.
-5. Registrar al final/por transacción una auditoría inmutable de reset con actor, escenario, conteos por tabla, correlación y hash/versión del seed. La auditoría de aplicación actual (`AuditoriaService`) hace commits propios, por lo que no sirve como garantía transaccional de reset.
+3. Dependientes de perfiles demo: conversaciones/mensajes, notificaciones, solicitudes, `usuario_especialidad`, `usuario_rol`, `horarios_guardados` y perfiles `usuarios`; **no borrar `auth.users`**. Las cuatro cuentas Auth demo se preaprovisionan y se conservan fuera del ciclo de reset.
+4. Catálogos demo: ambientes antes de sedes; programas antes de coordinaciones; limpiar roles, jornadas, días o trimestres solo si el inventario confirma que pertenecen al proyecto DEMO y el seed los repone.
+5. Sembrar de nuevo el grafo demo en orden padre→hijo y registrar en la misma transacción una auditoría de reset con actor, conteos, correlación y versión/hash del seed. Si falla la limpieza o el seed, hacer rollback de **todos los datos de aplicación**; no dejar semilla parcial.
 
-Las FKs comprobadas incluyen `horarios → ambiente/instructor/ficha/resultado` (`models/horario.py:38-43`), `fichas → programa/trimestre/sede`, `resultado → competencia/guía`, y el puente `horario_dia` con cascada (`models/horario.py:10-15`). El esquema SQL también define `ficha_usuario` con cascada y `auditoria.idUsuario` con `SET NULL` (`database/01_creacion.sql:132-134,316-329`). Se debe validar el catálogo real con `information_schema` antes de aplicar la migración: modelos y esquema histórico no declaran todos los mismos `ondelete`.
+Las FKs comprobadas incluyen `horarios → ambiente/instructor/ficha/resultado` (`models/horario.py:38-43`), `fichas → programa/trimestre/sede`, `resultado → competencia/guía`, y el puente `horario_dia` con cascada (`models/horario.py:10-15`). El esquema SQL también define `ficha_usuario` con cascada y `auditoria.idUsuario` con `SET NULL` (`database/01_creacion.sql:132-134,316-329`). Antes de implementar, se debe inventariar la base DEMO real con `information_schema`: modelos y esquema histórico no declaran todos los mismos `ondelete`.
+
+La transacción **no abarca Supabase Auth**. Por diseño, no se crea, altera ni elimina una cuenta de `auth.users` en reset/seed: las cuatro cuentas demo se crean y verifican al preparar el entorno, se mantienen estables y el seed solo reconstruye sus perfiles y roles de aplicación cuando corresponda.
 
 ## Propuesta: “Escenario demo reiniciable”
 
 ### Diseño mínimo seguro que falta implementar
 
-1. **Migración:** tabla `demo_escenarios` (`id`, `codigo` único, `versionSeed`, `estado`, `creadoPor`, `reseteadoPor`, timestamps) y columna nullable indexada `demoScenarioId` en cada entidad que pueda crearse para demo. Para Auth, una tabla `demo_auth_allowlist` enlaza IDs de `auth.users` creados específicamente para el escenario. No marcar por email, nombre o prefijo solamente.
-2. **Modelo/repositorio/servicio:** `DemoScenarioService` con una transacción `SERIALIZABLE`, bloqueo asesorado por `scenario_id` y comprobación de que el escenario está en estado `resetting`. Los repositorios usados por el seed/reset deben tener variantes `*_sin_commit`; hoy múltiples repositorios hacen `db.commit()` propios (por ejemplo `horario_repository.py:95-141`, `auditoria_repository.py:12`), lo que impediría atomicidad.
-3. **Endpoints exclusivos de Administrador:**
-   - `POST /demo-scenarios/{codigo}/reset-preview`: conteos y plan, sin escribir.
-   - `POST /demo-scenarios/{codigo}/reset`: body con `confirmacionExacta`, `idempotencyKey` y versión esperada; exige `require_admin`, MFA/política equivalente si está disponible, confirmación textual `RESETEAR <codigo>`, y retorna correlación/auditoría.
-   - `GET /demo-scenarios/{codigo}/estado` y `GET /demo-scenarios/{codigo}/auditoria`.
-   Ninguno acepta SQL, IDs arbitrarios ni permite reset global.
-4. **Seed determinista y versionado:** fixtures Python/SQL idempotentes con UUID/IDs naturales fijos por escenario, cuatro usuarios Auth demo preprovisionados y allow-list, catálogo mínimo propio (sede, ambiente, programa, trimestre, ficha, guía, competencia, RAP), vínculos de aprendiz, horario borrador/publicado y archivo Excel sintético versionado. No reutilizar `docs-sihs/datos-muestra`: su README afirma que contiene datos institucionales reales.
-5. **Auditoría y recuperación:** escribir un evento de inicio y uno de éxito/error en una tabla de auditoría de reset independiente del conjunto borrado; guardar actor, IP/correlación, versión, conteos y duración. Ante error: rollback total y estado `failed`; no dejar semilla parcial.
+1. **Guarda de entorno obligatoria:** el endpoint de reset solo arranca si `DEMO_MODE=true` y la URL/base configurada coincide exactamente con una allow-list explícita del proyecto Supabase DEMO (por ejemplo, URL canónica y/o `project_ref` esperado en configuración de servidor). Debe fallar cerrado ante variable ausente, URL no HTTPS, host distinto o configuración institucional/compartida. La validación se ejecuta en el servidor antes de abrir transacción y se cubre con pruebas.
+2. **Modelo/repositorio/servicio:** `DemoResetService` con transacción `SERIALIZABLE`, bloqueo exclusivo para impedir dos resets concurrentes y operaciones internas sin `commit` intermedio. Hoy múltiples repositorios hacen `db.commit()` propios (por ejemplo `horario_repository.py:95-141`, `auditoria_repository.py:12`), lo que impediría rollback atómico: hay que proveer variantes `*_sin_commit` para el ciclo reset/seed.
+3. **Endpoint exclusivo de Administrador:** `POST /demo/reset-preview` muestra conteos/versión sin escribir; `POST /demo/reset` exige `require_admin`, `confirmacionExacta`, `idempotencyKey` y texto `RESETEAR DEMO`. No acepta SQL, URL, IDs arbitrarios ni selector de entorno. Devuelve correlación, conteos y auditoría. El acceso requiere además que la guarda de entorno del punto 1 sea válida.
+4. **Seed determinista y versionado:** fixtures idempotentes con IDs naturales/UUID fijos para las cuatro cuentas Auth demo ya preaprovisionadas, perfiles y roles de aplicación, catálogo mínimo (sede, ambiente, programa, trimestre, ficha, guía, competencia, RAP), vínculos de aprendiz, horario borrador/publicado y Excel sintético. No reutilizar `docs-sihs/datos-muestra`: su README afirma que contiene datos institucionales reales.
+5. **Auditoría y recuperación:** registrar inicio y éxito/error con actor, correlación, versión, conteos y duración. Si limpieza o seed falla, rollback total de datos de aplicación y estado de auditoría de error; las cuentas Auth permanecen sin cambio porque quedan fuera de la transacción.
+
+`demoScenarioId` y una tabla de escenarios siguen siendo una **evolución posterior**, necesaria si SIHS necesita reset seguro dentro de una futura base compartida. No son P0 ni se añaden a todas las tablas en estos diez días.
 
 ### Pruebas obligatorias de esa capacidad
 
-- API: no autenticado `401`, Coordinador/Instructor/Aprendiz `403`, Admin sin confirmación `422`, escenario desconocido `404`, doble petición con misma idempotency key y rollback ante fallo inducido.
-- API de ciclo completo: `reset → seed → crear ambiente/ficha/relaciones/horario → validar cruce 409 → corregir → publicar → consultas de ficha/instructor/ambiente → reset → verificar ausencia solo de datos demo → seed → repetir`.
+- API: guarda de entorno rechaza `DEMO_MODE` ausente/falso y URL/base no permitida; no autenticado `401`, Coordinador/Instructor/Aprendiz `403`, Admin sin confirmación `422`, doble petición con misma idempotency key y rollback ante fallo inducido.
+- API de ciclo completo en la base DEMO: `reset → seed → crear ambiente/ficha/relaciones/horario → validar cruce 409 → corregir → publicar → consultas de ficha/instructor/ambiente → reset → verificar reconstrucción determinista → repetir`. Verificar que `auth.users` no cambió.
 - E2E web: usar las credenciales demo aisladas, nunca credenciales institucionales ni `E2E_TEST_*` manuales. Extender `e2e/tests/horarios-flujos.spec.ts` y `publicar-horario.spec.ts` con bootstrap/reset por API autenticada como Admin.
 - E2E móvil: login Instructor y Aprendiz demo, comprobar que ambos ven solo horario publicado después de cada seed/reset.
 - PostgreSQL efímero: ejecutar contra `backend/tests/docker-compose.postgres.yml`; el README backend ya limita esa suite a `sihs_test` en puerto `55440`.
@@ -77,12 +77,13 @@ Las FKs comprobadas incluyen `horarios → ambiente/instructor/ficha/resultado` 
 
 | Hallazgo | Evidencia | Acción |
 |---|---|---|
-| P0: reset inexistente | No hay router/modelo/servicio demo; CRUD borra recursos individuales. | Implementar propuesta anterior y no ensayar contra base institucional. |
+| P0: reset inexistente | No hay router/modelo/servicio demo; CRUD borra recursos individuales. | Implementar solo contra Supabase DEMO aislado, con `DEMO_MODE=true`, allow-list explícita de URL/base y seed transaccional. |
 | P0: instructores no administrables de punta a punta | `usuarios.py` solo expone GET, especialidades y códigos; no POST/import. | Definir creación de Auth + perfil + rol + especialidades en un servicio compensable/administrado, e importador con preview/errores por fila. |
 | P0: Flutter rojo | `flutter test` falla compilando `mobile/test/screens/asistencia_screen_test.dart`: `AsistenciaFalsa` no implementa `AsistenciaGateway.registrarSesion`. | Corregir el doble de prueba y ejecutar toda la suite; no modificar producción para “hacer pasar” el test. |
 | P0: E2E no reproducible | `login.spec.ts` exige variables; `horarios-flujos.spec.ts` exige credenciales e IDs `E2E_TEST_*`; no cubre reset. | Hacerlos depender del escenario demo y CI efímero. |
 | P1: IA dependiente de proveedor | `horarios.py:168-229` traduce `AIServiceError` a 503; `api.ts` lo contempla. | Health/readiness de IA, timeout y archivo sintético; plan B manual preensayado. |
-| P1: protección de datos demo | SQL histórico contiene datos de prueba y `docs-sihs/datos-muestra/README.md` advierte de Excel institucional real. | Separar fixtures sintéticas, secretos fuera de Git y allow-list de usuarios demo. |
+| P0: entorno DEMO aún no confirmado | El repositorio solo contiene `.env.example`; no hay manifiesto de plataforma ni proyecto DEMO versionado. | Crear proyecto Supabase DEMO, configurar URL/base permitida, secretos, healthcheck y cuatro cuentas Auth demo preaprovisionadas antes del reset. |
+| P1: protección de datos demo | SQL histórico contiene datos de prueba y `docs-sihs/datos-muestra/README.md` advierte de Excel institucional real. | Separar fixtures sintéticas, secretos fuera de Git y conservar las cuentas Auth demo fuera de reset. |
 | P1: publicación programada | Existen router/modelo/worker (`publicaciones_programadas.py`, `worker_publicacion_service.py`), pero no hay evidencia de worker/deploy ejecutándose. | Para demo usar publicación inmediata; validar worker antes de ofrecer agenda. |
 | P1: vitrina web | Comentarios explícitos de mock pendientes en pantallas citadas en matriz. | Ocultar/etiquetar como pendiente; nunca narrarlos como datos reales. |
 | P1: integridad de cruces de BD | `EXCLUDE` está comentado en `01_creacion.sql:254`; validación está en servicio. | Pruebas de concurrencia y, si el modelo lo permite, restricción PostgreSQL/migración que no contradiga `horario_dia`. |
@@ -93,35 +94,35 @@ Las FKs comprobadas incluyen `horarios → ambiente/instructor/ficha/resultado` 
 
 | Día | Prioridad, responsable sugerido | Entregable y criterio de salida |
 |---:|---|---|
-| 1 | P0 — líder backend + DBA | Inventario real de FKs/entorno demo; ADR de aislamiento; congelar lista de datos institucionales prohibidos. |
-| 2 | P0 — backend/DBA | Migraciones de `demo_escenarios`, marcas de pertenencia y auditoría de reset; prueba de upgrade en PostgreSQL desechable. |
-| 3 | P0 — backend | Servicio transaccional de seed/reset, exclusión mutua, confirmación, idempotencia y endpoints solo Admin. |
-| 4 | P0 — backend + autenticación | Cuentas Auth demo allow-list, alta/importación de instructores con preview, roles y especialidades; pruebas de permisos. |
-| 5 | P0 — QA API | API completa crear→usar→reset→recrear, rollback inducido, FKs, cruces y publicación; ejecutar pytest en entorno reproducible. |
-| 6 | P1 — frontend | Conectar/validar cada paso demo real, retirar del guion datos mock, mensaje claro para indisponibilidad IA y botón reset admin con doble confirmación. |
-| 7 | P1 — IA/backend | Excel sintético, smoke de importar→propuesta→persistir, readiness del proveedor y guion manual alterno. |
-| 8 | P0 — móvil | Corregir doble `AsistenciaFalsa`, suite Flutter verde; E2E/manual móvil con Instructor y Aprendiz demo tras publicación. |
-| 9 | P0 — QA/DevOps | E2E aislado web + API + móvil, health/CORS/variables/worker; registrar artefactos y no usar producción institucional. |
-| 10 | P0 — equipo completo | Dos ensayos completos consecutivos con reset entre ambos; checklist firmado, plan de contingencia y decisión go/no-go. |
+| 1 | P0 — móvil | Corregir `AsistenciaFalsa.registrarSesion` en el doble de prueba y ejecutar `flutter test` completo en verde. |
+| 2 | P0 — DevOps + autenticación | Crear/confirmar proyecto Supabase DEMO aislado; configurar variables, allow-list URL/base, healthcheck y cuatro cuentas Auth demo preaprovisionadas. |
+| 3 | P0 — DBA + backend | Inventario real de FKs/on-delete de la base DEMO, orden de limpieza validado y prueba contra PostgreSQL desechable. |
+| 4 | P0 — backend | Guardas `DEMO_MODE`/URL-base permitida, servicio reset+seed transaccional, exclusión mutua, confirmación e idempotencia. |
+| 5 | P0 — backend + QA API | Pruebas de permisos/guardas/rollback y ciclo API crear→usar→reset→recrear; verificar que Auth no cambia. |
+| 6 | P0 — backend + frontend | Alta/importación de instructores con preview, perfil, rol y especialidades; pruebas API y conexión web real. |
+| 7 | P1 — IA/backend | Excel sintético, smoke importar→propuesta→persistir, readiness IA y guion manual alterno. |
+| 8 | P1 — frontend | Validar cada paso demo real, retirar del guion datos mock y añadir confirmación UI de reset Admin. |
+| 9 | P0 — QA web/móvil | E2E aislado web y móvil con cuentas demo, health/CORS/variables/worker y artefactos de ejecución. |
+| 10 | P0 — equipo completo | Dos ensayos completos consecutivos con reset entre ambos; checklist firmado, contingencia y decisión go/no-go. |
 
 ## Definición de “demo lista”
 
 - Un Administrador demo entra; Coordinador, Instructor y Aprendiz demuestran permisos y vistas correctas.
-- El escenario se crea desde seed determinista y ninguna consulta/reset puede tocar filas fuera de `demoScenarioId` o Auth allow-list.
+- El proyecto Supabase DEMO está aislado y el reset solo funciona con `DEMO_MODE=true` y URL/base explícitamente permitida; nunca toca la base institucional/compartida ni `auth.users`.
 - Se ejecuta todo el flujo 1–9 sin mocks funcionales; las zonas visuales sin integración están ocultas o claramente etiquetadas.
 - Un cruce controlado retorna `409`, se corrige sin `forzar`, se publica y se verifica web/móvil desde los roles adecuados.
-- Reset transaccional confirmado por Admin deja auditoría, elimina solo datos demo y reconstituye exactamente la versión de seed.
+- Reset transaccional confirmado por Admin deja auditoría, limpia solo datos de aplicación DEMO, hace rollback ante error y reconstituye exactamente la versión de seed; las cuentas Auth demo se mantienen.
 - API, web, móvil y E2E relevantes están verdes en un entorno desechable; health, CORS, secretos y dependencia IA/alternativa manual están verificados.
 
 ## Checklist de ensayo
 
-- [ ] URL API, web, Supabase demo, CORS y `GET /api/v1/health` comprobados.
+- [ ] Proyecto Supabase DEMO aislado, `DEMO_MODE=true`, URL/base allow-list, CORS y `GET /api/v1/health` comprobados; se verificó que no es el proyecto institucional/compartido.
 - [ ] Credenciales demo por rol, never expuestas en capturas ni Git; sesión anterior cerrada.
-- [ ] Escenario en versión de seed esperada; auditoría y conteos iniciales revisados.
+- [ ] Cuatro cuentas Auth demo preaprovisionadas y estables; versión de seed, auditoría y conteos iniciales revisados.
 - [ ] Admin crea/importa instructor demo; crea ambiente, currículo/ficha y vínculo aprendiz.
 - [ ] Coordinador crea horario manual con instructor, ambiente, ficha y RAP; dry-run limpio.
 - [ ] Se provoca un cruce esperado, se muestra 409/auditoría y se resuelve editando, no forzando.
 - [ ] Se importa Excel sintético y se muestra propuesta IA; si falla IA, se ejecuta el camino manual declarado.
 - [ ] Se publica; se consulta por ficha/instructor/ambiente en web y por Instructor/Aprendiz en móvil.
-- [ ] Se resetea con Admin, confirmación exacta y correlación; se constata que no se tocaron datos no demo.
+- [ ] Se resetea con Admin, confirmación exacta y correlación; se constata rollback ante fallo inducido y que `auth.users` no cambió.
 - [ ] Se resemilla y se repite al menos un tramo completo; adjuntar resultados de API/E2E/Flutter.
