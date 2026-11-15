@@ -82,11 +82,6 @@ const NAV: GrupoNav[] = [
       { etiqueta: 'Gestionar horarios', ruta: '/horarios/completos', soloGestion: true },
       { etiqueta: 'Publicaciones programadas', ruta: '/horarios/publicaciones-programadas', soloGestion: true },
       { etiqueta: 'Historial de horarios', ruta: '/horarios/historial', soloGestion: true },
-      { etiqueta: 'Vista por fichas', ruta: '/vista-fichas', soloGestion: true },
-      { etiqueta: 'Vista por instructores', ruta: '/vista-instructores', soloGestion: true },
-      { etiqueta: 'Vista por ambientes', ruta: '/vista-ambientes', soloGestion: true },
-      { etiqueta: 'Calendario general', ruta: '/calendario', soloGestion: true },
-      { etiqueta: 'Auditoría de cruces', ruta: '/horarios/auditoria', soloGestion: true },
     ],
   },
   {
