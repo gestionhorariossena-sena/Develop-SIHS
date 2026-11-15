@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
-import { GridAsistente } from '../components/horario/GridAsistente'
-import { celdasDesdeHorarios } from '../components/horario/celdasAsistente'
+import { DrawerHorario } from '../components/horarios/DrawerHorario'
 import { nombresDias } from '../components/relacionados/formatoBloque'
 import type { Jornada } from './horario/tipos'
 import { colorParaBloque } from './horario/gridLogic'
-import type { ColorBloque } from './horario/gridLogic'
-import { apiGet, apiPatch, ApiError } from '../services/api'
-import type { Ambiente, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
+import { apiGet, ApiError } from '../services/api'
+import type { Ambiente, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
 
 // Las tres entradas de gestión conservan la misma fuente de bloques. Las
 // perspectivas por ficha, instructor y ambiente se abren desde el detalle
@@ -47,193 +44,6 @@ function jornadaDeHorario(horario: Horario): Jornada {
 
 function formatoHora(hora: string) {
   return hora.slice(0, 5)
-}
-
-function colorBarraCarga(horasAsignadas: number, horasMaximas: number) {
-  if (horasAsignadas > horasMaximas) return 'bg-red-600 dark:bg-red-500'
-  if (horasAsignadas / horasMaximas >= 0.8) return 'bg-amber-500 dark:bg-amber-400'
-  return 'bg-emerald-600 dark:bg-emerald-500'
-}
-
-interface DetalleHorarioProps {
-  horario: Horario
-  ficha: Ficha | undefined
-  instructor: Usuario | undefined
-  ambiente: Ambiente | undefined
-  sedeNombre: string | undefined
-  trimestre: Trimestre | undefined
-  jornada: Jornada | null
-  color: ColorBloque
-  diasPorId: Record<number, string>
-  onCambiarPublicado: (horario: Horario) => void
-}
-
-/**
- * Contenido del drawer temporal de un bloque. Reúne ficha, instructor,
- * ambiente y tema sin reflujo de la tabla global.
- */
-function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trimestre, jornada, color, diasPorId, onCambiarPublicado }: DetalleHorarioProps) {
-  const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
-  const [errorCarga, setErrorCarga] = useState(false)
-  const [publicando, setPublicando] = useState(false)
-  const [errorPublicacion, setErrorPublicacion] = useState<string | null>(null)
-
-  async function alternarPublicado() {
-    setErrorPublicacion(null)
-    setPublicando(true)
-    try {
-      const actualizado = await apiPatch<Horario>(`/horarios/${horario.idHorario}/estado`, { publicado: !horario.publicado })
-      onCambiarPublicado(actualizado)
-    } catch (err) {
-      setErrorPublicacion(err instanceof ApiError ? err.message : 'No se pudo cambiar la publicación. Intenta de nuevo.')
-    } finally {
-      setPublicando(false)
-    }
-  }
-
-  useEffect(() => {
-    apiGet<CargaSemanal>(`/usuarios/${horario.idInstructor}/carga-semanal`)
-      .then(setCargaSemanal)
-      .catch(() => setErrorCarga(true))
-  }, [horario.idInstructor])
-
-  const celdas = celdasDesdeHorarios([horario])
-
-  return (
-    <div className="space-y-4 p-4">
-      {errorPublicacion && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">{errorPublicacion}</p>}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`rounded px-2 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>Horario #{horario.idHorario}</span>
-          <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">Jornada {jornada ?? 'sin definir'}</span>
-          <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">{trimestre?.nombre ?? 'Sin período académico'}</span>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeEstadoPublicacion(horario.publicado)}`}>
-            {horario.publicado ? 'Publicado' : 'Borrador'}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => void alternarPublicado()}
-            disabled={publicando}
-            title={horario.publicado ? 'Deja de mostrarse en "Mi horario" para el instructor' : 'A partir de ahora el instructor lo ve en "Mi horario"'}
-            className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-          >
-            {publicando ? 'Guardando…' : horario.publicado ? 'Despublicar' : 'Publicar ahora'}
-          </button>
-          {!horario.publicado && (
-            <Link
-              to={`/horarios/publicaciones-programadas?idHorario=${horario.idHorario}`}
-              className="rounded-xl border border-primary px-3 py-1.5 text-sm font-semibold text-primary hover:bg-primary-container"
-            >
-              Programar publicación
-            </Link>
-          )}
-          <Link
-            to={`/horarios/historial?id=${horario.idHorario}`}
-            title="El historial todavía no distingue horarios individuales — se está rediseñando como registro de cambios, por ahora esto abre el listado general."
-            className="text-sm font-medium text-primary hover:text-on-primary-container dark:text-sena-400"
-          >
-            Detalles de creación / Modificar →
-          </Link>
-        </div>
-      </div>
-
-      <SeccionDrawer titulo="Horario semanal">
-        <GridAsistente celdas={celdas} />
-      </SeccionDrawer>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Ficha</p>
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.fichaCodigo ?? 'Sin definir'}</p>
-          {ficha ? (
-            <dl className="mt-1.5 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
-              <div>{ficha.programa.nombrePrograma} ({ficha.programa.codigoPrograma})</div>
-              <div>Nivel: {ficha.programa.nivelFormacion ?? 'Sin definir'}</div>
-              <div>Período académico: {ficha.trimestre.nombre} ({ficha.trimestre.fechaInicio} a {ficha.trimestre.fechaFin})</div>
-              <div>Aprendices: {ficha.aprendicesTotales}</div>
-              <div>Jornadas de la ficha: {ficha.jornadas.length ? ficha.jornadas.join(', ') : 'Sin horario'}</div>
-            </dl>
-          ) : (
-            <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-400">Sin más datos disponibles.</p>
-          )}
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-outline-variant pt-2 dark:border-slate-700">
-            <Link to={`/fichas?id=${horario.idFicha}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Más info →</Link>
-            <Link to={`/vista-fichas?id=${horario.idFicha}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Ver horario por ficha →</Link>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Instructor</p>
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.instructorNombre ?? 'Sin definir'}</p>
-          {instructor ? (
-            <dl className="mt-1.5 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
-              <div>{instructor.email}</div>
-              <div>Contrato: {instructor.tipoContrato?.trim() || 'Sin definir'}</div>
-              <div>Especialidades: {instructor.especialidades.length ? instructor.especialidades.map((item) => item.nombre).join(', ') : 'Sin asignar'}</div>
-            </dl>
-          ) : (
-            <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-400">Sin más datos disponibles.</p>
-          )}
-
-          <div className="mt-2">
-            <p className="mb-1 text-xs font-medium text-on-surface-variant dark:text-slate-400">Carga semanal</p>
-            {errorCarga ? (
-              <p className="text-xs text-on-surface-variant dark:text-slate-400">No se pudo calcular.</p>
-            ) : !cargaSemanal ? (
-              <p className="text-xs text-on-surface-variant dark:text-slate-400">Calculando…</p>
-            ) : cargaSemanal.horasMaximas == null ? (
-              <p className="text-xs text-on-surface-variant dark:text-slate-400">Sin tope definido (falta tipo de contrato).</p>
-            ) : (
-              <>
-                <p className="mb-1 text-xs font-medium text-on-surface dark:text-slate-300">{cargaSemanal.horasAsignadas}h / {cargaSemanal.horasMaximas}h</p>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high dark:bg-slate-700">
-                  <div
-                    className={`h-full rounded-full ${colorBarraCarga(cargaSemanal.horasAsignadas, cargaSemanal.horasMaximas)}`}
-                    style={{ width: `${Math.min(100, Math.round((cargaSemanal.horasAsignadas / cargaSemanal.horasMaximas) * 100))}%` }}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-outline-variant pt-2 dark:border-slate-700">
-            <Link to={`/instructores?id=${horario.idInstructor}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Más info →</Link>
-            <Link to={`/vista-instructores?id=${horario.idInstructor}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Ver horario por instructor →</Link>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Ambiente</p>
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.ambienteNombre ?? 'Sin definir'}</p>
-          {ambiente ? (
-            <dl className="mt-1.5 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
-              <div>Número: {ambiente.numeroAmbiente}</div>
-              <div>Tipo: {ambiente.tipoAmbiente}</div>
-              <div>Estado: {ambiente.estadoAmbiente}</div>
-              <div>Sede: {sedeNombre ?? 'Sin definir'}</div>
-            </dl>
-          ) : (
-            <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-400">Sin más datos disponibles.</p>
-          )}
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-outline-variant pt-2 dark:border-slate-700">
-            <Link to={`/ambientes?id=${horario.idAmbiente}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Más info →</Link>
-            <Link to={`/vista-ambientes?id=${horario.idAmbiente}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Ver horario por ambiente →</Link>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Tema</p>
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.resultadoCodigo ?? 'Sin definir'}</p>
-          <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-300">{horario.resultadoDescripcion ?? 'Sin descripción.'}</p>
-          <dl className="mt-2 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
-            <div>Días: {nombresDias(horario.dias, diasPorId)}</div>
-            <div>Hora: {formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</div>
-          </dl>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 /**
@@ -295,7 +105,6 @@ export function HorariosCompletos() {
   const fichaPorId = new Map(fichas.map((ficha) => [ficha.idFicha, ficha]))
   const instructorPorId = new Map(instructores.map((usuario) => [usuario.idUsuario, usuario]))
   const ambientePorId = new Map(ambientes.map((ambiente) => [ambiente.idAmbiente, ambiente]))
-  const sedePorId = new Map(sedes.map((sede) => [sede.idSede, sede.nombreSede]))
   const trimestrePorId = new Map(trimestres.map((trimestre) => [trimestre.idTrimestre, trimestre]))
   const diasPorId = Object.fromEntries(diasSemana.map((dia) => [dia.idDia, dia.nombreDia]))
 
@@ -485,28 +294,18 @@ export function HorariosCompletos() {
       </div>
 
       {horarioSeleccionado && (
-        <DrawerRelacionados
-          iniciales={(horarioSeleccionado.fichaCodigo ?? 'HO').slice(0, 2).toUpperCase()}
-          titulo={`Horario #${horarioSeleccionado.idHorario}`}
-          subtitulo={horarioSeleccionado.fichaCodigo ?? undefined}
-          etiquetas={[horarioSeleccionado.publicado ? 'Publicado' : 'Borrador', jornadaDeHorario(horarioSeleccionado)]}
+        <DrawerHorario
+          horario={horarioSeleccionado}
+          ficha={fichaPorId.get(horarioSeleccionado.idFicha)}
+          instructor={instructorPorId.get(horarioSeleccionado.idInstructor)}
+          ambiente={ambientePorId.get(horarioSeleccionado.idAmbiente)}
+          sede={ambientePorId.get(horarioSeleccionado.idAmbiente) ? sedes.find((sede) => sede.idSede === ambientePorId.get(horarioSeleccionado.idAmbiente)?.idSede) : undefined}
+          trimestre={trimestrePorId.get(horarioSeleccionado.idTrimestre)}
+          diasPorId={diasPorId}
+          jornada={jornadaDeHorario(horarioSeleccionado)}
           onCerrar={() => setIdExpandido(null)}
-        >
-          <DetalleHorario
-            horario={horarioSeleccionado}
-            ficha={fichaPorId.get(horarioSeleccionado.idFicha)}
-            instructor={instructorPorId.get(horarioSeleccionado.idInstructor)}
-            ambiente={ambientePorId.get(horarioSeleccionado.idAmbiente)}
-            sedeNombre={ambientePorId.get(horarioSeleccionado.idAmbiente) ? sedePorId.get(ambientePorId.get(horarioSeleccionado.idAmbiente)?.idSede ?? 0) : undefined}
-            trimestre={trimestrePorId.get(horarioSeleccionado.idTrimestre)}
-            jornada={jornadaDeHorario(horarioSeleccionado)}
-            color={colorParaBloque(String(horarioSeleccionado.idHorario))}
-            diasPorId={diasPorId}
-            onCambiarPublicado={(actualizado) =>
-              setHorarios((anterior) => anterior.map((horario) => (horario.idHorario === actualizado.idHorario ? actualizado : horario)))
-            }
-          />
-        </DrawerRelacionados>
+          onActualizar={(actualizado) => setHorarios((anterior) => anterior.map((horario) => (horario.idHorario === actualizado.idHorario ? actualizado : horario)))}
+        />
       )}
     </AppShell>
   )

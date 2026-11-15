@@ -126,7 +126,7 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
   })
 
-  it('clic en una fila abre un drawer temporal a la derecha sin retirar la tabla', async () => {
+  it('clic en una fila abre el DrawerHorario a la derecha sin retirar la tabla', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
@@ -136,17 +136,12 @@ describe('HorariosCompletos', () => {
 
     const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
     expect(drawer).toHaveClass('fixed', 'right-0', 'top-0', 'h-screen', 'max-w-[460px]')
-    expect(within(drawer).getByText('Análisis y Desarrollo de Software (ADSO)')).toBeInTheDocument()
-    expect(within(drawer).getByText('erick@example.com')).toBeInTheDocument()
-    expect(within(drawer).getByText('Contrato: Planta')).toBeInTheDocument()
-    expect(within(drawer).getByText('Número: 101')).toBeInTheDocument()
-    expect(within(drawer).getByText('Sede: Sede principal')).toBeInTheDocument()
-    // "CPL18" (código) solo en la tarjeta "Tema" del detalle -- el grid
-    // muestra la DESCRIPCIÓN del resultado (único dato que también tienen
-    // los bloques "nuevos" del asistente, que no traen código), así que
-    // "Gestión de inventarios" aparece dos veces: grid + tarjeta.
-    expect(within(drawer).getByText('CPL18')).toBeInTheDocument()
-    expect(within(drawer).getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
+    expect(within(drawer).getByText('Bloque #7 · Ficha 3228973 B')).toBeInTheDocument()
+    expect(within(drawer).getByRole('tab', { name: 'Información', selected: true })).toBeInTheDocument()
+    expect(within(drawer).getByText('Competencia')).toBeInTheDocument()
+    expect(within(drawer).getByText('Resultado de aprendizaje (RAP)')).toBeInTheDocument()
+    expect(within(drawer).getByText('Carga semanal')).toBeInTheDocument()
+    expect(within(drawer).getByText(/CPL18 · Gestión de inventarios/)).toBeInTheDocument()
     expect(within(drawer).getByText('Horario semanal')).toBeInTheDocument()
 
     expect(await within(drawer).findByText('10h / 40h')).toBeInTheDocument()
@@ -159,6 +154,7 @@ describe('HorariosCompletos', () => {
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+    await usuario.click(screen.getByRole('tab', { name: 'Publicación' }))
     await usuario.click(await screen.findByRole('button', { name: 'Despublicar' }))
     expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
     expect(await screen.findByText('No se pudo cambiar la publicación. Intenta de nuevo.')).toBeInTheDocument()
@@ -178,7 +174,7 @@ describe('HorariosCompletos', () => {
     expect(boton).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('cada tarjeta tiene links "Más info" y "Ver horario por..." hacia su vista completa y su vista agregada', async () => {
+  it('la pestaña Relaciones enlaza las perspectivas de ficha, instructor y ambiente', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
@@ -186,17 +182,12 @@ describe('HorariosCompletos', () => {
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
     await screen.findByRole('dialog', { name: 'Horario #7' })
-
-    const masInfo = screen.getAllByRole('link', { name: 'Más info →' })
-    expect(masInfo[0]).toHaveAttribute('href', '/fichas?id=1')
-    expect(masInfo[1]).toHaveAttribute('href', '/instructores?id=u1')
-    expect(masInfo[2]).toHaveAttribute('href', '/ambientes?id=1')
+    await usuario.click(screen.getByRole('tab', { name: 'Relaciones' }))
 
     expect(screen.getByRole('link', { name: 'Ver horario por ficha →' })).toHaveAttribute('href', '/vista-fichas?id=1')
     expect(screen.getByRole('link', { name: 'Ver horario por instructor →' })).toHaveAttribute('href', '/vista-instructores?id=u1')
     expect(screen.getByRole('link', { name: 'Ver horario por ambiente →' })).toHaveAttribute('href', '/vista-ambientes?id=1')
-
-    expect(screen.getByRole('link', { name: 'Detalles de creación / Modificar →' })).toHaveAttribute('href', '/horarios/historial?id=7')
+    expect(screen.getByText('No se pudo consultar la validación de cruces.')).toBeInTheDocument()
   })
 
   it('muestra "Publicado" y permite despublicar un horario individual', async () => {
@@ -207,10 +198,9 @@ describe('HorariosCompletos', () => {
     await screen.findByText('3228973 B')
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    // "Publicado" ahora aparece dos veces con la fila expandida: el badge de
-    // la columna "Estado" en la fila y el badge dentro del detalle expandido.
     expect((await screen.findAllByText('Publicado')).length).toBeGreaterThan(0)
 
+    await usuario.click(screen.getByRole('tab', { name: 'Publicación' }))
     await usuario.click(screen.getByRole('button', { name: 'Despublicar' }))
 
     expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
@@ -233,6 +223,23 @@ describe('HorariosCompletos', () => {
     await usuario.click(screen.getAllByText('3228973 B')[0])
     await usuario.keyboard('{Escape}')
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await usuario.click(screen.getAllByText('3228973 B')[0])
+    const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
+    await usuario.click(drawer.parentElement!)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+
+  it('las pestañas muestran su contenido y el footer conserva las acciones principales', async () => {
+    mockeaBase()
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+    await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+
+    await usuario.click(screen.getByRole('tab', { name: 'Relaciones' }))
+    expect(screen.getByRole('link', { name: 'Gestionar publicación' })).toHaveAttribute('href', '/horarios/publicaciones-programadas?idHorario=7')
+    await usuario.click(screen.getByRole('tab', { name: 'Acciones' }))
+    expect(screen.getAllByRole('link', { name: 'Editar bloque' })[0]).toHaveAttribute('href', '/horarios/historial?id=7')
   })
 
   it('con ?id= en la URL, abre el drawer directo (deep link desde Calendario general)', async () => {
