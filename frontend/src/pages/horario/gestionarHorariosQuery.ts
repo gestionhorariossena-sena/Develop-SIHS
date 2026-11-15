@@ -1,8 +1,12 @@
 /**
- * Contrato de URL para la futura experiencia unificada de Gestionar horarios.
+ * Contrato de URL de la experiencia unificada de Gestionar horarios.
  *
- * Fase 0 solamente: todavía ninguna ruta ni pantalla lo consume. Mantenerlo
- * puro permite caracterizar los deep links vigentes antes de migrarlos.
+ * Fase 2: `HorariosCompletos` ya lo consume para las cuatro perspectivas
+ * (Bloques/Por ficha/Por instructor/Por ambiente), compartiendo filtros y
+ * drawer vía URL canónica. `/vista-fichas`, `/vista-instructores` y
+ * `/vista-ambientes` siguen existiendo como rutas propias (ver
+ * `normalizarRutaHorarioLegada`); redirigirlas a la ruta canónica es Fase 3,
+ * todavía sin activar.
  */
 export const PERSPECTIVAS_HORARIOS = ['bloques', 'ficha', 'instructor', 'ambiente'] as const
 export const VISTAS_HORARIOS = ['lista', 'calendario', 'conflictos'] as const
