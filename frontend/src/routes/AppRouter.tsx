@@ -6,6 +6,7 @@ import { RecuperarContrasena } from '../pages/RecuperarContrasena'
 import { RestablecerContrasena } from '../pages/RestablecerContrasena'
 import { DashboardRouter } from '../pages/DashboardRouter'
 import { NuevoHorario } from '../pages/NuevoHorario'
+import { CrearHorario } from '../pages/CrearHorario'
 import { AsistenteHorarios } from '../pages/AsistenteHorarios'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { CalendarioGeneral } from '../pages/CalendarioGeneral'
@@ -113,6 +114,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={INSTRUCTOR}>
             <DetalleFranjaAmbiente />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/horarios/crear"
+        element={
+          <ProtectedRoute roles={GESTION}>
+            <CrearHorario />
           </ProtectedRoute>
         }
       />
