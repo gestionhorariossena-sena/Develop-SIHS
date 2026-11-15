@@ -1,5 +1,6 @@
 # Raíz
 .env
+.env.*
 
 # Backend
 backend/venv
@@ -9,6 +10,8 @@ backend/.venv/
 backend/**/__pycache__/
 backend/**/*.pyc
 backend/.env
+backend/.env.*
+!backend/.env.example
 backend/.env.bak-*
 backend/.pytest_cache/
 backend/*.log
@@ -21,9 +24,13 @@ frontend/dist/
 frontend/coverage/
 frontend/.env
 frontend/.env.local
+frontend/.env.*
+!frontend/.env.example
 
 # Móvil (Flutter)
 mobile/.env
+mobile/.env.*
+!mobile/.env.example
 mobile/.dart_tool/
 mobile/build/
 mobile/.flutter-plugins-dependencies
