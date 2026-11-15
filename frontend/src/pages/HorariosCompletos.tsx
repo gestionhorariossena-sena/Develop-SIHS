@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { DrawerHorario } from '../components/horarios/DrawerHorario'
 import { nombresDias } from '../components/relacionados/formatoBloque'
-import type { Jornada } from './horario/tipos'
 import { colorParaBloque } from './horario/gridLogic'
-import { apiGet, ApiError } from '../services/api'
-import type { Ambiente, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
+import { useGestionarHorariosData } from '../hooks/useGestionarHorariosData'
+import { filtrarHorarios, jornadaDeHorario } from './horario/filtrosGestionarHorarios'
+import { escribirGestionarHorariosQuery, leerGestionarHorariosQuery, normalizarRutaHorarioLegada, type GestionarHorariosQuery, type JornadaQuery } from './horario/gestionarHorariosQuery'
 
 // Las tres entradas de gestión conservan la misma fuente de bloques. Las
 // perspectivas por ficha, instructor y ambiente se abren desde el detalle
@@ -17,8 +17,6 @@ const MODOS_VISTA = [
   { etiqueta: 'Conflictos', ruta: '/horarios/auditoria', icono: 'warning' },
 ] as const
 
-type FiltroJornada = 'todas' | Jornada
-type FiltroEstado = 'todos' | 'publicado' | 'borrador'
 const POR_PAGINA = 10
 
 function badgeEstadoPublicacion(publicado: boolean) {
@@ -27,20 +25,7 @@ function badgeEstadoPublicacion(publicado: boolean) {
     : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
 }
 
-// Por RANGO de hora (< 12 Mañana, < 18 Tarde, si no Noche), no por
-// coincidencia exacta con las 2 franjas institucionales fijas -- mismo
-// criterio que ya usa GridSemanalInstructor.tsx (Mi Horario del
-// instructor). Antes, esto solo reconocía las horas de BLOQUES
-// (06:15/09:00/12:00/15:00/18:00/20:00): cualquier horario creado por el
-// Asistente de Programación (franjas propias: 07:00/09:00/11:00/13:00/
-// 15:00/17:00, ver GridAsistente.tsx) devolvía `null` y se mostraba como
-// "Sin definir" en la tabla -- encontrado en vivo el 2026-09-14.
-function jornadaDeHorario(horario: Horario): Jornada {
-  const hora = Number(horario.horaInicio.split(':')[0])
-  if (hora < 12) return 'Mañana'
-  if (hora < 18) return 'Tarde'
-  return 'Noche'
-}
+function etiquetaJornada(jornada: JornadaQuery) { return jornada === 'manana' ? 'Mañana' : jornada === 'tarde' ? 'Tarde' : 'Noche' }
 
 function formatoHora(hora: string) {
   return hora.slice(0, 5)
@@ -56,51 +41,11 @@ function formatoHora(hora: string) {
  * (versionado/registro de cambios) es un módulo aparte, no se toca acá.
  */
 export function HorariosCompletos() {
-  const [searchParams] = useSearchParams()
-  const idDesdeUrl = searchParams.get('id')
-  const [horarios, setHorarios] = useState<Horario[]>([])
-  const [fichas, setFichas] = useState<Ficha[]>([])
-  const [instructores, setInstructores] = useState<Usuario[]>([])
-  const [ambientes, setAmbientes] = useState<Ambiente[]>([])
-  const [sedes, setSedes] = useState<Sede[]>([])
-  const [trimestres, setTrimestres] = useState<Trimestre[]>([])
-  const [diasSemana, setDiasSemana] = useState<DiaSemana[]>([])
-
-  const [busqueda, setBusqueda] = useState('')
-  const [filtroJornada, setFiltroJornada] = useState<FiltroJornada>('todas')
-  const [filtroTrimestre, setFiltroTrimestre] = useState('todos')
-  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const query = normalizarRutaHorarioLegada('/horarios/completos', searchParams) ?? leerGestionarHorariosQuery(searchParams)
+  const { horarios, fichas, instructores, ambientes, sedes, trimestres, diasSemana, cargando, error, actualizarHorario } = useGestionarHorariosData()
   const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false)
-  const [paginaActual, setPaginaActual] = useState(1)
-  const [idExpandido, setIdExpandido] = useState<number | null>(null)
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  useEffect(() => {
-    apiGet<Horario[]>('/horarios/')
-      .then((datos) => {
-        setHorarios(datos)
-
-        // Deep link desde el link "Ver horario completo" (Calendario
-        // general) — expande esta fila directo, dentro del .then, mismo
-        // patrón que Fichas.tsx/Instructores.tsx/Ambientes.tsx.
-        if (idDesdeUrl) {
-          const encontrado = datos.find((horario) => horario.idHorario === Number(idDesdeUrl))
-          if (encontrado) setIdExpandido(encontrado.idHorario)
-        }
-      })
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de horarios.'))
-      .finally(() => setCargando(false))
-
-    apiGet<Ficha[]>('/fichas/').then(setFichas).catch(() => {})
-    apiGet<Usuario[]>('/usuarios/').then(setInstructores).catch(() => {})
-    apiGet<Ambiente[]>('/ambientes').then(setAmbientes).catch(() => {})
-    apiGet<Sede[]>('/sedes').then(setSedes).catch(() => {})
-    apiGet<Trimestre[]>('/trimestres/')
-      .then(setTrimestres)
-      .catch(() => {})
-    apiGet<DiaSemana[]>('/dias-semana/').then(setDiasSemana).catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idDesdeUrl no cambia en la vida del componente.
-  }, [])
+  function actualizarQuery(cambios: Partial<GestionarHorariosQuery>, reiniciarPagina = false) { setSearchParams(escribirGestionarHorariosQuery({ ...query, ...cambios, pagina: reiniciarPagina ? 1 : (cambios.pagina ?? query.pagina) })) }
 
   const fichaPorId = new Map(fichas.map((ficha) => [ficha.idFicha, ficha]))
   const instructorPorId = new Map(instructores.map((usuario) => [usuario.idUsuario, usuario]))
@@ -108,26 +53,15 @@ export function HorariosCompletos() {
   const trimestrePorId = new Map(trimestres.map((trimestre) => [trimestre.idTrimestre, trimestre]))
   const diasPorId = Object.fromEntries(diasSemana.map((dia) => [dia.idDia, dia.nombreDia]))
 
-  const texto = busqueda.trim().toLocaleLowerCase('es-CO')
-  const filtrosActivos = Number(Boolean(busqueda.trim())) + Number(filtroJornada !== 'todas') + Number(filtroTrimestre !== 'todos') + Number(filtroEstado !== 'todos')
-  const visibles = horarios.filter((horario) => {
-    const programa = fichaPorId.get(horario.idFicha)?.programa.nombrePrograma ?? ''
-    const coincideTexto =
-      !texto ||
-      `${horario.fichaCodigo} ${programa} ${horario.instructorNombre} ${horario.ambienteNombre}`.toLocaleLowerCase('es-CO').includes(texto)
-    const coincideJornada = filtroJornada === 'todas' || jornadaDeHorario(horario) === filtroJornada
-    const coincideTrimestre = filtroTrimestre === 'todos' || horario.idTrimestre === Number(filtroTrimestre)
-    const coincideEstado =
-      filtroEstado === 'todos' ||
-      (filtroEstado === 'publicado' ? horario.publicado : !horario.publicado)
-    return coincideTexto && coincideJornada && coincideTrimestre && coincideEstado
-  })
+  const programaPorFicha = new Map(fichas.map((ficha) => [ficha.idFicha, ficha.programa.nombrePrograma]))
+  const filtrosActivos = Number(Boolean(query.q)) + Number(Boolean(query.jornada)) + Number(Boolean(query.idTrimestre)) + Number(Boolean(query.estado))
+  const visibles = filtrarHorarios(horarios, query, programaPorFicha)
 
   const totalPaginas = Math.max(1, Math.ceil(visibles.length / POR_PAGINA))
-  const paginaSegura = Math.min(paginaActual, totalPaginas)
+  const paginaSegura = Math.min(query.pagina, totalPaginas)
   const inicioPagina = (paginaSegura - 1) * POR_PAGINA
   const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
-  const horarioSeleccionado = idExpandido === null ? undefined : horarios.find((horario) => horario.idHorario === idExpandido)
+  const horarioSeleccionado = query.idHorario ? horarios.find((horario) => horario.idHorario === Number(query.idHorario)) : undefined
 
   return (
     <AppShell activo="Horarios completos">
@@ -161,7 +95,7 @@ export function HorariosCompletos() {
         {MODOS_VISTA.map((modo) => (
           <Link
             key={modo.ruta}
-            to={modo.ruta}
+            to={`${modo.ruta}?${escribirGestionarHorariosQuery({ ...query, vista: modo.etiqueta === 'Lista' ? 'lista' : modo.etiqueta === 'Calendario' ? 'calendario' : 'conflictos' }).toString()}`}
             className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
               modo.etiqueta === 'Lista'
                 ? 'bg-surface-container-lowest text-on-surface shadow-sm dark:bg-slate-800 dark:text-slate-100'
@@ -182,7 +116,7 @@ export function HorariosCompletos() {
             <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Filtrar horarios</p>
             {filtrosActivos > 0 && <span className="rounded-full bg-primary-container px-2 py-0.5 text-xs font-semibold text-on-primary-container">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
             {filtrosActivos > 0 && (
-              <button type="button" onClick={() => { setBusqueda(''); setFiltroJornada('todas'); setFiltroTrimestre('todos'); setFiltroEstado('todos') }} className="text-sm font-medium text-primary hover:text-on-primary-container dark:text-sena-400">
+              <button type="button" onClick={() => actualizarQuery({ q: undefined, jornada: undefined, idTrimestre: undefined, estado: undefined }, true)} className="text-sm font-medium text-primary hover:text-on-primary-container dark:text-sena-400">
                 Limpiar filtros
               </button>
             )}
@@ -196,40 +130,38 @@ export function HorariosCompletos() {
         <div className="grid gap-3 md:grid-cols-3">
           <div className="md:col-span-2">
             <label htmlFor="buscar-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Buscar</label>
-            <input id="buscar-horario" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Ficha, programa, instructor o ambiente" className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+            <input id="buscar-horario" value={query.q ?? ''} onChange={(evento) => actualizarQuery({ q: evento.target.value || undefined }, true)} placeholder="Ficha, programa, instructor o ambiente" className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
           </div>
           <div>
             <label htmlFor="filtro-jornada-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Jornada</label>
-            <select id="filtro-jornada-horario" value={filtroJornada} onChange={(evento) => setFiltroJornada(evento.target.value as FiltroJornada)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <select id="filtro-jornada-horario" value={query.jornada ?? 'todas'} onChange={(evento) => actualizarQuery({ jornada: evento.target.value === 'todas' ? undefined : evento.target.value as JornadaQuery }, true)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todas">Todas</option>
-              <option value="Mañana">Mañana</option>
-              <option value="Tarde">Tarde</option>
-              <option value="Noche">Noche</option>
+              <option value="manana">Mañana</option><option value="tarde">Tarde</option><option value="noche">Noche</option>
             </select>
           </div>
         </div>
         <button type="button" aria-expanded={mostrarFiltrosAvanzados} onClick={() => setMostrarFiltrosAvanzados((abiertos) => !abiertos)} className="mt-3 text-sm font-semibold text-primary hover:text-on-primary-container">
           {mostrarFiltrosAvanzados ? 'Ocultar filtros avanzados' : 'Más filtros'}
         </button>
-        {!mostrarFiltrosAvanzados && (filtroTrimestre !== 'todos' || filtroEstado !== 'todos') && (
+        {!mostrarFiltrosAvanzados && (query.idTrimestre || query.estado) && (
           <p className="mt-1 text-xs text-on-surface-variant" role="status">
             Filtros avanzados activos: {[
-              filtroTrimestre !== 'todos' ? trimestres.find((item) => String(item.idTrimestre) === filtroTrimestre)?.nombre ?? `Período académico ${filtroTrimestre}` : null,
-              filtroEstado !== 'todos' ? `Estado ${filtroEstado}` : null,
+              query.idTrimestre ? trimestres.find((item) => String(item.idTrimestre) === query.idTrimestre)?.nombre ?? `Período académico ${query.idTrimestre}` : null,
+              query.estado ? `Estado ${query.estado}` : null,
             ].filter(Boolean).join(' · ')}
           </p>
         )}
         {mostrarFiltrosAvanzados && <div className="mt-3 grid gap-3 md:grid-cols-2">
           <div>
             <label htmlFor="filtro-trimestre-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Período académico</label>
-            <select id="filtro-trimestre-horario" value={filtroTrimestre} onChange={(evento) => setFiltroTrimestre(evento.target.value)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <select id="filtro-trimestre-horario" value={query.idTrimestre ?? 'todos'} onChange={(evento) => actualizarQuery({ idTrimestre: evento.target.value === 'todos' ? undefined : evento.target.value }, true)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todos">Todos</option>
               {trimestres.map((trimestre) => <option key={trimestre.idTrimestre} value={trimestre.idTrimestre}>{trimestre.nombre}</option>)}
             </select>
           </div>
           <div>
             <label htmlFor="filtro-estado-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Estado</label>
-            <select id="filtro-estado-horario" value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value as FiltroEstado)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <select id="filtro-estado-horario" value={query.estado ?? 'todos'} onChange={(evento) => actualizarQuery({ estado: evento.target.value === 'todos' ? undefined : evento.target.value as GestionarHorariosQuery['estado'] }, true)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todos">Todos</option>
               <option value="publicado">Publicado</option>
               <option value="borrador">Borrador</option>
@@ -241,18 +173,18 @@ export function HorariosCompletos() {
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
       {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Período académico</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
         const color = colorParaBloque(String(horario.idHorario))
-        const expandido = horario.idHorario === idExpandido
+        const expandido = horario.idHorario === Number(query.idHorario)
         const jornada = jornadaDeHorario(horario)
         return (
-            <tr key={horario.idHorario} onClick={() => setIdExpandido(expandido ? null : horario.idHorario)} className="cursor-pointer hover:bg-surface-container-low dark:hover:bg-slate-700/60">
+            <tr key={horario.idHorario} onClick={() => actualizarQuery({ idHorario: expandido ? undefined : String(horario.idHorario) })} className="cursor-pointer hover:bg-surface-container-low dark:hover:bg-slate-700/60">
               <td className={`border-l-4 px-4 py-3 font-semibold text-on-surface dark:text-slate-100 ${color.borde}`}>
-                <button type="button" aria-expanded={expandido} aria-haspopup="dialog" aria-label={`${expandido ? 'Ocultar' : 'Ver'} detalle del horario de la ficha ${horario.fichaCodigo}`} onClick={(evento) => { evento.stopPropagation(); setIdExpandido(expandido ? null : horario.idHorario) }} className="rounded text-left font-semibold text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-primary">
+                <button type="button" aria-expanded={expandido} aria-haspopup="dialog" aria-label={`${expandido ? 'Ocultar' : 'Ver'} detalle del horario de la ficha ${horario.fichaCodigo}`} onClick={(evento) => { evento.stopPropagation(); actualizarQuery({ idHorario: expandido ? undefined : String(horario.idHorario) }) }} className="rounded text-left font-semibold text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-primary">
                   {horario.fichaCodigo}
                 </button>
               </td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.instructorNombre ?? 'Sin definir'}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.ambienteNombre ?? 'Sin definir'}</td>
-              <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{jornada}</span></td>
+              <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{etiquetaJornada(jornada)}</span></td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{nombresDias(horario.dias, diasPorId)}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{trimestrePorId.get(horario.idTrimestre)?.nombre ?? 'Sin definir'}</td>
@@ -273,7 +205,7 @@ export function HorariosCompletos() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+                onClick={() => actualizarQuery({ pagina: Math.max(1, paginaSegura - 1) })}
                 disabled={paginaSegura === 1}
                 className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
@@ -281,7 +213,7 @@ export function HorariosCompletos() {
               </button>
               <button
                 type="button"
-                onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+                onClick={() => actualizarQuery({ pagina: Math.min(totalPaginas, paginaSegura + 1) })}
                 disabled={paginaSegura === totalPaginas}
                 className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
@@ -302,9 +234,9 @@ export function HorariosCompletos() {
           sede={ambientePorId.get(horarioSeleccionado.idAmbiente) ? sedes.find((sede) => sede.idSede === ambientePorId.get(horarioSeleccionado.idAmbiente)?.idSede) : undefined}
           trimestre={trimestrePorId.get(horarioSeleccionado.idTrimestre)}
           diasPorId={diasPorId}
-          jornada={jornadaDeHorario(horarioSeleccionado)}
-          onCerrar={() => setIdExpandido(null)}
-          onActualizar={(actualizado) => setHorarios((anterior) => anterior.map((horario) => (horario.idHorario === actualizado.idHorario ? actualizado : horario)))}
+          jornada={etiquetaJornada(jornadaDeHorario(horarioSeleccionado))}
+          onCerrar={() => actualizarQuery({ idHorario: undefined })}
+          onActualizar={actualizarHorario}
         />
       )}
     </AppShell>

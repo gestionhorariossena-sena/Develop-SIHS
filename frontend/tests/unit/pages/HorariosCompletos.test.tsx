@@ -89,8 +89,8 @@ describe('HorariosCompletos', () => {
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Lista' })).toHaveAttribute('href', '/horarios/completos')
-    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', '/calendario')
-    expect(screen.getByRole('link', { name: 'Conflictos' })).toHaveAttribute('href', '/horarios/auditoria')
+    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', '/calendario?vista=calendario')
+    expect(screen.getByRole('link', { name: 'Conflictos' })).toHaveAttribute('href', '/horarios/auditoria?vista=conflictos')
     expect(screen.getAllByRole('columnheader')).toHaveLength(8)
   })
 
@@ -124,6 +124,17 @@ describe('HorariosCompletos', () => {
 
     expect(screen.getByText('Erick Granados')).toBeInTheDocument()
     expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
+  })
+
+  it('sincroniza filtros, página y drawer con la URL', async () => {
+    mockeaBase([HORARIO, OTRO_HORARIO])
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?q=Erick&jornada=manana&pagina=2'])
+    expect(await screen.findByText('Erick Granados')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', expect.stringContaining('q=Erick'))
+    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', expect.stringContaining('idHorario=7'))
   })
 
   it('clic en una fila abre el DrawerHorario a la derecha sin retirar la tabla', async () => {
