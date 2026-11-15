@@ -28,20 +28,20 @@ def _ref_supabase(url: str) -> str:
     parsed = urlparse(url)
     host = (parsed.hostname or "").lower()
     if parsed.scheme != "https" or not host.endswith(".supabase.co"):
-        raise ValueError("SUPABASE_URL debe ser HTTPS de un proyecto Supabase")
+        raise RuntimeError("SUPABASE_URL debe ser HTTPS de un proyecto Supabase")
     ref = host.removesuffix(".supabase.co")
     if not ref or "." in ref:
-        raise ValueError("Proyecto Supabase no válido")
+        raise RuntimeError("Proyecto Supabase no válido")
     return ref
 
 
 def _ref_database(url: str) -> str:
     parsed = make_url(url)
     if not (parsed.host or "").endswith(".pooler.supabase.com"):
-        raise ValueError("La base local seleccionada debe utilizar un pooler Supabase")
+        raise RuntimeError("La base local seleccionada debe utilizar un pooler Supabase")
     username = parsed.username or ""
     if not username.startswith("postgres.") or len(username) <= 9:
-        raise ValueError("La conexión debe identificar postgres.<project-ref>")
+        raise RuntimeError("La conexión debe identificar postgres.<project-ref>")
     return username.removeprefix("postgres.")
 
 
@@ -91,16 +91,16 @@ class Settings(BaseSettings):
             return self  # No alterar despliegues existentes.
         nombre = _SELECTED.removeprefix(".env.")
         if self.app_env != nombre:
-            raise ValueError(f"APP_ENV debe ser {nombre}")
+            raise RuntimeError(f"APP_ENV debe ser {nombre}")
         ref = _ref_supabase(self.supabase_url)
         if _ref_database(self.database_url) != ref:
-            raise ValueError("DATABASE_URL apunta a otro proyecto Supabase")
+            raise RuntimeError("DATABASE_URL apunta a otro proyecto Supabase")
         if _ref_database(self.alembic_database_url) != ref:
-            raise ValueError("ALEMBIC_DATABASE_URL apunta a otro proyecto Supabase")
+            raise RuntimeError("ALEMBIC_DATABASE_URL apunta a otro proyecto Supabase")
         if not self.supabase_anon_key:
-            raise ValueError("Falta SUPABASE_ANON_KEY")
+            raise RuntimeError("Falta SUPABASE_ANON_KEY")
         if nombre == "institucional" and os.getenv("SIHS_ALLOW_INSTITUTIONAL") != "1":
-            raise ValueError("Inicio institucional bloqueado: usa el selector")
+            raise RuntimeError("Inicio institucional bloqueado: usa el selector")
         return self
 
     model_config = SettingsConfigDict(env_file=_ARCHIVO_ENV, env_file_encoding="utf-8", extra="ignore")
