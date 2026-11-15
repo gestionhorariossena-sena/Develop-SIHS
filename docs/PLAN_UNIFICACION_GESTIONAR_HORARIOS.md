@@ -216,7 +216,7 @@ Aplicación del glosario:
 
 | Lugar | Texto objetivo |
 | --- | --- |
-| Menú global, grupo Programación | Gestionar horarios; Crear horario; Asistente IA; Publicaciones programadas; Borradores e historial. Las perspectivas, Lista/Calendario/Conflictos no repiten entradas globales. |
+| Menú global, grupo Programación | Gestionar horarios; Crear horario; Publicaciones programadas; Borradores e historial. Las perspectivas, Lista/Calendario/Conflictos no repiten entradas globales. **Asistente IA no aparece como módulo independiente**: al abrir Crear horario, la persona elige entre **Crear manualmente** e **Importar y procesar con IA**. |
 | Selector contextual de Gestionar horarios | Bloques · Por ficha · Por instructor · Por ambiente. |
 | Selector de vista | Lista · Calendario · Conflictos. |
 | Breadcrumb | `Dashboard / Gestionar horarios / Por ficha` (o la perspectiva activa). |
