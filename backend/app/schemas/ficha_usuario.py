@@ -7,6 +7,13 @@ class FichaUsuarioVincular(BaseModel):
     codigoFicha: str
 
 
+class MiRolFichaResponse(BaseModel):
+    """GET /ficha-usuario/mi-rol -- rolEnFicha propio del Aprendiz, para
+    que el frontend sepa si puede abrir conversaciones nuevas en Mensajes."""
+
+    rolEnFicha: str | None
+
+
 class VoceroResponse(BaseModel):
     """SCRUM-108 — GET /fichas/{id_ficha}/vocero: quién es el
     vocero/subvocero de una ficha. No cubre mensajería (Epic "Vistas del

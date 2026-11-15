@@ -173,6 +173,21 @@ class AsistenciaService:
         }
 
     @staticmethod
+    def eliminar_sesion(db: Session, id_horario: int, fecha_sesion: date, id_instructor) -> int:
+        """Revoca una lista completa de una clase propia.
+
+        No se permite borrar la lista de otro instructor ni una sesión que
+        nunca fue registrada. La auditoría la hace el endpoint, igual que al
+        crear o corregir.
+        """
+        horario = AsistenciaService._horario_del_instructor(db, id_horario, id_instructor)
+        AsistenciaService._validar_fecha(db, horario, fecha_sesion)
+        cantidad = AsistenciaRepository.eliminar_de_sesion(db, id_horario, fecha_sesion)
+        if not cantidad:
+            raise AsistenciaError("Esta sesión no tiene una lista registrada", 404)
+        return cantidad
+
+    @staticmethod
     def obtener_de_aprendiz(db: Session, id_aprendiz, *, desde=None, hasta=None) -> dict:
         registros = AsistenciaRepository.obtener_de_aprendiz(db, id_aprendiz, desde=desde, hasta=hasta)
 

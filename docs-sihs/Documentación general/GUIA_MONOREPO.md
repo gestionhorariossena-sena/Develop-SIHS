@@ -147,9 +147,9 @@ mypy app/
 ### Frontend
 ```bash
 cd frontend
-npm test
-npm run lint
-npm run build  # Verifica que no hay errores de TS
+pnpm test
+pnpm lint
+pnpm build  # Verifica que no hay errores de TS
 ```
 
 ### Mobile

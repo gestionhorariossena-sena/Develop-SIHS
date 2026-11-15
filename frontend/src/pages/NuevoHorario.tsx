@@ -548,7 +548,7 @@ export function NuevoHorario() {
   })
 
   return (
-    <AppShell activo="Horarios">
+    <AppShell activo="Crear horario">
       <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant print:hidden">
         <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
         <span className="text-outline">/</span>

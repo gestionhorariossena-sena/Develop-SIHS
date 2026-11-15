@@ -19,7 +19,8 @@ nota sobre ella.
 
 ### Qué hay
 
-App Flutter **de solo lectura** (decisión de `ARQUITECTURA_MOBILE.md`):
+App Flutter **de solo lectura** (decisión de
+[`ARQUITECTURA_MOBILE.md`](../_Docs/Arquitectura/ARQUITECTURA_MOBILE.md)):
 programar horarios es de la web.
 
 | Pantalla | Archivo | Rol | Endpoint |

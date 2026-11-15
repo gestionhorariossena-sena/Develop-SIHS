@@ -76,7 +76,7 @@ describe('AppShell', () => {
     const botonGrupo = await screen.findByRole('button', { name: 'Mi trabajo' })
     fireEvent.click(botonGrupo)
 
-    for (const etiqueta of ['Mi horario', 'Mensajes', 'Notificaciones']) {
+    for (const etiqueta of ['Mi horario', 'Mis instructores', 'Notificaciones']) {
       expect(screen.getByText(etiqueta)).toBeInTheDocument()
     }
   })

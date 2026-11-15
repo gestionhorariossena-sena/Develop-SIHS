@@ -102,6 +102,43 @@ describe('MiAsistencia', () => {
     expect(screen.queryByText(/por debajo del 85%/)).not.toBeInTheDocument()
   })
 
+  it('al día no muestra la advertencia y sí muestra la barra con su porcentaje', async () => {
+    mockear(datos({ resumen: { registradas: 10, presente: 10, tardanza: 0, excusa: 0, ausente: 0, porcentaje: 100 } }))
+    renderConProviders(<MiAsistencia />)
+
+    expect(await screen.findByText(/Al día/)).toBeInTheDocument()
+    expect(screen.queryByText(/Por debajo del mínimo/)).not.toBeInTheDocument()
+  })
+
+  it('el filtro de Periodo recorta por fecha sin volver a pedirle nada al backend', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    vi.setSystemTime(new Date(2026, 9, 26, 9, 0, 0)) // 2026-10-26
+
+    mockear(
+      datos({
+        sesiones: [
+          sesion({ idAsistencia: 1, fechaSesion: '2026-10-26', resultadoDescripcion: 'Hoy mismo' }),
+          sesion({ idAsistencia: 2, fechaSesion: '2026-10-10', resultadoDescripcion: 'Hace 16 días' }),
+        ],
+      }),
+    )
+
+    const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderConProviders(<MiAsistencia />)
+
+    expect(await screen.findByText('Hoy mismo')).toBeInTheDocument()
+    expect(screen.getByText('Hace 16 días')).toBeInTheDocument()
+
+    apiGetMock.mockClear()
+    await usuario.click(screen.getByRole('button', { name: 'Hoy' }))
+
+    expect(screen.getByText('Hoy mismo')).toBeInTheDocument()
+    expect(screen.queryByText('Hace 16 días')).not.toBeInTheDocument()
+    expect(apiGetMock).not.toHaveBeenCalledWith('/asistencias/mias')
+
+    vi.useRealTimers()
+  })
+
   it('filtra por estado sin volver a pedirle nada al backend', async () => {
     mockear(
       datos({

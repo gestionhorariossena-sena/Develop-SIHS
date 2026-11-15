@@ -615,7 +615,7 @@ si se mantiene el auto-alta, marcar esos perfiles como `pendienteAprobacion`. **
 | B-1 | 8 archivos `.xlsx`/`.jpeg` con **datos institucionales reales** (líderes de ficha, programación 2026) sueltos en la raíz y sin versionar | Mover a `_Docs/` o añadir a `.gitignore`. Riesgo de commit accidental de datos personales |
 | B-2 | 4 árboles de trabajo `prunable` + ramas residuales (`nicol-merge`, `worktree-agent-*`) | `git worktree prune`, borrar ramas |
 | B-3 | `infra/` y `scripts/` en la raíz están **vacíos** | Eliminarlos o poblarlos |
-| B-4 | El repositorio no tiene `CLAUDE.md` pese a `GUIA_MONOREPO.md` y `GUIA_NUEVAS_FEATURES.md` con convenciones valiosas | Crear uno que apunte a esas guías |
+| B-4 | El repositorio no tiene `CLAUDE.md` pese a [`GUIA_MONOREPO.md`](./GUIA_MONOREPO.md) y `GUIA_NUEVAS_FEATURES.md` con convenciones valiosas | Crear uno que apunte a esas guías |
 | B-5 | `frontend/src/data/notificacionesEjemplo.ts` no lo importa nadie — código muerto | Eliminar |
 | B-6 | El generador usa 3 franjas inventadas (`generator.py:46-50` (`FRANJAS_POR_JORNADA`)), no la plantilla institucional de 2 franjas | Requiere que el solver reparta varios resultados por bloque (ya analizado en el docstring) |
 | B-7 | Sin índices en `usuarios.numeroDocumento` (login), `usuarios.codigoInstructor` (validación), `horario_dia.idDia` | Añadir en una migración |

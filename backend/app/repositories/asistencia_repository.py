@@ -39,3 +39,16 @@ class AsistenciaRepository:
         for asistencia in asistencias:
             db.add(asistencia)
         db.commit()
+
+    @staticmethod
+    def eliminar_de_sesion(db: Session, id_horario: int, fecha_sesion: date) -> int:
+        """Elimina la lista completa de una sesión, nunca una fila aislada.
+
+        La asistencia se registra como un acto de clase; borrar una marca
+        individual dejaría una lista parcial y ambigua.
+        """
+        registros = AsistenciaRepository.obtener_de_sesion(db, id_horario, fecha_sesion)
+        for registro in registros:
+            db.delete(registro)
+        db.commit()
+        return len(registros)

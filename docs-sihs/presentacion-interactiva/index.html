@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SIHS — Plataforma de Presentación Técnica</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">SIHS</div>
+        <div class="brand-sub">Plataforma técnica</div>
+      </div>
+
+      <nav class="nav" id="nav"></nav>
+
+      <div class="sidebar-footer">
+        <label class="reduce-motion-toggle">
+          <input type="checkbox" id="toggleReduceMotion" />
+          <span>Reducir animaciones</span>
+        </label>
+        <div class="progress-indicator" id="progressIndicator"></div>
+      </div>
+    </aside>
+
+    <main class="main" id="main">
+      <header class="topbar">
+        <div class="topbar-title" id="topbarTitle">Resumen</div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost" id="btnModoDocente">Modo docente: simple</button>
+          <button class="btn btn-ghost" id="btnExpositor">Modo expositor</button>
+        </div>
+      </header>
+
+      <div class="content" id="content"></div>
+    </main>
+  </div>
+
+  <div class="expositor-overlay" id="expositorOverlay">
+    <div class="expositor-panel">
+      <div class="expositor-header">
+        <h2>Modo expositor</h2>
+        <button class="btn btn-ghost" id="closeExpositor">Cerrar</button>
+      </div>
+      <div class="expositor-body" id="expositorBody"></div>
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="render.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

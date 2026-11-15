@@ -1,6 +1,8 @@
+import json
 import uuid
 from datetime import date, timedelta
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, types
@@ -166,6 +168,37 @@ def fake_supabase(monkeypatch):
 
 
 @pytest.fixture()
+def fake_gemini(monkeypatch):
+    """Instala un responder Gemini estructurado sin salir a la red."""
+
+    def instalar(payload: dict) -> list[dict]:
+        llamadas: list[dict] = []
+        cuerpo = {
+            "candidates": [
+                {
+                    "content": {
+                        "parts": [{"text": json.dumps(payload, ensure_ascii=False)}],
+                    },
+                },
+            ],
+        }
+
+        def fake_post(url, **kwargs):
+            llamadas.append({"url": str(url), **kwargs})
+            return httpx.Response(
+                200,
+                json=cuerpo,
+                request=httpx.Request("POST", str(url)),
+            )
+
+        monkeypatch.setattr("app.ai.client.settings.gemini_api_key", "gemini-test-key")
+        monkeypatch.setattr("app.ai.client.httpx.post", fake_post)
+        return llamadas
+
+    return instalar
+
+
+@pytest.fixture()
 def crear_rol(db_session):
     def _crear(nombre: str = "Administrador") -> Rol:
         existente = db_session.query(Rol).filter(Rol.nombre == nombre).first()
@@ -226,8 +259,8 @@ def crear_ficha(db_session):
         hoy = date.today()
         trimestre = Trimestre(
             nombre="Trimestre 1",
-            fechaInicio=hoy - timedelta(days=30),
-            fechaFin=hoy + timedelta(days=60),
+            fechaInicio=hoy - timedelta(days=90),
+            fechaFin=hoy + timedelta(days=90),
             estado="activo",
         )
         db_session.add(trimestre)

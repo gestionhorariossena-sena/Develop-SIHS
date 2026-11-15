@@ -1,6 +1,15 @@
 import { useEffect, useRef } from 'react'
 import type { KeyboardEvent, ReactNode } from 'react'
 
+const SELECTOR_FOCO = [
+  'a[href]',
+  'button:not([disabled])',
+  'input:not([disabled])',
+  'select:not([disabled])',
+  'textarea:not([disabled])',
+  '[tabindex]:not([tabindex="-1"])',
+].join(', ')
+
 interface DrawerRelacionadosProps {
   iniciales: string
   titulo: string
@@ -28,6 +37,24 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
 
   function manejarTeclado(evento: KeyboardEvent<HTMLDivElement>) {
     if (evento.key === 'Escape') onCerrar()
+    if (evento.key !== 'Tab') return
+
+    const controles = Array.from(evento.currentTarget.querySelectorAll<HTMLElement>(SELECTOR_FOCO))
+      .filter((control) => !control.hasAttribute('disabled') && !control.hidden)
+    if (controles.length === 0) {
+      evento.preventDefault()
+      return
+    }
+
+    const primero = controles[0]
+    const ultimo = controles[controles.length - 1]
+    if (evento.shiftKey && document.activeElement === primero) {
+      evento.preventDefault()
+      ultimo.focus()
+    } else if (!evento.shiftKey && document.activeElement === ultimo) {
+      evento.preventDefault()
+      primero.focus()
+    }
   }
 
   return (
@@ -39,7 +66,7 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
         aria-label={titulo}
         onKeyDown={manejarTeclado}
         onClick={(evento) => evento.stopPropagation()}
-        className="flex h-full w-full max-w-md flex-col overflow-y-auto bg-surface-container-lowest p-6 shadow-2xl dark:bg-slate-800"
+        className="fixed right-0 top-0 flex h-screen w-full max-w-[460px] flex-col overflow-y-auto bg-surface-container-lowest p-6 shadow-2xl dark:bg-slate-800"
       >
         <div className="mb-6 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
@@ -64,9 +91,9 @@ export function DrawerRelacionados({ iniciales, titulo, subtitulo, etiquetas, on
             type="button"
             onClick={onCerrar}
             aria-label="Cerrar"
-            className="text-sm font-medium text-on-surface-variant hover:text-on-surface dark:text-slate-400 dark:hover:text-slate-100"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface hover:text-on-surface focus-visible:outline-2 focus-visible:outline-primary dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-100"
           >
-            Cerrar
+            <span className="material-symbols-outlined" aria-hidden="true">close</span>
           </button>
         </div>
 
