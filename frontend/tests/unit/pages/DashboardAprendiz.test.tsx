@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import { renderConProviders } from '../../helpers/renderConProviders'
 import { DashboardAprendiz } from '../../../src/pages/DashboardAprendiz'
-import type { Ficha, Horario, MiAsistencia, Usuario } from '../../../src/types/api'
+import type { Aviso, Ficha, Horario, MiAsistencia, Notificacion, Usuario } from '../../../src/types/api'
 
 const { ApiErrorMock, apiGetMock } = vi.hoisted(() => {
   class ApiErrorMock extends Error {
@@ -36,7 +36,6 @@ const FICHA: Ficha = {
   idPrograma: 1,
   idTrimestre: 1,
   idSede: null,
-  faseActual: 2,
   programa: {
     idPrograma: 1,
     codigoPrograma: 'ADSO',
@@ -48,110 +47,161 @@ const FICHA: Ficha = {
   trimestre: { idTrimestre: 1, nombre: 'Trimestre IV', fechaInicio: '2026-01-01', fechaFin: '2026-03-31', estado: 'activo' },
   sede: null,
   aprendicesTotales: 30,
-  jornadas: ['Mañana'],
+  jornadas: [],
 }
 
-const HOY_ID = (() => {
-  const dia = new Date().getDay()
-  return dia === 0 ? 7 : dia
-})()
-
-const HORARIO: Horario = {
-  idHorario: 1,
-  horaInicio: '08:00:00',
-  horaFin: '10:00:00',
-  idJornada: 1,
-  idTrimestre: 1,
-  idAmbiente: 1,
-  idInstructor: 'i1',
-  idFicha: 1,
-  idResultado: 1,
-  dias: [HOY_ID],
-  fechaCreacion: '2026-01-01T00:00:00Z',
-  fechaModificacion: '2026-01-01T00:00:00Z',
-  activo: true,
-  publicado: true,
-  instructorNombre: 'Carlos Díaz',
-  fichaCodigo: '2874521',
-  ambienteNombre: 'Ambiente 302',
-  resultadoCodigo: 'RA-01',
-  resultadoDescripcion: 'Análisis de requerimientos',
-}
-
-const ASISTENCIA: MiAsistencia = {
-  resumen: {
-    registradas: 10,
-    presente: 9,
-    tardanza: 0,
-    excusa: 0,
-    ausente: 1,
-    porcentaje: 90,
-  },
-  sesiones: [],
-}
-
-function mockearRespuestas({ ficha, fichaError }: { ficha?: Ficha; fichaError?: InstanceType<typeof ApiErrorMock> }) {
+function mockearRespuestas({
+  ficha,
+  fichaError,
+  horarios = [],
+  asistencia,
+  avisos = [],
+  notificaciones = [],
+}: {
+  ficha?: Ficha
+  fichaError?: InstanceType<typeof ApiErrorMock>
+  horarios?: Horario[]
+  asistencia?: MiAsistencia
+  avisos?: Aviso[]
+  notificaciones?: Notificacion[]
+}) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/usuarios/me') return Promise.resolve(PERFIL)
     if (path === '/ficha-usuario/mi-ficha') {
       return fichaError ? Promise.reject(fichaError) : Promise.resolve(ficha)
     }
-    if (path === '/ficha-usuario/mi-horario') return Promise.resolve([HORARIO])
-    if (path === '/asistencias/mias') return Promise.resolve(ASISTENCIA)
-    if (path === '/avisos/') return Promise.resolve([])
+    if (path === '/ficha-usuario/mi-horario') return Promise.resolve(horarios)
+    if (path === '/asistencias/mias') {
+      return asistencia ? Promise.resolve(asistencia) : Promise.reject(new ApiErrorMock(404, 'Sin asistencia'))
+    }
+    if (path === '/avisos/') return Promise.resolve(avisos)
+    if (path === '/notificaciones/') return Promise.resolve(notificaciones)
     return Promise.reject(new Error(`no mockeado: ${path}`))
   })
 }
 
+const HORARIO: Horario = {
+  idHorario: 1,
+  horaInicio: '06:15:00',
+  horaFin: '09:00:00',
+  idJornada: 1,
+  idTrimestre: 1,
+  idAmbiente: 1,
+  idInstructor: 'i-1',
+  idFicha: 1,
+  idResultado: 1,
+  // Todos los días: así la prueba encuentra "próxima clase" sin importar
+  // en qué día/hora real corra (no usa fake timers).
+  dias: [1, 2, 3, 4, 5, 6],
+  fechaCreacion: '2026-01-01',
+  fechaModificacion: '2026-01-01',
+  activo: true,
+  publicado: true,
+  instructorNombre: 'Ana Ríos',
+  fichaCodigo: '2874521',
+  ambienteNombre: '204',
+  resultadoCodigo: null,
+  resultadoDescripcion: 'Programación Web',
+}
+
+const ASISTENCIA: MiAsistencia = {
+  resumen: { registradas: 48, presente: 42, tardanza: 3, excusa: 2, ausente: 1, porcentaje: 92 },
+  sesiones: [],
+}
+
+const AVISO: Aviso = {
+  idAviso: 1,
+  idUsuarioPublicador: null,
+  publicadorNombre: 'Coordinación Académica',
+  titulo: 'Suspensión de clases el viernes',
+  cuerpo: 'Mantenimiento eléctrico en el bloque B.',
+  categoria: 'reprog',
+  idFicha: null,
+  idSede: null,
+  adjuntoUrl: null,
+  fechaPublicacion: new Date().toISOString(),
+  vigenteHasta: null,
+  fichaCodigo: null,
+  sedeNombre: null,
+}
+
+const NOTIFICACION: Notificacion = {
+  idNotificacion: 1,
+  idUsuario: 'u1',
+  tipo: 'ambiente',
+  mensaje: 'Cambio de ambiente: Programación Web ahora en el 204.',
+  leida: false,
+  fechaCreacion: new Date().toISOString(),
+  entidadRelacionada: null,
+  idEntidadRelacionada: null,
+}
+
 describe('DashboardAprendiz', () => {
-  it('usa el nuevo encabezado y muestra la ficha vinculada', async () => {
+  it('saluda por el nombre de pila y muestra la ficha vinculada', async () => {
     mockearRespuestas({ ficha: FICHA })
     renderConProviders(<DashboardAprendiz />)
 
-    expect(await screen.findByText('Hola, Aprendiz Sara Rodríguez')).toBeInTheDocument()
+    expect(await screen.findByText('Hola, Sara')).toBeInTheDocument()
     expect(await screen.findByText('Ficha 2874521')).toBeInTheDocument()
-    expect(screen.getAllByText('Análisis y Desarrollo de Software').length).toBeGreaterThan(0)
-    expect(screen.getByText('Fase 2')).toBeInTheDocument()
+    expect(screen.getByText('Análisis y Desarrollo de Software')).toBeInTheDocument()
   })
 
-  it('muestra resumen real de asistencia y carga del día', async () => {
-    mockearRespuestas({ ficha: FICHA })
-    renderConProviders(<DashboardAprendiz />)
-
-    expect(await screen.findByText('90%')).toBeInTheDocument()
-    expect(screen.getByText('10 asistencias registradas')).toBeInTheDocument()
-    expect(screen.getByText('2')).toBeInTheDocument()
-    expect(screen.getByText('horas presenciales')).toBeInTheDocument()
-  })
-
-  it('muestra el cronograma de hoy con datos reales del horario', async () => {
-    mockearRespuestas({ ficha: FICHA })
-    renderConProviders(<DashboardAprendiz />)
-
-    expect(await screen.findByText('Mi cronograma de hoy')).toBeInTheDocument()
-    expect(screen.getByText('RA-01')).toBeInTheDocument()
-    expect(screen.getByText('Carlos Díaz')).toBeInTheDocument()
-    expect(screen.getAllByText('Ambiente 302').length).toBeGreaterThan(0)
-  })
-
-  it('no bloquea el dashboard si el aprendiz no tiene ficha vinculada', async () => {
+  it('no muestra la tarjeta de ficha si el aprendiz no tiene una vinculada', async () => {
     mockearRespuestas({ fichaError: new ApiErrorMock(404, 'No tienes una ficha vinculada') })
     renderConProviders(<DashboardAprendiz />)
 
-    await screen.findByText('Hola, Aprendiz Sara Rodríguez')
-    await waitFor(() => expect(screen.getAllByText('Sin ficha vinculada').length).toBeGreaterThan(0))
+    await screen.findByText('Hola, Sara')
+    await waitFor(() => expect(screen.queryByText(/^Ficha /)).not.toBeInTheDocument())
   })
 
-  it('los accesos rápidos apuntan a las rutas reales del Aprendiz', async () => {
+  it('enlaza a las 4 pantallas del Aprendiz', async () => {
     mockearRespuestas({ ficha: FICHA })
     renderConProviders(<DashboardAprendiz />)
 
-    await screen.findByText('Hola, Aprendiz Sara Rodríguez')
-    const contenido = within(screen.getByRole('main'))
+    await screen.findByText('Hola, Sara')
 
-    expect(contenido.getAllByRole('link', { name: /Mi horario/ }).some((link) => link.getAttribute('href') === '/mi-horario-aprendiz')).toBe(true)
-    expect(contenido.getByRole('link', { name: /Mensajes/ })).toHaveAttribute('href', '/mensajes')
-    expect(contenido.getByRole('link', { name: /Ver avisos/ })).toHaveAttribute('href', '/avisos')
-    expect(contenido.getByRole('link', { name: /Mi asistencia/ })).toHaveAttribute('href', '/mi-asistencia')
+    // Se acota al <main> porque el sidebar (AppShell) también linkea a
+    // estas mismas rutas dentro del grupo "MI TRABAJO".
+    const contenido = within(screen.getByRole('main'))
+    // '/mi-horario' está protegida para Instructor (ver AppRouter.tsx) -- un
+    // Aprendiz necesita '/mi-horario-aprendiz' o ProtectedRoute lo rebota a
+    // /dashboard. Antes de esta prueba, el link sí apuntaba a '/mi-horario'
+    // y nadie lo notó porque esta aserción solo comparaba el string.
+    expect(contenido.getByRole('link', { name: /Mi Horario/ })).toHaveAttribute('href', '/mi-horario-aprendiz')
+    // '/mensajes-docentes' no existe en AppRouter.tsx -- solo '/mensajes'
+    // renderiza MensajesAprendiz. El link viejo era un 404 silencioso.
+    expect(contenido.getByRole('link', { name: /Mis instructores/ })).toHaveAttribute('href', '/mensajes')
+    expect(contenido.getByRole('link', { name: /Comunicados del centro/ })).toHaveAttribute('href', '/avisos')
+    expect(contenido.getByRole('link', { name: /Notificaciones/ })).toHaveAttribute('href', '/notificaciones')
+  })
+
+  it('muestra la franja de asistencia y los previews de cada tarjeta con datos reales', async () => {
+    mockearRespuestas({
+      ficha: FICHA,
+      horarios: [HORARIO],
+      asistencia: ASISTENCIA,
+      avisos: [AVISO],
+      notificaciones: [NOTIFICACION],
+    })
+    renderConProviders(<DashboardAprendiz />)
+
+    await screen.findByText('Hola, Sara')
+
+    // Franja de asistencia.
+    expect(await screen.findByText('92%')).toBeInTheDocument()
+    expect(screen.getByText('Al día')).toBeInTheDocument()
+
+    // Preview de "Mi Horario": próxima clase.
+    expect(screen.getByText('Programación Web')).toBeInTheDocument()
+
+    // Preview de "Mis instructores": instructor derivado del horario.
+    // "Ana Ríos" aparece más de una vez (también en el pie de "Mi Horario").
+    expect(screen.getAllByText(/Ana Ríos/).length).toBeGreaterThan(0)
+
+    // Preview de "Comunicados del centro".
+    expect(screen.getByText('Suspensión de clases el viernes')).toBeInTheDocument()
+
+    // Preview de "Notificaciones".
+    expect(screen.getByText('1 sin leer')).toBeInTheDocument()
   })
 })

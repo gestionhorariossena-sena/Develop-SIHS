@@ -5,12 +5,8 @@ import { FormField } from '../components/FormField'
 import { apiGet, apiPost } from '../services/api'
 import { supabase } from '../services/supabaseClient'
 import { configurarRecordarme } from '../services/authStorage'
+import { formatearTiempoRestante } from '../utils/tiempoRestante'
 import type { EstadoLogin } from '../types/api'
-
-function formatearTiempoRestante(segundos: number): string {
-  const minutos = Math.ceil(segundos / 60)
-  return minutos <= 1 ? 'menos de 1 minuto' : `${minutos} minutos`
-}
 
 /**
  * El login habla directo con Supabase Auth (supabase.auth.signInWithPassword),

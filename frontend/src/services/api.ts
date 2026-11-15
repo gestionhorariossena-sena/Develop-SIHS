@@ -1,6 +1,39 @@
 import { supabase } from './supabaseClient'
 
-const API_URL = import.meta.env.VITE_API_URL ?? (import.meta.env.PROD ? 'https://sihs-backend.onrender.com/api/v1' : 'http://127.0.0.1:8001/api/v1')
+const API_LOCAL_DESARROLLO = 'http://127.0.0.1:8000/api/v1'
+
+function esOrigenLocal(url: string) {
+  try {
+    return ['localhost', '127.0.0.1', '::1'].includes(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
+
+/**
+ * VITE_API_URL se incrusta en el bundle. Producción debe recibir una URL
+ * HTTPS pública del backend desde Vercel: no se permite localhost ni un
+ * fallback silencioso que oculte una variable ausente.
+ */
+export function resolverApiUrl(configurada: string | undefined, produccion: boolean) {
+  const apiUrl = configurada?.trim().replace(/\/$/, '')
+
+  if (!produccion) return apiUrl || API_LOCAL_DESARROLLO
+
+  if (!apiUrl) {
+    throw new Error('Falta VITE_API_URL en producción. Configura la URL HTTPS pública del backend.')
+  }
+  if (esOrigenLocal(apiUrl)) {
+    throw new Error('VITE_API_URL no puede apuntar a localhost ni 127.0.0.1 en producción.')
+  }
+  if (!apiUrl.startsWith('https://')) {
+    throw new Error('VITE_API_URL debe usar HTTPS en producción.')
+  }
+
+  return apiUrl
+}
+
+const API_URL = resolverApiUrl(import.meta.env.VITE_API_URL, import.meta.env.PROD)
 const TIMEOUT_MS = 15000
 
 /**

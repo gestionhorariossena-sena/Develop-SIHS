@@ -1,31 +1,26 @@
-import { Fragment, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import { SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
-import { GridAsistente } from '../components/horario/GridAsistente'
-import { celdasDesdeHorarios } from '../components/horario/celdasAsistente'
+import { DrawerHorario } from '../components/horarios/DrawerHorario'
+import { GridHorario } from '../components/horario/GridHorario'
+import { GridSemanalInstructor } from '../components/horario/GridSemanalInstructor'
+import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { nombresDias } from '../components/relacionados/formatoBloque'
-import type { Jornada } from './horario/tipos'
 import { colorParaBloque } from './horario/gridLogic'
-import type { ColorBloque } from './horario/gridLogic'
-import { apiGet, apiPatch, ApiError } from '../services/api'
-import { avisoTrimestres, trimestreVigente } from '../utils/trimestreVigente'
-import type { Ambiente, AuditoriaCrucesResponse, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
+import { useGestionarHorariosData } from '../hooks/useGestionarHorariosData'
+import { filtrarHorarios, jornadaDeHorario } from './horario/filtrosGestionarHorarios'
+import { escribirGestionarHorariosQuery, leerGestionarHorariosQuery, normalizarRutaHorarioLegada, type GestionarHorariosQuery, type JornadaQuery } from './horario/gestionarHorariosQuery'
+import type { Ambiente, AuditoriaCrucesResponse, Ficha, Usuario } from '../types/api'
 
-// Mismos 4 "modos" que el mockup de Stitch (Vista General/Por Instructor/
-// Por Ficha/Por Ambiente), pero acá son links reales a las rutas que YA
-// existen (VistaInstructores/VistaFichas/VistaAmbientes) en vez de tabs que
-// cambian de contenido en el mismo componente — evita duplicar esas 3
-// pantallas dentro de esta.
+// Las tres entradas de gestión conservan la misma fuente de bloques. Las
+// perspectivas por ficha, instructor y ambiente se abren desde el detalle
+// contextual de cada bloque, no se duplican como tabs de la lista global.
 const MODOS_VISTA = [
-  { etiqueta: 'Vista General', ruta: '/horarios/completos', icono: 'grid_view' },
-  { etiqueta: 'Por Instructor', ruta: '/vista-instructores', icono: 'person' },
-  { etiqueta: 'Por Ficha', ruta: '/vista-fichas', icono: 'groups' },
-  { etiqueta: 'Por Ambiente', ruta: '/vista-ambientes', icono: 'meeting_room' },
+  { etiqueta: 'Lista', ruta: '/horarios/completos', icono: 'format_list_bulleted' },
+  { etiqueta: 'Calendario', ruta: '/calendario', icono: 'calendar_month' },
+  { etiqueta: 'Conflictos', ruta: '/horarios/auditoria', icono: 'warning' },
 ] as const
 
-type FiltroJornada = 'todas' | Jornada
-type FiltroEstado = 'todos' | 'publicado' | 'borrador'
 const POR_PAGINA = 10
 
 function badgeEstadoPublicacion(publicado: boolean) {
@@ -34,341 +29,70 @@ function badgeEstadoPublicacion(publicado: boolean) {
     : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
 }
 
-// Por RANGO de hora (< 12 Mañana, < 18 Tarde, si no Noche), no por
-// coincidencia exacta con las 2 franjas institucionales fijas -- mismo
-// criterio que ya usa GridSemanalInstructor.tsx (Mi Horario del
-// instructor). Antes, esto solo reconocía las horas de BLOQUES
-// (06:15/09:00/12:00/15:00/18:00/20:00): cualquier horario creado por el
-// Asistente de Programación (franjas propias: 07:00/09:00/11:00/13:00/
-// 15:00/17:00, ver GridAsistente.tsx) devolvía `null` y se mostraba como
-// "Sin definir" en la tabla -- encontrado en vivo el 2026-09-14.
-function jornadaDeHorario(horario: Horario): Jornada {
-  const hora = Number(horario.horaInicio.split(':')[0])
-  if (hora < 12) return 'Mañana'
-  if (hora < 18) return 'Tarde'
-  return 'Noche'
+function PerspectivaContextual({ perspectiva, query, fichas, instructores, ambientes, horarios, auditoria, cargandoAuditoria, errorAuditoria, actualizarQuery }: { perspectiva: Exclude<GestionarHorariosQuery['perspectiva'], 'bloques'>; query: GestionarHorariosQuery; fichas: Ficha[]; instructores: Usuario[]; ambientes: Ambiente[]; horarios: import('../types/api').Horario[]; auditoria: AuditoriaCrucesResponse | null; cargandoAuditoria: boolean; errorAuditoria: string | null; actualizarQuery: (cambios: Partial<GestionarHorariosQuery>) => void }) {
+  const id = perspectiva === 'ficha' ? query.idFicha : perspectiva === 'instructor' ? query.idInstructor : query.idAmbiente
+  const opciones = perspectiva === 'ficha' ? fichas.map((item) => [String(item.idFicha), item.codigoFicha]) : perspectiva === 'instructor' ? instructores.map((item) => [item.idUsuario, item.nombre]) : ambientes.map((item) => [String(item.idAmbiente), item.nombreAmbiente])
+  const clave = perspectiva === 'ficha' ? 'idFicha' : perspectiva === 'instructor' ? 'idInstructor' : 'idAmbiente'
+  const { bloques, grid } = convertirHorariosAGrid(horarios)
+  const aprendicesPorFicha = Object.fromEntries(fichas.map((ficha) => [ficha.idFicha, ficha.aprendicesTotales]))
+  const idsHorarios = new Set(horarios.map((horario) => horario.idHorario))
+  const conflictos = auditoria?.conflictos.filter((conflicto) => idsHorarios.has(conflicto.idHorario) || (conflicto.idHorarioExistente != null && idsHorarios.has(conflicto.idHorarioExistente))) ?? []
+  return <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+    <label className="mb-2 block text-sm font-semibold text-on-surface" htmlFor="entidad-perspectiva">Seleccionar {perspectiva === 'ficha' ? 'ficha' : perspectiva === 'instructor' ? 'instructor' : 'ambiente'}</label>
+    <select id="entidad-perspectiva" value={id ?? ''} onChange={(evento) => actualizarQuery({ [clave]: evento.target.value || undefined } as Partial<GestionarHorariosQuery>)} className="mb-4 w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface">
+      <option value="">Selecciona una opción</option>{opciones.map(([valor, etiqueta]) => <option key={valor} value={valor}>{etiqueta}</option>)}
+    </select>
+    {!id ? <p className="py-10 text-center text-sm text-on-surface-variant">Selecciona una entidad para ver su horario.</p> : <>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm font-semibold text-on-surface">{horarios.length} bloque{horarios.length === 1 ? '' : 's'} en el contexto actual</p>
+        <div className="flex flex-wrap gap-2">{horarios.map((horario) => <button key={horario.idHorario} type="button" onClick={() => actualizarQuery({ idHorario: String(horario.idHorario) })} className="rounded-lg border border-outline px-2 py-1 text-xs font-semibold text-primary">Abrir bloque #{horario.idHorario}</button>)}</div>
+      </div>
+      {errorAuditoria ? <p role="status" className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">No se pudo consultar los Conflictos: {errorAuditoria}</p> : cargandoAuditoria ? <p role="status" className="mb-4 rounded-xl border border-outline-variant p-3 text-sm text-on-surface-variant dark:border-slate-700">Cargando Conflictos del contexto…</p> : conflictos.length === 0 ? <p className="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">Conflictos: no hay conflictos para este contexto.</p> : <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"><p className="font-semibold">Conflictos: {conflictos.length} detectado{conflictos.length === 1 ? '' : 's'}.</p>{conflictos.map((conflicto, indice) => <p key={`${conflicto.idHorario}-${conflicto.tipo}-${indice}`} className="mt-1">{conflicto.mensaje}</p>)}</div>}
+      {perspectiva === 'instructor' ? <GridSemanalInstructor horarios={horarios} jornadasVisibles={['Mañana', 'Tarde', 'Noche']} aprendicesPorFicha={aprendicesPorFicha} mostrarDetalle={false} /> : <GridHorario bloques={bloques} grid={grid} hayBloqueActivo={false} soloLectura onClicBloqueLectura={(idBloque) => actualizarQuery({ idHorario: idBloque })} />}
+    </>}
+  </section>
 }
+
+function etiquetaJornada(jornada: JornadaQuery) { return jornada === 'manana' ? 'Mañana' : jornada === 'tarde' ? 'Tarde' : 'Noche' }
 
 function formatoHora(hora: string) {
   return hora.slice(0, 5)
-}
-
-function colorBarraCarga(horasAsignadas: number, horasMaximas: number) {
-  if (horasAsignadas > horasMaximas) return 'bg-red-600 dark:bg-red-500'
-  if (horasAsignadas / horasMaximas >= 0.8) return 'bg-amber-500 dark:bg-amber-400'
-  return 'bg-emerald-600 dark:bg-emerald-500'
-}
-
-interface DetalleHorarioProps {
-  horario: Horario
-  ficha: Ficha | undefined
-  instructor: Usuario | undefined
-  ambiente: Ambiente | undefined
-  sedeNombre: string | undefined
-  trimestre: Trimestre | undefined
-  jornada: Jornada | null
-  color: ColorBloque
-  diasPorId: Record<number, string>
-  onCerrar: () => void
-  onCambiarPublicado: (horario: Horario) => void
-}
-
-/**
- * La caja que se expande bajo la fila — junta TODO lo que hoy está
- * repartido entre Fichas.tsx/Instructores.tsx/Ambientes.tsx (más la carga
- * semanal, que solo vivía en el drawer de instructor) en un solo lugar, en
- * vez de un resumen con links hacia allá. Componente aparte (no un bloque
- * inline en el .map de la tabla) para que la carga semanal se pida sola al
- * montar/desmontar con la fila — sin tener que comparar "instructor
- * anterior vs. actual" a mano como hace Instructores.tsx.
- */
-function DetalleHorario({ horario, ficha, instructor, ambiente, sedeNombre, trimestre, jornada, color, diasPorId, onCerrar, onCambiarPublicado }: DetalleHorarioProps) {
-  const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
-  const [errorCarga, setErrorCarga] = useState(false)
-  const [publicando, setPublicando] = useState(false)
-  const [errorPublicacion, setErrorPublicacion] = useState<string | null>(null)
-
-  async function alternarPublicado() {
-    setErrorPublicacion(null)
-    setPublicando(true)
-    try {
-      const actualizado = await apiPatch<Horario>(`/horarios/${horario.idHorario}/estado`, { publicado: !horario.publicado })
-      onCambiarPublicado(actualizado)
-    } catch (err) {
-      setErrorPublicacion(err instanceof ApiError ? err.message : 'No se pudo cambiar la publicación. Intenta de nuevo.')
-    } finally {
-      setPublicando(false)
-    }
-  }
-
-  useEffect(() => {
-    apiGet<CargaSemanal>(`/usuarios/${horario.idInstructor}/carga-semanal`)
-      .then(setCargaSemanal)
-      .catch(() => setErrorCarga(true))
-  }, [horario.idInstructor])
-
-  const celdas = celdasDesdeHorarios([horario])
-
-  return (
-    <div className="space-y-4 p-4">
-      {errorPublicacion && <p role="alert" className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">{errorPublicacion}</p>}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className={`rounded px-2 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>Horario #{horario.idHorario}</span>
-          <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">Jornada {jornada ?? 'sin definir'}</span>
-          <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">{trimestre?.nombre ?? 'Sin período académico'}</span>
-          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeEstadoPublicacion(horario.publicado)}`}>
-            {horario.publicado ? 'Publicado' : 'Borrador'}
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => void alternarPublicado()}
-            disabled={publicando}
-            title={horario.publicado ? 'Deja de mostrarse en "Mi horario" para el instructor' : 'A partir de ahora el instructor lo ve en "Mi horario"'}
-            className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-          >
-            {publicando ? 'Guardando…' : horario.publicado ? 'Despublicar' : 'Publicar ahora'}
-          </button>
-          {!horario.publicado && (
-            <Link
-              to={`/horarios/publicaciones-programadas?idHorario=${horario.idHorario}`}
-              className="rounded-xl border border-primary px-3 py-1.5 text-sm font-semibold text-primary hover:bg-primary-container"
-            >
-              Programar publicación
-            </Link>
-          )}
-          <Link
-            to={`/horarios/historial?id=${horario.idHorario}`}
-            title="El historial todavía no distingue horarios individuales — se está rediseñando como registro de cambios, por ahora esto abre el listado general."
-            className="text-sm font-medium text-primary hover:text-on-primary-container dark:text-sena-400"
-          >
-            Detalles de creación / Modificar →
-          </Link>
-          <button type="button" onClick={onCerrar} className="text-sm font-medium text-on-surface-variant hover:text-on-surface dark:text-slate-400 dark:hover:text-slate-100">
-            Cerrar
-          </button>
-        </div>
-      </div>
-
-      <SeccionDrawer titulo="Horario semanal">
-        <GridAsistente celdas={celdas} />
-      </SeccionDrawer>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Ficha</p>
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.fichaCodigo ?? 'Sin definir'}</p>
-          {ficha ? (
-            <dl className="mt-1.5 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
-              <div>{ficha.programa.nombrePrograma} ({ficha.programa.codigoPrograma})</div>
-              <div>Nivel: {ficha.programa.nivelFormacion ?? 'Sin definir'}</div>
-              <div>Período académico: {ficha.trimestre.nombre} ({ficha.trimestre.fechaInicio} a {ficha.trimestre.fechaFin})</div>
-              <div>Aprendices: {ficha.aprendicesTotales}</div>
-              <div>Jornadas de la ficha: {ficha.jornadas.length ? ficha.jornadas.join(', ') : 'Sin horario'}</div>
-            </dl>
-          ) : (
-            <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-400">Sin más datos disponibles.</p>
-          )}
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-outline-variant pt-2 dark:border-slate-700">
-            <Link to={`/fichas?id=${horario.idFicha}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Más info →</Link>
-            <Link to={`/vista-fichas?id=${horario.idFicha}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Ver horario por ficha →</Link>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Instructor</p>
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.instructorNombre ?? 'Sin definir'}</p>
-          {instructor ? (
-            <dl className="mt-1.5 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
-              <div>{instructor.email}</div>
-              <div>Contrato: {instructor.tipoContrato?.trim() || 'Sin definir'}</div>
-              <div>Especialidades: {instructor.especialidades.length ? instructor.especialidades.map((item) => item.nombre).join(', ') : 'Sin asignar'}</div>
-            </dl>
-          ) : (
-            <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-400">Sin más datos disponibles.</p>
-          )}
-
-          <div className="mt-2">
-            <p className="mb-1 text-xs font-medium text-on-surface-variant dark:text-slate-400">Carga semanal</p>
-            {errorCarga ? (
-              <p className="text-xs text-on-surface-variant dark:text-slate-400">No se pudo calcular.</p>
-            ) : !cargaSemanal ? (
-              <p className="text-xs text-on-surface-variant dark:text-slate-400">Calculando…</p>
-            ) : cargaSemanal.horasMaximas == null ? (
-              <p className="text-xs text-on-surface-variant dark:text-slate-400">Sin tope definido (falta tipo de contrato).</p>
-            ) : (
-              <>
-                <p className="mb-1 text-xs font-medium text-on-surface dark:text-slate-300">{cargaSemanal.horasAsignadas}h / {cargaSemanal.horasMaximas}h</p>
-                <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high dark:bg-slate-700">
-                  <div
-                    className={`h-full rounded-full ${colorBarraCarga(cargaSemanal.horasAsignadas, cargaSemanal.horasMaximas)}`}
-                    style={{ width: `${Math.min(100, Math.round((cargaSemanal.horasAsignadas / cargaSemanal.horasMaximas) * 100))}%` }}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-outline-variant pt-2 dark:border-slate-700">
-            <Link to={`/instructores?id=${horario.idInstructor}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Más info →</Link>
-            <Link to={`/vista-instructores?id=${horario.idInstructor}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Ver horario por instructor →</Link>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Ambiente</p>
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.ambienteNombre ?? 'Sin definir'}</p>
-          {ambiente ? (
-            <dl className="mt-1.5 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
-              <div>Número: {ambiente.numeroAmbiente}</div>
-              <div>Tipo: {ambiente.tipoAmbiente}</div>
-              <div>Estado: {ambiente.estadoAmbiente}</div>
-              <div>Sede: {sedeNombre ?? 'Sin definir'}</div>
-            </dl>
-          ) : (
-            <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-400">Sin más datos disponibles.</p>
-          )}
-          <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 border-t border-outline-variant pt-2 dark:border-slate-700">
-            <Link to={`/ambientes?id=${horario.idAmbiente}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Más info →</Link>
-            <Link to={`/vista-ambientes?id=${horario.idAmbiente}`} className="text-xs font-medium text-primary hover:text-on-primary-container dark:text-sena-400">Ver horario por ambiente →</Link>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-3 dark:border-slate-700 dark:bg-slate-800">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Tema</p>
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">{horario.resultadoCodigo ?? 'Sin definir'}</p>
-          <p className="mt-1.5 text-xs text-on-surface-variant dark:text-slate-300">{horario.resultadoDescripcion ?? 'Sin descripción.'}</p>
-          <dl className="mt-2 space-y-1 text-xs text-on-surface-variant dark:text-slate-300">
-            <div>Días: {nombresDias(horario.dias, diasPorId)}</div>
-            <div>Hora: {formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</div>
-          </dl>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 /**
  * "Horarios completos" — a diferencia de Fichas/Instructores/Ambientes
  * (cada una centrada en UNA entidad y todo lo que tiene alrededor), acá el
  * horario mismo es la fila: cada `GET /horarios/` es un renglón. Clic en
- * una fila expande hacia abajo (no un drawer/panel lateral) una caja con
- * TODA la info combinada — ficha, instructor (con carga semanal), ambiente
- * y tema — igual que se ve repartida entre las otras tres pantallas, más
- * el horario en el mismo formato de grid que usa el creador
- * (`NuevoHorario.tsx`). Historial de horarios (versionado/registro de
- * cambios) es un módulo aparte, no se toca acá.
+ * una fila abre un drawer temporal a la derecha con la información
+ * combinada de ficha, instructor (con carga semanal), ambiente y tema.
+ * La tabla global no se comprime ni se reemplaza. Historial de horarios
+ * (versionado/registro de cambios) es un módulo aparte, no se toca acá.
  */
 export function HorariosCompletos() {
-  const [searchParams] = useSearchParams()
-  const idDesdeUrl = searchParams.get('id')
-  const [horarios, setHorarios] = useState<Horario[]>([])
-  const [fichas, setFichas] = useState<Ficha[]>([])
-  const [instructores, setInstructores] = useState<Usuario[]>([])
-  const [ambientes, setAmbientes] = useState<Ambiente[]>([])
-  const [sedes, setSedes] = useState<Sede[]>([])
-  const [trimestres, setTrimestres] = useState<Trimestre[]>([])
-  const [diasSemana, setDiasSemana] = useState<DiaSemana[]>([])
-
-  const [busqueda, setBusqueda] = useState('')
-  const [filtroJornada, setFiltroJornada] = useState<FiltroJornada>('todas')
-  const [filtroTrimestre, setFiltroTrimestre] = useState('todos')
-  const [filtroEstado, setFiltroEstado] = useState<FiltroEstado>('todos')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const query = normalizarRutaHorarioLegada('/horarios/completos', searchParams) ?? leerGestionarHorariosQuery(searchParams)
+  const { horarios, fichas, instructores, ambientes, sedes, trimestres, diasSemana, auditoria, cargandoAuditoria, errorAuditoria, cargando, error, erroresCatalogos, actualizarHorario } = useGestionarHorariosData()
   const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false)
-  const [paginaActual, setPaginaActual] = useState(1)
-  const [idExpandido, setIdExpandido] = useState<number | null>(null)
-  const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  // Resumen real de conflictos (mismo endpoint que AuditoriaCruces.tsx) para
-  // el panel lateral "Auditoría" del mockup — no es un dato nuevo inventado,
-  // es el mismo GET /horarios/auditoria-cruces ya construido.
-  const [auditoria, setAuditoria] = useState<AuditoriaCrucesResponse | null>(null)
-  const [trimestreAuditoria, setTrimestreAuditoria] = useState<number | null>(null)
-  const [trimestresCargados, setTrimestresCargados] = useState(false)
-  const [errorTrimestres, setErrorTrimestres] = useState(false)
-  const [errorAuditoria, setErrorAuditoria] = useState(false)
-
-  // No auditar todos los períodos por defecto: la consulta es costosa.
-  // Si no existe uno vigente por estado Y fechas, esperar selección expresa.
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTrimestreAuditoria(trimestreVigente(trimestres)?.idTrimestre ?? null)
-  }, [trimestres])
-
-  useEffect(() => {
-    if (trimestreAuditoria === null) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setAuditoria(null)
-      setErrorAuditoria(false)
-      return
-    }
-    let vigente = true
-    setAuditoria(null)
-    setErrorAuditoria(false)
-    apiGet<AuditoriaCrucesResponse>(`/horarios/auditoria-cruces?idTrimestre=${trimestreAuditoria}`, 60000)
-      .then((datos) => { if (vigente) setAuditoria(datos) })
-      .catch(() => { if (vigente) setErrorAuditoria(true) })
-    return () => { vigente = false }
-  }, [trimestreAuditoria])
-
-  useEffect(() => {
-    apiGet<Horario[]>('/horarios/')
-      .then((datos) => {
-        setHorarios(datos)
-
-        // Deep link desde el link "Ver horario completo" (Calendario
-        // general) — expande esta fila directo, dentro del .then, mismo
-        // patrón que Fichas.tsx/Instructores.tsx/Ambientes.tsx.
-        if (idDesdeUrl) {
-          const encontrado = datos.find((horario) => horario.idHorario === Number(idDesdeUrl))
-          if (encontrado) setIdExpandido(encontrado.idHorario)
-        }
-      })
-      .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar el listado de horarios.'))
-      .finally(() => setCargando(false))
-
-    apiGet<Ficha[]>('/fichas/').then(setFichas).catch(() => {})
-    apiGet<Usuario[]>('/usuarios/').then(setInstructores).catch(() => {})
-    apiGet<Ambiente[]>('/ambientes').then(setAmbientes).catch(() => {})
-    apiGet<Sede[]>('/sedes').then(setSedes).catch(() => {})
-    apiGet<Trimestre[]>('/trimestres/')
-      .then(setTrimestres)
-      .catch(() => setErrorTrimestres(true))
-      .finally(() => setTrimestresCargados(true))
-    apiGet<DiaSemana[]>('/dias-semana/').then(setDiasSemana).catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idDesdeUrl no cambia en la vida del componente.
-  }, [])
+  function actualizarQuery(cambios: Partial<GestionarHorariosQuery>, reiniciarPagina = false) { setSearchParams(escribirGestionarHorariosQuery({ ...query, ...cambios, pagina: reiniciarPagina ? 1 : (cambios.pagina ?? query.pagina) })) }
 
   const fichaPorId = new Map(fichas.map((ficha) => [ficha.idFicha, ficha]))
   const instructorPorId = new Map(instructores.map((usuario) => [usuario.idUsuario, usuario]))
   const ambientePorId = new Map(ambientes.map((ambiente) => [ambiente.idAmbiente, ambiente]))
-  const sedePorId = new Map(sedes.map((sede) => [sede.idSede, sede.nombreSede]))
   const trimestrePorId = new Map(trimestres.map((trimestre) => [trimestre.idTrimestre, trimestre]))
   const diasPorId = Object.fromEntries(diasSemana.map((dia) => [dia.idDia, dia.nombreDia]))
 
-  const texto = busqueda.trim().toLocaleLowerCase('es-CO')
-  const filtrosActivos = Number(Boolean(busqueda.trim())) + Number(filtroJornada !== 'todas') + Number(filtroTrimestre !== 'todos') + Number(filtroEstado !== 'todos')
-  const visibles = horarios.filter((horario) => {
-    const programa = fichaPorId.get(horario.idFicha)?.programa.nombrePrograma ?? ''
-    const coincideTexto =
-      !texto ||
-      `${horario.fichaCodigo} ${programa} ${horario.instructorNombre} ${horario.ambienteNombre}`.toLocaleLowerCase('es-CO').includes(texto)
-    const coincideJornada = filtroJornada === 'todas' || jornadaDeHorario(horario) === filtroJornada
-    const coincideTrimestre = filtroTrimestre === 'todos' || horario.idTrimestre === Number(filtroTrimestre)
-    const coincideEstado =
-      filtroEstado === 'todos' ||
-      (filtroEstado === 'publicado' ? horario.publicado : !horario.publicado)
-    return coincideTexto && coincideJornada && coincideTrimestre && coincideEstado
-  })
+  const programaPorFicha = new Map(fichas.map((ficha) => [ficha.idFicha, ficha.programa.nombrePrograma]))
+  const filtrosActivos = Number(Boolean(query.q)) + Number(Boolean(query.jornada)) + Number(Boolean(query.idTrimestre)) + Number(Boolean(query.estado))
+  const visibles = filtrarHorarios(horarios, query, programaPorFicha)
 
   const totalPaginas = Math.max(1, Math.ceil(visibles.length / POR_PAGINA))
-  const paginaSegura = Math.min(paginaActual, totalPaginas)
+  const paginaSegura = Math.min(query.pagina, totalPaginas)
   const inicioPagina = (paginaSegura - 1) * POR_PAGINA
   const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
+  const horarioSeleccionado = query.idHorario ? horarios.find((horario) => horario.idHorario === Number(query.idHorario)) : undefined
 
   return (
-    <AppShell activo="Horarios completos">
+    <AppShell activo="Gestionar horarios">
       <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant dark:text-slate-400">
         <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
         <span className="text-outline">/</span>
@@ -379,7 +103,7 @@ export function HorariosCompletos() {
 
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Vistas de Horarios — Coordinación Académica</h1>
+          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Gestionar horarios</h1>
           <p className="text-sm text-on-surface-variant dark:text-slate-400">Cada horario con su ficha, instructor, ambiente y tema en un solo lugar.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -393,23 +117,15 @@ export function HorariosCompletos() {
         </div>
       </div>
 
-      {trimestresCargados && (errorTrimestres || avisoTrimestres(trimestres)) && (
-        <p role="alert" className="mb-4 rounded-xl border border-tertiary bg-tertiary-container px-4 py-3 text-sm text-on-tertiary-container">
-          {errorTrimestres ? 'No se pudieron consultar los períodos académicos.' : avisoTrimestres(trimestres)} La lista histórica sigue disponible; la auditoría requiere escoger un período.
-        </p>
-      )}
-
-      {/* Selector de perspectiva — mismos 4 modos del mockup, como links
-       * reales a las vistas que ya existen (evita duplicar Vista por
-       * fichas/instructores/ambientes dentro de esta pantalla). */}
+      {/* Las entradas globales no sustituyen las perspectivas por entidad. */}
       <div className="mb-4 max-w-full overflow-x-auto">
       <nav aria-label="Cambiar vista de horarios" className="inline-flex w-max items-center gap-1 rounded-full bg-surface-container-low p-1 dark:bg-slate-900">
         {MODOS_VISTA.map((modo) => (
           <Link
             key={modo.ruta}
-            to={modo.ruta}
+            to={`${modo.ruta}?${escribirGestionarHorariosQuery({ ...query, vista: modo.etiqueta === 'Lista' ? 'lista' : modo.etiqueta === 'Calendario' ? 'calendario' : 'conflictos' }).toString()}`}
             className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-              modo.etiqueta === 'Vista General'
+              modo.etiqueta === 'Lista'
                 ? 'bg-surface-container-lowest text-on-surface shadow-sm dark:bg-slate-800 dark:text-slate-100'
                 : 'text-on-surface-variant hover:text-on-surface dark:text-slate-400'
             }`}
@@ -421,7 +137,10 @@ export function HorariosCompletos() {
       </nav>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <nav aria-label="Perspectiva de horarios" className="mb-4 flex flex-wrap gap-2">
+        {([['bloques', 'Bloques'], ['ficha', 'Por ficha'], ['instructor', 'Por instructor'], ['ambiente', 'Por ambiente']] as const).map(([perspectiva, etiqueta]) => <button key={perspectiva} type="button" onClick={() => actualizarQuery({ perspectiva })} className={`rounded-full px-3 py-1.5 text-sm font-semibold ${query.perspectiva === perspectiva ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}`}>{etiqueta}</button>)}
+      </nav>
+
       <div className="min-w-0">
       <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de horarios">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -429,7 +148,7 @@ export function HorariosCompletos() {
             <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Filtrar horarios</p>
             {filtrosActivos > 0 && <span className="rounded-full bg-primary-container px-2 py-0.5 text-xs font-semibold text-on-primary-container">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
             {filtrosActivos > 0 && (
-              <button type="button" onClick={() => { setBusqueda(''); setFiltroJornada('todas'); setFiltroTrimestre('todos'); setFiltroEstado('todos') }} className="text-sm font-medium text-primary hover:text-on-primary-container dark:text-sena-400">
+              <button type="button" onClick={() => actualizarQuery({ q: undefined, jornada: undefined, idTrimestre: undefined, estado: undefined }, true)} className="text-sm font-medium text-primary hover:text-on-primary-container dark:text-sena-400">
                 Limpiar filtros
               </button>
             )}
@@ -443,40 +162,38 @@ export function HorariosCompletos() {
         <div className="grid gap-3 md:grid-cols-3">
           <div className="md:col-span-2">
             <label htmlFor="buscar-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Buscar</label>
-            <input id="buscar-horario" value={busqueda} onChange={(evento) => setBusqueda(evento.target.value)} placeholder="Ficha, programa, instructor o ambiente" className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+            <input id="buscar-horario" value={query.q ?? ''} onChange={(evento) => actualizarQuery({ q: evento.target.value || undefined }, true)} placeholder="Ficha, programa, instructor o ambiente" className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
           </div>
           <div>
             <label htmlFor="filtro-jornada-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Jornada</label>
-            <select id="filtro-jornada-horario" value={filtroJornada} onChange={(evento) => setFiltroJornada(evento.target.value as FiltroJornada)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <select id="filtro-jornada-horario" value={query.jornada ?? 'todas'} onChange={(evento) => actualizarQuery({ jornada: evento.target.value === 'todas' ? undefined : evento.target.value as JornadaQuery }, true)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todas">Todas</option>
-              <option value="Mañana">Mañana</option>
-              <option value="Tarde">Tarde</option>
-              <option value="Noche">Noche</option>
+              <option value="manana">Mañana</option><option value="tarde">Tarde</option><option value="noche">Noche</option>
             </select>
           </div>
         </div>
         <button type="button" aria-expanded={mostrarFiltrosAvanzados} onClick={() => setMostrarFiltrosAvanzados((abiertos) => !abiertos)} className="mt-3 text-sm font-semibold text-primary hover:text-on-primary-container">
           {mostrarFiltrosAvanzados ? 'Ocultar filtros avanzados' : 'Más filtros'}
         </button>
-        {!mostrarFiltrosAvanzados && (filtroTrimestre !== 'todos' || filtroEstado !== 'todos') && (
+        {!mostrarFiltrosAvanzados && (query.idTrimestre || query.estado) && (
           <p className="mt-1 text-xs text-on-surface-variant" role="status">
             Filtros avanzados activos: {[
-              filtroTrimestre !== 'todos' ? trimestres.find((item) => String(item.idTrimestre) === filtroTrimestre)?.nombre ?? `Período académico ${filtroTrimestre}` : null,
-              filtroEstado !== 'todos' ? `Estado ${filtroEstado}` : null,
+              query.idTrimestre ? trimestres.find((item) => String(item.idTrimestre) === query.idTrimestre)?.nombre ?? `Período académico ${query.idTrimestre}` : null,
+              query.estado ? `Estado ${query.estado}` : null,
             ].filter(Boolean).join(' · ')}
           </p>
         )}
         {mostrarFiltrosAvanzados && <div className="mt-3 grid gap-3 md:grid-cols-2">
           <div>
             <label htmlFor="filtro-trimestre-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Período académico</label>
-            <select id="filtro-trimestre-horario" value={filtroTrimestre} onChange={(evento) => setFiltroTrimestre(evento.target.value)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <select id="filtro-trimestre-horario" value={query.idTrimestre ?? 'todos'} onChange={(evento) => actualizarQuery({ idTrimestre: evento.target.value === 'todos' ? undefined : evento.target.value }, true)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todos">Todos</option>
               {trimestres.map((trimestre) => <option key={trimestre.idTrimestre} value={trimestre.idTrimestre}>{trimestre.nombre}</option>)}
             </select>
           </div>
           <div>
             <label htmlFor="filtro-estado-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Estado</label>
-            <select id="filtro-estado-horario" value={filtroEstado} onChange={(evento) => setFiltroEstado(evento.target.value as FiltroEstado)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <select id="filtro-estado-horario" value={query.estado ?? 'todos'} onChange={(evento) => actualizarQuery({ estado: evento.target.value === 'todos' ? undefined : evento.target.value as GestionarHorariosQuery['estado'] }, true)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todos">Todos</option>
               <option value="publicado">Publicado</option>
               <option value="borrador">Borrador</option>
@@ -485,23 +202,22 @@ export function HorariosCompletos() {
         </div>}
       </section>
 
+      {erroresCatalogos.length > 0 && <p role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">La tabla se muestra, pero no se pudieron cargar: {erroresCatalogos.join(', ')}. Los datos relacionados pueden aparecer como “Sin definir”.</p>}
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Período académico</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p> : query.perspectiva !== 'bloques' ? <PerspectivaContextual perspectiva={query.perspectiva} query={query} fichas={fichas} instructores={instructores} ambientes={ambientes} horarios={visibles} auditoria={auditoria} cargandoAuditoria={cargandoAuditoria} errorAuditoria={errorAuditoria} actualizarQuery={actualizarQuery} /> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Período académico</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
         const color = colorParaBloque(String(horario.idHorario))
-        const expandido = horario.idHorario === idExpandido
+        const expandido = horario.idHorario === Number(query.idHorario)
         const jornada = jornadaDeHorario(horario)
-        const ambiente = ambientePorId.get(horario.idAmbiente)
         return (
-          <Fragment key={horario.idHorario}>
-            <tr onClick={() => setIdExpandido(expandido ? null : horario.idHorario)} className="cursor-pointer hover:bg-surface-container-low dark:hover:bg-slate-700/60">
+            <tr key={horario.idHorario} onClick={() => actualizarQuery({ idHorario: expandido ? undefined : String(horario.idHorario) })} className="cursor-pointer hover:bg-surface-container-low dark:hover:bg-slate-700/60">
               <td className={`border-l-4 px-4 py-3 font-semibold text-on-surface dark:text-slate-100 ${color.borde}`}>
-                <button type="button" aria-expanded={expandido} aria-controls={`detalle-horario-${horario.idHorario}`} aria-label={`${expandido ? 'Ocultar' : 'Ver'} detalle del horario de la ficha ${horario.fichaCodigo}`} onClick={(evento) => { evento.stopPropagation(); setIdExpandido(expandido ? null : horario.idHorario) }} className="rounded text-left font-semibold text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-primary">
+                <button type="button" aria-expanded={expandido} aria-haspopup="dialog" aria-label={`${expandido ? 'Ocultar' : 'Ver'} detalle del horario de la ficha ${horario.fichaCodigo}`} onClick={(evento) => { evento.stopPropagation(); actualizarQuery({ idHorario: expandido ? undefined : String(horario.idHorario) }) }} className="rounded text-left font-semibold text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-primary">
                   {horario.fichaCodigo}
                 </button>
               </td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.instructorNombre ?? 'Sin definir'}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.ambienteNombre ?? 'Sin definir'}</td>
-              <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{jornada}</span></td>
+              <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{etiquetaJornada(jornada)}</span></td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{nombresDias(horario.dias, diasPorId)}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</td>
               <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{trimestrePorId.get(horario.idTrimestre)?.nombre ?? 'Sin definir'}</td>
@@ -511,28 +227,6 @@ export function HorariosCompletos() {
                 </span>
               </td>
             </tr>
-            {expandido && (
-              <tr id={`detalle-horario-${horario.idHorario}`}>
-                <td colSpan={8} className="bg-surface dark:bg-slate-900/40">
-                  <DetalleHorario
-                    horario={horario}
-                    ficha={fichaPorId.get(horario.idFicha)}
-                    instructor={instructorPorId.get(horario.idInstructor)}
-                    ambiente={ambiente}
-                    sedeNombre={ambiente ? sedePorId.get(ambiente.idSede) : undefined}
-                    trimestre={trimestrePorId.get(horario.idTrimestre)}
-                    jornada={jornada}
-                    color={color}
-                    diasPorId={diasPorId}
-                    onCerrar={() => setIdExpandido(null)}
-                    onCambiarPublicado={(actualizado) =>
-                      setHorarios((anterior) => anterior.map((h) => (h.idHorario === actualizado.idHorario ? actualizado : h)))
-                    }
-                  />
-                </td>
-              </tr>
-            )}
-          </Fragment>
         )
       })}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay horarios que coincidan con los filtros.</p>}
 
@@ -544,7 +238,7 @@ export function HorariosCompletos() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setPaginaActual((pagina) => Math.max(1, pagina - 1))}
+                onClick={() => actualizarQuery({ pagina: Math.max(1, paginaSegura - 1) })}
                 disabled={paginaSegura === 1}
                 className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
@@ -552,7 +246,7 @@ export function HorariosCompletos() {
               </button>
               <button
                 type="button"
-                onClick={() => setPaginaActual((pagina) => Math.min(totalPaginas, pagina + 1))}
+                onClick={() => actualizarQuery({ pagina: Math.min(totalPaginas, paginaSegura + 1) })}
                 disabled={paginaSegura === totalPaginas}
                 className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
@@ -564,81 +258,23 @@ export function HorariosCompletos() {
       </div>}
       </div>
 
-      <aside className="space-y-4">
-        <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="flex items-center gap-1.5 text-sm font-bold text-on-surface dark:text-slate-100">
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px] text-primary">insights</span>
-              Auditoría de cruces
-            </h2>
-            <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-              (auditoria?.conflictos.length ?? 0) > 0 ? 'bg-error-container text-on-error-container' : 'bg-primary-container text-on-primary-container'
-            }`}>
-              {trimestreAuditoria === null ? '—' : auditoria === null ? '…' : auditoria.conflictos.length}
-            </span>
-          </div>
-          <label htmlFor="trimestre-auditoria" className="mb-2 block text-xs font-medium text-on-surface-variant">
-            Período académico a auditar
-          </label>
-          <select
-            id="trimestre-auditoria"
-            value={trimestreAuditoria ?? ''}
-            onChange={(evento) => setTrimestreAuditoria(evento.target.value ? Number(evento.target.value) : null)}
-            className="mb-3 w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
-          >
-            <option value="">Selecciona un período académico</option>
-            {trimestres.map((trimestre) => (
-              <option key={trimestre.idTrimestre} value={trimestre.idTrimestre}>
-                {trimestre.nombre} · {trimestre.fechaInicio} a {trimestre.fechaFin}
-              </option>
-            ))}
-          </select>
-          {trimestreAuditoria === null ? (
-            <p className="text-xs text-on-surface-variant">Selecciona un período académico para consultar sus cruces.</p>
-          ) : errorAuditoria ? (
-            <p role="alert" className="text-xs text-error">No se pudo cargar la auditoría del período académico seleccionado.</p>
-          ) : auditoria === null ? (
-            <p className="text-xs text-on-surface-variant dark:text-slate-400">Auditando horarios…</p>
-          ) : auditoria.conflictos.length === 0 ? (
-            <p className="text-xs text-on-surface-variant dark:text-slate-400">Sin conflictos activos entre los horarios guardados.</p>
-          ) : (
-            <>
-              <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
-                {auditoria.conflictos.length} conflicto{auditoria.conflictos.length === 1 ? '' : 's'} activo{auditoria.conflictos.length === 1 ? '' : 's'} entre horarios ya guardados.
-              </p>
-              <div className="space-y-1.5">
-                {auditoria.resumen.tipos.map((tipo) => (
-                  <div key={tipo} className="flex items-center justify-between rounded-lg bg-surface-container-low px-2.5 py-1.5 text-xs dark:bg-slate-900">
-                    <span className="text-on-surface-variant dark:text-slate-300">{tipo}</span>
-                    <span className="font-semibold text-on-surface dark:text-slate-100">{auditoria.conflictos.filter((c) => c.tipo === tipo).length}</span>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-          <Link
-            to="/horarios/auditoria"
-            className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary hover:text-on-primary-container dark:text-sena-400"
-          >
-            Ver auditoría completa →
-          </Link>
-        </section>
-
-        <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <h2 className="mb-1 text-sm font-bold text-on-surface dark:text-slate-100">Resolución en Constructor Ágil</h2>
-          <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
-            Para ajustar ambientes, reasignar fichas o corregir cruces, use el módulo Constructor.
-          </p>
-          <Link
-            to="/horarios/nuevo"
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
-          >
-            <span aria-hidden="true" className="material-symbols-outlined text-[18px]">edit_calendar</span>
-            Abrir Constructor
-          </Link>
-        </section>
-      </aside>
-      </div>
+      {horarioSeleccionado && (
+        <DrawerHorario
+          horario={horarioSeleccionado}
+          ficha={fichaPorId.get(horarioSeleccionado.idFicha)}
+          instructor={instructorPorId.get(horarioSeleccionado.idInstructor)}
+          ambiente={ambientePorId.get(horarioSeleccionado.idAmbiente)}
+          sede={ambientePorId.get(horarioSeleccionado.idAmbiente) ? sedes.find((sede) => sede.idSede === ambientePorId.get(horarioSeleccionado.idAmbiente)?.idSede) : undefined}
+          trimestre={trimestrePorId.get(horarioSeleccionado.idTrimestre)}
+          diasPorId={diasPorId}
+          jornada={etiquetaJornada(jornadaDeHorario(horarioSeleccionado))}
+          conflictos={auditoria ? auditoria.conflictos : null}
+          cargandoConflictos={cargandoAuditoria}
+          errorConflictos={errorAuditoria}
+          onCerrar={() => actualizarQuery({ idHorario: undefined })}
+          onActualizar={actualizarHorario}
+        />
+      )}
     </AppShell>
   )
 }

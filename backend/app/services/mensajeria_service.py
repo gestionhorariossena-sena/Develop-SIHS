@@ -10,7 +10,20 @@ class ConversacionNoPermitidaError(Exception):
     """El instructor pedido no le dicta clase a la ficha del aprendiz."""
 
 
+class RemitenteNoAutorizadoError(Exception):
+    """Solo el vocero/subvocero de la ficha puede ABRIR una conversación nueva --
+    si todos los aprendices de la ficha pudieran escribirle al mismo
+    instructor, sería imposible de atender. Una conversación que ya existe
+    (creada cuando sí era vocero, por ejemplo) se sigue pudiendo leer y
+    responder -- esto solo bloquea la creación de una nueva."""
+
+
 class MensajeriaService:
+    @staticmethod
+    def _es_vocero_o_subvocero(db: Session, id_aprendiz) -> bool:
+        ficha_usuario = db.query(FichaUsuario).filter(FichaUsuario.idUsuario == id_aprendiz).first()
+        return ficha_usuario is not None and ficha_usuario.rolEnFicha in ("vocero", "subvocero")
+
     @staticmethod
     def _instructor_dicta_a_aprendiz(db: Session, id_aprendiz, id_instructor) -> bool:
         ficha_usuario = db.query(FichaUsuario).filter(FichaUsuario.idUsuario == id_aprendiz).first()
@@ -29,6 +42,9 @@ class MensajeriaService:
         existente = MensajeriaRepository.obtener_conversacion_por_par(db, id_aprendiz, id_instructor)
         if existente:
             return existente
+
+        if not MensajeriaService._es_vocero_o_subvocero(db, id_aprendiz):
+            raise RemitenteNoAutorizadoError()
 
         if not MensajeriaService._instructor_dicta_a_aprendiz(db, id_aprendiz, id_instructor):
             raise ConversacionNoPermitidaError()

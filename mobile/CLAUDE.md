@@ -2,7 +2,8 @@
 
 Cliente **Flutter de solo lectura** para Instructores y Aprendices. Consume
 el MISMO backend FastAPI y la MISMA base Supabase que el cliente web (ver
-`../ARQUITECTURA_MOBILE.md`). Programar horarios sigue siendo de la web;
+[`../_Docs/Arquitectura/ARQUITECTURA_MOBILE.md`](../_Docs/Arquitectura/ARQUITECTURA_MOBILE.md)).
+Programar horarios sigue siendo de la web;
 acá solo se consultan.
 
 ## Cómo correrlo

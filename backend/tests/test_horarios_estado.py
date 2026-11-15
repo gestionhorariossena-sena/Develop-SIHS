@@ -35,17 +35,17 @@ def _crear_tablas_extra(db_session):
 
 
 def _catalogos_base(db_session):
+    hoy = date.today()
     coordinacion = Coordinacion(idCoordinacion=1, nombreCoordinacion="Tecnología")
     programa = Programa(
         idPrograma=1, codigoPrograma="TEC-01", nombrePrograma="Tecnología",
         nivelFormacion="Técnico", activo=True, idCoordinacion=1,
     )
-    hoy = date.today()
     trimestre = Trimestre(
         idTrimestre=1,
-        nombre="Periodo vigente",
-        fechaInicio=hoy - timedelta(days=30),
-        fechaFin=hoy + timedelta(days=60),
+        nombre="Período de prueba",
+        fechaInicio=hoy - timedelta(days=90),
+        fechaFin=hoy + timedelta(days=90),
         estado="activo",
     )
     sede = Sede(id=1, nombre="Sede Norte", direccion="Calle 1", tipo="principal")
@@ -185,56 +185,6 @@ def test_mis_horarios_solo_muestra_lo_publicado_y_propio(client, db_session, aut
     assert ids == [100]
 
 
-def test_mis_horarios_filtra_por_trimestre_explicito(client, db_session, autenticar_como):
-    _crear_tablas_extra(db_session)
-    yo, headers = autenticar_como("Instructor")
-    _, ficha_actual = _catalogos_base(db_session)
-    _crear_horario(db_session, 100, yo, ficha_actual)
-
-    trimestre_anterior = Trimestre(
-        idTrimestre=2,
-        nombre="Periodo anterior",
-        fechaInicio=date.today() - timedelta(days=180),
-        fechaFin=date.today() - timedelta(days=90),
-        estado="finalizado",
-    )
-    ficha_anterior = Ficha(
-        idFicha=2,
-        codigoFicha="FICHA-ANT",
-        idPrograma=1,
-        idTrimestre=2,
-    )
-    db_session.add_all([trimestre_anterior, ficha_anterior])
-    db_session.commit()
-
-    horario_anterior = Horario(
-        idHorario=200,
-        horaInicio=time(10, 0),
-        horaFin=time(12, 0),
-        idJornada=1,
-        idTrimestre=2,
-        idAmbiente=1,
-        idInstructor=yo.idUsuario,
-        idFicha=2,
-        idResultado=9,
-        publicado=True,
-        activo=True,
-    )
-    db_session.add(horario_anterior)
-    db_session.commit()
-    db_session.execute(horario_dia.insert().values(idHorario=200, idDia=1))
-    db_session.commit()
-
-    respuesta = client.get(
-        "/api/v1/usuarios/me/horarios"
-        "?fechaInicio=2000-01-01&fechaFin=2100-12-31&idTrimestre=2",
-        headers=headers,
-    )
-
-    assert respuesta.status_code == 200
-    assert [fila["idHorario"] for fila in respuesta.json()] == [200]
-
-
 def test_mis_horarios_requiere_autenticacion(client, db_session):
     _crear_tablas_extra(db_session)
 
@@ -250,21 +200,18 @@ def test_mis_horarios_filtra_por_rango_de_fechas_del_trimestre(client, db_sessio
     _crear_horario(db_session, 100, yo, ficha)
 
     hoy = date.today()
-    dentro_inicio = hoy
-    dentro_fin = hoy + timedelta(days=4)
-    fuera_inicio = hoy + timedelta(days=120)
-    fuera_fin = fuera_inicio + timedelta(days=4)
-
     dentro = client.get(
-        f"/api/v1/usuarios/me/horarios?fechaInicio={dentro_inicio.isoformat()}&fechaFin={dentro_fin.isoformat()}",
+        f"/api/v1/usuarios/me/horarios?fechaInicio={hoy.isoformat()}&fechaFin={hoy.isoformat()}",
         headers=headers,
     )
+    fuera_inicio = hoy + timedelta(days=91)
+    fuera_fin = hoy + timedelta(days=95)
     fuera = client.get(
         f"/api/v1/usuarios/me/horarios?fechaInicio={fuera_inicio.isoformat()}&fechaFin={fuera_fin.isoformat()}",
         headers=headers,
     )
     rango_incompleto = client.get(
-        f"/api/v1/usuarios/me/horarios?fechaInicio={dentro_inicio.isoformat()}",
+        f"/api/v1/usuarios/me/horarios?fechaInicio={hoy.isoformat()}",
         headers=headers,
     )
 

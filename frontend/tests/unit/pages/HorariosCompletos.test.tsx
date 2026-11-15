@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../../helpers/renderConProviders'
 import { HorariosCompletos } from '../../../src/pages/HorariosCompletos'
-import type { Ambiente, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../../../src/types/api'
+import type { Ambiente, AuditoriaCrucesResponse, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../../../src/types/api'
 
 const FICHA: Ficha = {
   idFicha: 1,
@@ -67,6 +67,7 @@ function mockeaBase(horarios: Horario[] = [HORARIO]) {
     if (path === '/sedes') return Promise.resolve([SEDE])
     if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
+    if (path === '/horarios/auditoria-cruces') return Promise.resolve({ conflictos: [], resumen: { totalCruces: 0, tipos: [] } })
     if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA_SEMANAL)
     return Promise.reject(new Error('no mockeado en este test'))
   })
@@ -82,15 +83,74 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('1 de 1 horarios')).toBeInTheDocument()
   })
 
-  it('no audita automáticamente un período activo vencido; permite elegirlo expresamente', async () => {
+  it('mantiene las entradas Lista, Calendario y Conflictos sin abrir un drawer', async () => {
     mockeaBase()
-    const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await screen.findByText('3228973 B')
-    expect(await screen.findByText(/No hay un período académico activo para la fecha actual/)).toBeInTheDocument()
-    expect(apiGetMock).not.toHaveBeenCalledWith('/horarios/auditoria-cruces?idTrimestre=1', 60000)
-    await usuario.selectOptions(screen.getByLabelText('Período académico a auditar'), '1')
-    await waitFor(() => expect(apiGetMock).toHaveBeenCalledWith('/horarios/auditoria-cruces?idTrimestre=1', 60000))
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Lista' })).toHaveAttribute('href', '/horarios/completos')
+    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', '/calendario?vista=calendario')
+    expect(screen.getByRole('link', { name: 'Conflictos' })).toHaveAttribute('href', '/horarios/auditoria?vista=conflictos')
+    expect(screen.getAllByRole('columnheader')).toHaveLength(8)
+  })
+
+  it('cambia entre Bloques y las tres perspectivas sin perder filtros compartidos ni el drawer en la URL', async () => {
+    mockeaBase()
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?q=Erick&jornada=manana&idTrimestre=1&estado=publicado&idHorario=7'])
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+
+    for (const [perspectiva, etiqueta] of [['ficha', 'Por ficha'], ['instructor', 'Por instructor'], ['ambiente', 'Por ambiente']] as const) {
+      await usuario.click(screen.getByRole('button', { name: etiqueta }))
+      expect(screen.getByLabelText(new RegExp(`Seleccionar ${perspectiva}`))).toBeInTheDocument()
+      const calendario = screen.getByRole('link', { name: 'Calendario' })
+      expect(calendario).toHaveAttribute('href', expect.stringContaining(`perspectiva=${perspectiva}`))
+      expect(calendario).toHaveAttribute('href', expect.stringContaining('q=Erick'))
+      expect(calendario).toHaveAttribute('href', expect.stringContaining('idHorario=7'))
+      expect(screen.getByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+    }
+
+    await usuario.click(screen.getByRole('button', { name: 'Bloques' }))
+    expect(screen.getAllByRole('columnheader')).toHaveLength(8)
+    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', expect.stringContaining('q=Erick'))
+  })
+
+  it.each([
+    ['/horarios/completos?idHorario=7', 'Bloques'],
+    ['/horarios/completos?perspectiva=ficha&idFicha=1&idHorario=7', 'Por ficha'],
+    ['/horarios/completos?perspectiva=instructor&idInstructor=u1&idHorario=7', 'Por instructor'],
+    ['/horarios/completos?perspectiva=ambiente&idAmbiente=1&idHorario=7', 'Por ambiente'],
+  ])('abre el drawer desde %s', async (ruta, perspectiva) => {
+    mockeaBase()
+    renderConProviders(<HorariosCompletos />, [ruta])
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: perspectiva })).toBeInTheDocument()
+  })
+
+  it('muestra Conflictos contextuales provenientes de la auditoría real, incluyendo carga y error', async () => {
+    let resolverAuditoria: ((respuesta: AuditoriaCrucesResponse) => void) | undefined
+    mockeaBase()
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/horarios/auditoria-cruces') return new Promise<AuditoriaCrucesResponse>((resolve) => { resolverAuditoria = resolve })
+      if (path === '/horarios/') return Promise.resolve([HORARIO])
+      if (path === '/fichas/') return Promise.resolve([FICHA])
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE])
+      if (path === '/sedes') return Promise.resolve([SEDE])
+      if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?perspectiva=ficha&idFicha=1'])
+    expect(await screen.findByText('Cargando Conflictos del contexto…')).toBeInTheDocument()
+    resolverAuditoria?.({ conflictos: [{ idHorario: 7, idHorarioExistente: null, tipo: 'cruce_ficha', mensaje: 'Cruce real de ficha', idFicha: 1 }], resumen: { totalCruces: 1, tipos: ['cruce_ficha'] } })
+    expect(await screen.findByText('Cruce real de ficha')).toBeInTheDocument()
+
+    cleanup()
+    apiGetMock.mockImplementation((path: string) => path === '/horarios/auditoria-cruces' ? Promise.reject(new Error('falló auditoría')) : path === '/horarios/' ? Promise.resolve([HORARIO]) : path === '/fichas/' ? Promise.resolve([FICHA]) : path === '/usuarios/' ? Promise.resolve([INSTRUCTOR]) : path === '/ambientes' ? Promise.resolve([AMBIENTE]) : path === '/sedes' ? Promise.resolve([SEDE]) : path === '/trimestres/' ? Promise.resolve([TRIMESTRE]) : path === '/dias-semana/' ? Promise.resolve(DIAS) : Promise.reject(new Error('no mockeado')))
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?perspectiva=ambiente&idAmbiente=1'])
+    expect(await screen.findByText(/No se pudo consultar los Conflictos/)).toBeInTheDocument()
   })
 
   it('el buscador filtra por ficha, programa, instructor o ambiente', async () => {
@@ -125,7 +185,18 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
   })
 
-  it('clic en una fila expande debajo una caja con ficha, instructor (+ carga semanal), ambiente, tema y el grid del horario', async () => {
+  it('sincroniza filtros, página y drawer con la URL', async () => {
+    mockeaBase([HORARIO, OTRO_HORARIO])
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?q=Erick&jornada=manana&pagina=2'])
+    expect(await screen.findByText('Erick Granados')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', expect.stringContaining('q=Erick'))
+    expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', expect.stringContaining('idHorario=7'))
+  })
+
+  it('clic en una fila abre el DrawerHorario a la derecha sin retirar la tabla', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
@@ -133,24 +204,18 @@ describe('HorariosCompletos', () => {
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
 
-    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
-    expect(screen.getByText('Análisis y Desarrollo de Software (ADSO)')).toBeInTheDocument()
-    expect(screen.getByText('erick@example.com')).toBeInTheDocument()
-    expect(screen.getByText('Contrato: Planta')).toBeInTheDocument()
-    expect(screen.getByText('Número: 101')).toBeInTheDocument()
-    expect(screen.getByText('Sede: Sede principal')).toBeInTheDocument()
-    // "CPL18" (código) solo en la tarjeta "Tema" del detalle -- el grid
-    // muestra la DESCRIPCIÓN del resultado (único dato que también tienen
-    // los bloques "nuevos" del asistente, que no traen código), así que
-    // "Gestión de inventarios" aparece dos veces: grid + tarjeta.
-    expect(screen.getByText('CPL18')).toBeInTheDocument()
-    expect(screen.getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
-    expect(screen.getByText('Horario semanal')).toBeInTheDocument()
+    const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
+    expect(drawer).toHaveClass('fixed', 'right-0', 'top-0', 'h-screen', 'max-w-[460px]')
+    expect(within(drawer).getByText('Bloque #7 · Ficha 3228973 B')).toBeInTheDocument()
+    expect(within(drawer).getByRole('tab', { name: 'Información', selected: true })).toBeInTheDocument()
+    expect(within(drawer).getByText('Competencia')).toBeInTheDocument()
+    expect(within(drawer).getByText('Resultado de aprendizaje (RAP)')).toBeInTheDocument()
+    expect(within(drawer).getByText('Carga semanal')).toBeInTheDocument()
+    expect(within(drawer).getByText(/CPL18 · Gestión de inventarios/)).toBeInTheDocument()
+    expect(within(drawer).getByText('Horario semanal')).toBeInTheDocument()
 
-    expect(await screen.findByText('10h / 40h')).toBeInTheDocument()
-
-    // No debe abrirse ningún panel/drawer lateral — todo pasa dentro de la tabla.
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(await within(drawer).findByText('10h / 40h')).toBeInTheDocument()
+    expect(screen.getAllByRole('columnheader')).toHaveLength(8)
   })
 
   it('muestra el motivo del error al despublicar en lugar de ignorar el fallo', async () => {
@@ -159,6 +224,7 @@ describe('HorariosCompletos', () => {
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+    await usuario.click(screen.getByRole('tab', { name: 'Publicación' }))
     await usuario.click(await screen.findByRole('button', { name: 'Despublicar' }))
     expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
     expect(await screen.findByText('No se pudo cambiar la publicación. Intenta de nuevo.')).toBeInTheDocument()
@@ -174,29 +240,24 @@ describe('HorariosCompletos', () => {
     boton.focus()
     await usuario.keyboard('{Enter}')
 
-    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
     expect(boton).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('cada tarjeta tiene links "Más info" y "Ver horario por..." hacia su vista completa y su vista agregada', async () => {
+  it('la pestaña Relaciones enlaza las perspectivas de ficha, instructor y ambiente', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await screen.findByText('3228973 B')
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    await screen.findByText('Horario #7')
+    await screen.findByRole('dialog', { name: 'Horario #7' })
+    await usuario.click(screen.getByRole('tab', { name: 'Relaciones' }))
 
-    const masInfo = screen.getAllByRole('link', { name: 'Más info →' })
-    expect(masInfo[0]).toHaveAttribute('href', '/fichas?id=1')
-    expect(masInfo[1]).toHaveAttribute('href', '/instructores?id=u1')
-    expect(masInfo[2]).toHaveAttribute('href', '/ambientes?id=1')
-
-    expect(screen.getByRole('link', { name: 'Ver horario por ficha →' })).toHaveAttribute('href', '/vista-fichas?id=1')
-    expect(screen.getByRole('link', { name: 'Ver horario por instructor →' })).toHaveAttribute('href', '/vista-instructores?id=u1')
-    expect(screen.getByRole('link', { name: 'Ver horario por ambiente →' })).toHaveAttribute('href', '/vista-ambientes?id=1')
-
-    expect(screen.getByRole('link', { name: 'Detalles de creación / Modificar →' })).toHaveAttribute('href', '/horarios/historial?id=7')
+    expect(screen.getByRole('link', { name: 'Ver horario por ficha →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=ficha&idFicha=1&idHorario=7')
+    expect(screen.getByRole('link', { name: 'Ver horario por instructor →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=instructor&idInstructor=u1&idHorario=7')
+    expect(screen.getByRole('link', { name: 'Ver horario por ambiente →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=ambiente&idAmbiente=1&idHorario=7')
+    expect(screen.getByText('Validación de cruces superada.')).toBeInTheDocument()
   })
 
   it('muestra "Publicado" y permite despublicar un horario individual', async () => {
@@ -207,10 +268,9 @@ describe('HorariosCompletos', () => {
     await screen.findByText('3228973 B')
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    // "Publicado" ahora aparece dos veces con la fila expandida: el badge de
-    // la columna "Estado" en la fila y el badge dentro del detalle expandido.
     expect((await screen.findAllByText('Publicado')).length).toBeGreaterThan(0)
 
+    await usuario.click(screen.getByRole('tab', { name: 'Publicación' }))
     await usuario.click(screen.getByRole('button', { name: 'Despublicar' }))
 
     expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
@@ -218,24 +278,45 @@ describe('HorariosCompletos', () => {
     expect(screen.getByRole('button', { name: 'Publicar ahora' })).toBeInTheDocument()
   })
 
-  it('clic de nuevo en la misma fila colapsa la caja expandida', async () => {
+  it('cierra el drawer con X y con Escape', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await screen.findByText('3228973 B')
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Cerrar' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    expect(screen.queryByText('Horario #7')).not.toBeInTheDocument()
+    await usuario.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+
+    await usuario.click(screen.getAllByText('3228973 B')[0])
+    const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
+    await usuario.click(drawer.parentElement!)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('con ?id= en la URL, expande esa fila directo (deep link desde Calendario general)', async () => {
+  it('las pestañas muestran su contenido y el footer conserva las acciones principales', async () => {
+    mockeaBase()
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+    await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+
+    await usuario.click(screen.getByRole('tab', { name: 'Relaciones' }))
+    expect(screen.getByRole('link', { name: 'Gestionar publicación' })).toHaveAttribute('href', '/horarios/publicaciones-programadas?idHorario=7')
+    await usuario.click(screen.getByRole('tab', { name: 'Acciones' }))
+    expect(screen.getAllByRole('link', { name: 'Editar bloque' })[0]).toHaveAttribute('href', '/horarios/historial?id=7')
+  })
+
+  it('con ?id= en la URL, abre el drawer directo (deep link desde Calendario general)', async () => {
     mockeaBase()
     renderConProviders(<HorariosCompletos />, ['/horarios/completos?id=7'])
 
-    expect(await screen.findByText('Horario #7')).toBeInTheDocument()
+    expect(await screen.findByRole('dialog', { name: 'Horario #7' })).toBeInTheDocument()
   })
 
   it('muestra el error del backend si la carga falla', async () => {
@@ -247,6 +328,23 @@ describe('HorariosCompletos', () => {
     await waitFor(() => {
       expect(screen.getByText('No se pudo cargar el listado de horarios.')).toBeInTheDocument()
     })
+  })
+
+  it('advierte el catálogo fallido sin ocultar la tabla', async () => {
+    mockeaBase()
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/horarios/') return Promise.resolve([HORARIO])
+      if (path === '/fichas/') return Promise.reject(new Error('falló fichas'))
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE])
+      if (path === '/sedes') return Promise.resolve([SEDE])
+      if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<HorariosCompletos />)
+    expect(await screen.findByText('3228973 B')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('no se pudieron cargar: fichas')
   })
 
   it('un horario creado por el Asistente (franja propia, no la institucional) sí aparece en el grid y con jornada correcta', async () => {
@@ -271,7 +369,7 @@ describe('HorariosCompletos', () => {
     // en silencio -- "Gestión de inventarios" solo aparecería una vez, en
     // la tarjeta de detalle, si el grid lo hubiera perdido).
     await usuario.click(screen.getAllByText('3228973 B')[0])
-    await screen.findByText('Horario #7')
-    expect(screen.getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
+    const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
+    expect(within(drawer).getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
   })
 })

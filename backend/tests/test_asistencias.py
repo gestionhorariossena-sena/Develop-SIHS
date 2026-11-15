@@ -146,6 +146,28 @@ def test_volver_a_pasar_lista_corrige_en_vez_de_duplicar(client, db_session, esc
     assert db_session.query(Asistencia).one().estado == "presente"
 
 
+def test_el_instructor_puede_eliminar_la_lista_completa_y_se_audita(client, db_session, escenario):
+    client.post(
+        "/api/v1/asistencias/sesion",
+        json={
+            "idHorario": 100,
+            "fechaSesion": escenario["fecha"],
+            "marcas": [{"idUsuarioAprendiz": str(escenario["aprendiz"].idUsuario), "estado": "presente"}],
+        },
+        headers=escenario["headers"],
+    )
+
+    respuesta = client.delete(
+        f"/api/v1/asistencias/sesion?idHorario=100&fecha={escenario['fecha']}",
+        headers=escenario["headers"],
+    )
+
+    assert respuesta.status_code == 200
+    assert respuesta.json() == {"eliminadas": 1}
+    assert db_session.query(Asistencia).count() == 0
+    assert "ELIMINAR_ASISTENCIA" in [a.accion for a in db_session.query(Auditoria).all()]
+
+
 def test_la_correccion_queda_auditada(client, db_session, escenario):
     cuerpo = {
         "idHorario": 100,

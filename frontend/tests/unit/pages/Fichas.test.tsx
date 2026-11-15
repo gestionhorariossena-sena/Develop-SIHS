@@ -11,8 +11,8 @@ const FICHAS: Ficha[] = [
     codigoFicha: '3228973 B',
     idPrograma: 1,
     idTrimestre: 1,
-    idSede: null,
-    sede: null,
+    idSede: 1,
+    sede: { idSede: 1, nombreSede: 'Sede Principal', direccion: null, tipoSede: 'Principal' },
     programa: {
       idPrograma: 1,
       codigoPrograma: 'ADSO',
@@ -30,8 +30,8 @@ const FICHAS: Ficha[] = [
     codigoFicha: '2758431',
     idPrograma: 2,
     idTrimestre: 2,
-    idSede: null,
-    sede: null,
+    idSede: 2,
+    sede: { idSede: 2, nombreSede: 'Sede Norte', direccion: null, tipoSede: 'Alterna' },
     programa: {
       idPrograma: 2,
       codigoPrograma: 'COCI',
@@ -97,12 +97,13 @@ describe('Fichas', () => {
     renderConProviders(<Fichas />)
     await screen.findByText('3228973 B')
 
-    await usuario.click(screen.getAllByRole('button', { name: 'Editar' })[0])
+    await usuario.click(screen.getByRole('button', { name: 'Más acciones de la ficha 3228973 B' }))
+    await usuario.click(screen.getByRole('menuitem', { name: 'Editar ficha' }))
     await usuario.clear(screen.getByLabelText('Código de ficha'))
     await usuario.type(screen.getByLabelText('Código de ficha'), 'Actualizada')
     await usuario.click(screen.getByRole('button', { name: 'Guardar ficha' }))
 
-    await waitFor(() => expect(apiPutMock).toHaveBeenCalledWith('/fichas/2', expect.objectContaining({ codigoFicha: 'Actualizada', fechaInicioLectiva: null })))
+    await waitFor(() => expect(apiPutMock).toHaveBeenCalledWith('/fichas/1', expect.objectContaining({ codigoFicha: 'Actualizada', fechaInicioLectiva: null })))
     expect(apiGetMock.mock.calls.filter(([path]) => path === '/fichas/').length).toBe(2)
   })
 
@@ -113,7 +114,7 @@ describe('Fichas', () => {
     expect(await screen.findByText('3228973 B')).toBeInTheDocument()
     expect(screen.getByText('2758431')).toBeInTheDocument()
     expect(apiGetMock).toHaveBeenCalledWith('/fichas/')
-    expect(screen.getByText('2 de 2 fichas')).toBeInTheDocument()
+    expect(screen.getByText('2 fichas')).toBeInTheDocument()
   })
 
   it('el buscador filtra por código o programa', async () => {
@@ -126,7 +127,20 @@ describe('Fichas', () => {
 
     expect(screen.queryByText('3228973 B')).not.toBeInTheDocument()
     expect(screen.getByText('2758431')).toBeInTheDocument()
-    expect(screen.getByText('1 de 2 fichas')).toBeInTheDocument()
+  })
+
+  it('filtra por sede y trimestre desde los filtros visibles', async () => {
+    mockeaFichasYPerfil(FICHAS)
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    await screen.findByText('3228973 B')
+
+    await usuario.selectOptions(screen.getByLabelText('Sede'), 'Sede Principal')
+    expect(screen.getByText('3228973 B')).toBeInTheDocument()
+    expect(screen.queryByText('2758431')).not.toBeInTheDocument()
+
+    await usuario.selectOptions(screen.getByLabelText('Trimestre'), 'Trimestre 1')
+    expect(screen.getByText('No hay fichas que coincidan con los filtros.')).toBeInTheDocument()
   })
 
   it('clic en una fila abre el drawer con programa, jornadas y aprendices', async () => {
@@ -181,6 +195,26 @@ describe('Fichas', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
+  it('mantiene el foco dentro del drawer al navegar con Tab', async () => {
+    mockeaFichasYPerfil(FICHAS)
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    await screen.findByText('3228973 B')
+
+    await usuario.click(screen.getByText('3228973 B'))
+    const panel = screen.getByRole('dialog', { name: '3228973 B' })
+    const cerrar = within(panel).getByRole('button', { name: 'Cerrar' })
+    const ultimaPestana = within(panel).getByRole('tab', { name: 'Acciones' })
+
+    cerrar.focus()
+    await usuario.keyboard('{Shift>}{Tab}{/Shift}')
+    expect(ultimaPestana).toHaveFocus()
+
+    await usuario.keyboard('{Tab}')
+    expect(cerrar).toHaveFocus()
+    expect(panel).toContainElement(document.activeElement)
+  })
+
   it('muestra el grid semanal con los horarios reales de la ficha', async () => {
     mockeaFichasConHorarios(FICHAS)
     const usuario = userEvent.setup()
@@ -190,6 +224,7 @@ describe('Fichas', () => {
     await usuario.click(screen.getByText('3228973 B'))
 
     const panel = screen.getByRole('dialog', { name: '3228973 B' })
+    await usuario.click(within(panel).getByRole('tab', { name: 'Horario' }))
     expect(await within(panel).findByText('Horario semanal')).toBeInTheDocument()
     expect(within(panel).getByText('RA-9')).toBeInTheDocument()
     // "Erick Granados" y "Ambiente 101" aparecen dos veces: en la celda del
@@ -207,6 +242,7 @@ describe('Fichas', () => {
     await usuario.click(screen.getByText('3228973 B'))
 
     const panel = screen.getByRole('dialog', { name: '3228973 B' })
+    await usuario.click(within(panel).getByRole('tab', { name: 'Relacionados' }))
     expect(await within(panel).findByText('Instructores')).toBeInTheDocument()
     expect(within(panel).getByText('Temas que dicta')).toBeInTheDocument()
     expect(within(panel).getByText('Ambientes asignados')).toBeInTheDocument()
@@ -231,7 +267,7 @@ describe('Fichas', () => {
     expect(await screen.findByRole('dialog', { name: '3228973 B' })).toBeInTheDocument()
   })
 
-  it('el drawer tiene un link "Ver horario completo" hacia Vista por fichas', async () => {
+  it('el drawer separa sus pestañas y deja preparado el detalle completo', async () => {
     mockeaFichasConHorarios(FICHAS)
     const usuario = userEvent.setup()
     renderConProviders(<Fichas />)
@@ -240,8 +276,9 @@ describe('Fichas', () => {
     await usuario.click(screen.getByText('3228973 B'))
 
     const panel = screen.getByRole('dialog', { name: '3228973 B' })
-    const link = await within(panel).findByRole('link', { name: 'Ver horario completo →' })
-    expect(link).toHaveAttribute('href', '/vista-fichas?id=1')
+    expect(within(panel).getByRole('tab', { name: 'Información' })).toHaveAttribute('aria-selected', 'true')
+    await usuario.click(within(panel).getByRole('tab', { name: 'Acciones' }))
+    expect(within(panel).getByRole('button', { name: 'Abrir detalle completo' })).toBeDisabled()
   })
 
   it('con más de 10 fichas, pagina y el botón de página 2 avanza', async () => {
@@ -314,13 +351,13 @@ describe('Fichas', () => {
       apiPostMock.mockClear()
     })
 
-    it('el botón "Cargar archivo" abre y cierra el panel de importación', async () => {
+    it('el botón "Importar CSV" abre y cierra el panel de importación', async () => {
       mockeaFichasYPerfil(FICHAS)
       const usuario = userEvent.setup()
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
       expect(screen.getByText(/Columnas esperadas/)).toBeInTheDocument()
 
       await usuario.click(screen.getByRole('button', { name: 'Cerrar' }))
@@ -334,7 +371,7 @@ describe('Fichas', () => {
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
       const csv = 'codigoFicha,codigoPrograma,trimestre,sede\nFICHA-NUEVA,ADSO,Trimestre 3,'
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
 
@@ -359,7 +396,7 @@ describe('Fichas', () => {
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
       const csv = 'codigoFicha,codigoPrograma,trimestre,sede\nFICHA-A,NOEXISTE,Trimestre 3,\nFICHA-B,ADSO,Trimestre 3,'
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
       await screen.findByText(/Se encontraron/)
@@ -377,7 +414,7 @@ describe('Fichas', () => {
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv('codigoFicha,codigoPrograma\nFICHA-X,ADSO'))
 
       expect(await screen.findByText(/le faltan estas columnas: trimestre/)).toBeInTheDocument()

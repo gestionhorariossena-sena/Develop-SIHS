@@ -60,6 +60,24 @@ function mockearNotificacionesYPerfil(notificaciones: unknown) {
 }
 
 describe('Notificaciones', () => {
+  // Pedido explícito: nada de contenido de "vitrina" (desarrollador) --
+  // el aprendiz debe ver solo cosas reales o el estado vacío de verdad.
+  it('sin notificaciones muestra el estado vacío real, sin tarjetas de vitrina', async () => {
+    mockearNotificacionesYPerfil([])
+    renderConProviders(<Notificaciones />)
+
+    expect(await screen.findByText('Sin notificaciones por ahora')).toBeInTheDocument()
+    expect(screen.queryByText(/Vitrina/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Canales de Entrega')).not.toBeInTheDocument()
+    expect(screen.queryByText('Anticipación de Alerta')).not.toBeInTheDocument()
+    expect(screen.queryByText('Instructores de la Ficha')).not.toBeInTheDocument()
+    expect(screen.getByText('¿Inconsistencia en horario?')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Crear radicado' })).toHaveAttribute(
+      'href',
+      'https://mesadeayuda.sena.edu.co',
+    )
+  })
+
   it('carga las notificaciones y las agrupa por fecha', async () => {
     mockearNotificacionesYPerfil(NOTIFICACIONES)
     renderConProviders(<Notificaciones />)

@@ -6,6 +6,7 @@ import { RecuperarContrasena } from '../pages/RecuperarContrasena'
 import { RestablecerContrasena } from '../pages/RestablecerContrasena'
 import { DashboardRouter } from '../pages/DashboardRouter'
 import { NuevoHorario } from '../pages/NuevoHorario'
+import { CrearHorario } from '../pages/CrearHorario'
 import { AsistenteHorarios } from '../pages/AsistenteHorarios'
 import { HistorialHorarios } from '../pages/HistorialHorarios'
 import { CalendarioGeneral } from '../pages/CalendarioGeneral'
@@ -117,6 +118,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/horarios/crear"
+        element={
+          <ProtectedRoute roles={GESTION}>
+            <CrearHorario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/horarios/nuevo"
         element={
           <ProtectedRoute roles={GESTION}>
@@ -183,6 +192,19 @@ export function AppRouter() {
       />
       <Route
         path="/mensajes"
+        element={
+          <ProtectedRoute roles={APRENDIZ}>
+            <MensajesAprendiz />
+          </ProtectedRoute>
+        }
+      />
+      {/* Mismo componente, otra vista: la lista de conversaciones con
+        * contador de no leídos en vez del directorio de solo lectura.
+        * Solo el vocero/subvocero la ve en el subnav (AppShell.tsx), pero
+        * la ruta en sí no es más permisiva -- MensajesAprendiz.tsx ya
+        * esconde "Escribir" si no puede, y el backend lo exige igual. */}
+      <Route
+        path="/mensajes/chat"
         element={
           <ProtectedRoute roles={APRENDIZ}>
             <MensajesAprendiz />

@@ -86,6 +86,7 @@ class HorarioResponse(HorarioBase):
     # Enriquecido por HorarioService/_a_response para no obligar al
     # frontend a resolver estos nombres con llamadas aparte.
     instructorNombre: str | None = None
+    instructorEmail: str | None = None
     fichaCodigo: str | None = None
     ambienteNombre: str | None = None
     resultadoCodigo: str | None = None

@@ -26,6 +26,16 @@ class AsistenciaFalsa implements AsistenciaGateway {
     required DateTime fecha,
   }) async =>
       throw UnimplementedError('es el endpoint del instructor, no el del aprendiz');
+
+  @override
+  Future<Map<String, dynamic>> guardarSesion({
+    required int idHorario,
+    required DateTime fecha,
+    required List<Map<String, dynamic>> marcas,
+  }) async => {};
+
+  @override
+  Future<void> eliminarSesion({required int idHorario, required DateTime fecha}) async {}
 }
 
 MiAsistencia _datos({

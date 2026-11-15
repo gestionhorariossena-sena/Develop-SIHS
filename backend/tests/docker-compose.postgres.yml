@@ -1,0 +1,17 @@
+name: sihs-postgres-tests
+
+services:
+  postgres-test:
+    image: postgres:16-alpine
+    container_name: sihs-postgres-test-db
+    environment:
+      POSTGRES_DB: sihs_test
+      POSTGRES_USER: sihs_test
+      POSTGRES_PASSWORD: sihs_test_only
+    ports:
+      - "127.0.0.1:55440:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sihs_test -d sihs_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

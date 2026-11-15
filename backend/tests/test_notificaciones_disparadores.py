@@ -48,6 +48,7 @@ def _crear_tablas_extra(db_session):
 
 
 def _catalogos(db_session):
+    hoy = date.today()
     db_session.add_all(
         [
             Coordinacion(idCoordinacion=1, nombreCoordinacion="Tecnología"),
@@ -57,9 +58,9 @@ def _catalogos(db_session):
             ),
             Trimestre(
                 idTrimestre=1,
-                nombre="Periodo vigente",
-                fechaInicio=date.today() - timedelta(days=30),
-                fechaFin=date.today() + timedelta(days=60),
+                nombre="Período de prueba",
+                fechaInicio=hoy - timedelta(days=90),
+                fechaFin=hoy + timedelta(days=90),
                 estado="activo",
             ),
             Sede(id=1, nombre="Sede Norte", direccion="Calle 1", tipo="principal"),

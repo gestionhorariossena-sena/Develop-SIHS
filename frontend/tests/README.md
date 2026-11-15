@@ -1,5 +1,17 @@
-# Tests de frontend
+# Tests de frontend — Vitest
 
-Las pruebas de Vitest viven fuera de `src/`, en `tests/unit/`, y reflejan las rutas del código de producción. El setup global se ubica en `tests/setup.ts`, y los utilitarios compartidos en `tests/helpers/`.
+Estructura separada del código de producción `frontend/src/`:
 
-Desde `frontend/` ejecuta `npm test` para validar las pruebas.
+- `unit/` — pruebas de reglas y componentes por módulo, respetando la estructura de `src/`.
+- `integration/` — flujos de componentes con servicios simulados, ejecutados con Vitest.
+- `helpers/` — utilidades para montar componentes en los tests.
+- `setup.ts` — inicialización compartida.
+
+```bash
+cd frontend
+pnpm install --frozen-lockfile
+pnpm test
+pnpm test:coverage
+```
+
+La ejecución E2E con navegador es independiente: `cd e2e && pnpm test`.

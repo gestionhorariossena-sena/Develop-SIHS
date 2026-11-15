@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
 import { GridHorario } from '../components/horario/GridHorario'
 import { apiDelete, apiGet, apiPost, apiPut, ApiError } from '../services/api'
-import type { AnotacionHorario, AnotacionHorarioInput, EtiquetaAnotacion, Ficha, Horario } from '../types/api'
+import type { AnotacionHorario, AnotacionHorarioInput, EtiquetaAnotacion, Ficha, Horario, Trimestre } from '../types/api'
 import {
   construirVistaSemanal,
   duracionHoras,
@@ -96,6 +96,13 @@ export function MiHorarioAprendiz() {
 
   const [anotaciones, setAnotaciones] = useState<AnotacionHorario[]>([])
   const [errorAnotaciones, setErrorAnotaciones] = useState<string | null>(null)
+
+  // Selector de Trimestre: la carga inicial sigue siendo GET /mi-horario
+  // sin parámetros (comportamiento de siempre -- el vigente de la ficha).
+  // Elegir una pestaña distinta dispara GET /mi-horario?idTrimestre=X.
+  const [trimestres, setTrimestres] = useState<Trimestre[]>([])
+  const [trimestreSeleccionado, setTrimestreSeleccionado] = useState<number | null>(null)
+  const [cargandoTrimestre, setCargandoTrimestre] = useState(false)
   const [idHorarioSeleccionado, setIdHorarioSeleccionado] = useState<number | null>(null)
   const [notaBorrador, setNotaBorrador] = useState('')
   const [etiquetaBorrador, setEtiquetaBorrador] = useState<EtiquetaAnotacion>('Normal')
@@ -107,6 +114,7 @@ export function MiHorarioAprendiz() {
     apiGet<Ficha>('/ficha-usuario/mi-ficha')
       .then((fichaVinculada) => {
         setFicha(fichaVinculada)
+        setTrimestreSeleccionado(fichaVinculada.idTrimestre)
         return apiGet<Horario[]>('/ficha-usuario/mi-horario')
       })
       .then(setHorarios)
@@ -118,7 +126,25 @@ export function MiHorarioAprendiz() {
         setError(err instanceof ApiError ? err.message : 'No se pudo cargar tu horario.')
       })
       .finally(() => setCargando(false))
+
+    apiGet<Trimestre[]>('/trimestres/')
+      .then(setTrimestres)
+      .catch(() => setTrimestres([]))
   }, [])
+
+  async function seleccionarTrimestre(idTrimestre: number) {
+    if (idTrimestre === trimestreSeleccionado || cargandoTrimestre) return
+    setTrimestreSeleccionado(idTrimestre)
+    setCargandoTrimestre(true)
+    setError(null)
+    try {
+      setHorarios(await apiGet<Horario[]>(`/ficha-usuario/mi-horario?idTrimestre=${idTrimestre}`))
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo cargar ese trimestre.')
+    } finally {
+      setCargandoTrimestre(false)
+    }
+  }
 
   async function actualizarHorario() {
     if (actualizandoHorario || cargando || sinFicha) return
@@ -277,6 +303,19 @@ export function MiHorarioAprendiz() {
     return [...mapa.values()]
   }, [horarios])
 
+  // Mismo criterio que TrimestreRepository.obtener_vigente en el backend
+  // (estado activo + hoy dentro del rango) -- solo para la etiqueta "actual"
+  // de la pestaña, no decide qué datos se piden (eso ya lo resuelve la API).
+  const trimestreVigente = useMemo(() => {
+    const hoy = new Date().toISOString().slice(0, 10)
+    return trimestres.find((t) => t.estado === 'activo' && t.fechaInicio <= hoy && t.fechaFin >= hoy) ?? null
+  }, [trimestres])
+
+  const trimestresOrdenados = useMemo(
+    () => [...trimestres].sort((a, b) => a.fechaInicio.localeCompare(b.fechaInicio)),
+    [trimestres],
+  )
+
   return (
     <AppShell activo="Mi Horario">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
@@ -303,6 +342,9 @@ export function MiHorarioAprendiz() {
             {vista.jornadas.length > 0
               ? `Jornada ${vista.jornadas.join(' y ')} · ${horasProgramadas.toFixed(1)}h lectivas por semana`
               : 'Distribución de clases de Lunes a Sábado por franja horaria.'}
+            {trimestreSeleccionado != null && (
+              <> · {trimestreSeleccionado === trimestreVigente?.idTrimestre ? 'Trimestre actual' : 'Horario histórico'}</>
+            )}
           </p>
         </div>
 
@@ -342,6 +384,34 @@ export function MiHorarioAprendiz() {
           </button>
         </div>
       </div>
+
+      {trimestresOrdenados.length > 0 && !sinFicha && (
+        <div className="mb-4">
+          <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Trimestre</p>
+          <div className="flex flex-wrap gap-1.5">
+            {trimestresOrdenados.map((trimestre) => {
+              const esSeleccionado = trimestre.idTrimestre === trimestreSeleccionado
+              const esVigente = trimestre.idTrimestre === trimestreVigente?.idTrimestre
+              return (
+                <button
+                  key={trimestre.idTrimestre}
+                  type="button"
+                  onClick={() => void seleccionarTrimestre(trimestre.idTrimestre)}
+                  disabled={cargandoTrimestre}
+                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition disabled:cursor-wait ${
+                    esSeleccionado
+                      ? 'bg-primary text-on-primary'
+                      : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
+                  }`}
+                >
+                  {trimestre.nombre}
+                  {esVigente ? ' · Actual' : ''}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {error && (
         <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
@@ -410,18 +480,18 @@ export function MiHorarioAprendiz() {
                 marcadoresPorBloqueId={marcadoresPorBloqueId}
                 onClicBloqueLectura={(bloqueId) => abrirOrganizador(idHorarioDeBloqueId(bloqueId))}
               />
-            </div>
 
-            {vista.sinUbicar.length > 0 && (
-              <p className="rounded-lg bg-surface-container-low px-3 py-2 text-xs text-on-surface-variant">
-                {vista.sinUbicar.length} clase{vista.sinUbicar.length === 1 ? '' : 's'} con un horario que no
-                coincide con los bloques institucionales, así que no se puede dibujar en la grilla:{' '}
-                {vista.sinUbicar
-                  .map((h) => `${h.resultadoCodigo ?? h.resultadoDescripcion ?? 'Clase'} (${formatearHora(h.horaInicio)}–${formatearHora(h.horaFin)})`)
-                  .join(', ')}
-                .
-              </p>
-            )}
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs text-on-surface-variant">
+                <span className="inline-flex items-center gap-1.5">
+                  <i aria-hidden="true" className="h-2.5 w-2.5 rounded-sm bg-emerald-200" />
+                  Jornada mañana y noche
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <i aria-hidden="true" className="h-2.5 w-2.5 rounded-sm bg-sky-200" />
+                  Jornada tarde
+                </span>
+              </div>
+            </div>
 
             <div className="flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-xs text-on-surface-variant">
               <span>Horario oficial emitido por Coordinación Académica.</span>
@@ -507,6 +577,22 @@ export function MiHorarioAprendiz() {
                     <span className="block text-[10px] text-on-primary/80">Instructor</span>
                     <span className="text-xs font-bold">{proxima.horario.instructorNombre ?? '—'}</span>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {vista.bloques.length > 0 && (
+              <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+                <p className="mb-3 text-sm font-semibold text-on-surface">Detalle de clases</p>
+                <div className="divide-y divide-outline-variant">
+                  {vista.bloques.map((bloque) => (
+                    <div key={bloque.id} className="py-2 text-xs first:pt-0 last:pb-0">
+                      <p className="truncate font-semibold text-on-surface">{bloque.tematica}</p>
+                      <p className="truncate text-on-surface-variant">
+                        {bloque.instructor} · {bloque.ambiente}
+                      </p>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}

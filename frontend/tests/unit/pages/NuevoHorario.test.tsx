@@ -354,6 +354,53 @@ describe('NuevoHorario', () => {
     expect(mocks.apiPost).toHaveBeenCalledWith('/horarios-guardados/', expect.objectContaining({ idsHorarios: [999] }))
   })
 
+  it('si falla la carga del horario de la ficha, muestra el error con botón "Reintentar" y al pulsarlo lo vuelve a cargar', async () => {
+    // Arrange (semana 2 - Edith): estado de error de NuevoHorario, que es
+    // quien le da los datos iniciales a HorarioEditor — HorarioEditor en sí
+    // no tiene estados de red propios (ver HorarioEditor.tsx).
+    configurarCatalogos()
+    let intentos = 0
+    mocks.apiGet.mockImplementation((ruta: string) => {
+      if (ruta === '/fichas/1/horarios') {
+        intentos += 1
+        return intentos === 1
+          ? Promise.reject(new mocks.ApiError(500, 'No se pudo consultar el horario de la ficha.'))
+          : Promise.resolve([])
+      }
+      if (ruta === '/fichas/') return Promise.resolve([FICHA])
+      if (ruta === '/usuarios/me') {
+        return Promise.resolve({
+          idUsuario: '22222222-2222-2222-2222-222222222222',
+          nombre: 'Coordinadora',
+          email: 'coordinadora@example.com',
+          roles: [{ idRol: 1, nombre: 'Coordinador' }],
+        })
+      }
+      if (ruta === '/jornadas/') return Promise.resolve([{ idJornada: 1, nombreJornada: 'Mañana' }])
+      if (ruta === '/dias-semana/') return Promise.resolve([{ idDia: 1, nombreDia: 'Lunes' }])
+      return Promise.resolve([])
+    })
+    const usuario = userEvent.setup()
+
+    // Act
+    renderConProviders(<NuevoHorario />)
+    await usuario.click(await screen.findByRole('button', { name: /Ficha 3228973/ }))
+
+    // Assert — estado de error visible, con la UI real bloqueada para guardar.
+    const alerta = await screen.findByRole('alert')
+    expect(alerta).toHaveTextContent('No se pudo consultar el horario de la ficha.')
+    expect(screen.queryByText('Editor de horario')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Guardar borrador/ })).toBeDisabled()
+
+    // Act — interacción real: el usuario pulsa "Reintentar".
+    await usuario.click(screen.getByRole('button', { name: 'Reintentar' }))
+
+    // Assert — el segundo intento sí resuelve y el error desaparece.
+    await screen.findByText('Editor de horario')
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(intentos).toBe(2)
+  })
+
   it('si falla la carga del horario a modificar, muestra el error', async () => {
     configurarCatalogos()
     mocks.apiGet.mockImplementation((ruta: string) => {
