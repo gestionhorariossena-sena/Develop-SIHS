@@ -95,7 +95,16 @@ export function normalizarRutaHorarioLegada(pathname: string, params: URLSearchP
   const idLegado = textoQuery(params.get('id'))
 
   if (pathname === '/horarios/completos') {
-    return { ...base, perspectiva: 'bloques', vista: 'lista', idHorario: base.idHorario ?? idLegado }
+    // En la ruta canónica no se reinterpreta estado ya explícito. Solo el
+    // antiguo `?id=` necesita completar Bloques/Lista para conservar el
+    // deep link que abría un bloque desde calendario o auditoría.
+    if (!idLegado) return base
+    return {
+      ...base,
+      perspectiva: params.has('perspectiva') ? base.perspectiva : 'bloques',
+      vista: params.has('vista') ? base.vista : 'lista',
+      idHorario: base.idHorario ?? idLegado,
+    }
   }
   if (pathname === '/vista-fichas') {
     return { ...base, perspectiva: 'ficha', vista: 'calendario', idFicha: base.idFicha ?? idLegado }

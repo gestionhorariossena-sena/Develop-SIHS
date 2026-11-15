@@ -44,6 +44,13 @@ describe('caracterización de deep links legados de horarios', () => {
     })
   })
 
+  it('conserva intacta una URL canónica de Gestionar horarios', () => {
+    const params = new URLSearchParams('perspectiva=ficha&vista=calendario&idFicha=12')
+    expect(normalizarRutaHorarioLegada('/horarios/completos', params)).toEqual({
+      perspectiva: 'ficha', vista: 'calendario', idFicha: '12', pagina: 1,
+    })
+  })
+
   it('no intenta normalizar rutas ajenas al módulo', () => {
     expect(normalizarRutaHorarioLegada('/fichas', new URLSearchParams('id=12'))).toBeNull()
   })
