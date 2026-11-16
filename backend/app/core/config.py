@@ -89,9 +89,9 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validar_entorno(self):
-        if not _SELECTED:
-            return self  # No alterar despliegues existentes.
-        nombre = _SELECTED.removeprefix(".env.")
+        if not _SELECTED and self.app_env != "demo":
+            return self  # Despliegues institucionales existentes sin cambios.
+        nombre = _SELECTED.removeprefix(".env.") if _SELECTED else "demo"
         if self.app_env != nombre:
             raise RuntimeError(f"APP_ENV debe ser {nombre}")
         ref = _ref_supabase(self.supabase_url)
