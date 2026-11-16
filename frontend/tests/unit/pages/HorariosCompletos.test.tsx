@@ -50,6 +50,18 @@ const OTRO_HORARIO: Horario = {
   resultadoCodigo: 'RA-2', resultadoDescripcion: null,
 }
 
+// SCRUM-196: segunda ficha/instructor/ambiente, solo para probar que las
+// perspectivas por entidad aíslan los bloques de la seleccionada y no los
+// mezclan con los de otra (el filtro vive en filtrarHorarios.ts, nunca se
+// había verificado a este nivel).
+const FICHA_2: Ficha = { ...FICHA, idFicha: 2, codigoFicha: '9999999' }
+const INSTRUCTOR_2: Usuario = { ...INSTRUCTOR, idUsuario: 'u2', nombre: 'Fredy Ardila' }
+const AMBIENTE_2: Ambiente = { ...AMBIENTE, idAmbiente: 2, nombreAmbiente: 'Ambiente 202' }
+
+const HORARIO_OTRA_FICHA: Horario = { ...HORARIO, idHorario: 10, idFicha: 2, fichaCodigo: '9999999' }
+const HORARIO_OTRO_INSTRUCTOR: Horario = { ...HORARIO, idHorario: 11, idInstructor: 'u2', instructorNombre: 'Fredy Ardila' }
+const HORARIO_OTRO_AMBIENTE: Horario = { ...HORARIO, idHorario: 12, idAmbiente: 2, ambienteNombre: 'Ambiente 202' }
+
 const apiGetMock = vi.fn()
 const apiPatchMock = vi.fn()
 vi.mock('../../../src/services/api', () => ({
@@ -371,5 +383,67 @@ describe('HorariosCompletos', () => {
     await usuario.click(screen.getAllByText('3228973 B')[0])
     const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
     expect(within(drawer).getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
+  })
+
+  // SCRUM-196: "bloque creado aparece en la perspectiva correspondiente" —
+  // nunca se había probado que el filtro de filtrosGestionarHorarios.ts
+  // (query.idFicha/idInstructor/idAmbiente) de verdad aísle los bloques de
+  // la entidad elegida y no los mezcle con los de otra ficha/instructor/
+  // ambiente que también existan en el sistema.
+  it('la perspectiva Por ficha solo muestra los bloques de la ficha seleccionada, no los de otra', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/horarios/') return Promise.resolve([HORARIO, HORARIO_OTRA_FICHA])
+      if (path === '/fichas/') return Promise.resolve([FICHA, FICHA_2])
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE])
+      if (path === '/sedes') return Promise.resolve([SEDE])
+      if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/horarios/auditoria-cruces') return Promise.resolve({ conflictos: [], resumen: { totalCruces: 0, tipos: [] } })
+      return Promise.reject(new Error('no mockeado en este test'))
+    })
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?perspectiva=ficha&idFicha=1'])
+
+    expect(await screen.findByText('1 bloque en el contexto actual')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Abrir bloque #7' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Abrir bloque #10' })).not.toBeInTheDocument()
+  })
+
+  it('la perspectiva Por instructor solo muestra los bloques del instructor seleccionado, no los de otro', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/horarios/') return Promise.resolve([HORARIO, HORARIO_OTRO_INSTRUCTOR])
+      if (path === '/fichas/') return Promise.resolve([FICHA])
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR, INSTRUCTOR_2])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE])
+      if (path === '/sedes') return Promise.resolve([SEDE])
+      if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/horarios/auditoria-cruces') return Promise.resolve({ conflictos: [], resumen: { totalCruces: 0, tipos: [] } })
+      return Promise.reject(new Error('no mockeado en este test'))
+    })
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?perspectiva=instructor&idInstructor=u1'])
+
+    expect(await screen.findByText('1 bloque en el contexto actual')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Abrir bloque #7' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Abrir bloque #11' })).not.toBeInTheDocument()
+  })
+
+  it('la perspectiva Por ambiente solo muestra los bloques del ambiente seleccionado, no los de otro', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/horarios/') return Promise.resolve([HORARIO, HORARIO_OTRO_AMBIENTE])
+      if (path === '/fichas/') return Promise.resolve([FICHA])
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE, AMBIENTE_2])
+      if (path === '/sedes') return Promise.resolve([SEDE])
+      if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/horarios/auditoria-cruces') return Promise.resolve({ conflictos: [], resumen: { totalCruces: 0, tipos: [] } })
+      return Promise.reject(new Error('no mockeado en este test'))
+    })
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?perspectiva=ambiente&idAmbiente=1'])
+
+    expect(await screen.findByText('1 bloque en el contexto actual')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Abrir bloque #7' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Abrir bloque #12' })).not.toBeInTheDocument()
   })
 })
