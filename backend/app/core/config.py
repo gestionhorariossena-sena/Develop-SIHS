@@ -49,6 +49,8 @@ def _ref_database(url: str) -> str:
 class Settings(BaseSettings):
     app_name: str = "SIHS API"
     app_env: str = "development"
+    sihs_demo_project_ref: str = ""
+    sihs_institutional_project_ref: str = ""
 
     # Conexión de runtime (transaction pooler de Supabase, puerto 6543)
     database_url: str = "postgresql+psycopg://usuario:contrasena@localhost:5432/sihs"
@@ -93,6 +95,16 @@ class Settings(BaseSettings):
         if self.app_env != nombre:
             raise RuntimeError(f"APP_ENV debe ser {nombre}")
         ref = _ref_supabase(self.supabase_url)
+        if not self.sihs_demo_project_ref or not self.sihs_institutional_project_ref:
+            raise RuntimeError("Configura ambos project-ref de la allow-list")
+        if self.sihs_demo_project_ref == self.sihs_institutional_project_ref:
+            raise RuntimeError("DEMO e institucional deben ser proyectos distintos")
+        permitido = (
+            self.sihs_demo_project_ref if nombre == "demo"
+            else self.sihs_institutional_project_ref
+        )
+        if ref != permitido:
+            raise RuntimeError("SUPABASE_URL no coincide con la allow-list del entorno")
         if _ref_database(self.database_url) != ref:
             raise RuntimeError("DATABASE_URL apunta a otro proyecto Supabase")
         if _ref_database(self.alembic_database_url) != ref:
