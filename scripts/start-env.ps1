@@ -39,16 +39,27 @@ if ($be["APP_ENV"] -ne $Mode -or $fe["VITE_APP_ENV"] -ne $Mode) {
     throw "APP_ENV y VITE_APP_ENV deben coincidir con $Mode."
 }
 $ref = Get-ProjectRef $be["SUPABASE_URL"]
+$demoRef = $be["SIHS_DEMO_PROJECT_REF"]
+$institutionalRef = $be["SIHS_INSTITUTIONAL_PROJECT_REF"]
+if (-not $demoRef -or -not $institutionalRef -or $demoRef -eq $institutionalRef) {
+    throw "Se requieren dos project-ref distintos en la allow-list (SIHS_DEMO_PROJECT_REF y SIHS_INSTITUTIONAL_PROJECT_REF)."
+}
+$expected = if ($Mode -eq "demo") { $demoRef } else { $institutionalRef }
+if ($ref -ne $expected) { throw "SUPABASE_URL no coincide con la allow-list del entorno $Mode." }
+
 if ((Get-ProjectRef $fe["VITE_SUPABASE_URL"]) -ne $ref) { throw "Frontend y backend usan Supabase distintos." }
 if ((Get-DbProjectRef $be["DATABASE_URL"]) -ne $ref) { throw "DATABASE_URL apunta a otro Supabase." }
 if ((Get-DbProjectRef $be["ALEMBIC_DATABASE_URL"]) -ne $ref) { throw "ALEMBIC_DATABASE_URL apunta a otro Supabase." }
 if (-not $be["SUPABASE_ANON_KEY"] -or -not $fe["VITE_SUPABASE_ANON_KEY"]) {
     throw "Faltan claves publicas de Supabase."
 }
+if ($be["SUPABASE_ANON_KEY"] -ne $fe["VITE_SUPABASE_ANON_KEY"]) {
+    throw "Las claves publicas de Supabase en frontend y backend son distintas."
+}
 if ($fe["VITE_API_URL"] -notmatch '^http://(localhost|127\.0\.0\.1):8000/api/v1/?$') {
     throw "VITE_API_URL debe apuntar al backend local :8000/api/v1."
 }
-if ($Mode -eq "demo" -and $be["EMBEDDED_PUBLICATION_WORKER"] -eq "true") {
+if ($Mode -eq "demo" -and $be["EMBEDDED_PUBLICATION_WORKER"] -match "^(?i:true|1|yes)$") {
     throw "El worker embebido debe estar apagado en DEMO local."
 }
 Write-Host "Configuracion valida: $Mode; Supabase ref: $ref. Sin exponer secretos."
@@ -66,7 +77,8 @@ if ($Mode -eq "demo") { Remove-Item Env:SIHS_ALLOW_INSTITUTIONAL -ErrorAction Si
 # Evitar que valores exportados accidentalmente invaliden los archivos elegidos.
 foreach ($name in @("APP_ENV", "DATABASE_URL", "ALEMBIC_DATABASE_URL", "SUPABASE_URL",
         "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "FRONTEND_URL",
-        "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY", "VITE_API_URL", "VITE_APP_ENV")) {
+        "VITE_SUPABASE_URL", "VITE_SUPABASE_ANON_KEY", "VITE_API_URL", "VITE_APP_ENV",
+        "SIHS_DEMO_PROJECT_REF", "SIHS_INSTITUTIONAL_PROJECT_REF")) {
     Remove-Item "Env:$name" -ErrorAction SilentlyContinue
 }
 if ($Role -eq "backend") {
