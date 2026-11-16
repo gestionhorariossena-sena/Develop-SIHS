@@ -15,10 +15,8 @@ import { AuditoriaCruces } from '../pages/AuditoriaCruces'
 import { Ambientes } from '../pages/Ambientes'
 import { Sedes } from '../pages/Sedes'
 import { Instructores } from '../pages/Instructores'
-import { VistaInstructores } from '../pages/VistaInstructores'
 import { Fichas } from '../pages/Fichas'
-import { VistaFichas } from '../pages/VistaFichas'
-import { VistaAmbientes } from '../pages/VistaAmbientes'
+import { RedirigirVistaLegada } from '../pages/horario/RedirigirVistaLegada'
 import { MiHorario } from '../pages/MiHorario'
 import { MiHorarioAprendiz } from '../pages/MiHorarioAprendiz'
 import { DetalleFranjaAmbiente } from '../pages/DetalleFranjaAmbiente'
@@ -272,7 +270,7 @@ export function AppRouter() {
         path="/vista-instructores"
         element={
           <ProtectedRoute roles={GESTION}>
-            <VistaInstructores />
+            <RedirigirVistaLegada />
           </ProtectedRoute>
         }
       />
@@ -288,7 +286,7 @@ export function AppRouter() {
         path="/vista-fichas"
         element={
           <ProtectedRoute roles={GESTION}>
-            <VistaFichas />
+            <RedirigirVistaLegada />
           </ProtectedRoute>
         }
       />
@@ -312,7 +310,7 @@ export function AppRouter() {
         path="/vista-ambientes"
         element={
           <ProtectedRoute roles={GESTION}>
-            <VistaAmbientes />
+            <RedirigirVistaLegada />
           </ProtectedRoute>
         }
       />
