@@ -428,6 +428,50 @@ describe('HorariosCompletos', () => {
     expect(screen.queryByRole('button', { name: 'Abrir bloque #11' })).not.toBeInTheDocument()
   })
 
+  // SCRUM-199: "tras resolver, la auditoría refleja el cambio" -- antes,
+  // actualizarHorario (publicar/despublicar) solo tocaba el estado local
+  // de `horarios`; la auditoría real seguía mostrando el conflicto ya
+  // resuelto hasta recargar toda la pantalla.
+  it('despublicar un horario para resolver un conflicto vuelve a consultar la auditoría real y refleja el cambio', async () => {
+    let llamadasAuditoria = 0
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/horarios/') return Promise.resolve([HORARIO])
+      if (path === '/fichas/') return Promise.resolve([FICHA])
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE])
+      if (path === '/sedes') return Promise.resolve([SEDE])
+      if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/horarios/auditoria-cruces') {
+        llamadasAuditoria += 1
+        return Promise.resolve(
+          llamadasAuditoria === 1
+            ? { conflictos: [{ idHorario: 7, idHorarioExistente: null, tipo: 'regla_instructor', mensaje: 'Excede el tope de horas semanales.' }], resumen: { totalCruces: 1, tipos: ['regla_instructor'] } }
+            : { conflictos: [], resumen: { totalCruces: 0, tipos: [] } },
+        )
+      }
+      if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA_SEMANAL)
+      return Promise.reject(new Error('no mockeado en este test'))
+    })
+    apiPatchMock.mockResolvedValue({ ...HORARIO, publicado: false })
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+
+    await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+    await usuario.click(screen.getByRole('tab', { name: 'Relaciones' }))
+    expect(await screen.findByText('Excede el tope de horas semanales.')).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('tab', { name: 'Publicación' }))
+    await usuario.click(await screen.findByRole('button', { name: 'Despublicar' }))
+
+    expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
+    await waitFor(() => expect(llamadasAuditoria).toBeGreaterThanOrEqual(2))
+
+    await usuario.click(screen.getByRole('tab', { name: 'Relaciones' }))
+    expect(await screen.findByText('Validación de cruces superada.')).toBeInTheDocument()
+    expect(screen.queryByText('Excede el tope de horas semanales.')).not.toBeInTheDocument()
+  })
+
   it('la perspectiva Por ambiente solo muestra los bloques del ambiente seleccionado, no los de otro', async () => {
     apiGetMock.mockImplementation((path: string) => {
       if (path === '/horarios/') return Promise.resolve([HORARIO, HORARIO_OTRO_AMBIENTE])
