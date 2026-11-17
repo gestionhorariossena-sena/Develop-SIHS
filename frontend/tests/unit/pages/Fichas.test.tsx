@@ -233,6 +233,38 @@ describe('Fichas', () => {
     expect(within(panel).getAllByText('Ambiente 101').length).toBeGreaterThan(0)
   })
 
+  // SCRUM-197: la vista de consulta de la ficha mezclaba borrador y
+  // publicado sin distinguirlos -- un coordinador no podía saber, mirando
+  // el grid, cuál bloque todavía no le llega al instructor/aprendiz.
+  it('un bloque en borrador se distingue del publicado en el grid de consulta', async () => {
+    const horarioPublicado: Horario = { ...HORARIOS[0] }
+    const horarioBorrador: Horario = {
+      ...HORARIOS[0], idHorario: 2, horaInicio: '09:00:00', horaFin: '12:00:00', publicado: false,
+      instructorNombre: 'Fredy Ardila', ambienteNombre: 'Ambiente 202', resultadoCodigo: 'RA-2',
+    }
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/fichas/') return Promise.resolve(FICHAS)
+      if (path === '/fichas/1/horarios') return Promise.resolve([horarioPublicado, horarioBorrador])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/horarios/') return Promise.resolve([horarioPublicado, horarioBorrador])
+      if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
+      return Promise.reject(new Error('no mockeado en este test'))
+    })
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    await screen.findByText('3228973 B')
+    await usuario.click(screen.getByText('3228973 B'))
+
+    const panel = screen.getByRole('dialog', { name: '3228973 B' })
+    await usuario.click(within(panel).getByRole('tab', { name: 'Horario' }))
+    await within(panel).findByText('Horario semanal')
+
+    // Solo el bloque sin publicar lleva la insignia -- el publicado no.
+    expect(within(panel).getAllByText('Borrador')).toHaveLength(1)
+    expect(within(panel).getByLabelText(/RA-2.*borrador/)).toBeInTheDocument()
+    expect(within(panel).queryByLabelText(/RA-9.*borrador/)).not.toBeInTheDocument()
+  })
+
   it('muestra instructores/temas/ambientes derivados de los horarios de la ficha', async () => {
     mockeaFichasConHorarios(FICHAS)
     const usuario = userEvent.setup()

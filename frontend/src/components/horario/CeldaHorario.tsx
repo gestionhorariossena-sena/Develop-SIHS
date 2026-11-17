@@ -73,6 +73,14 @@ export function CeldaHorario({
   }
 
   const color = colorParaBloque(bloque.id)
+  // SCRUM-197: un bloque sin `publicado` (todavía no se guardó, ver
+  // BloqueClase) no es un borrador real -- solo se marca cuando el
+  // backend ya lo confirmó como `publicado: false` (Vistas de consulta:
+  // Fichas/Instructores/Ambientes), para que coincida con lo que de
+  // verdad no le llega a aprendiz/instructor.
+  const esBorrador = bloque.publicado === false
+  const sufijoEtiqueta = esBorrador ? ', borrador' : ''
+  const sufijoTitulo = esBorrador ? ' · Borrador: aún no visible para el instructor ni el aprendiz' : ''
 
   if (soloLectura || bloqueSoloLectura) {
     const contenido = (
@@ -82,17 +90,26 @@ export function CeldaHorario({
         <p className="truncate opacity-80">{bloque.ambiente}</p>
       </>
     )
+    const insigniaBorrador = esBorrador && (
+      <span
+        aria-hidden="true"
+        className="absolute left-1 top-1 rounded-full bg-amber-500 px-1 py-px text-[8px] font-bold uppercase leading-none text-white"
+      >
+        Borrador
+      </span>
+    )
 
     if (onClicLectura) {
       return (
         <button
           type="button"
           onClick={onClicLectura}
-          aria-label={`${etiqueta}: ${bloque.tematica}${marcador ? `, con anotación ${marcador.etiqueta}` : ''}`}
-          title={`${bloque.tematica} · ${bloque.instructor} · ${bloque.ambiente}`}
+          aria-label={`${etiqueta}: ${bloque.tematica}${sufijoEtiqueta}${marcador ? `, con anotación ${marcador.etiqueta}` : ''}`}
+          title={`${bloque.tematica} · ${bloque.instructor} · ${bloque.ambiente}${sufijoTitulo}`}
           className={`relative block h-full min-h-16 w-full select-none space-y-0.5 border-l-2 px-2 py-1.5 text-left text-[11px] leading-tight ${color.fondo} ${color.borde} ${color.texto}`}
         >
           {contenido}
+          {insigniaBorrador}
           {marcador && (
             <span className={`absolute right-1 top-1 h-2 w-2 rounded-full ${marcador.claseColor}`} aria-hidden="true" />
           )}
@@ -102,11 +119,12 @@ export function CeldaHorario({
 
     return (
       <div
-        aria-label={`${etiqueta}: ${bloque.tematica}`}
-        title={`${bloque.tematica} · ${bloque.instructor} · ${bloque.ambiente}`}
-        className={`h-full min-h-16 space-y-0.5 border-l-2 px-2 py-1.5 text-left text-[11px] leading-tight ${color.fondo} ${color.borde} ${color.texto}`}
+        aria-label={`${etiqueta}: ${bloque.tematica}${sufijoEtiqueta}`}
+        title={`${bloque.tematica} · ${bloque.instructor} · ${bloque.ambiente}${sufijoTitulo}`}
+        className={`relative h-full min-h-16 space-y-0.5 border-l-2 px-2 py-1.5 text-left text-[11px] leading-tight ${color.fondo} ${color.borde} ${color.texto}`}
       >
         {contenido}
+        {insigniaBorrador}
       </div>
     )
   }
