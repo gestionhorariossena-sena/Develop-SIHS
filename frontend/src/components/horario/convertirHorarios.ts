@@ -42,6 +42,7 @@ export function convertirHorariosAGrid(horarios: Horario[]): { bloques: BloqueCl
       idTrimestre: horario.idTrimestre,
       idAmbiente: horario.idAmbiente,
       idHorarioOriginal: horario.idHorario,
+      publicado: horario.publicado,
     }
     bloques.push(bloqueClase)
 

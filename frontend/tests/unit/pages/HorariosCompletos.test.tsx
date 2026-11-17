@@ -62,6 +62,13 @@ const HORARIO_OTRA_FICHA: Horario = { ...HORARIO, idHorario: 10, idFicha: 2, fic
 const HORARIO_OTRO_INSTRUCTOR: Horario = { ...HORARIO, idHorario: 11, idInstructor: 'u2', instructorNombre: 'Fredy Ardila' }
 const HORARIO_OTRO_AMBIENTE: Horario = { ...HORARIO, idHorario: 12, idAmbiente: 2, ambienteNombre: 'Ambiente 202' }
 
+// SCRUM-197: mismo contexto (ficha 1, instructor u1), otro horario del
+// día, todavía sin publicar -- para probar que la perspectiva por entidad
+// distingue visualmente lo que no publicado de lo que sí.
+const HORARIO_BORRADOR: Horario = {
+  ...HORARIO, idHorario: 13, horaInicio: '09:00:00', horaFin: '12:00:00', publicado: false, resultadoCodigo: 'RA-2',
+}
+
 const apiGetMock = vi.fn()
 const apiPatchMock = vi.fn()
 vi.mock('../../../src/services/api', () => ({
@@ -489,5 +496,45 @@ describe('HorariosCompletos', () => {
     expect(await screen.findByText('1 bloque en el contexto actual')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Abrir bloque #7' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Abrir bloque #12' })).not.toBeInTheDocument()
+  })
+
+  // SCRUM-197: "vistas de consulta consistentes para ficha, instructor y
+  // ambiente" -- un bloque sin publicar no se distinguía del publicado en
+  // ninguna perspectiva, así que un coordinador no podía saber cuál
+  // todavía no le llega al instructor/aprendiz.
+  it('la perspectiva Por ficha distingue visualmente un bloque en borrador del publicado', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/horarios/') return Promise.resolve([HORARIO, HORARIO_BORRADOR])
+      if (path === '/fichas/') return Promise.resolve([FICHA])
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE])
+      if (path === '/sedes') return Promise.resolve([SEDE])
+      if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/horarios/auditoria-cruces') return Promise.resolve({ conflictos: [], resumen: { totalCruces: 0, tipos: [] } })
+      return Promise.reject(new Error('no mockeado en este test'))
+    })
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?perspectiva=ficha&idFicha=1'])
+
+    expect(await screen.findByText('2 bloques en el contexto actual')).toBeInTheDocument()
+    expect(screen.getAllByText('Borrador')).toHaveLength(1)
+  })
+
+  it('la perspectiva Por instructor distingue visualmente un bloque en borrador del publicado', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/horarios/') return Promise.resolve([HORARIO, HORARIO_BORRADOR])
+      if (path === '/fichas/') return Promise.resolve([FICHA])
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE])
+      if (path === '/sedes') return Promise.resolve([SEDE])
+      if (path === '/trimestres/') return Promise.resolve([TRIMESTRE])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/horarios/auditoria-cruces') return Promise.resolve({ conflictos: [], resumen: { totalCruces: 0, tipos: [] } })
+      return Promise.reject(new Error('no mockeado en este test'))
+    })
+    renderConProviders(<HorariosCompletos />, ['/horarios/completos?perspectiva=instructor&idInstructor=u1'])
+
+    expect(await screen.findByText('2 bloques en el contexto actual')).toBeInTheDocument()
+    expect(screen.getAllByText('Borrador')).toHaveLength(1)
   })
 })
