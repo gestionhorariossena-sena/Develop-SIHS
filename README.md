@@ -82,7 +82,7 @@ No ejecutar E2E contra producción ni requerir credenciales reales. No modificar
 - [x] Rama grupal `semana-5` y reparto con capas rotadas.
 - [x] Inventario inicial de dependencias externas.
 - [ ] PR de Nicol: ≥3 tests con dobles, mutación roja/verde y revisión de Dayana.
-- [ ] PR de David: ≥3 tests con dobles, mutación roja/verde y revisión de Nicol. Suite local y evidencia roja/verde preparadas en [TESTS_SEMANA_5_DAVID.md](docs-testing/reportes/TESTS_SEMANA_5_DAVID.md); falta abrir el PR y la revisión.
+- [ ] PR de David: [#229](https://github.com/gestionhorariossena-sena/Develop-SIHS/pull/229) — ≥3 tests con dobles y evidencia roja/verde por test. Suite local: 21 passed; CI backend verde en [Actions #43815486466](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43815486466). Pendiente: Nicol vuelva a revisar y aprobar los cambios documentales/evidencias. Ver [informe S5 de David](docs-testing/reportes/TESTS_SEMANA_5_DAVID.md).
 - [ ] PR de Dayana: ≥2 E2E con `page.route` y tercer test, mutación, revisión de Edith.
 - [ ] PR de Edith: cliente HTTP con MSW, casos de error y revisión de David.
 - [ ] Revisión grupal de exceso de mocks registrada.
