@@ -30,9 +30,12 @@ Ensayo en rama temporal `test/s5-mutacion-correo-nicol-evidencia` y [PR temporal
 + destinatario="otro@example.test",
 ```
 
-- 🔴 **[Corrida roja 43065968408](../../actions/runs/43065968408):** `pytest -q tests/test_s5_dobles_correo_nicol.py tests/test_email_service.py`: **3 failed, 3 passed**, detectado por el spy, el fake y el test SMTP anterior.
-- 🟢 **[Corrida verde 43066170950](../../actions/runs/43066170950):** tras restaurar destinatario original, **6 passed, 1 warning** con la misma suite focalizada.
-- El **PR entregable #180 nunca contiene el mutante** ni modificaciones del workflow de CI.
+- 🔴 **[Corrida roja 43065968408](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43065968408)** — job **Backend (pytest): failure** ([ver job 130680905443](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43065968408/job/130680905443)). La ejecución focalizada documentó **3 failed, 3 passed**, detectando el destinatario alterado mediante el spy, el fake y un test SMTP preexistente. El job de frontend terminó **cancelled**, por lo que esta corrida **no demuestra una CI global completa**.
+- 🟢 **[Corrida verde 43066170950](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43066170950)** — job **Backend (pytest): success** ([ver job 130681756715](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43066170950/job/130681756715)). Tras restaurar el destinatario correcto, la misma suite focalizada registró **6 passed, 1 warning**. El job de frontend aparece **cancelled**; el resultado verde corresponde al **backend**, no a una CI global validada.
+- ✅ **[CI completa del commit entregable 43066638679](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43066638679)** — commit `b30935675b9867a174b83c3727c81f121b0879d1`: workflow **success**, job [Backend (pytest): success](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43066638679/job/130683387885) y job [Frontend (lint, build, test): success](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43066638679/job/130683388287). Esta corrida aporta la confirmación integral que no daban por sí solas las corridas de mutación.
+- El **PR entregable #180 nunca contiene el mutante** ni modificaciones temporales del workflow de CI.
+
+**Interpretación de estados:** en las corridas de mutación se debe evaluar la **conclusión del job Backend (pytest)** y el resultado de sus pruebas, no equiparar un job frontend cancelado con el resultado de pytest. La evidencia roja comprueba que la suite detecta el defecto; la verde confirma que vuelve a pasar tras restaurar el código. La CI integral se valida por separado en la corrida 43066638679.
 
 ## Revisión de exceso de mocks
 
@@ -49,7 +52,7 @@ La señal de riesgo es una prueba que solamente verifica `mock.enviar.assert_cal
 - [x] Interfaz propia ante librería externa; API pública de EmailService conservada.
 - [x] Mutación roja reproducida en GitHub Actions.
 - [x] Restauración y ejecución verde comprobadas: [6/6](../../actions/runs/43066170950).
-- [x] **[CI previa del PR #180](../../actions/runs/43065874229)** completada en verde en backend y frontend.
+- [x] **[CI integral del commit actual](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43066638679)**: backend y frontend en success. La [CI previa 43065874229](https://github.com/gestionhorariossena-sena/Develop-SIHS/actions/runs/43065874229) también estaba en verde.
 - [ ] Revisión cruzada por Dayana y revisión grupal del exceso de mocks.
 - [ ] Integración y medición consolidada con los otros PR de S5.
 
