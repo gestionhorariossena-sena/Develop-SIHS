@@ -155,3 +155,70 @@ describe('AppRouter · roles por ruta', () => {
     expect(apiGetMock).not.toHaveBeenCalledWith('/usuario-rol/asignar')
   })
 })
+
+/**
+ * SCRUM-200/201 (Fase 3): /vista-fichas, /vista-instructores y
+ * /vista-ambientes dejaron de ser pantallas propias -- redirigen a
+ * `/horarios/completos` con la perspectiva y el id canónico equivalentes,
+ * para no romper los links que ya apuntan a ellas (Instructores.tsx,
+ * Ambientes.tsx) ni duplicar la pantalla que ya cubre las 4 perspectivas.
+ */
+describe('AppRouter · redirecciones legadas de Gestionar horarios', () => {
+  const FICHA = {
+    idFicha: 1, codigoFicha: '3228973 B', idPrograma: 1, idTrimestre: 1, idSede: null, sede: null,
+    programa: { idPrograma: 1, codigoPrograma: 'ADSO', nombrePrograma: 'Análisis y Desarrollo de Software', nivelFormacion: 'Tecnólogo', activo: true, idCoordinacion: 1 },
+    trimestre: { idTrimestre: 1, nombre: 'Trimestre 1', fechaInicio: '2026-01-01', fechaFin: '2026-03-31', estado: 'activo' },
+    aprendicesTotales: 30, jornadas: ['Mañana'],
+  }
+  const INSTRUCTOR = {
+    idUsuario: 'u1', nombre: 'Erick Granados', email: 'erick@example.com', estado: 'activo', fechaRegistro: '2026-01-01',
+    tipoContrato: 'Planta', roles: [{ idRol: 1, nombre: 'Instructor' }], especialidades: [], debeCambiarClave: false,
+  }
+  const AMBIENTE = { idAmbiente: 1, numeroAmbiente: 101, nombreAmbiente: 'Ambiente 101', tipoAmbiente: 'regular', estadoAmbiente: 'disponible', idSede: 1 }
+
+  function mockeaCatalogos() {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/me') return Promise.resolve(PERFIL_COORDINADOR)
+      if (path === '/notificaciones/') return Promise.resolve([])
+      if (path === '/horarios/') return Promise.resolve([])
+      if (path === '/fichas/') return Promise.resolve([FICHA])
+      if (path === '/usuarios/') return Promise.resolve([INSTRUCTOR])
+      if (path === '/ambientes') return Promise.resolve([AMBIENTE])
+      if (path === '/sedes') return Promise.resolve([])
+      if (path === '/trimestres/') return Promise.resolve([])
+      if (path === '/dias-semana/') return Promise.resolve([])
+      if (path === '/horarios/auditoria-cruces') return Promise.resolve({ conflictos: [], resumen: { totalCruces: 0, tipos: [] } })
+      return Promise.resolve([])
+    })
+  }
+
+  it('/vista-fichas?id= redirige a Gestionar horarios en la perspectiva Por ficha, con la ficha seleccionada', async () => {
+    mockeaCatalogos()
+    renderRuta('/vista-fichas?id=1')
+
+    expect(await screen.findByText('Gestionar horarios')).toBeInTheDocument()
+    expect(screen.queryByText('Vista por fichas')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Por ficha' })).toHaveClass('bg-primary')
+    expect(await screen.findByLabelText('Seleccionar ficha')).toHaveValue('1')
+  })
+
+  it('/vista-instructores?id= redirige a Gestionar horarios en la perspectiva Por instructor, con el instructor seleccionado', async () => {
+    mockeaCatalogos()
+    renderRuta('/vista-instructores?id=u1')
+
+    expect(await screen.findByText('Gestionar horarios')).toBeInTheDocument()
+    expect(screen.queryByText('Vista por instructores')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Por instructor' })).toHaveClass('bg-primary')
+    expect(await screen.findByLabelText('Seleccionar instructor')).toHaveValue('u1')
+  })
+
+  it('/vista-ambientes?id= redirige a Gestionar horarios en la perspectiva Por ambiente, con el ambiente seleccionado', async () => {
+    mockeaCatalogos()
+    renderRuta('/vista-ambientes?id=1')
+
+    expect(await screen.findByText('Gestionar horarios')).toBeInTheDocument()
+    expect(screen.queryByText('Vista por ambientes')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Por ambiente' })).toHaveClass('bg-primary')
+    expect(await screen.findByLabelText('Seleccionar ambiente')).toHaveValue('1')
+  })
+})
