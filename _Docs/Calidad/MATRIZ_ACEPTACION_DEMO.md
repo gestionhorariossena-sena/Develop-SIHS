@@ -46,6 +46,16 @@ Resultado: 15 passed, 1 warning; exit code 0.
 
 La suite usa el PostgreSQL desechable de `backend/tests/docker-compose.postgres.yml`. No utiliza la base compartida ni credenciales reales.
 
+Revalidación completa con PostgreSQL disponible:
+
+```text
+Comando: python -m pytest -q --cov=app --cov-report=term --cov-fail-under=84
+Resultado: 470 passed, 8 skipped, 1 warning; exit code 0.
+Cobertura backend: 84.65 % (umbral 84 %).
+```
+
+Los 15 tests de integración focalizados (`test_real_postgres.py`, `test_s4_crud_horarios_dayana.py` y `test_horarios_aislamiento_trimestre.py`) también pasaron contra la base desechable local.
+
 ### Publicación programada
 
 ```text
@@ -55,7 +65,7 @@ Resultado: 7 skipped; requiere SIHS_ISOLATED_PG_URL con un clúster/socket tempo
 
 El contenedor de pruebas del puerto `55440` no satisface deliberadamente ese contrato aislado (`/tmp`, puerto `55439`, revisión Alembic fijada), así que esos siete casos quedan **sin verificar**.
 
-### Frontend
+### Frontend revalidado
 
 ```text
 Comandos: pnpm lint; pnpm build; pnpm exec tsc -p tsconfig.login-tests.json --noEmit; pnpm test:coverage
@@ -63,14 +73,16 @@ Resultado: exit code 0; 56 archivos de test, 420 passed.
 Cobertura: sentencias 80.65 %, ramas 69.38 %, funciones 76.89 %, líneas 83.78 %.
 ```
 
+Lint/build emitieron advertencias, sin errores.
+
 ### Playwright
 
 ```text
 Comando: corepack pnpm@12.11.2 exec playwright test
-Resultado: 13 tests, 3 passed, 8 failed, 2 skipped; exit code 1.
+Revalidación: 13 tests, 7 passed, 4 failed, 2 skipped; exit code 1.
 ```
 
-Fallaron tres casos del asistente (timeout al avanzar), un caso de validación de login (timeout de interacción), el login autenticado (faltan variables `E2E_LOGIN_*`) y los tres casos S5 de Mi horario (el stub no cubre `GET /usuarios/me/periodos-horario`). No se usaron credenciales reales ni se ejecutó contra producción. Estos casos quedan pendientes de corrección/configuración y repetición antes de declarar verde la validación integral.
+Falló el login autenticado porque faltan `E2E_LOGIN_IDENTIFIER`, `E2E_LOGIN_PASSWORD` y `E2E_EXPECTED_ROLE`; tres escenarios S5 de Mi horario fallan porque su stub no contempla `GET /usuarios/me/periodos-horario`. Dos flujos de horarios se omitieron por falta de cuenta e IDs de fixtures. No se usaron credenciales reales ni se ejecutó contra producción. Los fallos requieren preparar fixtures/cuenta de prueba y completar el stub antes de declarar verde la suite E2E.
 
 ### Límite de validación móvil
 
