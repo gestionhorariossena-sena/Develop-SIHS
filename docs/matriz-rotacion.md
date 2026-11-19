@@ -168,3 +168,14 @@ Pendiente de medir sobre `semana-2` completa — no reemplaza la línea base de 
 
 **Cierre requerido:** ≥4 pruebas nuevas de API y un mutante rojo/verde por integrante; cuatro PR revisados y fusionados a `semana-4`; posterior PR exclusivo de umbrales sin reducir los heredados y CI verde. Véase [README S4](../README.md).
 **Flujo:** los cuatro PR individuales se fusionaron en `semana-3` y sus cambios se integraron en `develop`. El quinto PR de umbrales queda como paso separado pendiente de evidencia y validación. Evidencia individual: al menos 3 tests de componente, uno con `user-event`, uno de estado no feliz y un mutante detectado y restaurado.
+
+## Semana 5 — Dobles de prueba
+
+| Integrante | Capa nueva | PR | Evidencia |
+|---|---|---|---|
+| Nicol | API — SMTP con puerto propio | [#180](../../pull/180) | 4 pruebas; mutación rojo/verde |
+| David | BD — repositorios fake/mock | [#229](../../pull/229) | pruebas con fake de repositorio |
+| Dayana | E2E — `page.route` | [#182](../../pull/182) | 3 escenarios: caída API, respuesta vacía y HTTP 422 |
+| Edith | Front — cliente HTTP/MSW | [#183](../../pull/183) | 5 pruebas MSW; mutación 1/5 rojo, 5/5 verde |
+
+La cobertura frontend registrada por #183 fue 78,49 % de sentencias, 67,11 % de ramas, 74,40 % de funciones y 81,47 % de líneas. Queda pendiente el PR específico para actualizar umbrales sin reducir los heredados.
