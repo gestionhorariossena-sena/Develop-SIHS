@@ -87,3 +87,26 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 | Backend — global | Pendiente | Pendiente | Pendiente |
 
 **Cierre requerido:** ≥4 pruebas nuevas de API y un mutante rojo/verde por integrante; cuatro PR revisados y fusionados a `semana-4`; posterior PR exclusivo de umbrales sin reducir los heredados y CI verde. Véase [README S4](../README.md).
+
+## Semana 5 — Dobles de prueba (rotación desde S4)
+
+> **Rama:** `semana-5` · **Referencia:** [reto oficial de S5](https://github.com/ergrato-dev/bc-testing-adso/blob/main/bootcamp/week-05-dobles_de_prueba/3-reto/README.md). Las aportaciones individuales se integran después de revisión y CI; la cobertura final se mide y ajusta en un PR exclusivo de umbrales.
+
+| Integrante | S4 | S5 — capa nueva | Revisor | PR | Mutación | Pruebas / estado |
+|---|---|---|---|---|---|---|
+| Nicol | Front/contrato | **API — SMTP con puerto propio** | Dayana | [PR #180](../../pull/180) abierto | ✅ [rojo: 3 failed, 3 passed](../../actions/runs/43065968408) / [verde: 6/6](../../actions/runs/43066170950) | ✅ 4 nuevos; revisión cruzada pendiente |
+| David | E2E/seguridad | **BD — repositorios fake/mock** | Nicol | Pendiente | Pendiente | Pendiente |
+| Dayana | API/CRUD | **E2E — `page.route`** | Edith | Pendiente | Pendiente | Pendiente |
+| Edith | BD/datos | **Front — cliente HTTP/MSW** | David | Pendiente | Pendiente | Pendiente |
+
+**Inventario y distribución detallada:** [README del reto en `semana-5`](../README.md). **Reporte de Nicol:** [S5_NICOL_DOBLES_CORREO.md](../docs-testing/reportes/S5_NICOL_DOBLES_CORREO.md).
+
+| Cobertura de cierre S5 | Medición final tras fusionar cuatro PR | Umbral heredado mínimo | PR exclusivo de umbrales |
+|---|---|---|---|
+| Front — sentencias | Pendiente | 76,73 % | Pendiente |
+| Front — ramas | Pendiente | 64,85 % | Pendiente |
+| Front — funciones | Pendiente | 73,89 % | Pendiente |
+| Front — líneas | Pendiente | 79,59 % | Pendiente |
+| Backend — global | Pendiente | 84 % | Pendiente |
+
+El piso del reto es 60 %, pero no permite bajar umbrales vigentes mayores. La revisión grupal de exceso de mocks y el quinto PR de umbrales siguen pendientes; el aporte individual de Nicol incluye una revisión propia en su reporte.
