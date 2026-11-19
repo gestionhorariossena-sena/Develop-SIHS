@@ -105,8 +105,8 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 |---|---|---|---|
 | Front — sentencias | Pendiente | 76,73 % | Pendiente |
 | Front — ramas | Pendiente | 64,85 % | Pendiente |
-| Front — funciones | Pendiente | 73,89 % | Pendiente |
-| Front — líneas | Pendiente | 79,59 % | Pendiente |
-| Backend — global | Pendiente | 84 % | Pendiente |
-
+| Frontend — sentencias | 78,49 % | Pendiente (PR de umbrales; heredado 76,73 %) | [PR #183](../../pull/183) (Edith, MSW) |
+| Frontend — ramas | 67,11 % | Pendiente (PR de umbrales; heredado 64,85 %) | [PR #183](../../pull/183) (Edith, MSW) |
+| Frontend — funciones | 74,40 % | Pendiente (PR de umbrales; heredado 73,89 %) | [PR #183](../../pull/183) (Edith, MSW) |
+| Frontend — líneas | 81,47 % | Pendiente (PR de umbrales; heredado 79,59 %) | [PR #183](../../pull/183) (Edith, MSW) |
 El piso del reto es 60 %, pero no permite bajar umbrales vigentes mayores. La revisión grupal de exceso de mocks y el quinto PR de umbrales siguen pendientes; el aporte individual de Nicol incluye una revisión propia en su reporte.
