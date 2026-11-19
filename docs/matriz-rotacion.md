@@ -96,7 +96,7 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 |---|---|---|---|---|---|---|
 | Nicol | Front/contrato | **API — SMTP con puerto propio** | Dayana | [PR #180](../../pull/180) abierto | ✅ [rojo: 3 failed, 3 passed](../../actions/runs/43065968408) / [verde: 6/6](../../actions/runs/43066170950) | ✅ 4 nuevos; revisión cruzada pendiente |
 | David | E2E/seguridad | **BD — repositorios fake/mock** | Nicol | Pendiente | Pendiente | Pendiente |
-| Dayana | API/CRUD | **E2E — `page.route`** | Edith | Pendiente | Pendiente | Pendiente |
+| Dayana | API/CRUD | **E2E — `page.route`** | Edith | [PR #182](../../pull/182) | ✅ 3 casos rojo/verde | ✅ 3 pruebas: caída API, respuesta vacía y HTTP 422; evidencia en [reporte S5](../docs-testing/reportes/TESTS_SEMANA_5_E2E_DAYANA.md) |
 | Edith | BD/datos | **Front — cliente HTTP/MSW** | David | Pendiente | Pendiente | Pendiente |
 
 **Inventario y distribución detallada:** [README del reto en `semana-5`](../README.md). **Reporte de Nicol:** [S5_NICOL_DOBLES_CORREO.md](../docs-testing/reportes/S5_NICOL_DOBLES_CORREO.md).
