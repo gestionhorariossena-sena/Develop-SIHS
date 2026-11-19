@@ -97,7 +97,7 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 | Nicol | Front/contrato | **API — SMTP con puerto propio** | Dayana | [PR #180](../../pull/180) abierto | ✅ [rojo: 3 failed, 3 passed](../../actions/runs/43065968408) / [verde: 6/6](../../actions/runs/43066170950) | ✅ 4 nuevos; revisión cruzada pendiente |
 | David | E2E/seguridad | **BD — repositorios fake/mock** | Nicol | Pendiente | Pendiente | Pendiente |
 | Dayana | API/CRUD | **E2E — `page.route`** | Edith | [PR #182](../../pull/182) | ✅ 3 casos rojo/verde | ✅ 3 pruebas: caída API, respuesta vacía y HTTP 422; evidencia en [reporte S5](../docs-testing/reportes/TESTS_SEMANA_5_E2E_DAYANA.md) |
-| Edith | BD/datos | **Front — cliente HTTP/MSW** | David | Pendiente | Pendiente | Pendiente |
+| Edith | BD/datos | **Front — cliente HTTP/MSW** | David | [PR #183](../../pull/183) | ✅ 1/5 rojo, 5/5 verde | ✅ 5 pruebas MSW; evidencia en [reporte S5](../docs-testing/reportes/TESTS_SEMANA_5_EDITH.md) |
 
 **Inventario y distribución detallada:** [README del reto en `semana-5`](../README.md). **Reporte de Nicol:** [S5_NICOL_DOBLES_CORREO.md](../docs-testing/reportes/S5_NICOL_DOBLES_CORREO.md).
 
@@ -105,8 +105,8 @@ La prueba de login institucional de David requiere `E2E_LOGIN_IDENTIFIER`, `E2E_
 |---|---|---|---|
 | Front — sentencias | Pendiente | 76,73 % | Pendiente |
 | Front — ramas | Pendiente | 64,85 % | Pendiente |
-| Front — funciones | Pendiente | 73,89 % | Pendiente |
-| Front — líneas | Pendiente | 79,59 % | Pendiente |
-| Backend — global | Pendiente | 84 % | Pendiente |
-
+| Frontend — sentencias | 78,49 % | Pendiente (PR de umbrales; heredado 76,73 %) | [PR #183](../../pull/183) (Edith, MSW) |
+| Frontend — ramas | 67,11 % | Pendiente (PR de umbrales; heredado 64,85 %) | [PR #183](../../pull/183) (Edith, MSW) |
+| Frontend — funciones | 74,40 % | Pendiente (PR de umbrales; heredado 73,89 %) | [PR #183](../../pull/183) (Edith, MSW) |
+| Frontend — líneas | 81,47 % | Pendiente (PR de umbrales; heredado 79,59 %) | [PR #183](../../pull/183) (Edith, MSW) |
 El piso del reto es 60 %, pero no permite bajar umbrales vigentes mayores. La revisión grupal de exceso de mocks y el quinto PR de umbrales siguen pendientes; el aporte individual de Nicol incluye una revisión propia en su reporte.
