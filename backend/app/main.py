@@ -39,6 +39,7 @@ from app.api.v1.solicitudes_acceso import router as solicitudes_acceso_router
 from app.api.v1.publicaciones_programadas import router as publicaciones_programadas_router
 from app.api.v1.solicitudes_cambio_horario import router as solicitudes_cambio_horario_router
 from app.api.v1.solicitudes_acceso import router as solicitudes_acceso_router
+from app.api.v1.demo_reset import router as demo_reset_router
 
 
 _worker_stop_event = Event()
@@ -175,3 +176,4 @@ app.include_router(avisos_router, prefix="/api/v1")
 app.include_router(solicitudes_cambio_horario_router, prefix="/api/v1")
 app.include_router(solicitudes_acceso_router, prefix="/api/v1")
 app.include_router(publicaciones_programadas_router, prefix="/api/v1")
+app.include_router(demo_reset_router, prefix="/api/v1")
