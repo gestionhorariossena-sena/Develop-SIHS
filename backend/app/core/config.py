@@ -52,6 +52,10 @@ class Settings(BaseSettings):
     # El reset es una operación deliberadamente opt-in incluso cuando el
     # proceso ya está configurado como demo. Nunca se infiere desde APP_ENV.
     demo_mode: bool = False
+    demo_auth_admin_id: str = ""
+    demo_auth_coordinador_id: str = ""
+    demo_auth_instructor_id: str = ""
+    demo_auth_aprendiz_id: str = ""
     sihs_demo_project_ref: str = ""
     sihs_institutional_project_ref: str = ""
 
