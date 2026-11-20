@@ -21,6 +21,7 @@ from app.models.ficha import Ficha
 from app.models.ficha_usuario import FichaUsuario
 from app.models.notificacion import Notificacion
 from app.models.horario import Horario, horario_dia
+from app.models.lote_importacion_instructor import LoteImportacionInstructor
 from app.models.publicacion_programada import PublicacionProgramada, PublicacionProgramadaHorario
 from app.models.programa import Programa
 from app.models.rol import Rol
@@ -71,6 +72,7 @@ def db_session():
         bind=engine,
         tables=[
             Usuario.__table__,
+            LoteImportacionInstructor.__table__,
             Rol.__table__,
             UsuarioRol.__table__,
             Auditoria.__table__,

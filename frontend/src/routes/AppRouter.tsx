@@ -37,6 +37,7 @@ import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
 import { Notificaciones } from '../pages/Notificaciones'
 import { PublicacionesProgramadas } from '../pages/PublicacionesProgramadas'
 import { MisSolicitudesCambioHorario } from '../pages/MisSolicitudesCambioHorario'
+import { CargaMasivaInstructores } from '../pages/CargaMasivaInstructores'
 
 /**
  * Quién puede abrir cada pantalla. Mismo criterio que usa el navbar para
@@ -266,6 +267,7 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route path="/instructores/carga-masiva" element={<ProtectedRoute roles={ADMIN}><CargaMasivaInstructores /></ProtectedRoute>} />
       <Route
         path="/vista-instructores"
         element={
