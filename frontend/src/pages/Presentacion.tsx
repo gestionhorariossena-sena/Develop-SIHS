@@ -66,13 +66,20 @@ export function Presentacion() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* El selector vivía solo dentro de AppShell: quien todavía no
-            * ha entrado no podía cambiar el tema, justo en la primera
-            * pantalla que ve. */}
-          <ThemeSelector />
-          <Link to="/login" className="text-sm font-semibold text-on-surface-variant hover:text-on-surface">
-            Iniciar sesión
-          </Link>
+          {/* SCRUM-203: en 375px este grupo (selector + "Iniciar sesión" +
+            * "Registrarse") no cabía junto al logo y desbordaba el header
+            * horizontalmente. El selector y el enlace de texto se ocultan
+            * en angosto -- el CTA "Iniciar Sesión en SIHS" del hero sigue
+            * dando acceso a login, y "Registrarse" (la acción principal)
+            * queda siempre visible. El selector vivía solo dentro de
+            * AppShell: quien todavía no ha entrado no podía cambiar el
+            * tema, justo en la primera pantalla que ve. */}
+          <div className="hidden items-center gap-3 sm:flex">
+            <ThemeSelector />
+            <Link to="/login" className="text-sm font-semibold text-on-surface-variant hover:text-on-surface">
+              Iniciar sesión
+            </Link>
+          </div>
           <Link
             to="/registro"
             className="flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
@@ -84,12 +91,28 @@ export function Presentacion() {
       </header>
 
       <section className="bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_55%,_#ffffff_100%)] px-6 py-16 dark:bg-[radial-gradient(ellipse_at_top,_#14532d_0%,_#0f172a_55%)]">
-        <div className="mx-auto grid max-w-6xl items-center gap-12 lg:grid-cols-2">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-surface-container-lowest px-3 py-1 text-xs font-semibold text-on-surface-variant shadow-sm">
-              OPERACIÓN TRIMESTRAL
+        {/* SCRUM-203: sin "grid-cols-1" explícito en la base, el track
+          * implícito del grid se dimensiona por el max-content de sus
+          * hijos (Tailwind solo agrega el minmax(0,...) que evita esto
+          * cuando el breakpoint trae su propio grid-cols-N) -- en 375px
+          * eso desbordaba el header 14px aunque el item ya tuviera
+          * min-w-0: ese min-w-0 limita al item, no al track que lo
+          * contiene. */}
+        <div className="mx-auto grid grid-cols-1 max-w-6xl items-center gap-12 lg:grid-cols-2">
+          {/* SCRUM-203: sin min-w-0, un grid item crece hasta el ancho
+            * mínimo de su contenido -- la insignia de abajo, de una sola
+            * línea sin flex-wrap ("OPERACIÓN TRIMESTRAL | Centro de..."),
+            * imponía 365px de ancho mínimo y desbordaba en 375px de
+            * viewport (medido con Playwright: scrollWidth 389 vs 375). */}
+          <div className="min-w-0">
+            <div className="mb-4 inline-flex flex-wrap items-center gap-2 rounded-full bg-surface-container-lowest px-3 py-1 text-xs font-semibold text-on-surface-variant shadow-sm">
+              {/* Los textos sueltos son flex items anónimos con
+                * min-width:auto (no se parten) -- envueltos en <span>,
+                * flex-wrap sí puede mandar la frase larga a su propia
+                * línea en vez de forzar el ancho del badge completo. */}
+              <span>OPERACIÓN TRIMESTRAL</span>
               <span className="text-outline">|</span>
-              Centro de Gestión de Mercados, Logística y TI
+              <span>Centro de Gestión de Mercados, Logística y TI</span>
             </div>
 
             <h1 className="mb-4 text-4xl font-bold tracking-tight text-on-surface lg:text-5xl">
