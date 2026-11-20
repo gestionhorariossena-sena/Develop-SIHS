@@ -5,6 +5,7 @@ import type { Ambiente, AuditoriaConflicto, AuditoriaCrucesResponse, CargaSemana
 import { GridAsistente } from '../horario/GridAsistente'
 import { celdasDesdeHorarios } from '../horario/celdasAsistente'
 import { nombresDias } from '../relacionados/formatoBloque'
+import { escribirGestionarHorariosQuery, type GestionarHorariosQuery } from '../../pages/horario/gestionarHorariosQuery'
 
 type Pestana = 'informacion' | 'relaciones' | 'publicacion' | 'acciones'
 
@@ -20,6 +21,11 @@ interface DrawerHorarioProps {
   conflictos?: AuditoriaConflicto[] | null
   cargandoConflictos?: boolean
   errorConflictos?: string | null
+  // SCRUM-204: sin esto, "Ver horario por X" armaba su propio href desde
+  // cero (solo perspectiva+id+idHorario) y perdía el filtro de texto/
+  // jornada/trimestre/estado que ya estaba en la URL -- inconsistente con
+  // los botones Bloques/Por ficha/... de arriba, que sí lo conservan.
+  query: GestionarHorariosQuery
   onCerrar: () => void
   onActualizar: (horario: Horario) => void
 }
@@ -38,7 +44,11 @@ function periodoLectivo(trimestre?: Trimestre) {
 
 /** Drawer de un bloque de horario. Conserva la lista global visible debajo y
  * concentra las acciones/contexto de ese bloque, sin crear una nueva ruta. */
-export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trimestre, diasPorId, jornada, conflictos: conflictosCompartidos, cargandoConflictos = false, errorConflictos: errorConflictosCompartidos = null, onCerrar, onActualizar }: DrawerHorarioProps) {
+export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trimestre, diasPorId, jornada, conflictos: conflictosCompartidos, cargandoConflictos = false, errorConflictos: errorConflictosCompartidos = null, query, onCerrar, onActualizar }: DrawerHorarioProps) {
+  function hrefPerspectiva(cambios: Partial<GestionarHorariosQuery>) {
+    return `/horarios/completos?${escribirGestionarHorariosQuery({ ...query, idHorario: String(horario.idHorario), ...cambios }).toString()}`
+  }
+
   const cerrarRef = useRef<HTMLButtonElement>(null)
   const [pestana, setPestana] = useState<Pestana>('informacion')
   const [carga, setCarga] = useState<CargaSemanal | null>(null)
@@ -164,9 +174,9 @@ export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trim
 
           {pestana === 'relaciones' && <section aria-label="Relaciones del bloque" className="space-y-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Vistas contextuales vinculadas</p>
-            <Relacion titulo={`Ficha ${horario.fichaCodigo ?? 'sin definir'}`} detalle={ficha ? `${ficha.programa.nombrePrograma} · ${ficha.aprendicesTotales} aprendices` : 'Sin información adicional disponible'} href={`/horarios/completos?perspectiva=ficha&idFicha=${horario.idFicha}&idHorario=${horario.idHorario}`} enlace="Ver horario por ficha" icono="badge" />
-            <Relacion titulo={horario.instructorNombre ?? 'Instructor sin definir'} detalle={instructor ? `${instructor.tipoContrato ?? 'Sin contrato'} · ${cargaTexto}` : 'Sin información adicional disponible'} href={`/horarios/completos?perspectiva=instructor&idInstructor=${horario.idInstructor}&idHorario=${horario.idHorario}`} enlace="Ver horario por instructor" icono="person" />
-            <Relacion titulo={horario.ambienteNombre ?? 'Ambiente sin definir'} detalle={ambiente ? `${ambiente.numeroAmbiente} · ${sede?.nombreSede ?? 'Sede sin definir'}` : 'Sin información adicional disponible'} href={`/horarios/completos?perspectiva=ambiente&idAmbiente=${horario.idAmbiente}&idHorario=${horario.idHorario}`} enlace="Ver horario por ambiente" icono="meeting_room" />
+            <Relacion titulo={`Ficha ${horario.fichaCodigo ?? 'sin definir'}`} detalle={ficha ? `${ficha.programa.nombrePrograma} · ${ficha.aprendicesTotales} aprendices` : 'Sin información adicional disponible'} href={hrefPerspectiva({ perspectiva: 'ficha', idFicha: String(horario.idFicha) })} enlace="Ver horario por ficha" icono="badge" />
+            <Relacion titulo={horario.instructorNombre ?? 'Instructor sin definir'} detalle={instructor ? `${instructor.tipoContrato ?? 'Sin contrato'} · ${cargaTexto}` : 'Sin información adicional disponible'} href={hrefPerspectiva({ perspectiva: 'instructor', idInstructor: horario.idInstructor })} enlace="Ver horario por instructor" icono="person" />
+            <Relacion titulo={horario.ambienteNombre ?? 'Ambiente sin definir'} detalle={ambiente ? `${ambiente.numeroAmbiente} · ${sede?.nombreSede ?? 'Sede sin definir'}` : 'Sin información adicional disponible'} href={hrefPerspectiva({ perspectiva: 'ambiente', idAmbiente: String(horario.idAmbiente) })} enlace="Ver horario por ambiente" icono="meeting_room" />
             {errorConflictos ? <p role="status" className="rounded-xl border border-outline-variant p-3 text-sm text-on-surface-variant dark:border-slate-700">No se pudo consultar la validación de cruces.</p> : conflictosPendientes ? <p role="status" className="rounded-xl border border-outline-variant p-3 text-sm text-on-surface-variant dark:border-slate-700">Consultando validación de cruces…</p> : conflictos?.length === 0 ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">Validación de cruces superada.</p> : conflictos && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"><p className="font-semibold">{conflictos.length} conflicto{conflictos.length === 1 ? '' : 's'} detectado{conflictos.length === 1 ? '' : 's'}</p>{conflictos.map((conflicto, indice) => <p key={`${conflicto.tipo}-${indice}`} className="mt-1">{conflicto.mensaje}</p>)}<Link to="/horarios/auditoria" className="mt-2 inline-block font-semibold underline">Ver en Conflictos →</Link></div>}
           </section>}
 

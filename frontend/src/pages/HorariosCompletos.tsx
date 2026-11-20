@@ -271,6 +271,7 @@ export function HorariosCompletos() {
           conflictos={auditoria ? auditoria.conflictos : null}
           cargandoConflictos={cargandoAuditoria}
           errorConflictos={errorAuditoria}
+          query={query}
           onCerrar={() => actualizarQuery({ idHorario: undefined })}
           onActualizar={(actualizado) => { actualizarHorario(actualizado); recargarAuditoria() }}
         />

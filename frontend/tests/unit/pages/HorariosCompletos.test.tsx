@@ -273,9 +273,14 @@ describe('HorariosCompletos', () => {
     await screen.findByRole('dialog', { name: 'Horario #7' })
     await usuario.click(screen.getByRole('tab', { name: 'Relaciones' }))
 
-    expect(screen.getByRole('link', { name: 'Ver horario por ficha →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=ficha&idFicha=1&idHorario=7')
-    expect(screen.getByRole('link', { name: 'Ver horario por instructor →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=instructor&idInstructor=u1&idHorario=7')
-    expect(screen.getByRole('link', { name: 'Ver horario por ambiente →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=ambiente&idAmbiente=1&idHorario=7')
+    // SCRUM-204: construido con escribirGestionarHorariosQuery (el mismo
+    // escritor canónico que usa toda la app), no con un string armado a
+    // mano -- por eso conserva cualquier filtro ya activo en la URL (ver
+    // AppRouter.test.tsx, "regresión de flujo completo"), aunque el orden
+    // de los parámetros ya no coincida con el literal anterior.
+    expect(screen.getByRole('link', { name: 'Ver horario por ficha →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=ficha&idHorario=7&idFicha=1')
+    expect(screen.getByRole('link', { name: 'Ver horario por instructor →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=instructor&idHorario=7&idInstructor=u1')
+    expect(screen.getByRole('link', { name: 'Ver horario por ambiente →' })).toHaveAttribute('href', '/horarios/completos?perspectiva=ambiente&idHorario=7&idAmbiente=1')
     expect(screen.getByText('Validación de cruces superada.')).toBeInTheDocument()
   })
 
