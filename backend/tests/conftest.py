@@ -14,6 +14,7 @@ from sqlalchemy.pool import StaticPool
 from app.core.database import Base, get_db
 from app.main import app
 from app.models.auditoria import Auditoria
+from app.models.asistencia import Asistencia
 from app.models.coordinacion import Coordinacion
 from app.models.competencia_formacion import CompetenciaFormacion
 from app.models.especialidad import Especialidad, especialidad_competencia, usuario_especialidad
@@ -76,6 +77,7 @@ def db_session():
             Rol.__table__,
             UsuarioRol.__table__,
             Auditoria.__table__,
+            Asistencia.__table__,
             Coordinacion.__table__,
             Programa.__table__,
             Trimestre.__table__,
