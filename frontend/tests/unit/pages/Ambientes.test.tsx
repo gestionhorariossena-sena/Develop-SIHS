@@ -60,21 +60,23 @@ const HORARIO_B: Horario = {
 
 const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }, { idDia: 2, nombreDia: 'Martes' }]
 
-const { apiGetMock, apiPostMock, apiPutMock } = vi.hoisted(() => ({ apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPutMock: vi.fn() }))
+const { apiGetMock, apiPostMock, apiPutMock, apiDeleteMock } = vi.hoisted(() => ({ apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPutMock: vi.fn(), apiDeleteMock: vi.fn() }))
 const PERFIL_ADMIN = { idUsuario: 'admin', nombre: 'Administrador', email: 'admin@test.com', estado: 'activo', fechaRegistro: '2026-01-01', roles: [{ idRol: 1, nombre: 'Administrador' }], especialidades: [] }
+const PERFIL_COORDINADOR = { ...PERFIL_ADMIN, idUsuario: 'coord', nombre: 'Ana', roles: [{ idRol: 2, nombre: 'Coordinador' }] }
 vi.mock('../../../src/services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
   apiPost: (...args: unknown[]) => apiPostMock(...args),
   apiPut: (...args: unknown[]) => apiPutMock(...args),
+  apiDelete: (...args: unknown[]) => apiDeleteMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
 /** AppShell también llama a apiGet('/usuarios/me') al montar — el mock
  * tiene que distinguir por ruta o revienta leyendo `.roles` de lo que sea
  * que devuelva /ambientes. */
-function mockeaBase(ambientes: Ambiente[] = AMBIENTES, todosLosHorarios: Horario[] = [HORARIO_A, HORARIO_B]) {
+function mockeaBase(ambientes: Ambiente[] = AMBIENTES, todosLosHorarios: Horario[] = [HORARIO_A, HORARIO_B], perfil: typeof PERFIL_ADMIN = PERFIL_ADMIN) {
   apiGetMock.mockImplementation((path: string) => {
-    if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
+    if (path === '/usuarios/me') return Promise.resolve(perfil)
     if (path === '/ambientes') return Promise.resolve(ambientes)
     if (path === '/sedes') return Promise.resolve(SEDES)
     if (path === '/coordinaciones/') return Promise.resolve(COORDINACIONES)
@@ -342,6 +344,64 @@ describe('Ambientes', () => {
       await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 1 fila' }))
 
       expect(await screen.findByText(/No existe la sede "Sede fantasma"\./)).toBeInTheDocument()
+    })
+  })
+
+  // SCRUM-198: el borrado seguro de ambiente es solo de Administrador --
+  // un Coordinador ni siquiera debe ver la opción.
+  describe('SCRUM-198: borrado seguro de ambiente', () => {
+    it('un Administrador ve la opción de eliminar el ambiente en su detalle', async () => {
+      mockeaBase()
+      const usuario = userEvent.setup()
+      renderConProviders(<Ambientes />)
+      await screen.findByText('Sala 101')
+
+      await usuario.click(screen.getByText('Sala 101'))
+
+      expect(await screen.findByRole('button', { name: /Eliminar ambiente Sala 101/ })).toBeInTheDocument()
+    })
+
+    it('un Coordinador no ve la opción de eliminar el ambiente', async () => {
+      mockeaBase(AMBIENTES, [HORARIO_A, HORARIO_B], PERFIL_COORDINADOR)
+      const usuario = userEvent.setup()
+      renderConProviders(<Ambientes />)
+      await screen.findByText('Sala 101')
+
+      await usuario.click(screen.getByText('Sala 101'))
+
+      expect(screen.queryByRole('button', { name: /Eliminar ambiente/ })).not.toBeInTheDocument()
+    })
+
+    it('con horarios y asistencias, el análisis bloquea la eliminación con el motivo real', async () => {
+      mockeaBase()
+      apiGetMock.mockImplementation((path: string) => {
+        if (path === '/eliminacion-segura/ambiente/1') {
+          return Promise.resolve({
+            tipo: 'ambiente', id: '1',
+            dependencias: { horariosPublicados: 2, horariosBorrador: 0, asistencias: 5, vinculosFicha: 0 },
+            accion: 'bloqueado',
+          })
+        }
+        if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
+        if (path === '/ambientes') return Promise.resolve(AMBIENTES)
+        if (path === '/sedes') return Promise.resolve(SEDES)
+        if (path === '/coordinaciones/') return Promise.resolve(COORDINACIONES)
+        if (path === '/fichas/') return Promise.resolve(FICHAS)
+        if (path === '/horarios/') return Promise.resolve([HORARIO_A, HORARIO_B])
+        if (path === '/dias-semana/') return Promise.resolve(DIAS)
+        if (path === '/ambientes/1/horarios') return Promise.resolve([HORARIO_A])
+        return Promise.reject(new Error('no mockeado en este test'))
+      })
+      const usuario = userEvent.setup()
+      renderConProviders(<Ambientes />)
+      await screen.findByText('Sala 101')
+      await usuario.click(screen.getByText('Sala 101'))
+
+      await usuario.click(await screen.findByRole('button', { name: /Eliminar ambiente Sala 101/ }))
+
+      expect(await screen.findByRole('alert')).toHaveTextContent('2 horarios ya publicados')
+      expect(screen.getByRole('alert')).toHaveTextContent('5 registros de asistencia')
+      expect(apiDeleteMock).not.toHaveBeenCalled()
     })
   })
 })

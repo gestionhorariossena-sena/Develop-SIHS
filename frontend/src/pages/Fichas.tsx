@@ -8,6 +8,7 @@ import { indexarPorFicha, opcionesInstructor } from '../components/horario/index
 import { SeccionAmbientesAsignados, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
 import { SeccionInstructoresAsignados } from '../components/relacionados/SeccionesFicha'
 import { ImportarArchivo, type ColumnaImportar } from '../components/ImportarArchivo'
+import { EliminacionSegura } from '../components/EliminacionSegura'
 import { apiGet, apiPost, apiPut, ApiError } from '../services/api'
 import type { DiaSemana, Ficha, Horario, Programa, Sede, Trimestre, Usuario } from '../types/api'
 import type { FilaCsv } from '../utils/csv'
@@ -533,7 +534,7 @@ export function Fichas() {
             </>
           ))}
 
-          {pestanaDrawer === 'acciones' && <div className="space-y-3"><Link to="/horarios/crear" className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-on-primary-container"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit_calendar</span>Abrir en Crear horario</Link>{puedeGestionar && <button type="button" onClick={() => abrirEditar(seleccionada)} className="w-full rounded-xl border border-outline px-4 py-2.5 text-sm font-semibold text-on-surface hover:bg-surface dark:border-slate-700 dark:text-slate-200">Editar ficha</button>}<button type="button" disabled title="El detalle completo estará disponible en una fase posterior" className="w-full rounded-xl border border-outline px-4 py-2.5 text-sm font-semibold text-on-surface-variant/60">Abrir detalle completo</button></div>}
+          {pestanaDrawer === 'acciones' && <div className="space-y-3"><Link to="/horarios/crear" className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-on-primary-container"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit_calendar</span>Abrir en Crear horario</Link>{puedeGestionar && <button type="button" onClick={() => abrirEditar(seleccionada)} className="w-full rounded-xl border border-outline px-4 py-2.5 text-sm font-semibold text-on-surface hover:bg-surface dark:border-slate-700 dark:text-slate-200">Editar ficha</button>}<button type="button" disabled title="El detalle completo estará disponible en una fase posterior" className="w-full rounded-xl border border-outline px-4 py-2.5 text-sm font-semibold text-on-surface-variant/60">Abrir detalle completo</button>{puedeGestionar && <EliminacionSegura tipo="ficha" id={seleccionada.idFicha} nombre={seleccionada.codigoFicha} onEliminado={() => { setFichas((previo) => previo.filter((f) => f.idFicha !== seleccionada.idFicha)); setSeleccionada(null) }} />}</div>}
         </DrawerRelacionados>
       )}
     </AppShell>
