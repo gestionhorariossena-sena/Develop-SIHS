@@ -23,6 +23,7 @@ from app.models.ficha import Ficha
 from app.models.ficha_usuario import FichaUsuario
 from app.models.notificacion import Notificacion
 from app.models.horario import Horario, horario_dia
+from app.models.jornada import Jornada
 from app.models.lote_importacion_instructor import LoteImportacionInstructor
 from app.models.publicacion_programada import PublicacionProgramada, PublicacionProgramadaHorario
 from app.models.programa import Programa
@@ -107,6 +108,7 @@ def db_session():
             # SedeService) -- ningún test anterior las había necesitado.
             Sede.__table__,
             Ambiente.__table__,
+            Jornada.__table__,
         ],
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
