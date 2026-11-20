@@ -26,7 +26,9 @@ export function CargaMasivaInstructores() {
     }
   }
 
-  useEffect(() => { void cargarLotes() }, [])
+  useEffect(() => {
+    apiGet<Lote[]>('/usuarios/instructores/importar/lotes').then(setLotes).catch(() => {})
+  }, [])
 
   function seleccionarArchivo(evento: React.ChangeEvent<HTMLInputElement>) {
     const seleccionado = evento.target.files?.[0] ?? null

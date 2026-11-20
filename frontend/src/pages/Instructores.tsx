@@ -6,6 +6,7 @@ import { SeccionAmbientesAsignados, SeccionFichasAsignadas, SeccionTemasQueDicta
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { indexarPorInstructor, opcionesFichaAmbiente } from '../components/horario/indexarHorarios'
+import { EliminacionSegura } from '../components/EliminacionSegura'
 import { apiGet, ApiError } from '../services/api'
 import type { CargaSemanal, DiaSemana, Horario, Usuario } from '../types/api'
 
@@ -67,6 +68,10 @@ export function Instructores() {
   const [seleccionado, setSeleccionado] = useState<Usuario | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // SCRUM-198: mismo patrón que Fichas.tsx/Ambientes.tsx -- el borrado
+  // seguro es solo de Administrador en el backend (require_admin).
+  const [perfil, setPerfil] = useState<Usuario | null>(null)
+  const puedeGestionar = perfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
 
   const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
   const [errorCarga, setErrorCarga] = useState(false)
@@ -113,6 +118,8 @@ export function Instructores() {
     apiGet<Horario[]>('/horarios/')
       .then(setTodosLosHorarios)
       .catch(() => {})
+
+    apiGet<Usuario>('/usuarios/me').then(setPerfil).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar, igual que el resto del archivo; idDesdeUrl no cambia en la vida del componente.
   }, [])
 
@@ -412,6 +419,17 @@ export function Instructores() {
                 </button>
               </div>
             </>
+          )}
+
+          {puedeGestionar && (
+            <div className="mt-3 border-t border-outline-variant pt-3 dark:border-slate-700">
+              <EliminacionSegura
+                tipo="instructor"
+                id={seleccionado.idUsuario}
+                nombre={seleccionado.nombre}
+                onEliminado={() => { setInstructores((previo) => previo.filter((item) => item.idUsuario !== seleccionado.idUsuario)); setSeleccionado(null) }}
+              />
+            </div>
           )}
         </DrawerRelacionados>
       )}

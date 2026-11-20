@@ -13,6 +13,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
 from app.main import app
+from app.models.ambiente import Ambiente
 from app.models.auditoria import Auditoria
 from app.models.asistencia import Asistencia
 from app.models.coordinacion import Coordinacion
@@ -22,10 +23,12 @@ from app.models.ficha import Ficha
 from app.models.ficha_usuario import FichaUsuario
 from app.models.notificacion import Notificacion
 from app.models.horario import Horario, horario_dia
+from app.models.jornada import Jornada
 from app.models.lote_importacion_instructor import LoteImportacionInstructor
 from app.models.publicacion_programada import PublicacionProgramada, PublicacionProgramadaHorario
 from app.models.programa import Programa
 from app.models.rol import Rol
+from app.models.sede import Sede
 from app.models.solicitud_acceso import SolicitudAcceso
 from app.models.trimestre import Trimestre
 from app.models.usuario import Usuario
@@ -100,6 +103,12 @@ def db_session():
             # cada creación de horario, así que tampoco son opcionales.
             CompetenciaFormacion.__table__,
             especialidad_competencia,
+            # SCRUM-198: EliminacionSeguraService resuelve "ambiente" contra
+            # estas dos tablas directo (sin repositorio inyectable como
+            # SedeService) -- ningún test anterior las había necesitado.
+            Sede.__table__,
+            Ambiente.__table__,
+            Jornada.__table__,
         ],
     )
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
