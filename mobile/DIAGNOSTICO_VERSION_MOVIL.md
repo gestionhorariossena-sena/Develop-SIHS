@@ -77,7 +77,7 @@ falta en el backend.
 | **1** | **Permiso de Internet en Android release** | — | ✅ **Corregido en este PR** |
 | 2 | Descargar mi horario en PDF | `GET /usuarios/me/horarios/pdf` ya existe | Solo lectura; falta abrir/compartir el archivo (`share_plus` o `open_filex`) |
 | 2 | Deep link de recuperación de contraseña | Supabase lo soporta | Hoy el correo abre la web, no la app |
-| 2 | Identificador real de la app | — | `applicationId` sigue en `com.example.mobile`. Hay que elegir el definitivo (ej. `co.edu.sena.sihs`) **antes** de la primera publicación en tienda: cambiarlo después crea "otra app" |
+| 2 | Identificador real de la app | — | ✅ Definido como `co.edu.sena.sihs`; nombre visible `SIHS`. |
 | 3 | Marcar notificaciones como leídas | `PATCH /notificaciones/{id}/leida` y `/marcar-todas-leidas` | Es una escritura: rompe la regla de solo lectura. Decisión del equipo |
 | 3 | Mis solicitudes de cambio de horario (Instructor) | `GET /solicitudes-cambio-horario/mias` y `POST` | La consulta es de lectura; crear una solicitud es escritura |
 | 3 | Mensajes con docentes (Aprendiz) | `/mensajeria/conversaciones` | Lectura y escritura; en la web es `MensajesAprendiz.tsx` |

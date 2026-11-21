@@ -30,7 +30,7 @@ frontend/.env.*
 # Móvil (Flutter)
 mobile/.env
 mobile/.env.*
-!mobile/.env.example
+mobile/demo.local.json
 mobile/.dart_tool/
 mobile/build/
 mobile/.flutter-plugins-dependencies

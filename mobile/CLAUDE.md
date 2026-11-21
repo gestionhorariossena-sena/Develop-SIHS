@@ -9,24 +9,22 @@ acá solo se consultan.
 ## Cómo correrlo
 
 ```bash
-# 1. Backend arriba (otra terminal, desde la raíz del repo)
-cd backend && source .venv/bin/activate && uvicorn app.main:app --reload
+# 1. Demo local arriba (desde la raíz del repo)
+make demo-up
 
 # 2. App
 cd mobile
 flutter pub get
-flutter run            # -d linux | -d chrome | -d <emulador>
+cp demo.local.example.json demo.local.json # completar SUPABASE_ANON_KEY
+flutter run --dart-define-from-file=demo.local.json
 flutter analyze && flutter test
 ```
 
-`mobile/.env` **ya existe** y NO se versiona (está en el `.gitignore` de la
-raíz). Sus valores de Supabase son los mismos de `backend/.env` y
-`frontend/.env`: los tres clientes hablan con la misma base. Si hay que
-recrearlo, `.env.example` explica cada clave.
-
-En emulador Android no hace falta un `.env` distinto: `AppConfig` reescribe
-`127.0.0.1`/`localhost` a `10.0.2.2` solo. En dispositivo físico sí hay que
-poner la IP LAN del PC en `API_BASE_URL`.
+La configuración se inyecta con `--dart-define-from-file`; no se agrega como
+asset, para evitar empaquetar accidentalmente un `.env` local en el APK.
+`demo.local.json` está ignorado por Git. En emulador Android, `AppConfig`
+reescribe `127.0.0.1`/`localhost` a `10.0.2.2`; en dispositivo físico se usan
+las IP LAN del computador para la API y Supabase.
 
 ## Contrato con el backend (lo que hay que saber antes de tocar nada)
 
@@ -178,8 +176,10 @@ red, y una fuente que no carga cambia las métricas de texto.
 ## Pendiente / ideas
 
 - Lista priorizada completa en `DIAGNOSTICO_VERSION_MOVIL.md` §2.
-- `applicationId` sigue en `com.example.mobile`: elegir el definitivo
-  antes de publicar en tienda.
+- El identificador Android definitivo es `co.edu.sena.sihs`; el nombre
+  visible es `SIHS`.
+- Para compilar contra la demo local, seguir `README.md` § APK para la demo
+  local y usar `demo.local.json` (ignorado por Git).
 - Descarga del horario en PDF: `GET /usuarios/me/horarios/pdf` ya existe.
 - Deep link para que el correo de recuperación abra la app y no la web.
 - Los prompts de diseño viejos (`BRAND_GUIDE_SIHS_MOBILE.md`,

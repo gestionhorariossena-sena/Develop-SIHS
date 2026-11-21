@@ -30,29 +30,63 @@ Desde PowerShell, en la raíz del repositorio:
 ```powershell
 Set-Location mobile
 flutter pub get
-Copy-Item .env.example .env
+Copy-Item demo.local.example.json demo.local.json
 ```
 
-Completa `mobile/.env` con las credenciales del proyecto de desarrollo. Usa
-los mismos valores Supabase configurados para backend y frontend. Después:
+### APK para la demo local
 
-```powershell
-flutter run
-```
+El identificador Android es `co.edu.sena.sihs` y el nombre visible es `SIHS`.
+Para compilar contra la demo local (emulador Android):
+
+1. Desde la raíz del repositorio, inicia Supabase local y el backend:
+
+   ```powershell
+   make demo-up
+   ```
+
+2. Desde la raíz, consulta únicamente `ANON_KEY`:
+
+   ```powershell
+   supabase status -o env | Select-String '^ANON_KEY='
+   ```
+
+   Desde `mobile/`, crea la configuración local ignorada por Git y copia esa
+   clave en `SUPABASE_ANON_KEY`:
+
+   ```powershell
+   Copy-Item demo.local.example.json demo.local.json
+   ```
+
+   No uses `SERVICE_ROLE_KEY`: la configuración se incorpora al APK. El
+   archivo `demo.local.json` está excluido de Git.
+
+3. Compila o ejecuta el APK con esa configuración:
+
+   ```powershell
+   flutter build apk --dart-define-from-file=demo.local.json
+   flutter run --dart-define-from-file=demo.local.json
+   ```
+
+El APK se genera en `build/app/outputs/flutter-apk/app-release.apk`. En Android,
+`AppConfig` convierte las URLs locales `127.0.0.1`/`localhost` en `10.0.2.2`
+para que el emulador llegue al Supabase y al backend del computador. Las
+variables de build se empaquetan en la aplicación; deben ser solo configuración
+pública del cliente. No pases claves de servicio ni otros secretos.
 
 Variables requeridas:
 
 | Variable | Uso |
 |---|---|
 | `SUPABASE_URL` | URL del proyecto Supabase |
-| `SUPABASE_ANON_KEY` | Clave pública de Supabase |
+| `SUPABASE_ANON_KEY` | Clave pública de cliente de Supabase |
 | `API_BASE_URL` | URL base de la API, incluyendo `/api/v1` |
 
 El valor local predeterminado para la API es
 `http://127.0.0.1:8000/api/v1`. En el emulador Android, la app convierte
 automáticamente `127.0.0.1` o `localhost` en `10.0.2.2`. En un dispositivo
-físico, usa la dirección IP local del computador que ejecuta el backend,
-por ejemplo `http://192.168.1.20:8000/api/v1`.
+físico, usa la dirección IP local del computador que ejecuta
+el backend, por ejemplo `http://192.168.1.20:8000/api/v1`, y la URL LAN de
+Supabase si también se ejecuta localmente.
 
 La guía de configuración de Supabase está en
 [`../database/README.md`](../database/README.md); los pasos del backend, en
@@ -78,7 +112,8 @@ flutter test test\adaptacion_pantallas_test.dart
 - `lib/services/`: integración con Supabase y la API a través de Dio.
 - `lib/providers/`: estado compartido con Provider.
 - `lib/models/`: representación tipada de las respuestas.
-- `lib/config/app_config.dart`: carga de `.env` y ajuste de URL para Android.
+- `lib/config/app_config.dart`: carga de variables de build y ajuste de URL
+  para Android.
 - `test/`: pruebas Flutter.
 
 `ApiClient` agrega el token de Supabase a las solicitudes protegidas. El

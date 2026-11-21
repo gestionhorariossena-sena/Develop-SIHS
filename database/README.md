@@ -15,7 +15,7 @@ Desde PowerShell, en la raíz del repositorio, crea los archivos locales:
 ```powershell
 Copy-Item backend\.env.example backend\.env
 Copy-Item frontend\.env.example frontend\.env
-Copy-Item mobile\.env.example mobile\.env
+Copy-Item mobile\demo.local.example.json mobile\demo.local.json
 ```
 
 Completa solo los valores necesarios para el componente que vas a ejecutar:
@@ -26,8 +26,9 @@ Completa solo los valores necesarios para el componente que vas a ejecutar:
 - Frontend: `frontend/.env` usa las variables `VITE_SUPABASE_URL`,
   `VITE_SUPABASE_ANON_KEY` y `VITE_API_URL`. No pongas claves secretas en el
   cliente web.
-- Móvil: `mobile/.env` usa `SUPABASE_URL`, `SUPABASE_ANON_KEY` y
-  `API_BASE_URL`.
+- Móvil: `mobile/demo.local.json` usa `SUPABASE_URL`, `SUPABASE_ANON_KEY` y
+  `API_BASE_URL`, inyectadas con `--dart-define-from-file`; la clave es solo la
+  `ANON_KEY` de cliente, nunca `SERVICE_ROLE_KEY`.
 
 Para ejecutar cada aplicación, consulta el
 [README principal](../README.md) y las guías de
