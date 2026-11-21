@@ -79,6 +79,14 @@ class _AsistenciaDePrueba implements AsistenciaGateway {
           ),
         ],
       );
+
+  @override
+  Future<void> registrarSesion({
+    required int idHorario,
+    required DateTime fecha,
+    required Map<String, EstadoAsistencia> marcas,
+    Map<String, String?> referenciasExcusa = const {},
+  }) async {}
 }
 
 void main() {

@@ -65,6 +65,10 @@ Desde `mobile/`:
 ```powershell
 flutter test
 flutter analyze
+
+# Pruebas relacionadas con el contrato de asistencia
+flutter test test\screens\asistencia_screen_test.dart
+flutter test test\adaptacion_pantallas_test.dart
 ```
 
 ## Arquitectura
