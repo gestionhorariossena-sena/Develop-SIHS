@@ -27,13 +27,6 @@ class AsistenciaFalsa implements AsistenciaGateway {
   }) async =>
       throw UnimplementedError('es el endpoint del instructor, no el del aprendiz');
 
-  @override
-  Future<void> registrarSesion({
-    required int idHorario,
-    required DateTime fecha,
-    required Map<String, EstadoAsistencia> marcas,
-    Map<String, String?> referenciasExcusa = const {},
-  }) async {}
 }
 
 MiAsistencia _datos({
