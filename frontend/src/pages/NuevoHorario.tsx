@@ -97,6 +97,7 @@ async function validarDryRun(datos: HorarioCreate): Promise<HorarioDryRunRespons
 export function NuevoHorario() {
   const [searchParams] = useSearchParams()
   const idEditar = searchParams.get('editar')
+  const idFichaDesdeHistorial = Number(searchParams.get('idFicha'))
 
   const [ficha, setFicha] = useState('')
   const [aprendices, setAprendices] = useState('0')
@@ -205,6 +206,10 @@ export function NuevoHorario() {
         const diaIdPorNombre = Object.fromEntries(dias.map((d) => [d.nombreDia, d.idDia]))
 
         setCatalogos({ fichas, ambientes, instructores, resultados, jornadaIdPorNombre, diaIdPorNombre })
+        if (!idEditar && Number.isInteger(idFichaDesdeHistorial) && idFichaDesdeHistorial > 0) {
+          const fichaDeEnlace = fichas.find((item) => item.idFicha === idFichaDesdeHistorial)
+          if (fichaDeEnlace) aplicarSeleccionFicha(fichaDeEnlace)
+        }
       })
       .catch((err: unknown) => {
         setErrorCatalogos(
