@@ -330,12 +330,13 @@ export function Fichas() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {puedeGestionar && <button type="button" onClick={abrirCrear} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-on-primary-container focus-visible:outline-2 focus-visible:outline-primary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>Crear ficha</button>}
-          <button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="inline-flex items-center gap-2 rounded-xl border border-outline px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">{mostrarImportar ? 'Ocultar CSV' : 'Importar CSV'}</button>
+          <button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="inline-flex items-center gap-2 rounded-xl border border-outline px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">{mostrarImportar ? 'Ocultar carga masiva' : 'Carga masiva'}</button>
         </div>
       </div>
 
       {mostrarImportar && (
         <ImportarArchivo
+          entidad="fichas"
           columnas={COLUMNAS_IMPORTAR_FICHA}
           onImportarFila={importarFilaFicha}
           onTerminado={refrescarFichasTrasImportar}
