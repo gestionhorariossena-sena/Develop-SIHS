@@ -36,6 +36,16 @@ describe('ImportarArchivo', () => {
     expect(screen.queryByText(/Se encontraron/)).not.toBeInTheDocument()
   })
 
+  it('bloquea el lote cuando una fila no tiene datos requeridos', async () => {
+    const usuario = userEvent.setup()
+    const importar = vi.fn()
+    render(<ImportarArchivo columnas={COLUMNAS} onImportarFila={importar} onCerrar={() => {}} />)
+    await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv('codigo,nombre\\nA1,Ana\\nB2,'))
+    expect(await screen.findByText(/requieren corrección/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Confirmar importación de 2 filas' })).toBeDisabled()
+    expect(importar).not.toHaveBeenCalled()
+  })
+
   it('avisa si el archivo no tiene filas', async () => {
     const usuario = userEvent.setup()
     render(<ImportarArchivo columnas={COLUMNAS} onImportarFila={vi.fn()} onCerrar={() => {}} />)
