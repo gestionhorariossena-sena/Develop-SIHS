@@ -26,7 +26,6 @@ const MiHorario = lazy(() => import('../pages/MiHorario').then((modulo) => ({ de
 const MiHorarioAprendiz = lazy(() => import('../pages/MiHorarioAprendiz').then((modulo) => ({ default: modulo.MiHorarioAprendiz })))
 const DetalleFranjaAmbiente = lazy(() => import('../pages/DetalleFranjaAmbiente').then((modulo) => ({ default: modulo.DetalleFranjaAmbiente })))
 const Usuarios = lazy(() => import('../pages/Usuarios').then((modulo) => ({ default: modulo.Usuarios })))
-const CodigoInstructor = lazy(() => import('../pages/CodigoInstructor').then((modulo) => ({ default: modulo.CodigoInstructor })))
 const Roles = lazy(() => import('../pages/Roles').then((modulo) => ({ default: modulo.Roles })))
 const AprobarlicitarSolicitudes = lazy(() => import('../pages/AprobarlicitarSolicitudes').then((modulo) => ({ default: modulo.AprobarlicitarSolicitudes })))
 const PanelAdministracion = lazy(() => import('../pages/PanelAdministracion').then((modulo) => ({ default: modulo.PanelAdministracion })))
@@ -325,14 +324,6 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={ADMIN}>
             <Usuarios />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/codigo-instructor"
-        element={
-          <ProtectedRoute roles={GESTION}>
-            <CodigoInstructor />
           </ProtectedRoute>
         }
       />
