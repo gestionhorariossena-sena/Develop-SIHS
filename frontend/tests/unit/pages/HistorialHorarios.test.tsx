@@ -47,10 +47,12 @@ const SNAPSHOT_SIN_VINCULO: HorarioGuardado = {
 
 const apiGetMock = vi.fn()
 const apiPatchMock = vi.fn()
+const apiPutMock = vi.fn()
 const apiDeleteMock = vi.fn()
 vi.mock('../../../src/services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
   apiPatch: (...args: unknown[]) => apiPatchMock(...args),
+  apiPut: (...args: unknown[]) => apiPutMock(...args),
   apiDelete: (...args: unknown[]) => apiDeleteMock(...args),
   ApiError: class ApiError extends Error {},
 }))
@@ -61,6 +63,10 @@ function mockeaBase(horariosReales: Horario[] = [CLASE_1, CLASE_SUELTA], snapsho
     if (path === '/horarios/') return Promise.resolve(horariosReales)
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
     if (path === '/trimestres/') return Promise.resolve([{ idTrimestre: 1, nombre: 'Trimestre 1', fechaInicio: '2026-01-01', fechaFin: '2026-03-31', estado: 'activo' }])
+    if (path === '/usuarios/instructores') return Promise.resolve([{ idUsuario: 'u2', nombre: 'Fredy Ardila' }])
+    if (path === '/ambientes') return Promise.resolve([{ idAmbiente: 2, nombreAmbiente: 'Ambiente 202' }])
+    if (path === '/resultados-aprendizaje/') return Promise.resolve([{ idResultado: 2, codigo: 'RA-2', descripcion: 'Resultado demo' }])
+    if (path === '/jornadas/') return Promise.resolve([{ idJornada: 2, nombreJornada: 'Tarde' }])
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -112,6 +118,21 @@ describe('HistorialHorarios', () => {
     await usuario.click(within(grupo).getByRole('button', { name: 'Borrar bloque' }))
     await usuario.click(within(grupo).getByRole('button', { name: 'Confirmar borrar' }))
     expect(apiDeleteMock).toHaveBeenCalledWith('/horarios/2')
+  })
+
+  it('permite modificar un bloque importado desde el historial sin perder su publicación', async () => {
+    mockeaBase([CLASE_SUELTA], [])
+    const usuario = userEvent.setup()
+    apiPutMock.mockResolvedValue({ ...CLASE_SUELTA, horaFin: '16:00:00' })
+    renderConProviders(<HistorialHorarios />, ['/horarios/historial?idHorario=2'])
+    const grupo = await screen.findByRole('region', { name: 'Horario de FICHA-SUELTA' })
+    await usuario.click(within(grupo).getByRole('button', { name: 'Modificar bloque' }))
+    const editor = await within(grupo).findByRole('region', { name: 'Modificar bloque #2' })
+    await usuario.clear(within(editor).getByLabelText('Hasta'))
+    await usuario.type(within(editor).getByLabelText('Hasta'), '16:00')
+    await usuario.click(within(editor).getByRole('button', { name: 'Guardar cambios' }))
+    await waitFor(() => expect(apiPutMock).toHaveBeenCalledWith('/horarios/2', expect.objectContaining({ horaFin: '16:00:00', publicado: true })))
+    expect(await within(grupo).findByText(/12:00–16:00/)).toBeInTheDocument()
   })
 
   it('el botón "Modificar" de la lista enlaza al creador en modo edición', async () => {
