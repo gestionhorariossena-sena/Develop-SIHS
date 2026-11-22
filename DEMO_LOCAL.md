@@ -67,3 +67,14 @@ migración en `supabase/migrations/` se deriva solo de la estructura actual;
 La guía [Cargas masivas de SIHS](docs/GUIA_CARGAS_MASIVAS.md) enumera los cuatro cargadores unificados (Fichas, Ambientes, Instructores y Plan curricular) y sus pruebas recomendadas. El asistente de horarios con IA sigue su propio flujo.
 
 Después de `make demo-up`, verifica los cambios de catálogos en la base local y las invitaciones del alta de instructores en Mailpit. Si pruebas el envío de correo de cuentas nuevas, confirma que el SMTP del contenedor apunta a Mailpit; el archivo `backend/.env` montado no debe apuntar a correo institucional ni a Supabase remoto. Después de cada ensayo puedes restaurar la demo con `make demo-reset`.
+
+## SMTP de la demo local (2026-11-22)
+
+En `compose.demo.yml`, el backend usa `APP_ENV=demo`, `SMTP_HOST=host.docker.internal`, `SMTP_PORT=54325` y credenciales SMTP vacías; `supabase/config.toml` expone el puerto `54325` del servidor de correo de pruebas. **Solo** esa combinación (entorno demo, host interno y puerto 54325) permite a `EmailService` enviar sin STARTTLS ni usuario/contraseña. Los demás entornos conservan las exigencias SMTP anteriores.
+
+1. Tras `git pull`, reinicia Supabase CLI si es necesario para que adopte el nuevo `smtp_port`.
+2. Recrea el backend Docker con `docker compose -f compose.demo.yml up -d --build backend` o ejecuta `make demo-up` según el estado de tu stack.
+3. Desde Fichas carga el Excel de aprendices, confirma, y consulta los mensajes capturados en la interfaz de correo de Supabase local: http://127.0.0.1:54324.
+4. Prueba el acceso con la contraseña temporal mostrada **en el correo de prueba**, no en SIHS. Verifica que la aplicación obliga a cambiarla.
+
+Este flujo no entrega correos a Gmail desde la demo: solo captura mensajes en el servidor de pruebas. Si se usa una configuración SMTP real en otro entorno, conserva STARTTLS y autenticación.
