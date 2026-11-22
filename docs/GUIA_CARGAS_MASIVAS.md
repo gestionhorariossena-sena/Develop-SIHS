@@ -110,3 +110,21 @@ pnpm exec vitest run tests/unit/pages/CargaAprendices.test.tsx tests/unit/pages/
 pnpm lint
 pnpm build
 ```
+
+
+## Fallos al importar (2026-11-22)
+
+- **Instructores**: la pantalla consulta `GET /api/v1/instructores/alta/diagnostico`, restringido a Administrador/Coordinador. Detecta SMTP o claves de Supabase vacías. Los fallos de Supabase Auth (401/403, URL incorrecta, conexión) ahora se clasifican, no se confunden con fallos SMTP; los detalles sensibles quedan solo en logs.
+- **Fichas**: `POST /api/v1/fichas/` devuelve **409** si el código ya existe, **422** si faltan referencias a Programa/Período/Sede y **403** si la cuenta no es Administrador. Antes las violaciones de clave foránea podían aparecer como error 500. Solo Administrador ve el botón de importación (mismo rol del endpoint).
+- **Aprendices**: ruta de directorio `/aprendices`, carga masiva en `/aprendices/carga-masiva`. El servidor devuelve perfil, ficha, programa y estado de primer cambio de clave.
+- **Archivo SQL piloto**: las cuatro filas de la semilla `08_aprendices_semilla_local.sql` se convirtieron a `SIHS_aprendices_desde_semilla_importable.xlsx` para carga por la interfaz. Los correos `.local` se cambiaron a `@example.com`, porque `EmailStr` rechaza dominios locales. No ejecutes el SQL y el XLSX sobre la misma base.
+- **Docker**: Mailpit ahora corre como servicio en `compose.demo.yml`; las invitaciones están en http://127.0.0.1:8025, no en Gmail. Ejecuta `docker compose -f compose.demo.yml up -d --build` para aplicar configuración.
+
+Pruebas recomendadas:
+```bash
+cd backend
+python -m pytest tests/test_alta_instructores.py tests/test_alta_aprendices.py tests/test_fichas_importacion_errores.py tests/test_email_demo.py -q
+cd ../frontend
+pnpm exec vitest run tests/unit/pages/Aprendices.test.tsx tests/unit/pages/CargaAprendices.test.tsx tests/unit/pages/AltaInstructores.test.tsx tests/unit/pages/Fichas.test.tsx
+pnpm build
+```
