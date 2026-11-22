@@ -325,7 +325,7 @@ export function Programas() {
               <TituloPasoCarga numero={1} titulo="Seleccionar archivo" detalle="Formato de Planeación Pedagógica SENA · Excel." />
             <input
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx"
               onChange={(e) => void subirCurriculo(e)}
               disabled={subiendoCurriculo}
               aria-label="Seleccionar archivo de plan curricular"
