@@ -2,6 +2,7 @@
 import io
 import logging
 import secrets
+from zipfile import BadZipFile, ZipFile
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -110,8 +111,15 @@ def _normalizar(valor: object) -> str:
 
 def _leer_excel(contenido: bytes) -> list[dict]:
     try:
-        libro = load_workbook(io.BytesIO(contenido), read_only=True, data_only=True)
-    except Exception as exc:
+        # Un .xlsx es un ZIP: limitar también el tamaño descomprimido evita
+        # procesar archivos que parecen pequeños pero se expanden demasiado.
+        with ZipFile(io.BytesIO(contenido)) as paquete:
+            if sum(entrada.file_size for entrada in paquete.infolist()) > 20 * 1024 * 1024:
+                raise HTTPException(413, "El Excel excede el tamaño máximo de contenido permitido.")
+        libro = load_workbook(io.BytesIO(contenido), read_only=True, data_only=True, keep_links=False)
+    except HTTPException:
+        raise
+    except (BadZipFile, ValueError, OSError) as exc:
         raise HTTPException(422, "El archivo no es un Excel .xlsx válido.") from exc
     try:
         hoja = libro.active
