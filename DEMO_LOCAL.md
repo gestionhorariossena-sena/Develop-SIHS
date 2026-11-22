@@ -61,3 +61,9 @@ Después de iniciar, comprueba manualmente la API de salud, el login con cuentas
 No agregar dumps, `.env`, claves ni datos personales a este repositorio. La
 migración en `supabase/migrations/` se deriva solo de la estructura actual;
 `supabase/seed.sql` contiene exclusivamente información sintética.
+
+## Ensayo de cargas masivas para la sustentación
+
+La guía [Cargas masivas de SIHS](docs/GUIA_CARGAS_MASIVAS.md) enumera los cuatro cargadores unificados (Fichas, Ambientes, Instructores y Plan curricular) y sus pruebas recomendadas. El asistente de horarios con IA sigue su propio flujo.
+
+Después de `make demo-up`, verifica los cambios de catálogos en la base local y las invitaciones del alta de instructores en Mailpit. Si pruebas el envío de correo de cuentas nuevas, confirma que el SMTP del contenedor apunta a Mailpit; el archivo `backend/.env` montado no debe apuntar a correo institucional ni a Supabase remoto. Después de cada ensayo puedes restaurar la demo con `make demo-reset`.
