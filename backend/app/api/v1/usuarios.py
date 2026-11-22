@@ -19,10 +19,6 @@ from app.schemas.horario import HorarioResponse
 from app.schemas.usuario import (
     CargaSemanalResponse,
     UsuarioEspecialidadesUpdate,
-    UsuarioCodigoInstructorRequest,
-    UsuarioCodigoInstructorResponse,
-    UsuarioCodigoInstructorValidacionRequest,
-    UsuarioCodigoInstructorValidacionResponse,
     UsuarioLoginDocumentoRequest,
     UsuarioLoginDocumentoResponse,
     UsuarioPreferenciasUpdate,
@@ -31,7 +27,6 @@ from app.schemas.usuario import (
 from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import HorarioService
 from app.services.instructor_service import (
-    CodigoNoDisponibleError,
     InstructorService,
     NoEsInstructorError,
 )
@@ -277,32 +272,3 @@ def actualizar_especialidades_instructor(
     return actualizado
 
 
-@router.post("/instructor/codigo/generar", response_model=UsuarioCodigoInstructorResponse)
-def generar_codigo_instructor(
-    data: UsuarioCodigoInstructorRequest,
-    db: Session = Depends(get_db),
-    usuario=Depends(require_admin_o_coordinador),
-):
-    try:
-        generado = InstructorService.generar_codigo(db, data.idUsuario)
-    except NoEsInstructorError:
-        raise _no_es_instructor() from None
-    except CodigoNoDisponibleError:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="No se pudo generar un código único. Inténtalo de nuevo.",
-        ) from None
-
-    if generado is None:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
-    return generado
-
-
-@router.post("/instructor/codigo/validar", response_model=UsuarioCodigoInstructorValidacionResponse)
-def validar_codigo_instructor(
-    data: UsuarioCodigoInstructorValidacionRequest,
-    db: Session = Depends(get_db),
-):
-    """Pública a propósito: el registro la usa antes de que exista sesión."""
-    return InstructorService.validar_codigo(db, data.codigo)
