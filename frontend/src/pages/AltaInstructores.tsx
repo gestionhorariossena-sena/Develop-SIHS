@@ -19,7 +19,6 @@ interface FilaExcel {
   error: string | null
 }
 interface Previa { confirmado: false; filas: FilaExcel[]; total: number; validas: number }
-interface Importacion { confirmado: true; resultados: Resultado[]; total: number }
 
 const vacio: Alta = { nombre: '', correo: '', documento: '', tipoContrato: '', horasContratadasSemana: '', sigla: '' }
 const clase = 'mt-1.5 w-full min-h-10 rounded-md border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/15'
@@ -36,6 +35,7 @@ export function AltaInstructores() {
   const [mensaje, setMensaje] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [procesando, setProcesando] = useState(false)
+  const [progreso, setProgreso] = useState(0)
 
   function actualizar(campo: keyof Alta, valor: string) {
     setDatos((actual) => ({ ...actual, [campo]: valor }))
@@ -82,6 +82,7 @@ export function AltaInstructores() {
     setArchivo(file)
     setPrevia(null)
     setResultados([])
+    setProgreso(0)
     setMensaje(null)
     setError(null)
   }
@@ -92,18 +93,36 @@ export function AltaInstructores() {
     setError(null)
     setMensaje(null)
     try {
-      const form = new FormData()
-      form.append('archivo', archivo)
-      form.append('confirmar', String(confirmar))
-      const respuesta = await apiPostForm<Previa | Importacion>('/instructores/alta/importar', form, 120000)
-      if (respuesta.confirmado) {
-        setResultados(respuesta.resultados)
-        setPrevia(null)
-        setArchivo(null)
-        setMensaje('Importación procesada. Revisa el estado individual de cada correo.')
-      } else {
+      if (!confirmar) {
+        const form = new FormData()
+        form.append('archivo', archivo)
+        const respuesta = await apiPostForm<Previa>('/instructores/alta/importar', form, 120000)
         setPrevia(respuesta)
+        return
       }
+      if (!previa || previa.total === 0 || previa.validas !== previa.total) return
+
+      // Cada fila se confirma individualmente: un lote grande no queda
+      // colgado detrás del timeout de una sola petición HTTP.
+      setResultados([])
+      setProgreso(0)
+      for (const fila of previa.filas) {
+        let resultado: Resultado
+        try {
+          resultado = await apiPost<Resultado>('/instructores/alta/', fila.datos, 45000)
+        } catch (err) {
+          resultado = {
+            correo: String(fila.datos.correo ?? ''),
+            estado: 'error',
+            detalle: detalleError(err),
+          }
+        }
+        setResultados((anteriores) => [...anteriores, { ...resultado, fila: fila.fila }])
+        setProgreso((anterior) => anterior + 1)
+      }
+      setPrevia(null)
+      setArchivo(null)
+      setMensaje('Importación procesada. Revisa el resultado de cada instructor.')
     } catch (err) {
       setError(detalleError(err))
     } finally {
@@ -168,6 +187,7 @@ export function AltaInstructores() {
         </section>
       )}
 
+      {modo === 'excel' && procesando && previa && progreso > 0 && <p role="status" className="mt-4 text-sm text-on-surface-variant">Enviando invitaciones: {progreso} de {previa.total} instructores procesados.</p>}
       {resultados.length > 0 && <section aria-label="Resultados del registro" className="mt-6 max-w-4xl border-t border-outline-variant pt-4">
         <h2 className="mb-3 text-base font-semibold text-on-surface">Resultado del proceso</h2>
         <ul className="divide-y divide-outline-variant rounded-md border border-outline-variant bg-surface-container-lowest">{resultados.map((r, i) => <li key={`${r.correo}-${i}`} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 text-sm"><div><p className="font-medium text-on-surface">{r.correo}</p><p className="mt-1 text-xs text-on-surface-variant">{r.detalle}</p></div><span className={`text-xs font-semibold ${r.estado === 'creado' ? 'text-primary' : 'text-tertiary'}`}>{r.estado === 'creado' ? 'Invitado' : r.estado.replaceAll('_', ' ')}</span></li>)}</ul>
