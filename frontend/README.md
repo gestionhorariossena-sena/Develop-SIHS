@@ -133,3 +133,9 @@ Si SMTP no está configurado, la API no permite iniciar nuevas altas. Si la cuen
 ## Cargadores masivos unificados (2026-11-21)
 
 Fichas, Ambientes, Instructores y el plan curricular de Programas comparten el patrón **Carga masiva** (selección → revisión → confirmación → resultado), estilos y ejecución progresiva por elemento. El asistente de horarios con IA permanece separado. Consulta la [guía de cargas masivas](../docs/GUIA_CARGAS_MASIVAS.md) para formatos admitidos, permisos, pruebas y limitaciones.
+
+### Exportación de carga docente (2026-11-21)
+
+En **Instructores**, el botón **Exportar carga docente (.csv)** descarga un CSV UTF-8 compatible con Excel/LibreOffice (separador `;`). Se exportan **todos los instructores que coincidan con los filtros**, sin limitarse a la página visible. Incluye nombre, correo, documento, especialidades, contrato, horas contratadas, horas asignadas semanales según las clases registradas, límite RF-011, horas disponibles, porcentaje de ocupación y estado.
+
+La descarga utiliza datos ya consultados por el directorio, sin una llamada adicional ni un endpoint nuevo; si no se pueden recuperar los horarios, el botón permanece deshabilitado para no exportar cargas falsamente vacías. Las horas asignadas reflejan únicamente clases programadas; no estiman tareas administrativas o de preparación. La exportación está implementada en `src/utils/exportarCargaDocente.ts` y dispone de pruebas propias.
