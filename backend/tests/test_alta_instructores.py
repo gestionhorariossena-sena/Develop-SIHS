@@ -80,6 +80,8 @@ def test_alta_individual_crea_instructor_y_no_devuelve_clave(
     _, headers = autenticar_como("Coordinador")
     id_nuevo = uuid.uuid4()
     enviados = []
+    monkeypatch.setattr(alta_instructores.settings, "supabase_url", "http://supabase.local")
+    monkeypatch.setattr(alta_instructores.settings, "supabase_service_role_key", "test-service-key")
     monkeypatch.setattr(alta_instructores.settings, "smtp_user", "prueba@sena.edu.co")
     monkeypatch.setattr(alta_instructores.settings, "smtp_password", "clave-de-prueba")
     monkeypatch.setattr(alta_instructores, "buscar_usuario_supabase_por_email", lambda correo: None)
@@ -100,6 +102,8 @@ def test_alta_individual_crea_instructor_y_no_devuelve_clave(
 def test_no_reasigna_cuenta_de_correo_existente(client, crear_rol, autenticar_como, monkeypatch):
     crear_rol("Instructor")
     _, headers = autenticar_como("Administrador")
+    monkeypatch.setattr(alta_instructores.settings, "supabase_url", "http://supabase.local")
+    monkeypatch.setattr(alta_instructores.settings, "supabase_service_role_key", "test-service-key")
     monkeypatch.setattr(alta_instructores.settings, "smtp_user", "prueba@sena.edu.co")
     monkeypatch.setattr(alta_instructores.settings, "smtp_password", "clave-de-prueba")
     monkeypatch.setattr(alta_instructores, "buscar_usuario_supabase_por_email", lambda correo: {"id": "existente"})
