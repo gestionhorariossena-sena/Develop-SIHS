@@ -4,8 +4,6 @@ from email.mime.text import MIMEText
 
 from app.core.config import settings
 
-HORAS_VALIDEZ_CREDENCIAL_TEMPORAL = 48
-
 
 class SmtpNoConfiguradoError(RuntimeError):
     """SMTP_USER/SMTP_PASSWORD todavía no están en el .env — ver
@@ -31,8 +29,7 @@ class EmailService:
             "aprobada. Estas son tus credenciales temporales:\n\n"
             f"  Usuario (correo): {destinatario_email}\n"
             f"  Contraseña temporal: {password_temporal}\n\n"
-            f"Esta contraseña es válida por {HORAS_VALIDEZ_CREDENCIAL_TEMPORAL} horas "
-            "y deberás cambiarla por una propia al iniciar sesión por primera vez.\n\n"
+            "Deberás cambiar esta contraseña por una propia al iniciar sesión por primera vez.\n\n"
             "Si no reconoces esta solicitud, ignora este correo.\n\n"
             "— SIHS SENA, Gestión de Horarios"
         )
