@@ -207,7 +207,7 @@ describe('HorariosCompletos', () => {
     const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
     expect(drawer).toHaveClass('max-w-5xl', 'rounded-2xl')
     expect(within(drawer).getByText('Bloque #7 · Ficha 3228973 B')).toBeInTheDocument()
-    expect(within(drawer).getByRole('link', { name: 'Abrir en historial' })).toHaveAttribute('href', '/horarios/historial?idHorario=7')
+    expect(within(drawer).getByRole('link', { name: 'Ver registro de cambios' })).toHaveAttribute('href', '/horarios/historial?idHorario=7')
     expect(within(drawer).getByText('Competencia')).toBeInTheDocument()
     expect(within(drawer).getByText('Resultado de aprendizaje (RAP)')).toBeInTheDocument()
     expect(within(drawer).getByText('Carga semanal')).toBeInTheDocument()
@@ -218,16 +218,15 @@ describe('HorariosCompletos', () => {
     expect(screen.getAllByRole('columnheader')).toHaveLength(8)
   })
 
-  it('centraliza la publicación del bloque en el historial, sin controles duplicados', async () => {
+  it('centraliza la publicación y edición del bloque en su tarjeta de gestión', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
     const detalle = screen.getByRole('dialog', { name: 'Horario #7' })
-    expect(within(detalle).getByText('Bloque publicado')).toBeInTheDocument()
-    expect(within(detalle).getByRole('link', { name: 'Abrir en historial' })).toHaveAttribute('href', '/horarios/historial?idHorario=7')
-    expect(within(detalle).queryByRole('button', { name: 'Despublicar' })).not.toBeInTheDocument()
-    expect(within(detalle).queryByRole('link', { name: 'Gestionar publicación' })).not.toBeInTheDocument()
+    expect(within(detalle).getByText('Visible para el instructor')).toBeInTheDocument()
+    expect(within(detalle).getByRole('button', { name: 'Retirar de publicación' })).toBeInTheDocument()
+    expect(within(detalle).getByRole('button', { name: 'Modificar bloque' })).toBeInTheDocument()
   })
 
   it('permite expandir un horario con el teclado y anuncia su estado', async () => {
@@ -258,13 +257,12 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('Validación de cruces superada.')).toBeInTheDocument()
   })
 
-  it('un horario publicado se muestra como informativo, sin cambiarlo desde el detalle', async () => {
+  it('un horario publicado permite gestionarse desde su detalle', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
-    expect(screen.getByRole('link', { name: 'Abrir en historial' })).toHaveAttribute('href', '/horarios/historial?idHorario=7')
-    expect(screen.queryByRole('button', { name: 'Publicar ahora' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Retirar de publicación' })).toBeInTheDocument()
   })
 
   it('cierra el drawer con X y con Escape', async () => {
@@ -289,23 +287,23 @@ describe('HorariosCompletos', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('reúne edición y publicación en un único acceso al historial', async () => {
+  it('reúne edición y publicación en la tarjeta central', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
-    expect(screen.getByRole('link', { name: 'Abrir en historial' })).toHaveAttribute('href', '/horarios/historial?idHorario=7')
-    expect(screen.queryByRole('button', { name: 'Editar bloque' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Modificar bloque' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Retirar de publicación' })).toBeInTheDocument()
   })
 
-  it('muestra la cuadrícula del bloque importado y deriva las acciones al historial', async () => {
+  it('muestra la cuadrícula del bloque importado y sus acciones en la tarjeta', async () => {
     mockeaBase([{ ...HORARIO, horaInicio: '07:00:00', horaFin: '09:00:00', publicado: false }])
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
     const tarjeta = screen.getByRole('dialog', { name: 'Horario #7' })
     expect(within(tarjeta).getByRole('region', { name: 'Ubicación en la semana' })).toBeInTheDocument()
-    expect(within(tarjeta).getByRole('link', { name: 'Abrir en historial' })).toHaveAttribute('href', '/horarios/historial?idHorario=7')
+    expect(within(tarjeta).getByRole('button', { name: 'Publicar bloque' })).toBeInTheDocument()
   })
 
   it('con ?id= en la URL, abre el drawer directo (deep link desde Calendario general)', async () => {

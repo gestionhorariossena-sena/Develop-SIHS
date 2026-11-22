@@ -590,7 +590,7 @@ export function NuevoHorario() {
             </label>
           )}
           <Link
-            to={datosEdicion ? '/horarios/historial' : '/dashboard'}
+            to={datosEdicion ? '/horarios/completos' : '/dashboard'}
             className="rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
           >
             Cancelar

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
 import { FormField } from '../components/FormField'
 import { apiPatch, ApiError } from '../services/api'
+import { olvidarPerfil } from '../services/perfil'
 import { supabase } from '../services/supabaseClient'
 
 /**
@@ -43,6 +44,11 @@ export function CambiarClaveObligatorio() {
 
     try {
       await apiPatch('/usuarios/me/confirmar-cambio-clave')
+      // ProtectedRoute consulta el perfil desde un caché de sesión. Sin
+      // invalidarlo, al navegar reutiliza la versión anterior que todavía
+      // tenía `debeCambiarClave: true` y devuelve a esta pantalla aunque el
+      // backend ya hubiera confirmado el cambio.
+      olvidarPerfil()
     } catch (err) {
       setLoading(false)
       // La contraseña ya quedó cambiada en Supabase Auth -- si esto

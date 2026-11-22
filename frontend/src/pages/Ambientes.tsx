@@ -140,6 +140,9 @@ export function Ambientes() {
  const sedeEncontrada = sedes.find((item) => item.nombreSede.toLocaleUpperCase('es-CO') === nombreSede.toLocaleUpperCase('es-CO'))
  if (!sedeEncontrada) throw new Error(`No existe la sede "${nombreSede}".`)
 
+ const existente = ambientes.find((item) => item.numeroAmbiente === numeroAmbiente && item.idSede === sedeEncontrada.idSede)
+ if (existente) throw new Error(`Ya existe el ambiente ${numeroAmbiente} en la sede "${nombreSede}".`)
+
  await apiPost('/ambientes', {
  numeroAmbiente,
  nombreAmbiente,
@@ -247,7 +250,7 @@ export function Ambientes() {
  }
 
  return (
- <AppShell activo="Ambientes">
+ <AppShell activo="Datos académicos">
  <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
  <div>
  <nav className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">

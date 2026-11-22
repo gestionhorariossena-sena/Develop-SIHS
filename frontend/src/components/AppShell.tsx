@@ -87,19 +87,13 @@ const NAV: GrupoNav[] = [
       { etiqueta: 'Importar con IA', ruta: '/horarios/asistente-ia', soloGestion: true },
       { etiqueta: 'Gestionar horarios', ruta: '/horarios/completos', soloGestion: true },
       { etiqueta: 'Publicaciones programadas', ruta: '/horarios/publicaciones-programadas', soloGestion: true },
-      { etiqueta: 'Historial de horarios', ruta: '/horarios/historial', soloGestion: true },
+      { etiqueta: 'Registro y versiones', ruta: '/horarios/historial', soloGestion: true },
     ],
   },
   {
     grupo: 'Datos académicos',
     items: [
-      { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
-      { etiqueta: 'Aprendices', ruta: '/aprendices', soloGestion: true },
-      { etiqueta: 'Programas', ruta: '/programas', soloGestion: true },
-      { etiqueta: 'Temáticas', ruta: '/tematicas', soloGestion: true },
-      { etiqueta: 'Instructores', ruta: '/instructores', soloGestion: true },
-      { etiqueta: 'Ambientes', ruta: '/ambientes', soloGestion: true },
-      { etiqueta: 'Sedes', ruta: '/sedes', soloGestion: true },
+      { etiqueta: 'Datos académicos', ruta: '/datos-academicos', soloGestion: true },
     ],
   },
   {

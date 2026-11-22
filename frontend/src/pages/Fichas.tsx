@@ -310,7 +310,7 @@ export function Fichas() {
   if (etapa !== 'todas') chips.push({ etiqueta: etapa, quitar: () => setEtapa('todas') })
 
   return (
-    <AppShell activo="Fichas">
+    <AppShell activo="Datos académicos">
       <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant dark:text-slate-400">
         <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
         <span className="text-outline">/</span>

@@ -167,7 +167,7 @@ export function Tematicas() {
   }
 
   return (
-    <AppShell activo="Temáticas">
+    <AppShell activo="Datos académicos">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="mb-1 text-2xl font-bold text-slate-900 dark:text-slate-100">Temáticas</h1>

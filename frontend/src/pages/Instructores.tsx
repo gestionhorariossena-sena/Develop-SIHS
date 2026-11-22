@@ -170,7 +170,7 @@ export function Instructores() {
   const horasMaximasTotales = cargaPorInstructor.reduce((suma, item) => suma + item.maximas, 0)
 
   return (
-    <AppShell activo="Instructores">
+    <AppShell activo="Datos académicos">
       <nav className="mb-2 text-xs text-on-surface-variant">
         <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
         <span className="mx-1.5 text-outline">/</span>

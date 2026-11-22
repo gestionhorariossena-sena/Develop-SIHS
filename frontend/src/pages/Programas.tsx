@@ -171,7 +171,7 @@ export function Programas() {
   const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
 
   return (
-    <AppShell activo="Programas">
+    <AppShell activo="Datos académicos">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Programas</h1>

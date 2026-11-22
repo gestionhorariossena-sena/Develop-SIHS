@@ -24,6 +24,9 @@ export function CabeceraGestionHorarios({ vista, descripcion }: { vista: VistaHo
           <p className="mt-1 text-sm text-on-surface-variant">{descripcion}</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link to="/horarios/historial" className="rounded-lg border border-outline px-3 py-2 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container">
+            Registro y versiones
+          </Link>
           <Link to="/horarios/publicaciones-programadas" className="rounded-lg border border-outline px-3 py-2 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container">
             Publicaciones programadas
           </Link>

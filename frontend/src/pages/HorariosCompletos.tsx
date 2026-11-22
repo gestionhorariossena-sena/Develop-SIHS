@@ -63,7 +63,7 @@ function formatoHora(hora: string) {
 export function HorariosCompletos() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = normalizarRutaHorarioLegada('/horarios/completos', searchParams) ?? leerGestionarHorariosQuery(searchParams)
-  const { horarios, fichas, instructores, ambientes, sedes, trimestres, diasSemana, auditoria, cargandoAuditoria, errorAuditoria, cargando, error, erroresCatalogos } = useGestionarHorariosData()
+  const { horarios, fichas, instructores, ambientes, sedes, trimestres, diasSemana, auditoria, cargandoAuditoria, errorAuditoria, cargando, error, erroresCatalogos, actualizarHorario } = useGestionarHorariosData()
   const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false)
   function actualizarQuery(cambios: Partial<GestionarHorariosQuery>, reiniciarPagina = false) { setSearchParams(escribirGestionarHorariosQuery({ ...query, ...cambios, pagina: reiniciarPagina ? 1 : (cambios.pagina ?? query.pagina) })) }
 
@@ -85,7 +85,7 @@ export function HorariosCompletos() {
 
   return (
     <AppShell activo="Gestionar horarios">
-      <CabeceraGestionHorarios vista="lista" descripcion="Consulta bloques por ficha, instructor o ambiente" />
+      <CabeceraGestionHorarios vista="lista" descripcion="Revisa, ajusta y publica bloques sin salir de la programación." />
       <p className="mb-2 text-xs tabular-nums text-on-surface-variant">{visibles.length} de {horarios.length} horarios</p>
 
       <nav aria-label="Perspectiva de horarios" className="mb-4 flex flex-wrap gap-1 border-b border-outline-variant dark:border-slate-700">
@@ -224,10 +224,12 @@ export function HorariosCompletos() {
           sede={ambientePorId.get(horarioSeleccionado.idAmbiente) ? sedes.find((sede) => sede.idSede === ambientePorId.get(horarioSeleccionado.idAmbiente)?.idSede) : undefined}
           trimestre={trimestrePorId.get(horarioSeleccionado.idTrimestre)}
           diasPorId={diasPorId}
+          diasSemana={diasSemana}
           jornada={etiquetaJornada(jornadaDeHorario(horarioSeleccionado))}
           conflictos={auditoria ? auditoria.conflictos : null}
           cargandoConflictos={cargandoAuditoria}
           errorConflictos={errorAuditoria}
+          onActualizar={actualizarHorario}
           onCerrar={() => actualizarQuery({ idHorario: undefined })}
         />
       )}

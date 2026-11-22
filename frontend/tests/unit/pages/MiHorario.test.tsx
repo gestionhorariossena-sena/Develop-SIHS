@@ -228,8 +228,7 @@ describe('MiHorario', () => {
     expect(await screen.findByRole('link', { name: 'Mi horario' })).toHaveAttribute('href', '/mi-horario')
     // Ni siquiera debe aparecer el link — no es solo un tema de que falle
     // al hacer clic, la herramienta de coordinación no debe ser visible.
-    expect(screen.queryByRole('link', { name: 'Fichas' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('link', { name: 'Instructores' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Datos académicos' })).not.toBeInTheDocument()
     expect(screen.queryByRole('link', { name: 'Calendario general' })).not.toBeInTheDocument()
   })
 
@@ -247,10 +246,7 @@ describe('MiHorario', () => {
     await screen.findByText('Todavía no tenés clases publicadas en este período académico.')
     expect(screen.queryByRole('link', { name: 'Mi horario' })).not.toBeInTheDocument()
 
-    await usuario.click(await screen.findByRole('button', { name: 'Datos académicos' }))
-    expect(await screen.findByRole('link', { name: 'Fichas' })).toBeInTheDocument()
-
-    expect(await screen.findByRole('link', { name: 'Instructores' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Datos académicos' })).toHaveAttribute('href', '/datos-academicos')
   })
 
   it('un usuario con roles Instructor y Coordinador a la vez ve ambos mundos', async () => {
@@ -270,7 +266,6 @@ describe('MiHorario', () => {
     await usuario.click(await screen.findByRole('button', { name: 'Mi trabajo' }))
     expect(await screen.findByRole('link', { name: 'Mi horario' })).toBeInTheDocument()
 
-    await usuario.click(await screen.findByRole('button', { name: 'Datos académicos' }))
-    expect(await screen.findByRole('link', { name: 'Fichas' })).toBeInTheDocument()
+    expect(await screen.findByRole('link', { name: 'Datos académicos' })).toHaveAttribute('href', '/datos-academicos')
   })
 })

@@ -196,7 +196,7 @@ export function PublicacionesProgramadas() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Link to="/horarios/nuevo" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Crear horario</Link>
-          <Link to="/horarios/historial" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Historial de horarios</Link>
+          <Link to="/horarios/historial" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Registro y versiones</Link>
           <Link to="/notificaciones" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Notificaciones</Link>
         </div>
       </div>

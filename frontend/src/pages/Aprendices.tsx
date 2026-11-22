@@ -56,7 +56,7 @@ export function Aprendices() {
   const filas = visibles.slice((paginaSegura - 1) * 10, paginaSegura * 10)
   const sinFicha = aprendices.filter(a => !a.codigoFicha).length
 
-  return <AppShell activo="Aprendices">
+  return <AppShell activo="Datos académicos">
     <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
       <div className="max-w-2xl">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">Datos académicos</p>

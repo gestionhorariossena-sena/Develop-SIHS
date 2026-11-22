@@ -223,7 +223,7 @@ export function CalendarioGeneral() {
             </button>
           </div>
           <Link to="/horarios/historial" className="text-sm font-medium text-primary hover:underline">
-            Ver historial de horarios
+            Ver registro y versiones
           </Link>
         </div>
 

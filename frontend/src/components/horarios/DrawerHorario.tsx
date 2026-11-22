@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { Link } from 'react-router-dom'
-import { apiGet } from '../../services/api'
-import type { Ambiente, AuditoriaConflicto, AuditoriaCrucesResponse, CargaSemanal, Ficha, Horario, Sede, Trimestre, Usuario } from '../../types/api'
+import { apiGet, apiPatch, ApiError } from '../../services/api'
+import type { Ambiente, AuditoriaConflicto, AuditoriaCrucesResponse, CargaSemanal, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../../types/api'
+import { EditarBloqueImportado } from './EditarBloqueImportado'
 import { GridAsistente } from '../horario/GridAsistente'
 import { celdasDesdeHorarios } from '../horario/celdasAsistente'
 import { nombresDias } from '../relacionados/formatoBloque'
@@ -14,10 +15,12 @@ interface DrawerHorarioProps {
   sede?: Sede
   trimestre?: Trimestre
   diasPorId: Record<number, string>
+  diasSemana: DiaSemana[]
   jornada: string
   conflictos?: AuditoriaConflicto[] | null
   cargandoConflictos?: boolean
   errorConflictos?: string | null
+  onActualizar: (actualizado: Horario) => void
   onCerrar: () => void
 }
 
@@ -28,13 +31,16 @@ function periodoLectivo(trimestre?: Trimestre) {
 
 /** Tarjeta central de un bloque: conserva la lista global detrás y mantiene
  * información, relaciones y publicación a la vista. */
-export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trimestre, diasPorId, jornada, conflictos: conflictosCompartidos, cargandoConflictos = false, errorConflictos: errorConflictosCompartidos = null, onCerrar }: DrawerHorarioProps) {
+export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trimestre, diasPorId, diasSemana, jornada, conflictos: conflictosCompartidos, cargandoConflictos = false, errorConflictos: errorConflictosCompartidos = null, onActualizar, onCerrar }: DrawerHorarioProps) {
   const cerrarRef = useRef<HTMLButtonElement>(null)
   const dialogoRef = useRef<HTMLElement>(null)
   const [carga, setCarga] = useState<CargaSemanal | null>(null)
   const [estadoCarga, setEstadoCarga] = useState<'cargando' | 'error' | 'listo'>('cargando')
   const [conflictosLocales, setConflictosLocales] = useState<AuditoriaConflicto[] | null>(null)
   const [errorConflictosLocales, setErrorConflictosLocales] = useState(false)
+  const [editando, setEditando] = useState(false)
+  const [actualizandoPublicacion, setActualizandoPublicacion] = useState(false)
+  const [errorAccion, setErrorAccion] = useState<string | null>(null)
 
   useEffect(() => {
     const focoAnterior = document.activeElement instanceof HTMLElement ? document.activeElement : null
@@ -85,6 +91,19 @@ export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trim
         ? 'Sin tope definido'
         : `${carga.horasAsignadas}h / ${carga.horasMaximas}h`
 
+  async function cambiarPublicacion() {
+    setErrorAccion(null)
+    setActualizandoPublicacion(true)
+    try {
+      const actualizado = await apiPatch<Horario>(`/horarios/${horario.idHorario}/estado`, { publicado: !horario.publicado })
+      onActualizar(actualizado)
+    } catch (err) {
+      setErrorAccion(err instanceof ApiError ? err.message : 'No se pudo actualizar la publicación del bloque.')
+    } finally {
+      setActualizandoPublicacion(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-3 sm:p-6" onClick={onCerrar}>
       <section
@@ -109,8 +128,8 @@ export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trim
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${horario.publicado ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'}`}>{horario.publicado ? 'Publicado' : 'Borrador'}</span>
-            <span className="rounded-full bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">{jornada}</span>
+            <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${horario.publicado ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300'}`}>{horario.publicado ? 'Publicado' : 'Borrador'}</span>
+            <span className="rounded-md bg-surface-container px-2.5 py-1 text-xs font-medium text-on-surface-variant dark:bg-slate-700 dark:text-slate-300">{jornada}</span>
           </div>
         </header>
 
@@ -144,10 +163,22 @@ export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trim
             {errorConflictos ? <p role="status" className="rounded-xl border border-outline-variant p-3 text-sm text-on-surface-variant dark:border-slate-700">No se pudo consultar la validación de cruces.</p> : conflictosPendientes ? <p role="status" className="rounded-xl border border-outline-variant p-3 text-sm text-on-surface-variant dark:border-slate-700">Consultando validación de cruces…</p> : conflictos?.length === 0 ? <p className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200">Validación de cruces superada.</p> : conflictos && <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200"><p className="font-semibold">{conflictos.length} conflicto{conflictos.length === 1 ? '' : 's'} detectado{conflictos.length === 1 ? '' : 's'}</p>{conflictos.map((conflicto, indice) => <p key={`${conflicto.tipo}-${indice}`} className="mt-1">{conflicto.mensaje}</p>)}<Link to="/horarios/auditoria" className="mt-2 inline-block font-semibold underline">Ver en Conflictos →</Link></div>}
           </section>
 
-          <section aria-label="Estado de publicación" className="space-y-3 rounded-xl border border-outline-variant p-4 md:col-start-2 md:row-start-1">
-            <h3 className="text-sm font-semibold text-on-surface">{horario.publicado ? 'Bloque publicado' : 'Bloque en borrador'}</h3>
-            <p className="text-sm text-on-surface-variant">{horario.publicado ? 'El instructor puede verlo en su horario.' : 'Aún no es visible en el horario del instructor.'}</p>
-            <p className="text-xs text-on-surface-variant">Para modificar el horario o administrar su publicación, ábrelo desde el historial.</p>
+          <section aria-label="Gestión del bloque" className="space-y-3 rounded-xl border border-outline-variant bg-surface-container-low p-4 md:col-start-2 md:row-start-1 dark:bg-slate-800/60">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Gestión del bloque</p>
+              <h3 className="mt-1 text-sm font-semibold text-on-surface">{horario.publicado ? 'Visible para el instructor' : 'Pendiente de publicación'}</h3>
+              <p className="mt-1 text-sm text-on-surface-variant">{horario.publicado ? 'El instructor puede verlo en su horario.' : 'Aún no es visible en el horario del instructor.'}</p>
+            </div>
+            {errorAccion && <p role="alert" className="rounded-lg bg-error-container p-3 text-xs text-on-error-container">{errorAccion}</p>}
+            <div className="flex flex-wrap gap-2">
+              <button type="button" onClick={() => void cambiarPublicacion()} disabled={actualizandoPublicacion} className="min-h-10 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-on-primary transition-colors hover:bg-on-primary-container disabled:opacity-60">
+                {actualizandoPublicacion ? 'Actualizando…' : horario.publicado ? 'Retirar de publicación' : 'Publicar bloque'}
+              </button>
+              <button type="button" onClick={() => { setErrorAccion(null); setEditando((valor) => !valor) }} aria-expanded={editando} className="min-h-10 rounded-md border border-outline px-3 py-2 text-sm font-medium text-on-surface transition-colors hover:bg-surface-container">
+                {editando ? 'Cerrar edición' : 'Modificar bloque'}
+              </button>
+            </div>
+            <p className="text-xs leading-5 text-on-surface-variant">Los cambios se validan antes de guardarse.</p>
           </section>
 
           <section aria-label="Ubicación en la semana" className="md:col-span-2">
@@ -155,10 +186,13 @@ export function DrawerHorario({ horario, ficha, instructor, ambiente, sede, trim
             <div className="overflow-x-auto rounded-xl border border-outline-variant p-3"><div className="min-w-[760px]"><GridAsistente celdas={celdasDesdeHorarios([horario])} soloFranjasOcupadas /></div></div>
           </section>
 
+          {editando && <section aria-label="Edición del bloque" className="md:col-span-2"><EditarBloqueImportado horario={horario} diasSemana={diasSemana} onCancelar={() => setEditando(false)} onGuardar={(actualizado) => { onActualizar(actualizado); setEditando(false) }} /></section>}
+
         </div>
 
-        <footer className="flex justify-end border-t border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <Link to={`/horarios/historial?idHorario=${horario.idHorario}`} className="w-full rounded-xl bg-primary px-3 py-2 text-center text-sm font-semibold text-on-primary sm:w-auto">Abrir en historial</Link>
+        <footer className="flex justify-between gap-3 border-t border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
+          <Link to={`/horarios/historial?idHorario=${horario.idHorario}`} className="rounded-md px-3 py-2 text-sm font-medium text-primary hover:bg-surface-container hover:underline">Ver registro de cambios</Link>
+          <button type="button" onClick={onCerrar} className="rounded-md border border-outline px-3 py-2 text-sm font-medium text-on-surface hover:bg-surface-container">Cerrar detalle</button>
         </footer>
       </section>
     </div>

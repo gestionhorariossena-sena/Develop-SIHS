@@ -25,6 +25,11 @@ vi.mock('../../../src/services/api', () => ({
   ApiError: ApiErrorMock,
 }))
 
+const olvidarPerfilMock = vi.fn()
+vi.mock('../../../src/services/perfil', () => ({
+  olvidarPerfil: () => olvidarPerfilMock(),
+}))
+
 function renderPagina() {
   return render(
     <ThemeProvider>
@@ -42,6 +47,7 @@ describe('CambiarClaveObligatorio', () => {
   beforeEach(() => {
     updateUserMock.mockReset()
     apiPatchMock.mockReset()
+    olvidarPerfilMock.mockReset()
   })
 
   it('muestra un error si las contraseñas no coinciden, sin llamar a Supabase', async () => {
@@ -69,6 +75,7 @@ describe('CambiarClaveObligatorio', () => {
     expect(await screen.findByText('Pantalla dashboard')).toBeInTheDocument()
     expect(updateUserMock).toHaveBeenCalledWith({ password: 'nuevaClave123' })
     expect(apiPatchMock).toHaveBeenCalledWith('/usuarios/me/confirmar-cambio-clave')
+    expect(olvidarPerfilMock).toHaveBeenCalledOnce()
   })
 
   it('si Supabase rechaza la contraseña nueva, muestra el error y no llama al backend', async () => {
@@ -96,5 +103,6 @@ describe('CambiarClaveObligatorio', () => {
 
     expect(await screen.findByText('error de servidor')).toBeInTheDocument()
     expect(screen.queryByText('Pantalla dashboard')).not.toBeInTheDocument()
+    expect(olvidarPerfilMock).not.toHaveBeenCalled()
   })
 })

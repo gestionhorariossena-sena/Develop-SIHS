@@ -17,6 +17,7 @@ const HorariosCompletos = lazy(() => import('../pages/HorariosCompletos').then((
 const AuditoriaCruces = lazy(() => import('../pages/AuditoriaCruces').then((modulo) => ({ default: modulo.AuditoriaCruces })))
 const Ambientes = lazy(() => import('../pages/Ambientes').then((modulo) => ({ default: modulo.Ambientes })))
 const Sedes = lazy(() => import('../pages/Sedes').then((modulo) => ({ default: modulo.Sedes })))
+const DatosAcademicos = lazy(() => import('../pages/DatosAcademicos').then((modulo) => ({ default: modulo.DatosAcademicos })))
 const Instructores = lazy(() => import('../pages/Instructores').then((modulo) => ({ default: modulo.Instructores })))
 const AltaInstructores = lazy(() => import('../pages/AltaInstructores').then((modulo) => ({ default: modulo.AltaInstructores })))
 const CargaAprendices = lazy(() => import('../pages/CargaAprendices').then((modulo) => ({ default: modulo.CargaAprendices })))
@@ -245,6 +246,14 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={GESTION}>
             <CambiosHorario />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/datos-academicos"
+        element={
+          <ProtectedRoute roles={GESTION}>
+            <DatosAcademicos />
           </ProtectedRoute>
         }
       />
