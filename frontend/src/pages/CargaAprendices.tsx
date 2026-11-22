@@ -30,6 +30,7 @@ export function CargaAprendices() {
   const [ocupado, setOcupado] = useState(false)
   const [procesados, setProcesados] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [archivoVerificado, setArchivoVerificado] = useState(false)
   const [aviso, setAviso] = useState<string | null>(null)
 
   const descripcionError = (err: unknown) =>
@@ -37,6 +38,7 @@ export function CargaAprendices() {
 
   function seleccionarArchivo(nuevo: File | null) {
     setArchivo(nuevo)
+    setArchivoVerificado(false)
     setPrevia(null)
     setResultados([])
     setProcesados(0)
@@ -53,6 +55,7 @@ export function CargaAprendices() {
       datos.append('archivo', archivo)
       const respuesta = await apiPostForm<Previa>('/aprendices/alta/importar', datos, 120000)
       setPrevia(respuesta)
+      setArchivoVerificado(true)
       if (respuesta.total === 0) setError('El Excel no contiene aprendices para importar.')
     } catch (err) {
       setError(descripcionError(err))
@@ -62,7 +65,7 @@ export function CargaAprendices() {
   }
 
   async function confirmar() {
-    if (!previa || previa.total === 0 || previa.validas !== previa.total || ocupado) return
+    if (!previa || !archivoVerificado || previa.total === 0 || previa.validas !== previa.total || ocupado) return
     setOcupado(true)
     setError(null)
     setAviso(null)
@@ -87,6 +90,7 @@ export function CargaAprendices() {
       setAviso('Carga finalizada. Consulta el resultado de cada aprendiz.')
       setPrevia(null)
       setArchivo(null)
+      setArchivoVerificado(false)
     } finally {
       setOcupado(false)
     }
@@ -160,7 +164,7 @@ export function CargaAprendices() {
           type="button" disabled={ocupado || previa.total === 0 || previa.validas !== previa.total}
           className={botonConfirmarCarga} onClick={() => void confirmar()}
         >
-          {ocupado ? `Procesando ${procesados} de ${previa.total}…` : `Confirmar importación de ${previa.total} aprendices`}
+          {ocupado ? `Procesando ${procesados} de ${previa.total}…` : `Confirmar importación de ${previa.total} ${previa.total === 1 ? 'aprendiz' : 'aprendices'}`}
         </button>
       </section>}
 
