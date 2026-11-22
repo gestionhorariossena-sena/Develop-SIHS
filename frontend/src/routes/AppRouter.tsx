@@ -19,6 +19,7 @@ const Ambientes = lazy(() => import('../pages/Ambientes').then((modulo) => ({ de
 const Sedes = lazy(() => import('../pages/Sedes').then((modulo) => ({ default: modulo.Sedes })))
 const Instructores = lazy(() => import('../pages/Instructores').then((modulo) => ({ default: modulo.Instructores })))
 const AltaInstructores = lazy(() => import('../pages/AltaInstructores').then((modulo) => ({ default: modulo.AltaInstructores })))
+const CargaAprendices = lazy(() => import('../pages/CargaAprendices').then((modulo) => ({ default: modulo.CargaAprendices })))
 const VistaInstructores = lazy(() => import('../pages/VistaInstructores').then((modulo) => ({ default: modulo.VistaInstructores })))
 const Fichas = lazy(() => import('../pages/Fichas').then((modulo) => ({ default: modulo.Fichas })))
 const VistaFichas = lazy(() => import('../pages/VistaFichas').then((modulo) => ({ default: modulo.VistaFichas })))
@@ -279,6 +280,7 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
+      <Route path="/aprendices/carga-masiva" element={<ProtectedRoute roles={GESTION}><CargaAprendices /></ProtectedRoute>} />
       <Route
         path="/fichas"
         element={
