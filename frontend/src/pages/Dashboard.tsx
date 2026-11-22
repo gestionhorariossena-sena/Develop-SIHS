@@ -82,10 +82,28 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
       .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
   }, [horariosActivos, idDiaHoy])
 
+  // Si hoy no hay formación, mostrar el próximo día con sesiones en lugar
+  // de presentar un tablero vacío pese a tener programación registrada.
+  const proximoDiaProgramado = useMemo(() => {
+    if (horariosHoy.length > 0 || horariosActivos.length === 0) return null
+    for (let desplazamiento = 1; desplazamiento <= 7; desplazamiento++) {
+      const fecha = new Date()
+      fecha.setDate(fecha.getDate() + desplazamiento)
+      const nombreDia = capitalizar(fecha.toLocaleDateString('es-CO', { weekday: 'long' }))
+      const idDia = diasSemana.find((dia) => dia.nombreDia === nombreDia)?.idDia
+      if (idDia == null) continue
+      const sesiones = horariosActivos.filter((horario) => horario.dias.includes(idDia))
+        .slice().sort((a, b) => a.horaInicio.localeCompare(b.horaInicio))
+      if (sesiones.length > 0) return { fecha, sesiones }
+    }
+    return null
+  }, [horariosHoy, horariosActivos, diasSemana])
+
+  const sesionesVisibles = proximoDiaProgramado?.sesiones ?? horariosHoy
   const filas = useMemo(() => {
-    if (filtro === 'todos') return horariosHoy
-    return horariosHoy.filter((h) => jornadasPorId.get(h.idJornada) === filtro)
-  }, [horariosHoy, filtro, jornadasPorId])
+    if (filtro === 'todos') return sesionesVisibles
+    return sesionesVisibles.filter((h) => jornadasPorId.get(h.idJornada) === filtro)
+  }, [sesionesVisibles, filtro, jornadasPorId])
 
   const desglosePorJornada = useMemo(() => {
     const conteos = new Map<string, number>()
@@ -200,10 +218,10 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
             <div>
               <p className="flex items-center gap-2 text-lg font-medium text-on-surface dark:text-slate-100">
                 <span className="h-2 w-2 bg-tertiary dark:bg-primary" />
-                Horario académico de hoy
+                {proximoDiaProgramado ? 'Próximo día con clases' : 'Horario académico de hoy'}
               </p>
               <p className="text-sm text-on-surface-variant dark:text-slate-400">
-                {horariosHoy.length} sesiones programadas
+                {sesionesVisibles.length} sesiones programadas{proximoDiaProgramado ? ` · ${proximoDiaProgramado.fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}` : ''}
               </p>
             </div>
 
@@ -266,7 +284,7 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
                 {horarios && filas.length === 0 && (
                   <tr>
                     <td colSpan={5} className="py-6 text-center text-sm text-on-surface-variant dark:text-slate-400">
-                      No hay sesiones programadas para hoy en esta franja.
+                      {horariosActivos.length === 0 ? 'No hay horarios activos registrados.' : 'No hay sesiones programadas para esta franja.'}
                     </td>
                   </tr>
                 )}
