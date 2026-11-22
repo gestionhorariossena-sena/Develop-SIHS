@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { CargaMasivaTematicas } from '../components/tematicas/CargaMasivaTematicas'
 import { apiDelete, apiGet, apiPost, apiPut, ApiError } from '../services/api'
 import type { Programa, TematicaCompetencia, TematicaResultado, Usuario } from '../types/api'
 
@@ -49,6 +50,7 @@ export function Tematicas() {
   const [formulario, setFormulario] = useState<Formulario | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [recarga, setRecarga] = useState(0)
+  const [mostrarCarga, setMostrarCarga] = useState(false)
 
   useEffect(() => {
     apiGet<Programa[]>('/programas/')
@@ -173,6 +175,9 @@ export function Tematicas() {
             Competencias y resultados de aprendizaje que se asignan a cada bloque del horario.
           </p>
         </div>
+        {esAdmin && <button type="button" onClick={() => setMostrarCarga(actual => !actual)} className="inline-flex min-h-10 items-center rounded-md border border-outline px-4 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">
+          {mostrarCarga ? 'Ocultar carga masiva' : 'Carga masiva'}
+        </button>}
         {esAdmin && (
           <button
             type="button"
@@ -188,6 +193,13 @@ export function Tematicas() {
           </button>
         )}
       </div>
+
+      {esAdmin && mostrarCarga && <CargaMasivaTematicas
+        programas={programas}
+        idPrograma={idPrograma}
+        onTerminado={() => { setRecarga(n => n + 1); setMostrarCarga(false) }}
+        onCerrar={() => setMostrarCarga(false)}
+      />}
 
       <section className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
