@@ -62,17 +62,17 @@ class EmailService:
         asunto = "Tu cuenta de aprendiz en SIHS"
         acceso = (
             f"Ingresa a {settings.frontend_url.rstrip('/')}/login\n"
-            if settings.frontend_url else "Ingresa al portal SIHS de tu centro.\\n"
+            if settings.frontend_url else "Ingresa al portal SIHS de tu centro.\n"
         )
         mensaje = (
-            f"Hola {destinatario_nombre},\\n\\n"
-            "Coordinación ha creado tu cuenta de aprendiz en SIHS.\\n"
-            f"Ficha vinculada: {codigo_ficha}\\n"
-            f"Usuario: {destinatario_email}\\n"
-            f"Contraseña temporal: {password_temporal}\\n\\n"
+            f"Hola {destinatario_nombre},\n\n"
+            "Coordinación ha creado tu cuenta de aprendiz en SIHS.\n"
+            f"Ficha vinculada: {codigo_ficha}\n"
+            f"Usuario: {destinatario_email}\n"
+            f"Contraseña temporal: {password_temporal}\n\n"
             f"{acceso}"
-            "Debes cambiar la contraseña al iniciar sesión por primera vez.\\n"
-            "Si no reconoces esta invitación, contacta a coordinación.\\n\\n"
+            "Debes cambiar la contraseña al iniciar sesión por primera vez.\n"
+            "Si no reconoces esta invitación, contacta a coordinación.\n\n"
             "SIHS SENA — Gestión de Horarios"
         )
         EmailService._enviar(destinatario_email, asunto, mensaje)
