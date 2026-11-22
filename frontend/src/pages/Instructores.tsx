@@ -215,14 +215,9 @@ export function Instructores() {
           >
             Exportar carga docente
           </button>
-          <button
-            type="button"
-            disabled
-            title="Esta opción aún no está disponible"
-            className="cursor-not-allowed rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary opacity-60"
-          >
-            + Registrar instructor
-          </button>
+          <Link to="/instructores/registrar" className="inline-flex min-h-10 items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container">
+            Registrar instructores
+          </Link>
         </div>
       </div>
 
