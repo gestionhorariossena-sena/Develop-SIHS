@@ -81,3 +81,9 @@ En `app/scheduling/generator.py`, el bloqueo de recursos compara intervalos de t
 Desde la raíz y con Docker disponible, `make test-run` levanta un PostgreSQL aislado y ejecuta `tests/test_real_postgres.py`; `make test-down` lo elimina. Es una opción Unix/Make alternativa a los comandos PowerShell anteriores. No usar credenciales de bases reales para esta suite.
 
 El repositorio también incluye `backend/Dockerfile.dev`, `compose.demo.yml`, `supabase/config.toml` y un seed sintético para el [entorno local de demo](../DEMO_LOCAL.md). Esta configuración de demo es distinta del entorno remoto y no sustituye las migraciones Alembic de operaciones habituales. No se ha certificado en esta actualización documental que el stack levante correctamente de extremo a extremo.
+
+### Identidad y registro de instructores (2026-11-21)
+
+El sistema **ya no utiliza códigos de instructor para el alta**. Se retiraron los endpoints `POST /usuarios/instructor/codigo/generar` y `POST /usuarios/instructor/codigo/validar` y sus esquemas/servicios de emisión. El registro de Instructor ocurre en Supabase Auth y el Administrador asigna el rol real mediante el flujo de `usuario-rol`; solicitar un rol en metadatos no confiere permisos. Las operaciones académicas siguen utilizando `idUsuario` (UUID) y relaciones de rol, no el código de registro.
+
+Los campos históricos `usuarios.codigoInstructor` y `idTrimestre` no se borraron de base de datos para evitar pérdida de datos o cambios destructivos de migración. No deben interpretarse como requisito de acceso.
