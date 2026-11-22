@@ -68,58 +68,70 @@ export function EditarBloqueImportado({ horario, diasSemana, onGuardar, onCancel
     }
   }
 
-  const inputClass = 'mt-1 block w-full rounded-lg border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface'
+  const inputClass = 'mt-1.5 block min-h-10 w-full rounded-md border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:cursor-wait disabled:opacity-60'
   return (
-    <section aria-label={`Modificar bloque #${horario.idHorario}`} className="mt-4 rounded-xl border border-primary/30 bg-primary-container/20 p-4">
-      <h3 className="mb-1 font-semibold text-on-surface">Modificar bloque #{horario.idHorario}</h3>
-      <p className="mb-4 text-sm text-on-surface-variant">Se validarán los cruces antes de guardar. Se conserva el estado de publicación.</p>
+    <section aria-label={`Modificar bloque #${horario.idHorario}`} className="mt-4 w-full min-w-0 overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest">
+      <header className="border-b border-outline-variant px-4 py-4 sm:px-5">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">Edición de asignación</p>
+            <h3 className="mt-1 text-base font-semibold text-on-surface">Bloque #{horario.idHorario}</h3>
+          </div>
+          <span className={`rounded-md px-2 py-1 text-xs font-medium ${horario.publicado ? 'bg-primary-container text-on-primary-container' : 'bg-tertiary-container text-on-tertiary-container'}`}>
+            {horario.publicado ? 'Publicado' : 'Borrador'}
+          </span>
+        </div>
+        <p className="mt-2 text-xs leading-5 text-on-surface-variant">Modifica los datos de esta clase. Los cruces se validan al guardar; la publicación no cambia.</p>
+      </header>
+      <div className="px-4 py-5 sm:px-5">
       {cargando && <p role="status" className="mb-3 text-sm">Cargando opciones…</p>}
       {error && <p role="alert" className="mb-3 rounded-lg bg-error-container p-3 text-sm text-on-error-container">{error}</p>}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <label className="text-xs text-on-surface-variant">Instructor
+      <div className="grid gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+        <label className="block text-xs font-medium text-on-surface-variant">Instructor
           <select aria-label="Instructor del bloque" disabled={cargando} value={borrador.idInstructor} onChange={(e) => setBorrador((v) => ({ ...v, idInstructor: e.target.value }))} className={inputClass}>
             {!instructores.some((u) => u.idUsuario === borrador.idInstructor) && <option value={borrador.idInstructor}>{horario.instructorNombre ?? 'Instructor actual'}</option>}
             {instructores.map((u) => <option key={u.idUsuario} value={u.idUsuario}>{u.nombre}</option>)}
           </select>
         </label>
-        <label className="text-xs text-on-surface-variant">Ambiente
+        <label className="block text-xs font-medium text-on-surface-variant">Ambiente
           <select aria-label="Ambiente del bloque" disabled={cargando} value={borrador.idAmbiente} onChange={(e) => setBorrador((v) => ({ ...v, idAmbiente: Number(e.target.value) }))} className={inputClass}>
             {!ambientes.some((a) => a.idAmbiente === borrador.idAmbiente) && <option value={borrador.idAmbiente}>{horario.ambienteNombre ?? 'Ambiente actual'}</option>}
             {ambientes.map((a) => <option key={a.idAmbiente} value={a.idAmbiente}>{a.nombreAmbiente}</option>)}
           </select>
         </label>
-        <label className="text-xs text-on-surface-variant">Resultado de aprendizaje
+        <label className="block text-xs font-medium text-on-surface-variant">Resultado de aprendizaje
           <select aria-label="Resultado del bloque" disabled={cargando} value={borrador.idResultado} onChange={(e) => setBorrador((v) => ({ ...v, idResultado: Number(e.target.value) }))} className={inputClass}>
             {!resultados.some((r) => r.idResultado === borrador.idResultado) && <option value={borrador.idResultado}>{horario.resultadoDescripcion ?? 'Resultado actual'}</option>}
             {resultados.map((r) => <option key={r.idResultado} value={r.idResultado}>{r.codigo ? `${r.codigo} · ` : ''}{r.descripcion}</option>)}
           </select>
         </label>
-        <label className="text-xs text-on-surface-variant">Jornada
+        <label className="block text-xs font-medium text-on-surface-variant">Jornada
           <select aria-label="Jornada del bloque" disabled={cargando} value={borrador.idJornada} onChange={(e) => setBorrador((v) => ({ ...v, idJornada: Number(e.target.value) }))} className={inputClass}>
             {!jornadas.some((j) => j.idJornada === borrador.idJornada) && <option value={borrador.idJornada}>Jornada actual</option>}
             {jornadas.map((j) => <option key={j.idJornada} value={j.idJornada}>{j.nombreJornada}</option>)}
           </select>
         </label>
-        <label className="text-xs text-on-surface-variant">Desde
+        <label className="block text-xs font-medium text-on-surface-variant">Desde
           <input type="time" value={borrador.horaInicio.slice(0, 5)} onChange={(e) => setBorrador((v) => ({ ...v, horaInicio: `${e.target.value}:00` }))} className={inputClass} />
         </label>
-        <label className="text-xs text-on-surface-variant">Hasta
+        <label className="block text-xs font-medium text-on-surface-variant">Hasta
           <input type="time" value={borrador.horaFin.slice(0, 5)} onChange={(e) => setBorrador((v) => ({ ...v, horaFin: `${e.target.value}:00` }))} className={inputClass} />
         </label>
       </div>
-      <fieldset className="mt-4">
-        <legend className="mb-2 text-xs text-on-surface-variant">Días de clase</legend>
+      <fieldset className="mt-5 border-t border-outline-variant pt-4">
+        <legend className="mb-2 px-1 text-xs font-semibold text-on-surface-variant">Días de clase</legend>
         <div className="flex flex-wrap gap-2">
-          {diasSemana.map((dia) => <label key={dia.idDia} className="inline-flex items-center gap-2 rounded-lg border border-outline bg-surface-container-lowest px-3 py-2 text-xs text-on-surface">
+          {diasSemana.map((dia) => <label key={dia.idDia} className={`inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-xs font-medium transition-colors ${borrador.dias.includes(dia.idDia) ? 'border-primary/40 bg-primary-container text-on-primary-container' : 'border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container'}`}>
             <input type="checkbox" checked={borrador.dias.includes(dia.idDia)} onChange={(e) => setBorrador((v) => ({ ...v, dias: e.target.checked ? [...v.dias, dia.idDia] : v.dias.filter((d) => d !== dia.idDia) }))} />
             {dia.nombreDia}
           </label>)}
         </div>
       </fieldset>
-      <div className="mt-4 flex flex-wrap justify-end gap-2">
-        <button type="button" onClick={onCancelar} className="rounded-lg border border-outline px-4 py-2 text-sm">Cancelar</button>
-        <button type="button" disabled={guardando || cargando || Boolean(error && error.startsWith('No se pudieron cargar'))} onClick={() => void guardar()} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:opacity-60">{guardando ? 'Guardando…' : 'Guardar cambios'}</button>
       </div>
+      <footer className="flex flex-wrap justify-end gap-2 border-t border-outline-variant bg-surface-container-low px-4 py-3 sm:px-5">
+        <button type="button" onClick={onCancelar} className="min-h-10 rounded-md border border-outline px-4 py-2 text-sm font-medium text-on-surface hover:bg-surface-container">Cancelar</button>
+        <button type="button" disabled={guardando || cargando || Boolean(error && error.startsWith('No se pudieron cargar'))} onClick={() => void guardar()} className="min-h-10 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60">{guardando ? 'Guardando…' : 'Guardar cambios'}</button>
+      </footer>
     </section>
   )
 }
