@@ -268,7 +268,7 @@ export function Ambientes() {
  <div className="flex items-center gap-2">
  {puedeGestionar && <button type="button"onClick={abrirCrear} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container">Nuevo ambiente</button>}
  <button type="button"onClick={() => setMostrarImportar((valor) => !valor)} className="rounded-xl border border-outline px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container-low ">
- {mostrarImportar ? 'Ocultar carga de archivo': 'Cargar archivo'}
+ {mostrarImportar ? 'Ocultar carga masiva': 'Carga masiva'}
  </button>
  <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant ">{visibles.length} de {ambientes.length} ambientes</p>
  </div>
