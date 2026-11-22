@@ -129,3 +129,7 @@ La importación ofrece una **vista previa obligatoria** antes de confirmar. Desp
 
 Si SMTP no está configurado, la API no permite iniciar nuevas altas. Si la cuenta se crea pero falla el envío, se informa del fallo sin exponer la clave; la vía de recuperación disponible es Recuperar contraseña.
 
+
+## Cargadores masivos unificados (2026-11-21)
+
+Fichas, Ambientes, Instructores y el plan curricular de Programas comparten el patrón **Carga masiva** (selección → revisión → confirmación → resultado), estilos y ejecución progresiva por elemento. El asistente de horarios con IA permanece separado. Consulta la [guía de cargas masivas](../docs/GUIA_CARGAS_MASIVAS.md) para formatos admitidos, permisos, pruebas y limitaciones.
