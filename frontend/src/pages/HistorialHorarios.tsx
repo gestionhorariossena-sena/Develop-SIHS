@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
+import { EditarBloqueImportado } from '../components/horarios/EditarBloqueImportado'
 import { GridHorario } from '../components/horario/GridHorario'
 import { GridAsistente } from '../components/horario/GridAsistente'
 import { celdasDesdeHorarios } from '../components/horario/celdasAsistente'
@@ -33,6 +34,8 @@ export function HistorialHorarios() {
   const [horariosReales, setHorariosReales] = useState<Horario[] | null>(null)
   const [errorReales, setErrorReales] = useState<string | null>(null)
   const [diasPorId, setDiasPorId] = useState<Record<number, string>>({})
+  const [diasSemana, setDiasSemana] = useState<DiaSemana[]>([])
+  const [editandoBloqueId, setEditandoBloqueId] = useState<number | null>(null)
   const [trimestres, setTrimestres] = useState<Trimestre[]>([])
   const [confirmandoId, setConfirmandoId] = useState<number | null>(null)
   const [borrandoId, setBorrandoId] = useState<number | null>(null)
@@ -57,6 +60,7 @@ export function HistorialHorarios() {
     Promise.all([apiGet<Horario[]>('/horarios/'), apiGet<DiaSemana[]>('/dias-semana/')])
       .then(([lista, dias]) => {
         setHorariosReales(lista)
+        setDiasSemana(dias)
         setDiasPorId(Object.fromEntries(dias.map((d) => [d.idDia, d.nombreDia])))
       })
       .catch((err) =>
@@ -71,6 +75,7 @@ export function HistorialHorarios() {
       await apiDelete(`/horarios/${idHorario}`)
       setHorariosReales((anterior) => anterior?.filter((h) => h.idHorario !== idHorario) ?? anterior)
       setConfirmandoId(null)
+      setEditandoBloqueId(null)
     } catch (err) {
       setErrorReales(err instanceof ApiError ? err.message : 'No se pudo borrar la clase.')
     } finally {
@@ -157,6 +162,7 @@ export function HistorialHorarios() {
   function volverAlHistorial() {
     setSeleccionadoId(null)
     setGrupoSeleccionadoId(null)
+    setEditandoBloqueId(null)
     if (searchParams.has('idHorario')) {
       const siguientes = new URLSearchParams(searchParams)
       siguientes.delete('idHorario')
@@ -364,11 +370,13 @@ export function HistorialHorarios() {
           <div className="mb-4 overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest p-4"><div className="min-w-[760px]"><GridAsistente celdas={celdasDesdeHorarios(grupoSeleccionado.bloques)} soloFranjasOcupadas /></div></div>
           <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 print:hidden">
             <h3 className="mb-2 font-semibold text-on-surface">Bloques de esta ficha</h3>
-            <p className="mb-3 text-sm text-on-surface-variant">Estos bloques se guardaron sin un horario completo del constructor. Puedes administrar su publicación aquí y borrar clases individuales. La edición de un horario completo está disponible para los horarios del creador mediante «Modificar».</p>
+            <p className="mb-3 text-sm text-on-surface-variant">Estos bloques se guardaron sin un horario completo del constructor. Puedes modificar o borrar clases individuales y administrar su publicación aquí. Para añadir nuevas asignaciones utiliza el constructor, seleccionando esta misma ficha y período.</p>
+            <Link to="/horarios/nuevo" className="mb-3 inline-flex rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface">Añadir asignaciones en el constructor</Link>
             <ul className="divide-y divide-outline-variant">{grupoSeleccionado.bloques.map((bloque) => <li key={bloque.idHorario} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
               <div><p className="font-semibold text-on-surface">{bloque.resultadoDescripcion ?? bloque.resultadoCodigo ?? `Bloque #${bloque.idHorario}`}</p><p className="text-on-surface-variant">{bloque.dias.map((dia) => diasPorId[dia] ?? dia).join(', ')} · {formatearHora(bloque.horaInicio)}–{formatearHora(bloque.horaFin)} · {bloque.instructorNombre ?? 'Sin instructor'} · {bloque.publicado ? 'Publicado' : 'Borrador'}</p></div>
               <div className="flex items-center gap-2">
                 <Link to={`/horarios/completos?idHorario=${bloque.idHorario}`} className="rounded-xl border border-outline px-3 py-2 font-semibold text-on-surface hover:bg-surface">Ver detalle</Link>
+                <button type="button" onClick={() => setEditandoBloqueId((actual) => actual === bloque.idHorario ? null : bloque.idHorario)} className="rounded-xl border border-outline px-3 py-2 font-semibold text-on-surface">Modificar bloque</button>
                 {confirmandoId === bloque.idHorario ? (
                   <>
                     <button type="button" disabled={borrandoId === bloque.idHorario} onClick={() => void confirmarEliminar(bloque.idHorario)} className="rounded-xl bg-error px-3 py-2 font-semibold text-on-primary">Confirmar borrar</button>
@@ -378,6 +386,17 @@ export function HistorialHorarios() {
                   <button type="button" onClick={() => setConfirmandoId(bloque.idHorario)} className="rounded-xl border border-outline px-3 py-2 font-semibold text-error">Borrar bloque</button>
                 )}
               </div>
+              {editandoBloqueId === bloque.idHorario && (
+                <EditarBloqueImportado
+                  horario={bloque}
+                  diasSemana={diasSemana}
+                  onCancelar={() => setEditandoBloqueId(null)}
+                  onGuardar={(actualizado) => {
+                    setHorariosReales((anterior) => anterior?.map((item) => item.idHorario === actualizado.idHorario ? actualizado : item) ?? anterior)
+                    setEditandoBloqueId(null)
+                  }}
+                />
+              )}
             </li>)}</ul>
           </div>
         </section>
