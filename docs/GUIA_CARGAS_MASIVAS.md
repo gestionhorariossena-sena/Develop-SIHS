@@ -84,3 +84,29 @@ Usa los usuarios ficticios que muestra `make demo-info`, carga pequeños archivo
 Pruebas específicas: `pnpm exec vitest run tests/unit/utils/exportarCargaDocente.test.ts tests/unit/pages/Instructores.test.tsx` desde `frontend/`.
 
 **Accesos desde Instructores:** `Cargar instructores desde Excel` abre la pestaña de importación directamente; `Registrar instructor` abre el formulario manual; `Exportar carga docente (.csv)` genera un archivo de salida con las clases existentes. No confundir la recepción de registros de instructores con una futura importación de horas o asignaciones docentes.
+
+## Importación de aprendices (2026-11-22)
+
+La pantalla **Fichas → Cargar aprendices** (también en Datos académicos → Carga masiva de aprendices) acepta `.xlsx` con las columnas `nombre`, `correo`, `documento`, `codigoFicha`; `programaFormacion` es opcional. Por compatibilidad con el Excel piloto, se ignora la columna `claveDemoLocal`: **nunca se importan contraseñas del archivo**.
+
+- La vista previa `POST /api/v1/aprendices/alta/importar` valida estructura, filas repetidas, usuario existente, ficha y programa; no crea cuentas.
+- La confirmación `POST /api/v1/aprendices/alta/` crea la identidad en Supabase Auth local, perfil en PostgreSQL, asigna rol Aprendiz, vincula la ficha y envía invitación con clave temporal.
+- Solo Administrador y Coordinador pueden importar. Los duplicados se omiten sin modificar cuentas existentes. Si SMTP no está configurado, las altas no deben iniciarse.
+- En el kit piloto, primero importa `03_fichas_importar.csv`, luego usa `07_aprendices_datos_de_prueba_NO_IMPORTABLE.xlsx`. **El nombre antiguo del archivo quedó desactualizado: ahora sí puede subirse al nuevo cargador**. No ejecutes la semilla SQL `08` si utilizas este cargador, pues crearías registros duplicados.
+- Verifica login, cambio de clave en primer acceso, `/mi-horario-aprendiz`, ficha asignada y notificaciones. En Docker, usa solo Supabase local y un servidor SMTP de pruebas.
+
+## Carga curricular desde Temáticas (2026-11-22)
+
+**El archivo `04_curriculo_programa_DEMO_ADSO.xlsx` contiene competencias y resultados de aprendizaje.** Debe cargarse **una sola vez**: puedes hacerlo desde **Programas → DEMO-ADSO → Competencias / plan curricular → Carga masiva**, o desde **Temáticas → Carga masiva**, eligiendo el programa de destino `DEMO-ADSO`. Ambos utilizan el parser `POST /competencias-formacion/importar-vista-previa`.
+
+La nueva pantalla de Temáticas reutiliza competencias y resultados cuya descripción coincida dentro del mismo programa, evitando duplicados evidentes. La vista previa es obligatoria y solo un Administrador puede confirmar, según los permisos actuales de escritura de competencias/resultados. Si hay errores parciales, revisar qué quedó guardado antes de repetir.
+
+Pruebas pertinentes:
+```bash
+cd backend
+python -m pytest tests/test_alta_aprendices.py -q
+cd ../frontend
+pnpm exec vitest run tests/unit/pages/CargaAprendices.test.tsx tests/unit/pages/Tematicas.test.tsx
+pnpm lint
+pnpm build
+```
