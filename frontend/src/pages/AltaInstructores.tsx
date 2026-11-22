@@ -13,13 +13,13 @@ interface Alta {
   sigla: string
 }
 interface Resultado { correo: string; estado: string; detalle: string; fila?: number }
-interface FilaExcel {
+interface FilaCsvInstructor {
   fila: number
   valido: boolean
   datos: Record<string, string | number | null>
   error: string | null
 }
-interface Previa { confirmado: false; filas: FilaExcel[]; total: number; validas: number }
+interface Previa { confirmado: false; filas: FilaCsvInstructor[]; total: number; validas: number }
 
 const vacio: Alta = { nombre: '', correo: '', documento: '', tipoContrato: '', horasContratadasSemana: '', sigla: '' }
 const clase = 'mt-1.5 w-full min-h-10 rounded-md border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/15'
@@ -29,7 +29,7 @@ const secundario = botonSecundarioCarga
 
 export function AltaInstructores() {
   const [searchParams] = useSearchParams()
-  const [modo, setModo] = useState<'individual' | 'excel'>(searchParams.get('modo') === 'excel' ? 'excel' : 'individual')
+  const [modo, setModo] = useState<'individual' | 'csv'>(['csv', 'excel'].includes(searchParams.get('modo') ?? '') ? 'csv' : 'individual')
   const [datos, setDatos] = useState<Alta>(vacio)
   const [archivo, setArchivo] = useState<File | null>(null)
   const [previa, setPrevia] = useState<Previa | null>(null)
@@ -94,15 +94,15 @@ export function AltaInstructores() {
   }
 
   function seleccionarArchivo(file: File | null) {
-    setArchivo(file)
+    setArchivo(file && file.name.toLowerCase().endsWith('.csv') && file.size <= 2 * 1024 * 1024 ? file : null)
     setPrevia(null)
     setResultados([])
     setProgreso(0)
     setMensaje(null)
-    setError(null)
+    setError(file && !file.name.toLowerCase().endsWith('.csv') ? 'Selecciona un archivo CSV (.csv).' : file && file.size > 2 * 1024 * 1024 ? 'El archivo supera 2 MB.' : null)
   }
 
-  async function enviarExcel(confirmar: boolean) {
+  async function enviarCsv(confirmar: boolean) {
     if (!archivo || procesando) return
     setProcesando(true)
     setError(null)
@@ -152,7 +152,7 @@ export function AltaInstructores() {
       <header className="mb-6 max-w-3xl">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">Gestión de instructores</p>
         <h1 className="text-2xl font-bold tracking-tight text-on-surface">Registrar instructores</h1>
-        <p className="mt-2 text-sm leading-6 text-on-surface-variant">Registra instructores individualmente o carga un Excel. El sistema valida cada fila antes de crear cuentas y enviar accesos temporales.</p>
+        <p className="mt-2 text-sm leading-6 text-on-surface-variant">Registra instructores individualmente o carga un CSV. El sistema valida cada fila antes de crear cuentas y enviar accesos temporales.</p>
       </header>
 
       {diagnostico && (!diagnostico.smtpConfigurado || !diagnostico.supabaseConfigurado) && (
@@ -165,7 +165,7 @@ export function AltaInstructores() {
       )}
       <div role="tablist" aria-label="Método de registro" className="mb-5 inline-flex gap-1 rounded-md border border-outline-variant bg-surface-container-low p-1">
         <button role="tab" type="button" aria-selected={modo === 'individual'} onClick={() => { setModo('individual'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'individual' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Registro individual</button>
-        <button role="tab" type="button" aria-selected={modo === 'excel'} onClick={() => { setModo('excel'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'excel' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Carga masiva</button>
+        <button role="tab" type="button" aria-selected={modo === 'csv'} onClick={() => { setModo('csv'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'excel' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Carga masiva</button>
       </div>
 
       {error && <p role="alert" className="mb-4 max-w-3xl rounded-md border border-error/30 bg-error-container p-3 text-sm text-on-error-container">{error}</p>}
@@ -193,18 +193,18 @@ export function AltaInstructores() {
       ) : (
         <PanelCargaMasiva
           titulo="Carga masiva de instructores"
-          descripcion="Selecciona un Excel, revisa las filas y confirma el alta de cuentas. Cada instructor recibirá una invitación independiente."
-          columnas="nombre, correo, documento (obligatorias); tipoContrato, horasContratadasSemana, sigla (opcionales)"
+          descripcion="Selecciona un CSV, revisa las filas y confirma el alta de cuentas. Cada instructor recibirá una invitación independiente."
+          columnas="nombre, correo, documento, contrato, horas (obligatorias); sigla (opcional). También se aceptan tipoContrato, horasContratadasSemana y email."
           error={null}
         >
           <div className="space-y-4">
-            <TituloPasoCarga numero={1} titulo="Seleccionar archivo" detalle="Excel .xlsx · máximo 2 MB · hasta 200 instructores." />
+            <TituloPasoCarga numero={1} titulo="Seleccionar archivo" detalle="CSV, máximo 2 MB, hasta 200 instructores." />
 
-            <label className={etiqueta}>Archivo de coordinación <input aria-label="Archivo Excel de instructores" type="file" accept=".xlsx" onChange={(e) => seleccionarArchivo(e.target.files?.[0] ?? null)} className={estiloArchivoCarga} /></label>
-            <button type="button" className={secundario} disabled={!archivo || procesando} onClick={() => void enviarExcel(false)}>{procesando ? 'Revisando…' : 'Revisar archivo'}</button>
+            <label className={etiqueta}>Archivo de coordinación <input aria-label="Archivo CSV de instructores" type="file" accept=".csv,text/csv" onChange={(e) => seleccionarArchivo(e.target.files?.[0] ?? null)} className={estiloArchivoCarga} /></label>
+            <button type="button" className={secundario} disabled={!archivo || procesando} onClick={() => void enviarCsv(false)}>{procesando ? 'Revisando…' : 'Revisar archivo'}</button>
             {previa && <div className="overflow-x-auto border-t border-outline-variant pt-4">
               <TituloPasoCarga numero={2} titulo="Revisar datos" detalle="Los datos todavía no se han guardado. Confirma cuando todas las filas sean válidas." />
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h3 className="text-sm font-semibold text-on-surface">Vista previa · {previa.validas} de {previa.total} filas válidas</h3><button type="button" className={primario} disabled={procesando || previa.validas !== previa.total || previa.total === 0} onClick={() => void enviarExcel(true)}>{procesando ? 'Importando…' : 'Confirmar e invitar'}</button></div>
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h3 className="text-sm font-semibold text-on-surface">Vista previa · {previa.validas} de {previa.total} filas válidas</h3><button type="button" className={primario} disabled={procesando || previa.validas !== previa.total || previa.total === 0} onClick={() => void enviarCsv(true)}>{procesando ? 'Importando…' : 'Confirmar e invitar'}</button></div>
               <table className="min-w-[620px] w-full text-left text-xs">
                 <thead className="bg-surface-container-low text-on-surface-variant"><tr><th className="px-3 py-2">Fila</th><th className="px-3 py-2">Nombre</th><th className="px-3 py-2">Correo</th><th className="px-3 py-2">Validación</th></tr></thead>
                 <tbody className="divide-y divide-outline-variant">{previa.filas.map((f) => <tr key={f.fila}><td className="px-3 py-3 tabular-nums">{f.fila}</td><td className="px-3 py-3">{String(f.datos.nombre ?? '')}</td><td className="px-3 py-3">{String(f.datos.correo ?? '')}</td><td className={`px-3 py-3 ${f.valido ? 'text-primary' : 'text-error'}`}>{f.valido ? 'Formato válido' : f.error}</td></tr>)}</tbody>
