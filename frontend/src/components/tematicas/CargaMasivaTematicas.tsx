@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
-import { apiPost, apiPostForm, ApiError } from '../../services/api'
-import type { CompetenciaFormacionResponse, PreviewCurriculoResponse, Programa } from '../../types/api'
+import { apiGet, apiPost, apiPostForm, ApiError } from '../../services/api'
+import type { CompetenciaFormacionResponse, PreviewCurriculoResponse, Programa, TematicaCompetencia } from '../../types/api'
 import { PanelCargaMasiva, TituloPasoCarga, botonConfirmarCarga, estiloArchivoCarga, ejecutarCargaMasiva, ResumenCargaMasiva, type ResultadoCargaMasiva } from '../cargaMasiva/FlujoCargaMasiva'
 
 interface Props { programas: Programa[]; idPrograma: number | null; onTerminado: () => void; onCerrar: () => void }
@@ -39,16 +39,38 @@ export function CargaMasivaTematicas({ programas, idPrograma, onTerminado, onCer
     setConfirmando(true)
     setError(null)
     try {
+      // El mismo Excel puede haberse importado antes desde Programas:
+      // reutilizar competencias y resultados existentes evita duplicados.
+      const existentes = await apiGet<TematicaCompetencia[]>(`/tematicas/?id_programa=${programa}`)
+      const normalizar = (valor: string) => valor.trim().toLocaleLowerCase('es-CO').replace(/\\s+/g, ' ')
+      const porDescripcion = new Map(existentes.map(item => [normalizar(item.descripcion), item]))
       const resultado = await ejecutarCargaMasiva(
         previa.competencias,
         async competencia => {
-          const creada = await apiPost<CompetenciaFormacionResponse>('/competencias-formacion/', {
-            idPrograma: programa, descripcion: competencia.descripcion,
-          })
-          for (const resultado of competencia.resultados) {
+          const clave = normalizar(competencia.descripcion)
+          let previaCompetencia = porDescripcion.get(clave)
+          let idCompetencia = previaCompetencia?.idCompetencia
+          if (idCompetencia === undefined) {
+            const creada = await apiPost<CompetenciaFormacionResponse>('/competencias-formacion/', {
+              idPrograma: programa, descripcion: competencia.descripcion,
+            })
+            idCompetencia = creada.idCompetencia
+            previaCompetencia = {
+              idCompetencia, codigo: null, descripcion: competencia.descripcion,
+              idPrograma: programa, nombrePrograma: null, especialidades: [], resultados: [], totalHoras: 0,
+            }
+            porDescripcion.set(clave, previaCompetencia)
+          }
+          for (const item of competencia.resultados) {
+            if (previaCompetencia.resultados.some(actual => normalizar(actual.descripcion) === normalizar(item.descripcion))) continue
             await apiPost('/resultados-aprendizaje/', {
-              idCompetencia: creada.idCompetencia, descripcion: resultado.descripcion,
-              horasAsignadas: resultado.horasAsignadas, numeroFase: resultado.numeroFase,
+              idCompetencia, descripcion: item.descripcion,
+              horasAsignadas: item.horasAsignadas, numeroFase: item.numeroFase,
+            })
+            previaCompetencia.resultados.push({
+              idResultado: -1, codigo: null, descripcion: item.descripcion,
+              horasAsignadas: item.horasAsignadas, numeroFase: item.numeroFase,
+              idGuia: null, horariosAsignados: 0,
             })
           }
         },
@@ -88,7 +110,7 @@ export function CargaMasivaTematicas({ programas, idPrograma, onTerminado, onCer
           </li>)}
         </ul>
       </div>
-      <p className="text-xs leading-5 text-on-surface-variant">Revisa que no existan estas competencias en el programa: confirmar puede crear duplicados. Una importación parcialmente fallida puede requerir revisar los resultados ya guardados.</p>
+      <p className="text-xs leading-5 text-on-surface-variant">Si una competencia o resultado ya existe con la misma descripción en este programa, se reutiliza. Comprueba los datos antes de confirmar.</p>
       <button type="button" className={botonConfirmarCarga} disabled={programa === null || confirmando || resultados !== null} onClick={() => void confirmar()}>
         {confirmando ? 'Importando…' : 'Confirmar carga masiva'}
       </button>
