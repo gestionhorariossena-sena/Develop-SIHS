@@ -60,47 +60,28 @@ describe('AprobarlicitarSolicitudes', () => {
     apiPostMock.mockReset()
   })
 
-  it('al aprobar el rol Instructor, genera su código automáticamente y lo muestra', async () => {
+  it('aprueba el rol Instructor sin exigir ni generar códigos adicionales', async () => {
     mockeaSolicitudes()
     apiPostMock.mockImplementation((path: string) => {
       if (path === '/usuario-rol/asignar') return Promise.resolve({})
-      if (path === '/usuarios/instructor/codigo/generar') {
-        return Promise.resolve({ codigo: 'INS-AB12CD', idUsuario: 'u1' })
-      }
       return Promise.reject(new Error('no mockeado en este test'))
     })
 
     await aprobarConRol('Instructor')
 
     expect(apiPostMock).toHaveBeenCalledWith('/usuario-rol/asignar', { idUsuario: 'u1', idRol: 1 })
-    expect(apiPostMock).toHaveBeenCalledWith('/usuarios/instructor/codigo/generar', { idUsuario: 'u1' })
-    expect(await screen.findByText(/Código de instructor: INS-AB12CD\./)).toBeInTheDocument()
+    expect(apiPostMock).toHaveBeenCalledTimes(1)
+    expect(await screen.findByText(/ahora tiene el rol Instructor\./)).toBeInTheDocument()
   })
 
-  it('al aprobar un rol distinto de Instructor, no llama a generar código', async () => {
+  it('puede aprobar otro rol sin depender de códigos de instructor', async () => {
     mockeaSolicitudes()
-    apiPostMock.mockImplementation((path: string) => {
-      if (path === '/usuario-rol/asignar') return Promise.resolve({})
-      return Promise.reject(new Error('no mockeado en este test'))
-    })
+    apiPostMock.mockResolvedValue({})
 
     await aprobarConRol('Coordinador')
 
-    expect(await screen.findByText(/ahora tiene el rol Coordinador\./)).toBeInTheDocument()
-    expect(apiPostMock).not.toHaveBeenCalledWith('/usuarios/instructor/codigo/generar', expect.anything())
+    expect(apiPostMock).toHaveBeenCalledWith('/usuario-rol/asignar', { idUsuario: 'u1', idRol: 2 })
+    expect(apiPostMock).toHaveBeenCalledTimes(1)
   })
 
-  it('si falla la generación del código, el rol igual queda asignado y avisa dónde generarlo', async () => {
-    mockeaSolicitudes()
-    apiPostMock.mockImplementation((path: string) => {
-      if (path === '/usuario-rol/asignar') return Promise.resolve({})
-      if (path === '/usuarios/instructor/codigo/generar') return Promise.reject(new Error('falló'))
-      return Promise.reject(new Error('no mockeado en este test'))
-    })
-
-    await aprobarConRol('Instructor')
-
-    expect(await screen.findByText(/ahora tiene el rol Instructor\./)).toBeInTheDocument()
-    expect(screen.getByText(/No se pudo generar su código de instructor/)).toBeInTheDocument()
-  })
 })
