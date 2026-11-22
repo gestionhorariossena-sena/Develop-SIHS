@@ -17,6 +17,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.supabase_auth import require_admin_o_coordinador
 from app.models.ficha_usuario import FichaUsuario
+from app.models.ficha import Ficha
+from app.models.programa import Programa
 from app.models.rol import Rol
 from app.models.usuario import Usuario
 from app.repositories.ficha_repository import FichaRepository
@@ -121,6 +123,44 @@ def _revisar_fila(db: Session, datos: AprendizAlta) -> str | None:
     if UsuarioRepository.obtener_por_numero_documento(db, datos.documento):
         return "El documento ya está registrado."
     return None
+
+
+@router.get("/")
+def listar_aprendices(
+    db: Session = Depends(get_db),
+    actor: Usuario = Depends(require_admin_o_coordinador),
+):
+    """Directorio de aprendices con vínculo actual; incluye los no vinculados."""
+    usuarios = UsuarioRepository.obtener_por_rol(db, "Aprendiz")
+    if not usuarios:
+        return []
+    relaciones = (
+        db.query(FichaUsuario, Ficha, Programa)
+        .join(Ficha, Ficha.idFicha == FichaUsuario.idFicha)
+        .join(Programa, Programa.idPrograma == Ficha.idPrograma)
+        .filter(FichaUsuario.idUsuario.in_([u.idUsuario for u in usuarios]))
+        .all()
+    )
+    por_usuario = {
+        vinculo.idUsuario: (ficha, programa, vinculo)
+        for vinculo, ficha, programa in relaciones
+    }
+    resultado = []
+    for usuario in usuarios:
+        asociado = por_usuario.get(usuario.idUsuario)
+        ficha, programa, vinculo = asociado if asociado else (None, None, None)
+        resultado.append({
+            "idUsuario": str(usuario.idUsuario),
+            "nombre": usuario.nombre,
+            "correo": usuario.email,
+            "documento": usuario.numeroDocumento,
+            "estado": usuario.estado,
+            "codigoFicha": ficha.codigoFicha if ficha else None,
+            "programa": programa.nombrePrograma if programa else None,
+            "rolEnFicha": vinculo.rolEnFicha if vinculo else None,
+            "debeCambiarClave": usuario.debeCambiarClave,
+        })
+    return sorted(resultado, key=lambda item: (item["nombre"].casefold(), item["correo"]))
 
 
 @router.post("/importar")
