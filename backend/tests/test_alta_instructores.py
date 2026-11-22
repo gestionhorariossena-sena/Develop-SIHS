@@ -63,7 +63,7 @@ def test_alta_individual_crea_instructor_y_no_devuelve_clave(
     monkeypatch.setattr(alta_instructores.settings, "smtp_password", "clave-de-prueba")
     monkeypatch.setattr(alta_instructores, "buscar_usuario_supabase_por_email", lambda correo: None)
     monkeypatch.setattr(alta_instructores, "crear_o_recuperar_usuario_supabase", lambda correo, clave: ({"id": str(id_nuevo)}, True))
-    monkeypatch.setattr(alta_instructores.EmailService, "enviar_credencial_temporal", lambda **kwargs: enviados.append(kwargs))
+    monkeypatch.setattr(alta_instructores.EmailService, "enviar_alta_instructor", lambda **kwargs: enviados.append(kwargs))
 
     respuesta = client.post("/api/v1/instructores/alta/", headers=headers, json=_datos())
     assert respuesta.status_code == 200
