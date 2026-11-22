@@ -368,6 +368,11 @@ export function Programas() {
                 </button>
               </div>
             )}
+            {!previewCurriculo && resultadoImportacion && !importandoCurriculo && (
+              <div className="border-t border-outline-variant pt-4">
+                <TituloPasoCarga numero={3} titulo="Resultado de la importación" detalle={resultadoImportacion} />
+              </div>
+            )}
               </PanelCargaMasiva>
           </SeccionDrawer>
 
