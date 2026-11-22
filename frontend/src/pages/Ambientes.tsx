@@ -334,7 +334,7 @@ export function Ambientes() {
  />
  )}
 
- <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 "aria-label="Filtros de ambientes">
+ <section className="mb-4 rounded-lg border border-outline-variant bg-surface-container-lowest p-4" aria-label="Filtros de ambientes">
  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
  <div className="flex items-center gap-2">
  <p className="text-sm font-semibold text-on-surface">Filtrar ambientes</p>
