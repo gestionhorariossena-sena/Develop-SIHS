@@ -365,23 +365,36 @@ export function HistorialHorarios() {
             <p className="text-sm text-on-surface-variant">{grupoSeleccionado.bloques.length} bloque{grupoSeleccionado.bloques.length === 1 ? '' : 's'} guardado{grupoSeleccionado.bloques.length === 1 ? '' : 's'} · {nombrePeriodo(grupoSeleccionado.bloques[0].idTrimestre)}</p>
           </div>
           <div className="mb-4 overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest p-4"><div className="min-w-[760px]"><GridAsistente celdas={celdasDesdeHorarios(grupoSeleccionado.bloques)} soloFranjasOcupadas /></div></div>
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 print:hidden">
-            <h3 className="mb-2 font-semibold text-on-surface">Clases de este horario</h3>
-            <p className="mb-3 text-sm text-on-surface-variant">Este horario contiene asignaciones del cargador o clases individuales, agrupadas por ficha y período. Puedes modificar o borrar clases individuales y administrar su publicación aquí. Para añadir asignaciones, abre el constructor con esta ficha seleccionada.</p>
-            <Link to={`/horarios/nuevo?idFicha=${grupoSeleccionado.bloques[0].idFicha}`} className="mb-3 inline-flex rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface">Añadir asignaciones en el constructor</Link>
-            <ul className="divide-y divide-outline-variant">{grupoSeleccionado.bloques.map((bloque) => <li key={bloque.idHorario} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
-              <div><p className="font-semibold text-on-surface">{bloque.resultadoDescripcion ?? bloque.resultadoCodigo ?? `Bloque #${bloque.idHorario}`}</p><p className="text-on-surface-variant">{bloque.dias.map((dia) => diasPorId[dia] ?? dia).join(', ')} · {formatearHora(bloque.horaInicio)}–{formatearHora(bloque.horaFin)} · {bloque.instructorNombre ?? 'Sin instructor'} · {bloque.publicado ? 'Publicado' : 'Borrador'}</p></div>
-              <div className="flex items-center gap-2">
-                <Link to={`/horarios/completos?idHorario=${bloque.idHorario}`} className="rounded-xl border border-outline px-3 py-2 font-semibold text-on-surface hover:bg-surface">Ver detalle</Link>
-                <button type="button" onClick={() => setEditandoBloqueId((actual) => actual === bloque.idHorario ? null : bloque.idHorario)} className="rounded-xl border border-outline px-3 py-2 font-semibold text-on-surface">Modificar bloque</button>
+          <section aria-label="Clases de este horario" className="rounded-lg border border-outline-variant bg-surface-container-lowest p-4 print:hidden sm:p-5">
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant pb-4">
+              <div className="max-w-2xl">
+                <h3 className="text-base font-semibold text-on-surface">Clases de este horario</h3>
+                <p className="mt-1 text-sm leading-6 text-on-surface-variant">Modifica una clase concreta sin afectar las demás. La publicación del horario se gestiona arriba.</p>
+              </div>
+              <Link to={`/horarios/nuevo?idFicha=${grupoSeleccionado.bloques[0].idFicha}`} className="inline-flex min-h-10 items-center rounded-md border border-outline px-3 py-2 text-sm font-medium text-on-surface hover:bg-surface-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Añadir asignaciones</Link>
+            </div>
+            <ul className="divide-y divide-outline-variant">{grupoSeleccionado.bloques.map((bloque) => <li key={bloque.idHorario} className="flex min-w-0 flex-col gap-3 py-4 text-sm">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-semibold leading-6 text-on-surface">{bloque.resultadoDescripcion ?? bloque.resultadoCodigo ?? `Bloque #${bloque.idHorario}`}</p>
+                    <span className={`rounded px-2 py-0.5 text-[11px] font-medium ${bloque.publicado ? 'bg-primary-container text-on-primary-container' : 'bg-tertiary-container text-on-tertiary-container'}`}>{bloque.publicado ? 'Publicado' : 'Borrador'}</span>
+                  </div>
+                  <p className="mt-1 text-xs leading-5 text-on-surface-variant">{bloque.dias.map((dia) => diasPorId[dia] ?? dia).join(', ')} · {formatearHora(bloque.horaInicio)}–{formatearHora(bloque.horaFin)}</p>
+                  <p className="mt-0.5 text-xs text-on-surface-variant">{bloque.instructorNombre ?? 'Sin instructor'} · {bloque.ambienteNombre ?? 'Sin ambiente'}</p>
+                </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Link to={`/horarios/completos?idHorario=${bloque.idHorario}`} className="inline-flex min-h-9 items-center rounded-md border border-outline px-3 py-2 text-xs font-medium text-on-surface hover:bg-surface-container">Ver detalle</Link>
+                <button type="button" onClick={() => setEditandoBloqueId((actual) => actual === bloque.idHorario ? null : bloque.idHorario)} aria-expanded={editandoBloqueId === bloque.idHorario} className={`inline-flex min-h-9 items-center rounded-md px-3 py-2 text-xs font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${editandoBloqueId === bloque.idHorario ? 'border border-primary bg-primary-container text-on-primary-container' : 'bg-primary text-on-primary hover:bg-on-primary-container'}`}>Modificar bloque</button>
                 {confirmandoId === bloque.idHorario ? (
                   <>
                     <button type="button" disabled={borrandoId === bloque.idHorario} onClick={() => void confirmarEliminar(bloque.idHorario)} className="rounded-xl bg-error px-3 py-2 font-semibold text-on-primary">Confirmar borrar</button>
                     <button type="button" onClick={() => setConfirmandoId(null)} className="rounded-xl border border-outline px-3 py-2">Cancelar</button>
                   </>
                 ) : (
-                  <button type="button" onClick={() => setConfirmandoId(bloque.idHorario)} className="rounded-xl border border-outline px-3 py-2 font-semibold text-error">Borrar bloque</button>
+                  <button type="button" onClick={() => setConfirmandoId(bloque.idHorario)} className="inline-flex min-h-9 items-center rounded-md px-3 py-2 text-xs text-error hover:bg-error-container">Borrar bloque</button>
                 )}
+              </div>
               </div>
               {editandoBloqueId === bloque.idHorario && (
                 <EditarBloqueImportado
@@ -395,7 +408,7 @@ export function HistorialHorarios() {
                 />
               )}
             </li>)}</ul>
-          </div>
+          </section>
         </section>
       )}
 
