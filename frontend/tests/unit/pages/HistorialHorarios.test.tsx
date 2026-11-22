@@ -72,7 +72,7 @@ function mockeaBase(horariosReales: Horario[] = [CLASE_1, CLASE_SUELTA], snapsho
 }
 
 describe('HistorialHorarios', () => {
-  it('muestra los horarios del creador y los bloques guardados fuera de él sin duplicarlos', async () => {
+  it('muestra un listado único de horarios por ficha y período sin duplicar las clases', async () => {
     mockeaBase()
     renderConProviders(<HistorialHorarios />)
 
@@ -81,7 +81,9 @@ describe('HistorialHorarios', () => {
     // La clase vinculada al horario completo no aparece como otra fila.
     expect(screen.queryByText('FICHA-1')).not.toBeInTheDocument()
     expect(screen.getByText('FICHA-SUELTA')).toBeInTheDocument()
-    expect(screen.getByRole('region', { name: 'Horarios del cargador y otros bloques' })).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Horarios por ficha y período' })).toBeInTheDocument()
+    expect(screen.getAllByRole('row')).toHaveLength(3) // encabezado, horario del creador y horario importado
+
   })
 
   it('abre el horario creado por el asistente con una cuadrícula y acceso a su gestión', async () => {
@@ -89,7 +91,7 @@ describe('HistorialHorarios', () => {
     const usuario = userEvent.setup()
     renderConProviders(<HistorialHorarios />)
     expect(await screen.findByText('FICHA-SUELTA')).toBeInTheDocument()
-    await usuario.click(screen.getByRole('button', { name: 'Ver bloques' }))
+    await usuario.click(screen.getByRole('button', { name: 'Ver horario' }))
     const horario = screen.getByRole('region', { name: 'Horario de FICHA-SUELTA' })
     expect(within(horario).getByText('8:00 a.m')).toBeInTheDocument()
     expect(within(horario).getByText('– 10:00 a.m')).toBeInTheDocument()
@@ -114,7 +116,7 @@ describe('HistorialHorarios', () => {
     const grupo = await screen.findByRole('region', { name: 'Horario de FICHA-SUELTA' })
     expect(within(grupo).getByRole('link', { name: 'Ver detalle' })).toHaveAttribute('href', '/horarios/completos?idHorario=2')
     expect(within(grupo).getByRole('link', { name: 'Añadir asignaciones en el constructor' })).toHaveAttribute('href', '/horarios/nuevo?idFicha=2')
-    await usuario.click(within(grupo).getByRole('button', { name: 'Despublicar bloques' }))
+    await usuario.click(within(grupo).getByRole('button', { name: 'Despublicar horario' }))
     expect(apiPatchMock).toHaveBeenCalledWith('/horarios/2/estado', { publicado: false })
     await usuario.click(within(grupo).getByRole('button', { name: 'Borrar bloque' }))
     await usuario.click(within(grupo).getByRole('button', { name: 'Confirmar borrar' }))
