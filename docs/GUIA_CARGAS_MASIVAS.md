@@ -2,6 +2,8 @@
 
 Actualizado para `fixes-multiples-nicol` (2026-11-21).
 
+> **Actualización 22/11/2026 — Instructores:** ahora utiliza **solo CSV**, no XLSX. Encabezados canónicos: `nombre,correo,documento,contrato,horas,sigla`; las cinco primeras columnas son obligatorias. `sigla` es opcional. El backend acepta separadores `,` o `;`, UTF-8 con o sin BOM, Windows-1252/Latin-1 y campos CSV entrecomillados. Son equivalentes `tipoContrato`/`tipo_contrato`, `horasContratadasSemana`/`horas_contratadas_semana` y `email`. Mapea `contrato` a `tipoContrato` y `horas` a `horasContratadasSemana`. Límite 2 MB y 200 filas. El archivo piloto vigente es `01_instructores_alta_masiva.csv`; la subida se hace con el selector CSV del navegador y `FormData` (sin rutas Docker, WSL ni Windows). **Previsualizar no crea cuentas ni envía correos**. La confirmación sigue usando `POST /instructores/alta/` por fila. Las demás importaciones no cambiaron de formato.
+
 ## Alcance
 
 Los cargadores de **Fichas**, **Ambientes**, **Instructores** y **Plan curricular (Programas)** usan el término **Carga masiva**, el mismo flujo de selección → revisión → confirmación → resultado y las mismas primitivas de presentación.
@@ -12,7 +14,7 @@ Los cargadores de **Fichas**, **Ambientes**, **Instructores** y **Plan curricula
 | --- | --- | --- | --- |
 | Fichas → Carga masiva | CSV | Encabezados exactos, campos obligatorios por fila y vista previa | Un `POST /fichas/` por fila; resolución de programa/período/sede existente |
 | Ambientes → Carga masiva | CSV | Encabezados exactos, campos obligatorios por fila y vista previa | Un `POST /ambientes` por fila; resolución de sede existente |
-| Instructores → Registrar instructores → Carga masiva | XLSX | Excel validado en servidor, revisión antes de alta y duplicados | Un `POST /instructores/alta/` por fila; cuenta nueva e invitación |
+| Instructores → Registrar instructores → Carga masiva | CSV | CSV validado en servidor, revisión antes de alta y duplicados | Un `POST /instructores/alta/` por fila; cuenta nueva e invitación |
 | Programas → plan curricular → Carga masiva | Excel pedagógico | Vista previa especializada de competencias y resultados | Un `POST /competencias-formacion/` por competencia y resultados asociados |
 
 Los pasos tienen comportamientos compartidos, pero los **esquemas, permisos y reglas de negocio no se homogeneizan por la fuerza**. La validación estructural de un CSV no garantiza que un ID de catálogo exista: los errores de API de cada fila aparecen en el resultado.
@@ -28,7 +30,7 @@ Los pasos tienen comportamientos compartidos, pero los **esquemas, permisos y re
 - `frontend/src/components/ImportarArchivo.tsx` es el adaptador CSV de Fichas y Ambientes y conserva las reglas específicas mediante `onImportarFila`.
 - `frontend/src/pages/AltaInstructores.tsx` usa la vista previa del backend, el mismo ejecutor y los resultados individuales de invitación.
 - `frontend/src/pages/Programas.tsx` utiliza el mismo contenedor y el ejecutor para competencias; cada una procesa sus resultados asociados.
-- `backend/app/api/v1/alta_instructores.py` y `backend/app/services/curriculo_service.py` siguen siendo **interpretadores específicos** para sus Excel. No se mezclaron heurísticas de un archivo curricular con datos de identidad.
+- `backend/app/api/v1/alta_instructores.py` interpreta CSV de instructores y `backend/app/services/curriculo_service.py` interpreta el Excel curricular; sus formatos son deliberadamente distintos. No se mezclaron heurísticas de un archivo curricular con datos de identidad.
 
 ## Reglas compartidas
 
