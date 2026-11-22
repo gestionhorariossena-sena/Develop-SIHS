@@ -10,6 +10,7 @@ from app.api.v1.health import router as health_router
 from app.api.v1.roles import router as roles_router
 from app.api.v1.usuario_rol import router as usuario_rol_router
 from app.api.v1.usuarios import router as usuarios_router
+from app.api.v1.alta_instructores import router as alta_instructores_router
 from app.core.config import settings
 from app.workers.publicacion_programada_worker import run_worker
 from app.api.v1.dias_semana import router as dias_semana_router
@@ -147,6 +148,7 @@ app.add_middleware(
 
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(usuarios_router, prefix="/api/v1")
+app.include_router(alta_instructores_router, prefix="/api/v1")
 app.include_router(roles_router, prefix="/api/v1")
 app.include_router(usuario_rol_router, prefix="/api/v1")
 app.include_router(dias_semana_router, prefix="/api/v1")
