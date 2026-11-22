@@ -5,7 +5,6 @@ import { FormField } from '../components/FormField'
 import { apiPost, ApiError } from '../services/api'
 import { supabase } from '../services/supabaseClient'
 
-type RolSolicitado = 'Instructor' | 'Aprendiz'
 type TipoDocumento = 'CC' | 'CE' | 'TI' | 'PAS'
 
 /**
@@ -37,9 +36,6 @@ export function Registro() {
   const [telefono, setTelefono] = useState('')
   const [password, setPassword] = useState('')
   const [confirmarPassword, setConfirmarPassword] = useState('')
-  const [rol, setRol] = useState<RolSolicitado>('Instructor')
-  const [pasoRegistro, setPasoRegistro] = useState<'rol' | 'datos'>('rol')
-  const [especialidad, setEspecialidad] = useState('')
   const [codigoFicha, setCodigoFicha] = useState('')
   const [programaFormacion, setProgramaFormacion] = useState('')
   const [aceptaPolitica, setAceptaPolitica] = useState(false)
@@ -63,11 +59,7 @@ export function Registro() {
       setError('El número de documento es obligatorio.')
       return
     }
-    if (rol === 'Instructor' && !especialidad.trim()) {
-      setError('Completa la especialidad.')
-      return
-    }
-    if (rol === 'Aprendiz' && (!codigoFicha.trim() || !programaFormacion.trim())) {
+    if (!codigoFicha.trim() || !programaFormacion.trim()) {
       setError('Completa el código de ficha y el programa de formación.')
       return
     }
@@ -88,14 +80,9 @@ export function Registro() {
           tipo_documento: tipoDocumento,
           numero_documento: numeroDocumento.trim(),
           telefono: telefono.trim(),
-          rol_solicitado: rol,
-          ...(rol === 'Instructor' && {
-            especialidad: especialidad.trim(),
-          }),
-          ...(rol === 'Aprendiz' && {
-            codigo_ficha: codigoFicha.trim(),
-            programa_formacion: programaFormacion.trim(),
-          }),
+          rol_solicitado: 'Aprendiz',
+          codigo_ficha: codigoFicha.trim(),
+          programa_formacion: programaFormacion.trim(),
         },
       },
     })
@@ -113,46 +100,11 @@ export function Registro() {
     <AuthLayout>
       <h1 className="mb-2 text-2xl font-bold text-on-surface dark:text-slate-100">Crear cuenta</h1>
       <p className="mb-6 text-sm text-on-surface-variant dark:text-slate-400">
-        Tu solicitud será validada por la coordinación académica del centro.
+        Los instructores reciben su acceso desde coordinación. Si eres aprendiz, completa tus datos para solicitar tu cuenta.
       </p>
 
       <form onSubmit={handleSubmit}>
-        {pasoRegistro === 'rol' ? <>
-        <div className="mb-5">
-          <p id="rol-label" className="mb-2 text-sm font-medium text-on-surface-variant dark:text-slate-300">
-            Paso 1 de 2 · Selecciona tu rol
-          </p>
-          <div role="radiogroup" aria-labelledby="rol-label" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {(['Instructor', 'Aprendiz'] as const).map((opcion) => (
-              <button
-                key={opcion}
-                type="button"
-                role="radio"
-                aria-checked={rol === opcion}
-                onClick={() => setRol(opcion)}
-                className={`rounded-xl border px-4 py-3 text-left transition-all ${
-                  rol === opcion
-                    ? 'border-primary bg-primary-container shadow-sm ring-1 ring-primary dark:bg-sena-950/50'
-                    : 'border-outline bg-surface-container-lowest hover:border-outline-variant hover:bg-surface-container-low dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'
-                }`}
-              >
-                <span className="block text-base font-semibold text-on-surface dark:text-slate-100">{opcion}</span>
-                <span className="mt-1 block text-xs text-on-surface-variant dark:text-slate-400">
-                  {opcion === 'Instructor' ? 'Consulta su carga' : 'Consulta su ficha'}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-        <button type="button" onClick={() => setPasoRegistro('datos')} className="w-full rounded-xl bg-primary py-3 font-semibold text-on-primary transition hover:bg-on-primary-container">
-          Continuar como {rol.toLowerCase()}
-        </button>
-        </> : <>
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Paso 2 de 2 · Datos de {rol.toLowerCase()}</p>
-          <button type="button" onClick={() => setPasoRegistro('rol')} className="text-sm font-semibold text-primary hover:underline">Cambiar rol</button>
-        </div>
-
+        <p className="mb-5 text-sm font-medium text-on-surface">Registro para aprendices</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <FormField
             id="nombres"
@@ -240,22 +192,7 @@ export function Registro() {
         </div>
         {errorConfirmacion && <p id="error-confirmacion" role="alert" className="mb-4 text-sm text-error">Las contraseñas no coinciden. Revisa la confirmación.</p>}
 
-        {rol === 'Instructor' && (
-          <div className="mb-4">
-            <FormField
-              id="especialidad"
-              label="Especialidad"
-              placeholder="Ej. Teleinformática"
-              value={especialidad}
-              onChange={(e) => setEspecialidad(e.target.value)}
-              required
-            />
-            <p className="mt-1 text-xs text-on-surface-variant">El administrador verificará tu solicitud antes de asignarte el rol de Instructor.</p>
-          </div>
-        )}
-
-        {rol === 'Aprendiz' && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField
               id="codigoFicha"
               label="Código de ficha"
@@ -272,7 +209,6 @@ export function Registro() {
               required
             />
           </div>
-        )}
 
         <label className="mb-5 flex items-start gap-2 text-sm text-on-surface-variant">
           <input
@@ -305,7 +241,6 @@ export function Registro() {
         >
           {loading ? 'Enviando…' : 'Registrarme'}
         </button>
-        </>}
       </form>
 
       <p className="mt-4 text-center text-sm text-on-surface-variant">
