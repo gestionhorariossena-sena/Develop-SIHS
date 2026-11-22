@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { apiPost, apiPostForm, ApiError } from '../services/api'
 import { PanelCargaMasiva, TituloPasoCarga, botonConfirmarCarga, botonSecundarioCarga, estiloArchivoCarga, ejecutarCargaMasiva } from '../components/cargaMasiva/FlujoCargaMasiva'
@@ -28,7 +28,8 @@ const primario = botonConfirmarCarga
 const secundario = botonSecundarioCarga
 
 export function AltaInstructores() {
-  const [modo, setModo] = useState<'individual' | 'excel'>('individual')
+  const [searchParams] = useSearchParams()
+  const [modo, setModo] = useState<'individual' | 'excel'>(searchParams.get('modo') === 'excel' ? 'excel' : 'individual')
   const [datos, setDatos] = useState<Alta>(vacio)
   const [archivo, setArchivo] = useState<File | null>(null)
   const [previa, setPrevia] = useState<Previa | null>(null)
@@ -138,7 +139,7 @@ export function AltaInstructores() {
       <header className="mb-6 max-w-3xl">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-primary">Gestión de instructores</p>
         <h1 className="text-2xl font-bold tracking-tight text-on-surface">Registrar instructores</h1>
-        <p className="mt-2 text-sm leading-6 text-on-surface-variant">Crea cuentas para docentes del centro. El instructor recibirá un correo con su usuario y contraseña temporal, y deberá cambiarla al ingresar.</p>
+        <p className="mt-2 text-sm leading-6 text-on-surface-variant">Registra instructores individualmente o carga un Excel. El sistema valida cada fila antes de crear cuentas y enviar accesos temporales.</p>
       </header>
 
       <div role="tablist" aria-label="Método de registro" className="mb-5 inline-flex gap-1 rounded-md border border-outline-variant bg-surface-container-low p-1">
