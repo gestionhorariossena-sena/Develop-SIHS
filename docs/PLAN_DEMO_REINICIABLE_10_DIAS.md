@@ -1,5 +1,7 @@
 # Plan de demo reiniciable SIHS — 10 días
 
+> **Actualización documental (2026-11-21, `fixes-multiples-nicol`):** este informe de 2026-11-15 es una auditoría histórica y conserva sus conclusiones a esa fecha. Desde el commit `e4024b2` existen `DEMO_LOCAL.md`, `Makefile`, `compose.demo.yml`, `scripts/demo-{up,reset,down}.sh`, `supabase/config.toml`, una migración SQL y `supabase/seed.sql` con datos sintéticos. Por tanto, las afirmaciones más abajo sobre ausencia de manifiestos o inexistencia de reset/seed están **desfasadas respecto del repositorio actual**. No se ha demostrado aquí que las migraciones, la demo integral o las pruebas móviles pasen; validar antes de considerar resueltos los P0. Guía operativa actual: [DEMO_LOCAL.md](../DEMO_LOCAL.md).
+
 **Auditoría:** 2026-11-15; decisión de entorno demo actualizada después de la auditoría. **Rama auditada:** `fixes-multiples-nicol` (HEAD inicial `aaa7fcf`, `feat: agregar perspectivas a gestionar horarios`). Este documento describe el estado observable del repositorio; no certifica una base compartida ni un despliegue sin ejecutar las verificaciones indicadas.
 
 ## Resultado ejecutivo
