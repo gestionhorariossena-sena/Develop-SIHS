@@ -371,7 +371,7 @@ export function HistorialHorarios() {
           <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 print:hidden">
             <h3 className="mb-2 font-semibold text-on-surface">Bloques de esta ficha</h3>
             <p className="mb-3 text-sm text-on-surface-variant">Estos bloques se guardaron sin un horario completo del constructor. Puedes modificar o borrar clases individuales y administrar su publicación aquí. Para añadir nuevas asignaciones utiliza el constructor, seleccionando esta misma ficha y período.</p>
-            <Link to="/horarios/nuevo" className="mb-3 inline-flex rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface">Añadir asignaciones en el constructor</Link>
+            <Link to={`/horarios/nuevo?idFicha=${grupoSeleccionado.bloques[0].idFicha}`} className="mb-3 inline-flex rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface">Añadir asignaciones en el constructor</Link>
             <ul className="divide-y divide-outline-variant">{grupoSeleccionado.bloques.map((bloque) => <li key={bloque.idHorario} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
               <div><p className="font-semibold text-on-surface">{bloque.resultadoDescripcion ?? bloque.resultadoCodigo ?? `Bloque #${bloque.idHorario}`}</p><p className="text-on-surface-variant">{bloque.dias.map((dia) => diasPorId[dia] ?? dia).join(', ')} · {formatearHora(bloque.horaInicio)}–{formatearHora(bloque.horaFin)} · {bloque.instructorNombre ?? 'Sin instructor'} · {bloque.publicado ? 'Publicado' : 'Borrador'}</p></div>
               <div className="flex items-center gap-2">
