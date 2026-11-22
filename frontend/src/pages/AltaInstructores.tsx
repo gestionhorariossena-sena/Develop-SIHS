@@ -142,8 +142,8 @@ export function AltaInstructores() {
       </header>
 
       <div role="tablist" aria-label="Método de registro" className="mb-5 inline-flex gap-1 rounded-md border border-outline-variant bg-surface-container-low p-1">
-        <button role="tab" type="button" aria-selected={modo === 'individual'} onClick={() => { setModo('individual'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'individual' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Uno por uno</button>
-        <button role="tab" type="button" aria-selected={modo === 'excel'} onClick={() => { setModo('excel'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'excel' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Desde Excel</button>
+        <button role="tab" type="button" aria-selected={modo === 'individual'} onClick={() => { setModo('individual'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'individual' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Registro individual</button>
+        <button role="tab" type="button" aria-selected={modo === 'excel'} onClick={() => { setModo('excel'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'excel' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Carga masiva</button>
       </div>
 
       {error && <p role="alert" className="mb-4 max-w-3xl rounded-md border border-error/30 bg-error-container p-3 text-sm text-on-error-container">{error}</p>}
