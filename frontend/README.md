@@ -101,6 +101,9 @@ pnpm build
 
 ### Flujo de edición y publicación desde Historial (2026-11-21)
 
+El listado principal de Historial es **por horario de ficha y período**, no por bloque individual: combina en una tabla los horarios del constructor y los conjuntos del cargador/IA sin snapshot. Cada fila resume período, estado de publicación y número de clases; al abrirla se muestra la cuadrícula y se habilitan acciones de clases específicas. Cuando un snapshot del constructor conserva identidad propia, se mantiene como entrada separada para no mezclar accidentalmente versiones o conjuntos distintos.
+
+
 - El detalle de un bloque en **Gestionar horarios** es de consulta: «Abrir en historial» navega a `/horarios/historial?idHorario=<id>` y abre el conjunto que contiene el bloque.
 - Si el bloque pertenece a un horario completo del constructor, el historial ofrece **Modificar** (`/horarios/nuevo?editar=<idHorarioGuardado>`), publicación del conjunto, gestión de clases, borrado y exportación.
 - Para bloques del cargador sin snapshot, el historial agrupa por ficha y período: ofrece edición individual de instructor, ambiente, RAP, jornada, horas y días, publicación/despublicación del grupo y borrado de bloques. La edición mantiene el estado de publicación y pasa por validaciones del backend.
