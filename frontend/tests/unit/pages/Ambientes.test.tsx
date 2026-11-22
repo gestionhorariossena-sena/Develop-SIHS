@@ -292,7 +292,7 @@ describe('Ambientes', () => {
       renderConProviders(<Ambientes />)
       await screen.findByText('Sala 101')
 
-      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
       const csv = 'numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente\n201,Sala 201,regular,Sede principal,'
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
 
@@ -308,7 +308,8 @@ describe('Ambientes', () => {
       }))
       // La etiqueta de cada fila del reporte usa la primera columna
       // declarada (numeroAmbiente), no el nombre.
-      expect(await screen.findByText(/Fila 2 — 201: creada/)).toBeInTheDocument()
+      expect(await screen.findByText('Fila 2 · 201')).toBeInTheDocument()
+      expect(screen.getByText('Importado')).toBeInTheDocument()
     })
 
     it('si tipoAmbiente no es válido, reporta el error de esa fila sin llamar al backend', async () => {
@@ -317,7 +318,7 @@ describe('Ambientes', () => {
       renderConProviders(<Ambientes />)
       await screen.findByText('Sala 101')
 
-      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
       const csv = 'numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente\n201,Sala 201,invalido,Sede principal,'
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
       await screen.findByText(/Se encontraron/)
@@ -334,7 +335,7 @@ describe('Ambientes', () => {
       renderConProviders(<Ambientes />)
       await screen.findByText('Sala 101')
 
-      await usuario.click(screen.getByRole('button', { name: 'Cargar archivo' }))
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
       const csv = 'numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente\n201,Sala 201,regular,Sede fantasma,'
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
       await screen.findByText(/Se encontraron/)
