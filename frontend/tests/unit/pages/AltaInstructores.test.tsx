@@ -39,6 +39,29 @@ describe('AltaInstructores', () => {
     expect(screen.queryByText(/Contraseña temporal:/i)).not.toBeInTheDocument()
   })
 
+  it('procesa Excel validado en solicitudes individuales y reporta resultados', async () => {
+    apiPostFormMock.mockResolvedValue({
+      confirmado: false, total: 2, validas: 2,
+      filas: [
+        { fila: 2, valido: true, datos: { nombre: 'Laura', correo: 'laura@sena.edu.co', documento: '123456' }, error: null },
+        { fila: 3, valido: true, datos: { nombre: 'Pedro', correo: 'pedro@sena.edu.co', documento: '654321' }, error: null },
+      ],
+    })
+    apiPostMock
+      .mockResolvedValueOnce({ correo: 'laura@sena.edu.co', estado: 'creado', detalle: 'Invitación enviada.' })
+      .mockResolvedValueOnce({ correo: 'pedro@sena.edu.co', estado: 'omitido', detalle: 'Ya existe una cuenta.' })
+    const usuario = userEvent.setup()
+    renderConProviders(<AltaInstructores />)
+    await usuario.click(screen.getByRole('tab', { name: 'Desde Excel' }))
+    await usuario.upload(screen.getByLabelText('Archivo Excel de instructores'), new File(['contenido'], 'coordinacion.xlsx'))
+    await usuario.click(screen.getByRole('button', { name: 'Revisar archivo' }))
+    await usuario.click(await screen.findByRole('button', { name: 'Confirmar e invitar' }))
+    await waitFor(() => expect(apiPostMock).toHaveBeenCalledTimes(2))
+    expect(apiPostMock).toHaveBeenNthCalledWith(1, '/instructores/alta/', expect.objectContaining({ correo: 'laura@sena.edu.co' }), 45000)
+    expect(apiPostMock).toHaveBeenNthCalledWith(2, '/instructores/alta/', expect.objectContaining({ correo: 'pedro@sena.edu.co' }), 45000)
+    expect(await screen.findByText('Importación procesada. Revisa el resultado de cada instructor.')).toBeInTheDocument()
+  })
+
   it('previsualiza Excel y exige que todas las filas sean válidas para confirmar', async () => {
     apiPostFormMock.mockResolvedValue({
       confirmado: false, total: 2, validas: 1,
