@@ -96,9 +96,9 @@ export function CargaAprendices() {
     }
   }
 
-  return <AppShell activo="Fichas">
+  return <AppShell activo="Aprendices">
     <nav className="mb-5 text-xs text-on-surface-variant">
-      <Link to="/fichas" className="hover:text-primary">Fichas</Link>
+      <Link to="/aprendices" className="hover:text-primary">Aprendices</Link>
       <span className="mx-2">/</span>
       <span className="font-semibold text-on-surface">Carga de aprendices</span>
     </nav>
