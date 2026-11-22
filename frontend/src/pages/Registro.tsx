@@ -8,23 +8,10 @@ import { supabase } from '../services/supabaseClient'
 type TipoDocumento = 'CC' | 'CE' | 'TI' | 'PAS'
 
 /**
- * El registro también habla directo con Supabase Auth (supabase.auth.signUp).
- * El rol elegido en el formulario NO asigna un rol real todavía — se guarda
- * como metadata del usuario (rol_solicitado) para que un Administrador lo
- * revise y lo asigne de verdad después con POST /usuario-rol/asignar (ver
- * backend/app/api/v1/usuario_rol.py). Por eso el mensaje de éxito dice
- * "quedó pendiente de aprobación" en vez de meter a la persona directo al
- * dashboard — coincide con lo que dice el mockup 02-registro.png.
- *
- * "Coordinador" salió de este selector (pedido 2026-09-07): un registro
- * directo con contraseña propia era demasiado abierto para un rol que
- * administra el resto del sistema. En su lugar, "¿Eres coordinador?
- * Solicita acceso" abre un formulario corto (nombre, correo, documento,
- * motivo) que llama a `POST /solicitudes-acceso/` — endpoint público del
- * ticket "[Backend] Endpoints /solicitudes-acceso" (mismo Epic SCRUM-96).
- * Este paso NO crea cuenta de Supabase Auth: solo registra la solicitud
- * para que un Administrador la apruebe desde el Panel de Administración,
- * que es quien de verdad crea la cuenta y envía la credencial temporal.
+ * Registro público exclusivo de Aprendiz. Instructores se dan de alta
+ * por Administrador/Coordinador desde /instructores/registrar y reciben
+ * credenciales temporales por correo; no se auto-registran.
+ * Solicitudes de Coordinador conservan el formulario corto separado.
  */
 export function Registro() {
   const navigate = useNavigate()
