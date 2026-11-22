@@ -142,13 +142,21 @@ def _leer_excel(contenido: bytes) -> list[dict]:
                 resultado.append({"fila": numero, "valido": True, "datos": datos.model_dump(mode="json"), "error": None})
             except ValidationError as exc:
                 resultado.append({"fila": numero, "valido": False, "datos": registro, "error": "; ".join(str(e["loc"][-1]) + ": " + e["msg"] for e in exc.errors())})
-        vistos = set()
+        correos_vistos = set()
+        documentos_vistos = set()
         for fila in resultado:
             correo = str(fila["datos"].get("correo") or "").lower().strip()
-            if correo in vistos:
+            documento = str(fila["datos"].get("documento") or "").strip()
+            if correo and correo in correos_vistos:
                 fila["valido"] = False
                 fila["error"] = "Correo duplicado dentro del Excel."
-            vistos.add(correo)
+            elif documento and documento in documentos_vistos:
+                fila["valido"] = False
+                fila["error"] = "Documento duplicado dentro del Excel."
+            if correo:
+                correos_vistos.add(correo)
+            if documento:
+                documentos_vistos.add(documento)
         return resultado
     finally:
         libro.close()
