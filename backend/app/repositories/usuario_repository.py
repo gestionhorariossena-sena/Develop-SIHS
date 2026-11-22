@@ -35,10 +35,6 @@ class UsuarioRepository:
         return db.query(Usuario).filter(Usuario.numeroDocumento == numero).first()
 
     @staticmethod
-    def obtener_por_codigo_instructor(db: Session, codigo: str):
-        return db.query(Usuario).filter(Usuario.codigoInstructor == codigo).first()
-
-    @staticmethod
     def actualizar(db: Session, usuario: Usuario):
         db.commit()
         db.refresh(usuario)
