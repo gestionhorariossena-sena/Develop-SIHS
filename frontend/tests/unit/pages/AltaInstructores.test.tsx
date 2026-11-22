@@ -32,7 +32,19 @@ describe('AltaInstructores', () => {
   it('abre directamente la pestaña de carga masiva desde el directorio', () => {
     renderConProviders(<AltaInstructores />, ['/instructores/registrar?modo=excel'])
     expect(screen.getByRole('tab', { name: 'Carga masiva' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByLabelText('Archivo Excel de instructores')).toBeInTheDocument()
+    expect(screen.getByLabelText('Archivo CSV de instructores')).toBeInTheDocument()
+  })
+
+  it('acepta solo CSV en el selector de Windows y muestra limites', async () => {
+    renderConProviders(<AltaInstructores />, ['/instructores/registrar?modo=csv'])
+    expect(screen.getByRole('tab', { name: 'Carga masiva' })).toHaveAttribute('aria-selected', 'true')
+    const selector = screen.getByLabelText('Archivo CSV de instructores')
+    expect(selector).toHaveAttribute('accept', '.csv,text/csv')
+    expect(screen.getByText('CSV, máximo 2 MB, hasta 200 instructores.')).toBeInTheDocument()
+    const usuario = userEvent.setup()
+    await usuario.upload(selector, new File(['data'], 'rechazado.xlsx'), { applyAccept: false })
+    expect(screen.getByRole('button', { name: 'Revisar archivo' })).toBeDisabled()
+    expect(screen.getByRole('alert')).toHaveTextContent('Selecciona un archivo CSV')
   })
 
   it('registra un instructor individual sin revelar credenciales temporales', async () => {
@@ -53,7 +65,7 @@ describe('AltaInstructores', () => {
     expect(screen.queryByText(/Contraseña temporal:/i)).not.toBeInTheDocument()
   })
 
-  it('procesa Excel validado en solicitudes individuales y reporta resultados', async () => {
+  it('procesa CSV validado en solicitudes individuales y reporta resultados', async () => {
     apiPostFormMock.mockResolvedValue({
       confirmado: false, total: 2, validas: 2,
       filas: [
@@ -67,7 +79,7 @@ describe('AltaInstructores', () => {
     const usuario = userEvent.setup()
     renderConProviders(<AltaInstructores />)
     await usuario.click(screen.getByRole('tab', { name: 'Carga masiva' }))
-    await usuario.upload(screen.getByLabelText('Archivo Excel de instructores'), new File(['contenido'], 'coordinacion.xlsx'))
+    await usuario.upload(screen.getByLabelText('Archivo CSV de instructores'), new File(['nombre,correo,documento,contrato,horas,sigla\nLaura,laura@example.com,1234,planta,32,LM'], 'coordinacion.csv'))
     await usuario.click(screen.getByRole('button', { name: 'Revisar archivo' }))
     await usuario.click(await screen.findByRole('button', { name: 'Confirmar e invitar' }))
     await waitFor(() => expect(apiPostMock).toHaveBeenCalledTimes(2))
@@ -76,7 +88,7 @@ describe('AltaInstructores', () => {
     expect(await screen.findByText('Importación procesada. Revisa el resultado de cada instructor.')).toBeInTheDocument()
   })
 
-  it('previsualiza Excel y exige que todas las filas sean válidas para confirmar', async () => {
+  it('previsualiza CSV y exige que todas las filas sean válidas para confirmar', async () => {
     apiPostFormMock.mockResolvedValue({
       confirmado: false, total: 2, validas: 1,
       filas: [
@@ -87,8 +99,8 @@ describe('AltaInstructores', () => {
     const usuario = userEvent.setup()
     renderConProviders(<AltaInstructores />)
     await usuario.click(screen.getByRole('tab', { name: 'Carga masiva' }))
-    const hoja = new File(['contenido'], 'coordinacion.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-    await usuario.upload(screen.getByLabelText('Archivo Excel de instructores'), hoja)
+    const hoja = new File(['nombre,correo,documento,contrato,horas,sigla\nLaura,laura@example.com,1234,planta,32,LM'], 'coordinacion.csv', { type: 'text/csv' })
+    await usuario.upload(screen.getByLabelText('Archivo CSV de instructores'), hoja)
     await usuario.click(screen.getByRole('button', { name: 'Revisar archivo' }))
     const seccion = await screen.findByRole('region', { name: 'Carga masiva de instructores' })
     expect(within(seccion).getByText('Vista previa · 1 de 2 filas válidas')).toBeInTheDocument()
