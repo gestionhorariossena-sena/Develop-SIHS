@@ -96,6 +96,31 @@ describe('Registro', () => {
     expect(await screen.findByText('Formulario de inicio de sesión')).toBeInTheDocument()
   })
 
+  it('permite al instructor registrarse sin código, quedando pendiente de asignación de rol', async () => {
+    vi.mocked(supabase.auth.signUp).mockResolvedValue({ data: { user: null, session: null }, error: null })
+    const usuario = userEvent.setup()
+    renderPagina()
+    await usuario.click(screen.getByRole('button', { name: 'Continuar como instructor' }))
+    expect(screen.queryByLabelText('Código de instructor')).not.toBeInTheDocument()
+    await usuario.type(screen.getByLabelText('Nombres'), 'Juan')
+    await usuario.type(screen.getByLabelText('Apellidos'), 'Pérez')
+    await usuario.type(screen.getByLabelText('Número de documento'), '1234567')
+    await usuario.type(screen.getByLabelText('Correo institucional'), 'juan@sena.edu.co')
+    await usuario.type(screen.getByLabelText('Teléfono'), '3001234567')
+    await usuario.type(screen.getByLabelText('Contraseña'), 'ClaveSegura123')
+    await usuario.type(screen.getByLabelText('Confirmar contraseña'), 'ClaveSegura123')
+    await usuario.type(screen.getByLabelText('Especialidad'), 'Teleinformática')
+    await usuario.click(screen.getByRole('checkbox'))
+    await usuario.click(screen.getByRole('button', { name: 'Registrarme' }))
+    expect(supabase.auth.signUp).toHaveBeenCalledWith(expect.objectContaining({
+      options: { data: expect.objectContaining({ rol_solicitado: 'Instructor', especialidad: 'Teleinformática' }) },
+    }))
+    const solicitud = vi.mocked(supabase.auth.signUp).mock.calls[0][0].options?.data as Record<string, unknown>
+    expect(solicitud).not.toHaveProperty('codigo_instructor')
+    expect(apiPost).not.toHaveBeenCalled()
+    expect(await screen.findByText('Formulario de inicio de sesión')).toBeInTheDocument()
+  })
+
   it('muestra validación y no crea la cuenta si las contraseñas no coinciden', async () => {
     vi.mocked(supabase.auth.signUp).mockResolvedValue({
       data: { user: null, session: null },
