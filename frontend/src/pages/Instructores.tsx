@@ -186,10 +186,10 @@ export function Instructores() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
-            to="/instructores/registrar?modo=excel"
+            to="/instructores/registrar?modo=csv"
             className="inline-flex min-h-10 items-center rounded-md border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            Cargar instructores desde Excel
+            Cargar instructores desde CSV
           </Link>
           <button
             type="button"
