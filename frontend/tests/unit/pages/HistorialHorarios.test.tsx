@@ -60,21 +60,35 @@ function mockeaBase(horariosReales: Horario[] = [CLASE_1, CLASE_SUELTA], snapsho
     if (path === '/horarios-guardados/') return Promise.resolve(snapshots)
     if (path === '/horarios/') return Promise.resolve(horariosReales)
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
+    if (path === '/trimestres/') return Promise.resolve([{ idTrimestre: 1, nombre: 'Trimestre 1', fechaInicio: '2026-01-01', fechaFin: '2026-03-31', estado: 'activo' }])
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
 
 describe('HistorialHorarios', () => {
-  it('la lista principal solo muestra horarios completos, no clases individuales sueltas', async () => {
+  it('muestra los horarios del creador y los bloques guardados fuera de él sin duplicarlos', async () => {
     mockeaBase()
     renderConProviders(<HistorialHorarios />)
 
     expect(await screen.findByText('FICHA-SNAPSHOT')).toBeInTheDocument()
     expect(screen.getByText('Análisis y Desarrollo de Software')).toBeInTheDocument()
-    // FICHA-1/FICHA-SUELTA son clases individuales (GET /horarios/) — no
-    // deben aparecer como filas propias antes de abrir un horario.
+    // La clase vinculada al horario completo no aparece como otra fila.
     expect(screen.queryByText('FICHA-1')).not.toBeInTheDocument()
-    expect(screen.queryByText('FICHA-SUELTA')).not.toBeInTheDocument()
+    expect(screen.getByText('FICHA-SUELTA')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Horarios del cargador y otros bloques' })).toBeInTheDocument()
+  })
+
+  it('abre el horario creado por el asistente con una cuadrícula y acceso a su gestión', async () => {
+    mockeaBase([{ ...CLASE_SUELTA, horaInicio: '08:00:00', horaFin: '10:00:00', publicado: false }], [])
+    const usuario = userEvent.setup()
+    renderConProviders(<HistorialHorarios />)
+    expect(await screen.findByText('FICHA-SUELTA')).toBeInTheDocument()
+    await usuario.click(screen.getByRole('button', { name: 'Ver bloques' }))
+    const horario = screen.getByRole('region', { name: 'Horario de FICHA-SUELTA' })
+    expect(within(horario).getByText('8:00 a.m')).toBeInTheDocument()
+    expect(within(horario).getByText('– 10:00 a.m')).toBeInTheDocument()
+    expect(within(horario).getAllByText(/Fredy Ardila/).length).toBeGreaterThan(0)
+    expect(within(horario).getByRole('link', { name: 'Ver y gestionar' })).toHaveAttribute('href', '/horarios/completos?idHorario=2')
   })
 
   it('el botón "Modificar" de la lista enlaza al creador en modo edición', async () => {

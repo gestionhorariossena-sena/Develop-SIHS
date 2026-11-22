@@ -67,12 +67,15 @@ describe('CalendarioGeneral', () => {
     expect(link).toHaveAttribute('href', '/horarios/historial')
   })
 
-  it('la pestaña "Semana" aparece deshabilitada (aún no implementada)', async () => {
+  it('permite pasar del calendario a la lista y a conflictos', async () => {
     mockeaBase()
     renderConProviders(<CalendarioGeneral />)
     await screen.findByRole('button', { name: 'Hoy' })
 
-    expect(screen.getByText('Semana')).toHaveAttribute('title', 'Vista semanal — aún no implementada')
+    const vistas = screen.getByRole('navigation', { name: 'Cambiar vista de horarios' })
+    expect(vistas.querySelector('[aria-current="page"]')).toHaveTextContent('Calendario')
+    expect(vistas.querySelector('a[href="/horarios/completos"]')).toHaveTextContent('Lista')
+    expect(vistas.querySelector('a[href="/horarios/auditoria?vista=conflictos"]')).toHaveTextContent('Conflictos')
   })
 
   it('las flechas de mes anterior/siguiente cambian el mes mostrado', async () => {

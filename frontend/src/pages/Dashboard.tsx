@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { apiGet } from '../services/api'
+import { ocupacionSemanalPorHora } from './horario/ocupacionSemanal'
 import type { AuditoriaConflicto, Ambiente, AuditoriaCrucesResponse, DiaSemana, Ficha, Horario, Jornada, Usuario } from '../types/api'
 
 const FILTROS = [
@@ -10,8 +11,6 @@ const FILTROS = [
   { id: 'Tarde', etiqueta: 'Tarde' },
   { id: 'Noche', etiqueta: 'Noche' },
 ] as const
-
-const HORAS_OCUPACION = [6, 7, 8, 9, 10, 11, 12, 14, 16, 18, 20, 21]
 
 function capitalizar(texto: string) {
   return texto.charAt(0).toUpperCase() + texto.slice(1)
@@ -109,38 +108,28 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
 
   const pendientesDeRol = usuarios.filter((u) => u.roles.length === 0).length
 
-  // Ocupación real por franja: cuántos horarios activos cubren cada hora,
-  // como fracción de los ambientes totales — no es un dato ya calculado
-  // por el backend, pero sí se deriva 100% de datos reales ya cargados
-  // (horarios + ambientes), no es contenido inventado.
-  const ocupacionPorHora = useMemo(() => {
-    if (totalAmbientes === 0) return []
-    return HORAS_OCUPACION.map((hora) => {
-      const enUso = horariosActivos.filter((h) => {
-        const inicio = Number(h.horaInicio.slice(0, 2))
-        const fin = Number(h.horaFin.slice(0, 2))
-        return inicio <= hora && hora < fin
-      }).length
-      return { hora, porcentaje: Math.round((enUso / totalAmbientes) * 100) }
-    })
-  }, [horariosActivos, totalAmbientes])
+  const ocupacionPorHora = useMemo(
+    () => ocupacionSemanalPorHora(horariosActivos, diasSemana, totalAmbientes),
+    [horariosActivos, diasSemana, totalAmbientes],
+  )
 
   const diasDeLaSemana = useMemo(() => semanaDe(new Date()), [])
   const hoyTexto = new Date().toDateString()
+  const horaActual = new Date().getHours()
 
   return (
     <AppShell activo="Inicio">
-      <nav className="mb-1 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant dark:text-slate-400">
+      <nav className="mb-3 flex items-center gap-1.5 text-xs text-on-surface-variant dark:text-slate-400" aria-label="Ubicación">
         <span>SENA Regional D.C.</span>
         <span>/</span>
         <span>CGMLTI Calle 52</span>
         <span>/</span>
-        <span className="text-primary">Dashboard</span>
+        <span className="text-primary">Inicio</span>
       </nav>
 
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4 border-b border-outline-variant pb-6 dark:border-slate-700">
         <div>
-          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Dashboard — Panel de Programación</h1>
+          <h1 className="mb-2 text-3xl font-medium tracking-tight text-on-surface dark:text-slate-100">Programación académica</h1>
           <p className="text-sm text-on-surface-variant dark:text-slate-400">
             Centro de Gestión de Mercados, Logística y TI · {fechaHoy}
           </p>
@@ -149,9 +138,10 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
         <div className="flex items-center gap-3">
           <Link
             to="/horarios/nuevo"
-            className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-on-primary transition-colors hover:bg-on-primary-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
-            Nuevo horario
+            <span className="material-symbols-outlined text-[18px]">add</span>
+            Crear horario
           </Link>
         </div>
       </div>
@@ -162,75 +152,67 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
         </div>
       )}
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-3">
-        <div className="min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-medium tracking-wide text-on-surface-variant uppercase dark:text-slate-400">
-              Horarios activos
+      <section className="mb-6 border-y border-outline-variant dark:border-slate-700" aria-label="Estado de la programación">
+        <dl className="grid divide-y divide-outline-variant sm:grid-cols-3 sm:divide-x sm:divide-y-0 dark:divide-slate-700">
+          <div className="min-w-0 py-4 sm:px-5 sm:first:pl-0">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-sm text-on-surface-variant dark:text-slate-400">Horarios activos</dt>
+              <span className="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">calendar_month</span>
+            </div>
+            <dd className="mt-1 font-mono text-2xl font-medium tabular-nums text-on-surface dark:text-slate-100">{horarios ? horariosActivos.length : '—'}</dd>
+            <p className="mt-1 truncate text-xs text-on-surface-variant dark:text-slate-400">
+              {[...desglosePorJornada.entries()].map(([nombre, cantidad]) => `${nombre}: ${cantidad}`).join(' · ') || 'Sin franjas activas'}
             </p>
-            <span className="material-symbols-outlined text-[20px] text-primary">calendar_month</span>
           </div>
-          <p className="text-3xl font-bold text-on-surface dark:text-slate-100">{horarios ? horariosActivos.length : '—'}</p>
-          <p className="mt-1 text-sm text-on-surface-variant dark:text-slate-400">
-            {[...desglosePorJornada.entries()].map(([nombre, cantidad]) => `${nombre}: ${cantidad}`).join(' · ') || 'Sin franjas activas'}
-          </p>
-        </div>
 
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-medium tracking-wide text-on-surface-variant uppercase dark:text-slate-400">
-              Cruces detectados
+          <div className="py-4 sm:px-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-sm text-on-surface-variant dark:text-slate-400">Cruces detectados</dt>
+              <span className="material-symbols-outlined text-[18px] text-tertiary" aria-hidden="true">warning</span>
+            </div>
+            <dd className="mt-1 flex items-center gap-2 font-mono text-2xl font-medium tabular-nums text-on-surface dark:text-slate-100">
+              {conflictos.length}
+              {conflictos.length > 0 && <span className="rounded-md bg-tertiary-container px-1.5 py-0.5 font-sans text-[11px] font-medium text-on-tertiary-container dark:bg-orange-950/50 dark:text-orange-300">Revisar</span>}
+            </dd>
+            <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
+              {conflictosPorInstructor} instructor · {conflictosPorAmbiente} ambiente
             </p>
-            <span className="material-symbols-outlined text-[20px] text-tertiary">warning</span>
           </div>
-          <div className="flex items-center gap-2">
-            <p className="text-3xl font-bold text-on-surface dark:text-slate-100">{conflictos.length}</p>
-            {conflictos.length > 0 && (
-              <span className="rounded-full bg-tertiary-container px-2.5 py-1 text-xs font-semibold text-on-tertiary-container dark:bg-orange-950/50 dark:text-orange-300">
-                Requiere revisión
-              </span>
-            )}
-          </div>
-          <p className="mt-1 text-sm text-on-surface-variant dark:text-slate-400">
-            {conflictosPorInstructor} por instructor · {conflictosPorAmbiente} por ambiente
-          </p>
-        </div>
 
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-xs font-medium tracking-wide text-on-surface-variant uppercase dark:text-slate-400">
-              Ambientes disponibles
-            </p>
-            <span className="material-symbols-outlined text-[20px] text-on-surface-variant">meeting_room</span>
+          <div className="py-4 sm:pl-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <dt className="text-sm text-on-surface-variant dark:text-slate-400">Ambientes disponibles</dt>
+              <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden="true">meeting_room</span>
+            </div>
+            <dd className="mt-1 font-mono text-2xl font-medium tabular-nums text-on-surface dark:text-slate-100">
+              {ambientesDisponibles} <span className="text-base text-on-surface-variant dark:text-slate-400">/ {totalAmbientes}</span>
+            </dd>
+            <div className="mt-2 h-1 w-full bg-surface-container dark:bg-slate-700" aria-label={`${porcentajeDisponible}% de ambientes disponibles`}>
+              <div className="h-1 bg-primary" style={{ width: `${porcentajeDisponible}%` }} />
+            </div>
           </div>
-          <p className="text-3xl font-bold text-on-surface dark:text-slate-100">
-            {ambientesDisponibles} <span className="text-lg font-medium text-on-surface-variant dark:text-slate-400">/ {totalAmbientes}</span>
-          </p>
-          <div className="mt-3 h-1.5 w-full rounded-full bg-surface-container dark:bg-slate-700">
-            <div className="h-1.5 rounded-full bg-primary" style={{ width: `${porcentajeDisponible}%` }} />
-          </div>
-        </div>
-      </div>
+        </dl>
+      </section>
 
-      <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
-        <div className="min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+        <div className="min-w-0 rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="flex items-center gap-2 text-lg font-semibold text-on-surface dark:text-slate-100">
-                <span className="h-2 w-2 rounded-full bg-primary" />
+              <p className="flex items-center gap-2 text-lg font-medium text-on-surface dark:text-slate-100">
+                <span className="h-2 w-2 bg-tertiary dark:bg-primary" />
                 Horario académico de hoy
               </p>
               <p className="text-sm text-on-surface-variant dark:text-slate-400">
-                {horariosHoy.length} sesiones programadas · seguimiento en tiempo real
+                {horariosHoy.length} sesiones programadas
               </p>
             </div>
 
-            <div className="flex gap-1 rounded-xl bg-surface-container p-1 dark:bg-slate-900">
+            <div className="flex flex-wrap gap-1 rounded-lg bg-surface-container p-1 dark:bg-slate-900">
               {FILTROS.map((f) => (
                 <button
                   key={f.id}
                   onClick={() => setFiltro(f.id)}
-                  className={`rounded-xl px-3 py-1.5 text-sm font-medium transition ${
+                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
                     filtro === f.id
                       ? 'bg-primary-container text-on-primary-container'
                       : 'text-on-surface-variant hover:text-on-surface dark:text-slate-400 dark:hover:text-slate-200'
@@ -245,7 +227,7 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-outline-variant text-xs uppercase text-on-surface-variant dark:border-slate-700 dark:text-slate-400">
+                <tr className="border-b border-outline-variant text-xs text-on-surface-variant dark:border-slate-700 dark:text-slate-400">
                   <th scope="col" className="py-2 pr-4 font-medium">Hora</th>
                   <th scope="col" className="py-2 pr-4 font-medium">Ficha</th>
                   <th scope="col" className="py-2 pr-4 font-medium">Programa</th>
@@ -266,7 +248,7 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
                         tieneConflicto ? 'bg-tertiary-container/40 dark:bg-orange-950/30' : ''
                       }`}
                     >
-                      <td className="py-3 pr-4 font-semibold text-on-surface dark:text-slate-100">
+                      <td className="py-3 pr-4 font-mono text-xs font-medium tabular-nums text-on-surface dark:text-slate-100">
                         {fila.horaInicio.slice(0, 5)}–{fila.horaFin.slice(0, 5)}
                       </td>
                       <td className="py-3 pr-4 text-on-surface-variant dark:text-slate-300">{fila.fichaCodigo}</td>
@@ -295,8 +277,8 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
 
         <div className="flex flex-col gap-4">
           {primerConflicto && (
-            <div className="rounded-xl border border-tertiary-container bg-tertiary-container/30 p-4 dark:border-orange-900 dark:bg-orange-950/20">
-              <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-on-tertiary-container dark:text-orange-300">
+            <div className="rounded-2xl border border-tertiary-container bg-tertiary-container/30 p-5 dark:border-orange-900 dark:bg-orange-950/20">
+              <p className="mb-3 flex items-center gap-2 text-sm font-medium text-on-tertiary-container dark:text-orange-300">
                 <span className="material-symbols-outlined text-[18px]">emergency_home</span>
                 Atención inmediata
               </p>
@@ -304,28 +286,25 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
               {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato real
                   del backend: no existe un endpoint que sugiera un ambiente
                   alterno libre para un conflicto puntual. */}
-              <p className="mt-2 text-xs text-on-surface-variant dark:text-slate-400">
-                Ambiente alterno sugerido (ejemplo): <span className="font-semibold">por definir</span>
-              </p>
               <Link
                 to={`/horarios/completos?id=${primerConflicto.idHorario}`}
-                className="mt-3 flex items-center justify-center gap-1.5 rounded-xl bg-tertiary px-3 py-2 text-sm font-semibold text-on-tertiary hover:opacity-90"
+                className="mt-4 flex items-center justify-center gap-1.5 rounded-lg bg-tertiary px-3 py-2.5 text-sm font-medium text-on-tertiary transition-colors hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-tertiary"
               >
                 Resolver en Horarios Completos
               </Link>
             </div>
           )}
 
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-            <p className="mb-3 text-sm font-semibold text-on-surface dark:text-slate-100">
+          <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
+            <p className="mb-4 text-sm font-medium text-on-surface dark:text-slate-100">
               Semana · {diasDeLaSemana[0]?.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' })}
             </p>
             <div className="flex justify-center">
-              <div className="flex gap-1">
+              <div className="flex gap-1.5">
                 {diasDeLaSemana.map((dia) => (
                   <div
                     key={dia.toISOString()}
-                    className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold ${
+                    className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-medium tabular-nums ${
                       dia.toDateString() === hoyTexto
                         ? 'bg-primary text-on-primary'
                         : 'text-on-surface-variant dark:text-slate-400'
@@ -338,28 +317,27 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
             </div>
           </div>
 
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-            <p className="mb-3 flex items-center justify-between text-sm font-semibold text-on-surface dark:text-slate-100">
+          <div className="rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
+            <p className="mb-3 flex items-center justify-between text-sm font-medium text-on-surface dark:text-slate-100">
               Accesos de coordinación
-              <span className="text-xs font-normal text-on-surface-variant dark:text-slate-400">Frecuentes</span>
             </p>
             <div className="flex flex-col gap-1">
-              <Link to="/vista-ambientes" className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-on-surface hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
+              <Link to="/horarios/completos?perspectiva=ambiente" className="flex items-center justify-between rounded-lg px-2 py-2.5 text-sm text-on-surface transition-colors hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
                 Vista por ambientes
                 <span className="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward</span>
               </Link>
-              {esAdministrador && <Link to="/aprobar-solicitudes" className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-on-surface hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
+              {esAdministrador && <Link to="/aprobar-solicitudes" className="flex items-center justify-between rounded-lg px-2 py-2.5 text-sm text-on-surface transition-colors hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
                 <span>
-                  Aprobar solicitudes
-                  {pendientesDeRol > 0 && <span className="ml-1.5 rounded-full bg-error-container px-1.5 py-0.5 text-xs font-semibold text-on-error-container">{pendientesDeRol}</span>}
+                  Usuarios sin rol
+                  {pendientesDeRol > 0 && <span className="ml-1.5 rounded-md bg-error-container px-1.5 py-0.5 font-mono text-xs font-medium tabular-nums text-on-error-container">{pendientesDeRol}</span>}
                 </span>
                 <span className="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward</span>
               </Link>}
-              <Link to="/horarios/nuevo" className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-on-surface hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
-                Constructor de horarios
+              <Link to="/horarios/completos" className="flex items-center justify-between rounded-lg px-2 py-2.5 text-sm text-on-surface transition-colors hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
+                Gestionar horarios
                 <span className="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward</span>
               </Link>
-              <Link to="/instructores" className="flex items-center justify-between rounded-lg px-2 py-2 text-sm text-on-surface hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
+              <Link to="/instructores" className="flex items-center justify-between rounded-lg px-2 py-2.5 text-sm text-on-surface transition-colors hover:bg-surface-container dark:text-slate-200 dark:hover:bg-slate-700">
                 Carga docente
                 <span className="material-symbols-outlined text-[16px] text-on-surface-variant">arrow_forward</span>
               </Link>
@@ -369,22 +347,33 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
       </div>
 
       {ocupacionPorHora.length > 0 && (
-        <div className="mt-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Ocupación horaria por franja</p>
-          <p className="mb-4 text-xs text-on-surface-variant dark:text-slate-400">
-            % de ambientes con un horario activo en cada hora, calculado sobre {totalAmbientes} ambientes reales.
+        <section className="mt-4 rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800" aria-labelledby="ocupacion-title">
+          <div className="mb-5 flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <p id="ocupacion-title" className="text-lg font-medium text-on-surface dark:text-slate-100">Pico semanal por franja</p>
+              <p className="mt-1 text-xs text-on-surface-variant dark:text-slate-400">
+                Máximo de ambientes ocupados en un mismo día de la semana
+              </p>
+            </div>
+            <p className="font-mono text-xs tabular-nums text-on-surface-variant dark:text-slate-400">Base: {totalAmbientes} ambientes</p>
+          </div>
+          <p className="sr-only">
+            Máximo porcentaje semanal de ambientes ocupados a cada hora, calculado sobre {totalAmbientes} ambientes reales.
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6 xl:grid-cols-12">
             {ocupacionPorHora.map(({ hora, porcentaje }) => (
-              <div key={hora} className="flex flex-col items-center gap-1">
-                <span className="text-[11px] text-on-surface-variant dark:text-slate-400">{String(hora).padStart(2, '0')}:00</span>
+              <div key={hora} className="min-w-0 border-l-2 border-outline-variant px-2 py-1.5 dark:border-slate-700">
+                <div className="mb-2 flex items-center justify-between gap-1">
+                  <span className="font-mono text-[11px] tabular-nums text-on-surface-variant dark:text-slate-400">{String(hora).padStart(2, '0')}:00</span>
+                  {hora === horaActual && <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-label="Hora actual" />}
+                </div>
                 <span
-                  className={`flex h-10 w-14 items-center justify-center rounded-lg text-xs font-semibold ${
+                  className={`flex h-9 items-center justify-center rounded-md font-mono text-xs font-medium tabular-nums ${
                     porcentaje >= 90
-                      ? 'bg-primary text-on-primary'
+                      ? 'bg-tertiary-container text-on-tertiary-container dark:bg-orange-950/60 dark:text-orange-300'
                       : porcentaje >= 60
-                        ? 'bg-primary-container text-on-primary-container'
-                        : 'bg-surface-container text-on-surface-variant'
+                        ? 'bg-surface-container-high text-on-surface dark:bg-slate-700 dark:text-slate-100'
+                        : 'bg-surface-container text-on-surface-variant dark:bg-slate-900'
                   }`}
                 >
                   {porcentaje}%
@@ -392,7 +381,7 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
     </AppShell>
   )

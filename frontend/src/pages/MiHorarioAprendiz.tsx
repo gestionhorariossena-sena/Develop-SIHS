@@ -317,7 +317,7 @@ export function MiHorarioAprendiz() {
   )
 
   return (
-    <AppShell activo="Mi Horario">
+    <AppShell activo="Mi horario">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
@@ -356,7 +356,7 @@ export function MiHorarioAprendiz() {
             <button
               type="button"
               disabled
-              title="Vista Agenda: contenido de mockup (Stitch) — pendiente de conectar a un dato real del backend"
+              title="La vista de agenda aún no está disponible"
               className="cursor-not-allowed rounded-md px-3 py-1.5 font-medium text-on-surface-variant/50"
             >
               Vista Agenda
@@ -377,7 +377,7 @@ export function MiHorarioAprendiz() {
           <button
             type="button"
             disabled
-            title="Contenido de mockup (Stitch) — pendiente de conectar a un dato real del backend"
+            title="Esta opción aún no está disponible"
             className="cursor-not-allowed rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant/50"
           >
             Descargar Horario PDF
@@ -498,7 +498,7 @@ export function MiHorarioAprendiz() {
               <button
                 type="button"
                 disabled
-                title="Contenido de mockup (Stitch) — pendiente de conectar a un dato real del backend"
+                title="Esta opción aún no está disponible"
                 className="cursor-not-allowed font-medium text-on-surface-variant/50"
               >
                 Reportar novedad de asistencia
@@ -554,7 +554,7 @@ export function MiHorarioAprendiz() {
 
           <aside className="flex flex-col gap-4 lg:col-span-4">
             {proxima && (
-              <div className="rounded-xl bg-gradient-to-br from-primary to-on-primary-container p-4 text-on-primary shadow-sm">
+              <div className="rounded-xl bg-primary p-4 text-on-primary shadow-sm">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-on-primary">
                     Próxima clase
@@ -715,8 +715,7 @@ export function MiHorarioAprendiz() {
                 onChange={(evento) => setRecordatorioBorrador(evento.target.checked)}
                 className="h-4 w-4"
               />
-              Recordarme antes de esta clase (guarda la preferencia; el envío del recordatorio en sí todavía no está
-              implementado).
+              Guardar preferencia de recordatorio (los avisos aún no están disponibles)
             </label>
 
             <div className="flex items-center justify-between gap-2">

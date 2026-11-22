@@ -10,55 +10,68 @@
  * compatibilidad con clases ya escritas en páginas no migradas todavía —
  * apunta a los mismos valores que `primary`/`secondary` de acá. */
 @theme {
-  --color-surface: #f8fafc;
-  --color-surface-dim: #e2e8f0;
+  --color-surface: #f7f8f4;
+  --color-surface-dim: #e4e9e1;
   --color-surface-bright: #ffffff;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f1f5f9;
-  --color-surface-container: #e2e8f0;
-  --color-surface-container-high: #cbd5e1;
-  --color-surface-container-highest: #94a3b8;
-  --color-on-surface: #0f172a;
-  --color-on-surface-variant: #475569;
-  --color-inverse-surface: #1e293b;
-  --color-inverse-on-surface: #f8fafc;
-  --color-outline: #cbd5e1;
-  --color-outline-variant: #e2e8f0;
+  --color-surface-container-low: #eef1ea;
+  --color-surface-container: #e4e9e1;
+  --color-surface-container-high: #d6dcd3;
+  --color-surface-container-highest: #b5c0b5;
+  --color-on-surface: #17221d;
+  --color-on-surface-variant: #59655e;
+  --color-inverse-surface: #26332b;
+  --color-inverse-on-surface: #f7f8f4;
+  --color-outline: #b9c4b9;
+  --color-outline-variant: #d6dcd3;
 
-  --color-primary: #16a34a;
+  --color-primary: #176b45;
   --color-on-primary: #ffffff;
-  --color-primary-container: #dcfce7;
-  --color-on-primary-container: #14532d;
-  --color-inverse-primary: #4ade80;
+  --color-primary-container: #ddeee2;
+  --color-on-primary-container: #17573a;
+  --color-inverse-primary: #72c88b;
 
   --color-secondary: #39a900;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #eaf7ec;
-  --color-on-secondary-container: #14532d;
+  --color-on-secondary: #17221d;
+  --color-secondary-container: #eaf2df;
+  --color-on-secondary-container: #315a16;
 
-  --color-tertiary: #d97706;
+  --color-tertiary: #a95c18;
   --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #fef3c7;
-  --color-on-tertiary-container: #92400e;
+  --color-tertiary-container: #f7e9d8;
+  --color-on-tertiary-container: #79400f;
 
-  --color-error: #dc2626;
+  --color-error: #b53a36;
   --color-on-error: #ffffff;
-  --color-error-container: #fee2e2;
-  --color-on-error-container: #991b1b;
+  --color-error-container: #f9e6e2;
+  --color-on-error-container: #842c28;
 
   --color-background: #ffffff;
-  --color-on-background: #0f172a;
+  --color-on-background: #17221d;
+
+  /* Neutros heredados en pantallas aún escritas con clases slate. */
+  --color-slate-50: #f7f8f4;
+  --color-slate-100: #eef1ea;
+  --color-slate-200: #e4e9e1;
+  --color-slate-300: #d6dcd3;
+  --color-slate-400: #9aa89d;
+  --color-slate-500: #718075;
+  --color-slate-600: #59655e;
+  --color-slate-700: #344139;
+  --color-slate-800: #1c241f;
+  --color-slate-900: #141a16;
+  --color-slate-950: #0e130f;
 
   --font-display: "Hanken Grotesk", system-ui, sans-serif;
   --font-body: "Geist", system-ui, sans-serif;
 
   /* Compat: clases bg-sena-* y text-sena-* ya escritas antes del rediseño. */
-  --color-sena-50: #eaf7ec;
-  --color-sena-100: #dcfce7;
-  --color-sena-500: #16a34a;
+  --color-sena-50: #eaf2df;
+  --color-sena-100: #ddeee2;
+  --color-sena-500: #176b45;
   --color-sena-600: #39a900;
-  --color-sena-700: #14532d;
-  --color-sena-800: #14532d;
+  --color-sena-700: #17573a;
+  --color-sena-800: #17573a;
 }
 
 .material-symbols-outlined {
@@ -101,51 +114,51 @@ html.dark {
    * etc.) tengan con qué combinar — sin esto, un elemento con `dark:` viejo
    * quedaba con texto claro sobre un fondo que seguía claro (texto
    * invisible), porque los tokens nuevos no tenían variante oscura. */
-  --color-surface: #0f172a;
-  --color-surface-dim: #1e293b;
-  --color-surface-bright: #334155;
-  --color-surface-container-lowest: #1e293b;
-  --color-surface-container-low: #1e293b;
-  --color-surface-container: #334155;
-  --color-surface-container-high: #475569;
-  --color-surface-container-highest: #64748b;
-  --color-on-surface: #f1f5f9;
-  --color-on-surface-variant: #cbd5e1;
-  --color-inverse-surface: #f1f5f9;
-  --color-inverse-on-surface: #1e293b;
-  --color-outline: #475569;
-  --color-outline-variant: #334155;
+  --color-surface: #141a16;
+  --color-surface-dim: #101511;
+  --color-surface-bright: #344139;
+  --color-surface-container-lowest: #1c241f;
+  --color-surface-container-low: #202a23;
+  --color-surface-container: #28352c;
+  --color-surface-container-high: #344139;
+  --color-surface-container-highest: #46554a;
+  --color-on-surface: #ecf1ea;
+  --color-on-surface-variant: #b6c0b7;
+  --color-inverse-surface: #ecf1ea;
+  --color-inverse-on-surface: #17221d;
+  --color-outline: #516056;
+  --color-outline-variant: #344139;
 
-  --color-primary: #4ade80;
-  --color-on-primary: #052e13;
-  --color-primary-container: #14532d;
-  --color-on-primary-container: #bbf7d0;
-  --color-inverse-primary: #16a34a;
+  --color-primary: #72c88b;
+  --color-on-primary: #102b1c;
+  --color-primary-container: #193d29;
+  --color-on-primary-container: #bce5c7;
+  --color-inverse-primary: #176b45;
 
-  --color-secondary: #6fdf43;
-  --color-on-secondary: #052100;
-  --color-secondary-container: #1a3a0a;
-  --color-on-secondary-container: #bbf7d0;
+  --color-secondary: #9bd36c;
+  --color-on-secondary: #19300c;
+  --color-secondary-container: #293c20;
+  --color-on-secondary-container: #cce5b8;
 
-  --color-tertiary: #fbbf24;
-  --color-on-tertiary: #451a03;
-  --color-tertiary-container: #78350f;
-  --color-on-tertiary-container: #fef3c7;
+  --color-tertiary: #e5aa6e;
+  --color-on-tertiary: #3b220d;
+  --color-tertiary-container: #55351e;
+  --color-on-tertiary-container: #f3d8ba;
 
-  --color-error: #f87171;
-  --color-on-error: #450a0a;
-  --color-error-container: #7f1d1d;
-  --color-on-error-container: #fecaca;
+  --color-error: #efa39a;
+  --color-on-error: #3e1716;
+  --color-error-container: #5a2926;
+  --color-on-error-container: #f8cbc5;
 
-  --color-background: #0f172a;
-  --color-on-background: #f1f5f9;
+  --color-background: #141a16;
+  --color-on-background: #ecf1ea;
 
-  --color-sena-50: #14532d;
-  --color-sena-100: #14532d;
-  --color-sena-500: #4ade80;
-  --color-sena-600: #6fdf43;
-  --color-sena-700: #bbf7d0;
-  --color-sena-800: #bbf7d0;
+  --color-sena-50: #293c20;
+  --color-sena-100: #193d29;
+  --color-sena-500: #72c88b;
+  --color-sena-600: #9bd36c;
+  --color-sena-700: #bce5c7;
+  --color-sena-800: #bce5c7;
 }
 
 /* Barra de scroll delgada para el <nav> del sidebar (AppShell.tsx) — sin
@@ -157,7 +170,7 @@ html.dark {
  * los dos motores todavía. */
 .scroll-sidebar {
   scrollbar-width: thin;
-  scrollbar-color: #0f172a transparent;
+  scrollbar-color: #344139 transparent;
 }
 .scroll-sidebar::-webkit-scrollbar {
   width: 5px;
@@ -166,20 +179,20 @@ html.dark {
   background: transparent;
 }
 .scroll-sidebar::-webkit-scrollbar-thumb {
-  background-color: #0f172a;
+  background-color: #344139;
   border-radius: 9999px;
 }
 .scroll-sidebar::-webkit-scrollbar-thumb:hover {
-  background-color: #334155;
+  background-color: #59655e;
 }
 html.dark .scroll-sidebar {
-  scrollbar-color: #3b82f6 transparent;
+  scrollbar-color: #72c88b transparent;
 }
 html.dark .scroll-sidebar::-webkit-scrollbar-thumb {
-  background-color: #3b82f6;
+  background-color: #72c88b;
 }
 html.dark .scroll-sidebar::-webkit-scrollbar-thumb:hover {
-  background-color: #60a5fa;
+  background-color: #9bd8a9;
 }
 
 /* Sin esto, los navegadores quitan los fondos de color al imprimir/exportar

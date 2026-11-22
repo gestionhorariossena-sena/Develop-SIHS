@@ -292,7 +292,7 @@ export function DashboardInstructor() {
           {!perfil || cargandoCarga ? (
             <p className="text-sm text-on-surface-variant">{!perfil ? 'Cargando…' : 'Calculando…'}</p>
           ) : errorCarga ? (
-            <p className="text-sm text-on-surface-variant">No se pudo validar el tope de RF-011.</p>
+            <p className="text-sm text-on-surface-variant">No se pudo validar el límite de carga docente.</p>
           ) : cargaSemanal?.horasMaximas == null ? (
             <p className="text-sm text-on-surface-variant">Sin tipo de contrato definido.</p>
           ) : excedeTopeRf011 ? (

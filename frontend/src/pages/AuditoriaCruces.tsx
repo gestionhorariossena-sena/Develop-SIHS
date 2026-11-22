@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { CabeceraGestionHorarios } from '../components/horarios/CabeceraGestionHorarios'
 import { apiGet, ApiError } from '../services/api'
 import type { AuditoriaConflicto, AuditoriaCrucesResponse, Sede, Trimestre, TipoConflictoHorario } from '../types/api'
 
@@ -12,7 +13,7 @@ const TITULO_POR_TIPO: Record<TipoConflictoHorario, string> = {
   cruce_instructor: 'Instructor ocupado',
   cruce_ambiente: 'Ambiente ocupado',
   resultado_repetido: 'Resultado repetido',
-  regla_instructor: 'Regla institucional (RF-011)',
+  regla_instructor: 'Límite de carga docente',
   fortaleza_instructor: 'Fortaleza del instructor',
   ficha_trimestre: 'Ficha fuera de su trimestre',
 }
@@ -101,7 +102,7 @@ export function AuditoriaCruces() {
 
   if (noAutorizado) {
     return (
-      <AppShell activo="Auditoría de cruces">
+      <AppShell activo="Gestionar horarios">
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-8 text-center dark:border-slate-700 dark:bg-slate-800">
           <p className="text-sm font-semibold text-on-surface">No tienes acceso a esta sección.</p>
           <p className="mt-1 text-sm text-on-surface-variant">
@@ -162,25 +163,8 @@ export function AuditoriaCruces() {
   }
 
   return (
-    <AppShell activo="Auditoría de cruces">
-      <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
-        <span className="text-outline">/</span>
-        <span className="font-semibold text-primary">Auditoría de cruces</span>
-      </nav>
-
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="mb-1 text-2xl font-bold text-on-surface">Auditoría de cruces</h1>
-          <p className="text-sm text-on-surface-variant">
-            Cruces detectados entre horarios ya guardados — mismas reglas que el Constructor usa al crear uno nuevo.
-          </p>
-        </div>
-        <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-secondary-container px-3 py-1 text-xs font-semibold text-on-secondary-container">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" aria-hidden="true" />
-          Auditoría de Malla Activa
-        </span>
-      </div>
+    <AppShell activo="Gestionar horarios">
+      <CabeceraGestionHorarios vista="conflictos" descripcion="Revisa los cruces detectados en los horarios guardados" />
 
       <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de auditoría">
         <div className="grid gap-3 sm:grid-cols-3">
@@ -213,7 +197,7 @@ export function AuditoriaCruces() {
             </select>
           </div>
           <div>
-            <label htmlFor="busqueda-rapida-auditoria" className="mb-1.5 block text-xs font-medium text-on-surface-variant">Búsqueda Rápida</label>
+            <label htmlFor="busqueda-rapida-auditoria" className="mb-1.5 block text-xs font-medium text-on-surface-variant">Buscar conflicto</label>
             <div className="relative">
               <span aria-hidden="true" className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant">search</span>
               <input
@@ -231,7 +215,7 @@ export function AuditoriaCruces() {
 
       <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-2.5 text-xs font-medium text-on-surface-variant dark:border-slate-700 dark:bg-slate-800">
         <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-tertiary" aria-hidden="true" />Conflicto de solape detectado</span>
-        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-error" aria-hidden="true" />Regla institucional (RF-011)</span>
+        <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-error" aria-hidden="true" />Límite de carga docente</span>
         {conflictos.length > 0 && (
           <span className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-tertiary-container px-2.5 py-1 text-on-tertiary-container">
             <span aria-hidden="true" className="material-symbols-outlined text-[14px]">warning</span>

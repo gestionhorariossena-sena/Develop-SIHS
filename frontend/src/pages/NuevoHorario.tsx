@@ -24,12 +24,6 @@ import type {
   Usuario,
 } from '../types/api'
 
-const SEDES = [
-  { nombre: 'Sede principal', direccion: 'Calle 52 # 13 -65' },
-  { nombre: 'Sede Unigermana', direccion: 'AK 14 # 63 – 87' },
-  { nombre: 'Sede Fontibón', direccion: 'Cl 19A # 96c - 40' },
-]
-
 const FILTROS_JORNADA = ['Todas', 'Mañana', 'Tarde', 'Noche'] as const
 type FiltroJornada = (typeof FILTROS_JORNADA)[number]
 
@@ -231,7 +225,7 @@ export function NuevoHorario() {
             !ids.length || gruposOriginales.length !== ids.length || asignaciones.length !== ids.length ||
             ids.some((id, index) => asignaciones[index]?.idHorario !== id || !asignaciones[index]?.fechaModificacion)
           ) {
-            setErrorEdicion('Este snapshot no tiene vínculos completos con sus clases y no puede editarse de forma segura.')
+            setErrorEdicion('Este horario no tiene toda la información necesaria para editarlo con seguridad.')
             setDatosEdicion(snapshot)
             return
           }
@@ -550,7 +544,7 @@ export function NuevoHorario() {
   return (
     <AppShell activo="Crear horario">
       <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant print:hidden">
-        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
         <span className="text-outline">/</span>
         <span className="font-semibold text-primary">Constructor de Horarios</span>
       </nav>
@@ -569,7 +563,7 @@ export function NuevoHorario() {
             {datosEdicion
               ? edicionSegura
                 ? 'Los cambios se validan y reemplazan juntos en el servidor; si alguno falla, se conserva el horario original.'
-                : 'Este snapshot no dispone de vínculos completos con las clases originales y no puede editarse de forma segura.'
+                : 'Este horario no tiene toda la información necesaria para editarlo con seguridad.'
               : 'Selecciona una ficha para consultar lo que ya tiene asignado y completar su horario sin duplicar las clases existentes.'}
           </p>
           {catalogos && (
@@ -580,6 +574,10 @@ export function NuevoHorario() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3 print:hidden">
+          <Link to="/horarios/auditoria" className="inline-flex items-center gap-1 text-sm font-medium text-tertiary hover:underline focus-visible:outline-2 focus-visible:outline-tertiary">
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">fact_check</span>
+            Revisar cruces
+          </Link>
           {!idEditar && (
             <label className="inline-flex items-center gap-2 text-sm font-semibold text-on-surface">
               <input type="checkbox" checked={guardarComoBorrador} onChange={(evento) => setGuardarComoBorrador(evento.target.checked)} disabled={guardando} className="accent-primary" />
@@ -597,7 +595,7 @@ export function NuevoHorario() {
             type="button"
             onClick={() => void guardarHorario()}
             disabled={guardando || !catalogos || cargandoEdicion || (idEditar !== null && !edicionSegura) || (idEditar === null && (!fichaSeleccionada || cargandoHorarioFicha || errorHorarioFicha !== null))}
-            title={idEditar !== null && !edicionSegura ? 'Snapshot incompleto: no se puede editar de forma segura' : !catalogos ? 'Cargando catálogos…' : cargandoEdicion ? 'Cargando horario a modificar…' : !fichaSeleccionada ? 'Selecciona una ficha antes de guardar' : cargandoHorarioFicha ? 'Cargando asignaciones de la ficha…' : errorHorarioFicha ? 'Reintenta la carga del horario antes de guardar' : undefined}
+            title={idEditar !== null && !edicionSegura ? 'Falta información para editar este horario con seguridad' : !catalogos ? 'Cargando datos…' : cargandoEdicion ? 'Cargando horario a modificar…' : !fichaSeleccionada ? 'Selecciona una ficha antes de guardar' : cargandoHorarioFicha ? 'Cargando asignaciones de la ficha…' : errorHorarioFicha ? 'Reintenta la carga del horario antes de guardar' : undefined}
             className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container disabled:cursor-not-allowed disabled:opacity-60"
           >
             {guardando ? 'Guardando…' : idEditar !== null ? 'Guardar cambios' : guardarComoBorrador ? 'Guardar borrador' : 'Guardar y publicar'}
@@ -634,7 +632,7 @@ export function NuevoHorario() {
         </p>
       )}
 
-      <div className={`grid gap-4 ${idEditar ? 'xl:grid-cols-[minmax(0,1fr)_280px]' : 'xl:grid-cols-[18rem_minmax(0,1fr)_17rem]'}`}>
+      <div className={`grid gap-4 ${idEditar ? '' : 'xl:grid-cols-[18rem_minmax(0,1fr)]'}`}>
         {!idEditar && (
           <section
             className="flex h-[38rem] max-h-[calc(100vh-10rem)] min-h-0 min-w-0 flex-col rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800"
@@ -806,63 +804,6 @@ export function NuevoHorario() {
           ) : null}
         </main>
 
-        <aside className="flex flex-col gap-4 print:hidden">
-          {!idEditar && fichaSeleccionada && (
-            <section className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-              <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-on-surface dark:text-slate-100">
-                <span className="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">assignment</span>
-                Resumen de ficha
-              </h2>
-              <p className="font-semibold text-on-surface dark:text-slate-100">{fichaSeleccionada.codigoFicha}</p>
-              <p className="text-xs text-on-surface-variant dark:text-slate-400">{fichaSeleccionada.programa.nombrePrograma}</p>
-              <div className="mt-3 rounded-lg bg-surface px-3 py-2 text-xs dark:bg-slate-900/60">
-                {cargandoHorarioFicha
-                  ? 'Consultando asignaciones…'
-                  : errorHorarioFicha
-                    ? 'No se pudo consultar el estado del horario.'
-                    : `${horariosFicha?.datos.length ?? 0} asignaciones de horario`}
-              </div>
-            </section>
-          )}
-          <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
-            <div className="flex items-center gap-2 border-b border-outline-variant bg-error-container/40 px-4 py-3 dark:border-slate-700 dark:bg-red-950/20">
-              <span className="material-symbols-outlined text-[18px] text-error dark:text-red-400">shield</span>
-              <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Auditoría en Tiempo Real</p>
-            </div>
-            <div className="p-4">
-              <p className="mb-3 text-xs text-on-surface-variant dark:text-slate-400">
-                Consulta los cruces ya detectados entre horarios guardados de la sede antes de programar más clases —
-                mismas 5 categorías del motor real: cruce de ficha, instructor, ambiente, resultado repetido y regla
-                institucional (RF-011).
-              </p>
-              <Link
-                to="/horarios/auditoria"
-                className="inline-flex items-center gap-1 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-on-primary hover:bg-on-primary-container"
-              >
-                Ver auditoría de cruces →
-              </Link>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-            <p className="mb-2 font-semibold text-on-surface dark:text-slate-100">Dirección sede principal y sedes</p>
-            <ul className="space-y-0.5">
-              {SEDES.map((sede) => (
-                <li key={sede.nombre}>
-                  <span className="font-medium text-on-surface-variant dark:text-slate-300">{sede.nombre}:</span> {sede.direccion}
-                </li>
-              ))}
-            </ul>
-            <p className="mt-3 text-xs text-on-surface-variant dark:text-slate-400">
-              Plantilla base:{' '}
-              <code className="rounded bg-surface-container px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">
-                _Docs/Diseño/plantillas-institucionales/disponibilidad-ficha-3228973B.pdf
-              </code>
-              . Reglas de color/tipografía en{' '}
-              <code className="rounded bg-surface-container px-1.5 py-0.5 dark:bg-slate-900 dark:text-slate-300">_Docs/Diseño/GUIA_DE_MARCA.md</code>.
-            </p>
-          </div>
-        </aside>
       </div>
 
       {conflictoPendiente && (

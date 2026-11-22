@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
@@ -8,7 +9,9 @@ function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <AppRouter />
+          <Suspense fallback={<div role="status" className="grid min-h-screen place-items-center bg-surface text-sm text-on-surface-variant">Cargando vista…</div>}>
+            <AppRouter />
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>

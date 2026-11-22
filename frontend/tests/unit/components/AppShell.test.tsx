@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { renderConProviders } from '../../helpers/renderConProviders'
 import { AppShell } from '../../../src/components/AppShell'
 import type { Notificacion, Usuario } from '../../../src/types/api'
@@ -35,6 +35,17 @@ function mockearApiGet(perfil: Usuario, notificaciones: Notificacion[] = []) {
 }
 
 describe('AppShell', () => {
+  beforeAll(() => {
+    // jsdom no expone los métodos de apertura de HTMLDialogElement.
+    HTMLDialogElement.prototype.showModal = function () { this.open = true }
+    HTMLDialogElement.prototype.close = function () { this.open = false }
+  })
+
+  afterAll(() => {
+    Reflect.deleteProperty(HTMLDialogElement.prototype, 'showModal')
+    Reflect.deleteProperty(HTMLDialogElement.prototype, 'close')
+  })
+
   it('aplica el tema guardado en el backend aunque el navegador tenga otro (T-9)', async () => {
     localStorage.setItem('sihs-tema', 'claro')
     mockearApiGet({ ...crearPerfil(['Instructor']), preferenciaTema: 'oscuro' })
@@ -77,7 +88,7 @@ describe('AppShell', () => {
     fireEvent.click(botonGrupo)
 
     for (const etiqueta of ['Mi horario', 'Mis instructores', 'Notificaciones']) {
-      expect(screen.getByText(etiqueta)).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: etiqueta })).toBeInTheDocument()
     }
   })
 
@@ -95,8 +106,8 @@ describe('AppShell', () => {
     const botonGrupo = await screen.findByRole('button', { name: 'Mi trabajo' })
     fireEvent.click(botonGrupo)
 
-    expect(screen.getByText('Mi horario')).toBeInTheDocument()
-    expect(screen.getByText('Asistencia')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Mi horario' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Asistencia' })).toBeInTheDocument()
   })
 
   it('un Coordinador no ve el grupo "Mi trabajo" ni sus pantallas exclusivas de Aprendiz/Instructor', async () => {
@@ -128,10 +139,10 @@ describe('AppShell', () => {
     const botonGrupo = await screen.findByRole('button', { name: 'Administración' })
     fireEvent.click(botonGrupo)
 
-    expect(screen.getByText('Solicitudes de acceso')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Solicitudes de acceso' })).toBeInTheDocument()
   })
 
-  it('un Coordinador no ve "Solicitudes de acceso" (soloAdmin)', async () => {
+  it('un Coordinador no encuentra "Solicitudes de acceso" (soloAdmin)', async () => {
     mockearApiGet(crearPerfil(['Coordinador']))
     renderConProviders(
       <AppShell activo="Inicio">
@@ -139,10 +150,27 @@ describe('AppShell', () => {
       </AppShell>,
     )
 
-    const botonGrupo = await screen.findByRole('button', { name: 'Administración' })
-    fireEvent.click(botonGrupo)
+    await screen.findByRole('button', { name: 'Programación' })
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar módulo' }))
+    const dialogo = screen.getByRole('dialog', { name: 'Buscar módulo' })
+    fireEvent.change(within(dialogo).getByPlaceholderText('Buscar módulo'), { target: { value: 'solicitudes de acceso' } })
 
-    expect(screen.queryByText('Solicitudes de acceso')).not.toBeInTheDocument()
+    expect(within(dialogo).getByText('No hay módulos que coincidan')).toBeInTheDocument()
+  })
+
+  it('ofrece un buscador de módulos con solo los destinos permitidos por rol', async () => {
+    mockearApiGet(crearPerfil(['Administrador']))
+    renderConProviders(<AppShell activo="Inicio"><p>contenido</p></AppShell>)
+    await screen.findByRole('button', { name: 'Programación' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Buscar módulo' }))
+    const dialogo = screen.getByRole('dialog', { name: 'Buscar módulo' })
+    const buscador = within(dialogo).getByPlaceholderText('Buscar módulo')
+
+    fireEvent.change(buscador, { target: { value: 'crear' } })
+
+    expect(within(dialogo).getByRole('link', { name: 'Crear horario' })).toHaveAttribute('href', '/horarios/nuevo')
+    expect(within(dialogo).queryByText('Mi asistencia')).not.toBeInTheDocument()
   })
 
   it('consulta de nuevo las notificaciones persistidas al abrir la campana', async () => {

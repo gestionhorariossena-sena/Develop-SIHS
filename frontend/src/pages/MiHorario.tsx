@@ -115,16 +115,6 @@ function semanaISO(fecha: Date): number {
  * (`horasMaximas` null) no hay tope que evaluar — se muestra ese caso
  * aparte, no como "Aprobado".
  *
- * "Alertas Operativas" (columna derecha del mockup) depende del Módulo de
- * Asistencia y de Solicitudes de cambio/permuta — ninguno de los dos existe
- * en el backend todavía (tickets aparte, mismo epic), así que la sección se
- * queda en un estado disabled+tooltip explicando por qué, en vez de mostrar
- * las alertas de ejemplo del mockup (asistencia pendiente, permuta
- * aprobada) como si fueran reales. El botón "Solicitar Novedad o Permuta"
- * vive en esa misma tarjeta (igual que el mockup) y abre el formulario del
- * ticket de Solicitudes de cambio/permuta — deshabilitado por la misma
- * razón.
- *
  * "Mis Fichas Activas" (columna derecha) sí es real en la parte que puede
  * serlo: código de ficha, nombre del programa y aprendices totales vienen
  * de GET /fichas/ cruzado con las fichas de `horarios`. "Vocero" (ticket de
@@ -237,7 +227,7 @@ export function MiHorario() {
   return (
     <AppShell activo="Mi horario">
       <nav className="mb-3 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
         <span>/</span>
         <span className="text-on-surface">Mi Horario</span>
       </nav>
@@ -343,9 +333,9 @@ export function MiHorario() {
           {!perfil || cargandoCarga ? (
             <p className="text-sm text-on-surface-variant">{!perfil ? 'Cargando…' : 'Calculando…'}</p>
           ) : errorCarga ? (
-            <p className="text-sm text-on-surface-variant">No se pudo validar el tope de RF-011.</p>
+            <p className="text-sm text-on-surface-variant">No se pudo validar el límite de carga docente.</p>
           ) : cargaSemanal?.horasMaximas == null ? (
-            <p className="text-sm text-on-surface-variant">Sin tipo de contrato definido — no hay tope de RF-011 que evaluar.</p>
+            <p className="text-sm text-on-surface-variant">Falta el tipo de contrato para evaluar el límite de carga docente.</p>
           ) : excedeTopeRf011 ? (
             <>
               <p className="text-2xl font-bold text-red-600">
@@ -354,7 +344,7 @@ export function MiHorario() {
               </p>
               <p className="mt-1 flex items-center gap-1 text-xs font-medium text-red-600">
                 <span className="material-symbols-outlined text-[15px]">error</span>
-                Supera el máximo de RF-011
+                Supera el límite de carga docente
               </p>
             </>
           ) : (
@@ -390,8 +380,8 @@ export function MiHorario() {
           ))}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 rounded-xl border border-outline-variant bg-surface-container-lowest p-1">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="flex max-w-full items-center gap-1 rounded-xl border border-outline-variant bg-surface-container-lowest p-1">
             <button
               type="button"
               aria-label="Semana anterior"
@@ -400,7 +390,7 @@ export function MiHorario() {
                 anterior.setDate(anterior.getDate() - 7)
                 setSemanaInicio(anterior)
               }}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
@@ -413,7 +403,7 @@ export function MiHorario() {
                 siguiente.setDate(siguiente.getDate() + 7)
                 setSemanaInicio(siguiente)
               }}
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container-high"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_right</span>
             </button>
@@ -438,23 +428,11 @@ export function MiHorario() {
             Hoy
           </button>
 
-          {/* Pantalla del ticket "[Frontend] Pantalla Detalle de Franja y
-              Ambiente" (mismo epic) todavía no existe — deshabilitado en vez
-              de navegar a una ruta que no resuelve a nada. */}
-          <button
-            type="button"
-            disabled
-            title="Disponible cuando se publique la pantalla de Detalle de Franja y Ambiente (mismo epic)"
-            className="flex cursor-not-allowed items-center gap-1.5 rounded-xl bg-primary/50 px-4 py-2 text-sm font-semibold text-on-primary"
-          >
-            <span className="material-symbols-outlined text-[18px]">meeting_room</span>
-            Abrir Detalle de Franja y Ambiente
-          </button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 lg:col-span-2">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="min-w-0 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 lg:col-span-2">
           <div className="mb-3 px-1">
             <h2 className="text-base font-semibold text-on-surface">Calendario Semanal de Formación</h2>
             <p className="text-xs text-on-surface-variant">Franjas oficiales de formación presencial y asesorías</p>
@@ -478,32 +456,13 @@ export function MiHorario() {
         </div>
 
         <div className="flex flex-col gap-6">
-          {/* "Alertas Operativas" (mockup) depende de dos backends que no
-              existen todavía (Módulo de Asistencia, Solicitudes de cambio/
-              permuta) — no se inventan alertas de ejemplo, la sección queda
-              disabled+tooltip explicando la dependencia. */}
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
-            <div className="mb-1 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[18px] text-tertiary">notification_important</span>
-              <p className="text-sm font-semibold text-on-surface">Alertas Operativas</p>
+          <section aria-labelledby="acciones-horario" className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <h2 id="acciones-horario" className="mb-2 text-sm font-semibold text-on-surface">Gestión de clases</h2>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+              <Link to="/asistencia" className="font-medium text-primary hover:underline">Pasar lista</Link>
+              <Link to="/mis-solicitudes-cambio" className="font-medium text-primary hover:underline">Mis solicitudes de cambio</Link>
             </div>
-            <p
-              className="text-sm text-on-surface-variant"
-              title="Disponible cuando existan el Módulo de Asistencia y Solicitudes de cambio/permuta (mismo epic)"
-            >
-              Todavía no hay alertas de asistencia ni de permutas conectadas — esta sección se activa cuando esos
-              módulos estén disponibles.
-            </p>
-            <button
-              type="button"
-              disabled
-              title="Disponible cuando exista el módulo de Solicitudes de cambio/permuta (mismo epic)"
-              className="mt-3 flex w-full cursor-not-allowed items-center justify-center gap-1.5 rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant"
-            >
-              <span className="material-symbols-outlined text-[16px]">swap_horiz</span>
-              Solicitar Novedad o Permuta
-            </button>
-          </div>
+          </section>
 
           {/* "Mis Fichas Activas" (mockup): código, programa y aprendices
               son reales (GET /fichas/); vocero y avance curricular todavía
@@ -528,17 +487,17 @@ export function MiHorario() {
                     </div>
                     <p className="mt-1 text-xs font-medium leading-tight text-on-surface">{ficha.programa.nombrePrograma}</p>
                     <div className="mt-2 flex items-center justify-between text-[11px] text-on-surface-variant">
-                      <span title="Pendiente: ticket de vocero/subvocero (mismo epic)">Vocero: No disponible</span>
+                      <span>Vocero: No disponible</span>
                       <button
                         type="button"
                         disabled
-                        title="Disponible cuando exista mensajería instructor-aprendiz (Epic Vistas del Aprendiz)"
+                        title="La mensajería con aprendices aún no está disponible"
                         className="flex cursor-not-allowed items-center gap-1 font-bold text-on-surface-variant/50"
                       >
                         <span className="material-symbols-outlined text-[13px]">chat</span> Contactar
                       </button>
                     </div>
-                    <p className="mt-1 text-[11px] text-on-surface-variant" title="Pendiente: ticket de avance curricular (mismo epic)">
+                    <p className="mt-1 text-[11px] text-on-surface-variant">
                       Avance curricular: No disponible
                     </p>
                   </li>

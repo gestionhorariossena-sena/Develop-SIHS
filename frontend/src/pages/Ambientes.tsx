@@ -251,7 +251,7 @@ export function Ambientes() {
  <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
  <div>
  <nav className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
- <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+ <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
  <span>/</span>
  <span className="text-on-surface">Ambientes</span>
  </nav>

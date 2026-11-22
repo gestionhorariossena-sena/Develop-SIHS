@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { GridHorario } from '../components/horario/GridHorario'
+import { GridAsistente } from '../components/horario/GridAsistente'
+import { celdasDesdeHorarios } from '../components/horario/celdasAsistente'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { apiDelete, apiGet, apiPatch, ApiError } from '../services/api'
-import type { DiaSemana, Horario, HorarioGuardado } from '../types/api'
+import type { DiaSemana, Horario, HorarioGuardado, Trimestre } from '../types/api'
 
 function formatearFecha(iso: string) {
   return new Date(iso).toLocaleString('es-CO', {
@@ -19,30 +21,17 @@ function formatearHora(hhmmss: string) {
   return hhmmss.slice(0, 5)
 }
 
-/**
- * Backlog de horarios completos guardados desde `NuevoHorario.tsx` (tabla
- * `horarios_guardados`) — la lista principal es solo eso, un horario
- * completo por fila; las clases individuales (`GET /horarios/`, la tabla
- * que de verdad valida cruces) NO se listan sueltas acá — se ven solo
- * dentro del horario al que pertenecen (pedido 2026-09-03: verlas
- * mezcladas en la misma lista se sentía desordenado). Un horario real que
- * no pertenece a ningún snapshot (por ejemplo, creado directo por API) no
- * aparece acá — sigue siendo visible y manejable desde "Horarios
- * completos" (`/horarios/completos`), que sí lista cada clase suelta.
- *
- * Clic en un horario para verlo completo (con datos vigentes, no
- * congelados — ver `vistaSnapshotEnVivo` más abajo), exportarlo a PDF,
- * reabrirlo en el creador ("Modificar") o gestionar sus clases una por
- * una (activar/desactivar/borrar).
- */
+/** Historial de horarios completos y bloques creados desde el asistente. */
 export function HistorialHorarios() {
   const [horarios, setHorarios] = useState<HorarioGuardado[] | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [seleccionadoId, setSeleccionadoId] = useState<number | null>(null)
+  const [grupoSeleccionadoId, setGrupoSeleccionadoId] = useState<string | null>(null)
 
   const [horariosReales, setHorariosReales] = useState<Horario[] | null>(null)
   const [errorReales, setErrorReales] = useState<string | null>(null)
   const [diasPorId, setDiasPorId] = useState<Record<number, string>>({})
+  const [trimestres, setTrimestres] = useState<Trimestre[]>([])
   const [confirmandoId, setConfirmandoId] = useState<number | null>(null)
   const [borrandoId, setBorrandoId] = useState<number | null>(null)
 
@@ -71,6 +60,7 @@ export function HistorialHorarios() {
       .catch((err) =>
         setErrorReales(err instanceof ApiError ? err.message : 'No se pudieron cargar las clases guardadas.'),
       )
+    apiGet<Trimestre[]>('/trimestres/').then(setTrimestres).catch(() => {})
   }, [])
 
   async function confirmarEliminar(idHorario: number) {
@@ -129,8 +119,24 @@ export function HistorialHorarios() {
 
   const seleccionado = horarios?.find((h) => h.idHorarioGuardado === seleccionadoId) ?? null
 
+  const idsVinculados = new Set((horarios ?? []).flatMap((h) => h.idsHorarios ?? []))
+  const gruposMap = new Map<string, Horario[]>()
+  for (const horario of horariosReales ?? []) {
+    if (idsVinculados.has(horario.idHorario)) continue
+    const clave = `${horario.idFicha}:${horario.idTrimestre}`
+    gruposMap.set(clave, [...(gruposMap.get(clave) ?? []), horario])
+  }
+  const gruposImportados = [...gruposMap].map(([clave, bloques]) => ({
+    clave,
+    bloques,
+    ficha: bloques[0].fichaCodigo ?? `Ficha ${bloques[0].idFicha}`,
+    fecha: bloques.reduce((reciente, bloque) => bloque.fechaCreacion > reciente ? bloque.fechaCreacion : reciente, bloques[0].fechaCreacion),
+  })).sort((a, b) => b.fecha.localeCompare(a.fecha))
+  const grupoSeleccionado = gruposImportados.find((grupo) => grupo.clave === grupoSeleccionadoId) ?? null
+  const nombrePeriodo = (id: number) => trimestres.find((trimestre) => trimestre.idTrimestre === id)?.nombre ?? `Período ${id}`
+
   const cargando = !horarios && !error && !horariosReales && !errorReales
-  const hayFilas = horarios && horarios.length > 0
+  const hayFilas = (horarios?.length ?? 0) > 0 || gruposImportados.length > 0
 
   // Más reciente primero — con horarios_guardados no hay fechaModificacion
   // propia (es un snapshot, no algo que se edite in-place), así que el
@@ -161,8 +167,7 @@ export function HistorialHorarios() {
       <div className="mb-6 print:hidden">
         <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Historial de horarios</h1>
         <p className="text-sm text-on-surface-variant dark:text-slate-400">
-          Horarios completos guardados desde el creador. Abre uno para ver sus clases, modificarlo,
-          exportarlo a PDF o activar/desactivar/borrar una clase puntual.
+          Consulta horarios guardados desde el creador o el cargador de IA. Abre uno para ver sus clases y gestionarlo.
         </p>
       </div>
 
@@ -172,17 +177,19 @@ export function HistorialHorarios() {
         </p>
       )}
 
-      {!seleccionado && (
+      {!seleccionado && !grupoSeleccionado && (
         <div className="print:hidden">
           {cargando && <p className="py-12 text-center text-sm text-on-surface-variant">Cargando…</p>}
 
           {!cargando && !hayFilas && (
             <p className="text-sm text-on-surface-variant">
-              Todavía no se ha guardado ningún horario — créalo desde "Horarios" en el menú.
+              Todavía no se ha guardado ningún horario.
             </p>
           )}
 
-          {hayFilas && (
+          {snapshotsOrdenados.length > 0 && (
+            <section aria-label="Horarios completos del creador">
+            <h2 className="mb-3 text-base font-semibold text-on-surface">Horarios del creador</h2>
             <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
               <table className="w-full text-left text-sm">
                 <thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
@@ -261,8 +268,48 @@ export function HistorialHorarios() {
                 </tbody>
               </table>
             </div>
+            </section>
+          )}
+          {gruposImportados.length > 0 && (
+            <section aria-label="Horarios del cargador y otros bloques" className={snapshotsOrdenados.length ? 'mt-7' : ''}>
+              <h2 className="mb-1 text-base font-semibold text-on-surface">Horarios del cargador y otros bloques</h2>
+              <p className="mb-3 text-sm text-on-surface-variant">Bloques guardados sin un horario completo del creador, agrupados por ficha y período académico.</p>
+              <div className="overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
+                <table className="w-full min-w-[640px] text-left text-sm">
+                  <thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Período académico</th><th className="px-4 py-3">Bloques</th><th className="px-4 py-3">Último guardado</th><th className="px-4 py-3" /></tr></thead>
+                  <tbody className="divide-y divide-outline-variant">{gruposImportados.map((grupo) => <tr key={grupo.clave}>
+                    <td className="px-4 py-3 font-semibold text-on-surface">{grupo.ficha}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{nombrePeriodo(grupo.bloques[0].idTrimestre)}</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{grupo.bloques.length} · {grupo.bloques.filter((h) => !h.publicado).length} en borrador</td>
+                    <td className="px-4 py-3 text-on-surface-variant">{formatearFecha(grupo.fecha)}</td>
+                    <td className="px-4 py-3 text-right"><button type="button" onClick={() => setGrupoSeleccionadoId(grupo.clave)} className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface">Ver bloques</button></td>
+                  </tr>)}</tbody>
+                </table>
+              </div>
+            </section>
           )}
         </div>
+      )}
+
+      {grupoSeleccionado && (
+        <section aria-label={`Horario de ${grupoSeleccionado.ficha}`}>
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
+            <button type="button" onClick={() => setGrupoSeleccionadoId(null)} className="rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface">← Volver al historial</button>
+            <ExportarPdfButton />
+          </div>
+          <div className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+            <h2 className="text-lg font-semibold text-on-surface">Ficha {grupoSeleccionado.ficha}</h2>
+            <p className="text-sm text-on-surface-variant">{grupoSeleccionado.bloques.length} bloque{grupoSeleccionado.bloques.length === 1 ? '' : 's'} guardado{grupoSeleccionado.bloques.length === 1 ? '' : 's'} · {nombrePeriodo(grupoSeleccionado.bloques[0].idTrimestre)}</p>
+          </div>
+          <div className="mb-4 overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest p-4"><div className="min-w-[760px]"><GridAsistente celdas={celdasDesdeHorarios(grupoSeleccionado.bloques)} soloFranjasOcupadas /></div></div>
+          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 print:hidden">
+            <h3 className="mb-2 font-semibold text-on-surface">Bloques de esta ficha</h3>
+            <ul className="divide-y divide-outline-variant">{grupoSeleccionado.bloques.map((bloque) => <li key={bloque.idHorario} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+              <div><p className="font-semibold text-on-surface">{bloque.resultadoDescripcion ?? bloque.resultadoCodigo ?? `Bloque #${bloque.idHorario}`}</p><p className="text-on-surface-variant">{bloque.dias.map((dia) => diasPorId[dia] ?? dia).join(', ')} · {formatearHora(bloque.horaInicio)}–{formatearHora(bloque.horaFin)} · {bloque.instructorNombre ?? 'Sin instructor'} · {bloque.publicado ? 'Publicado' : 'Borrador'}</p></div>
+              <Link to={`/horarios/completos?idHorario=${bloque.idHorario}`} className="rounded-xl border border-outline px-3 py-2 font-semibold text-on-surface hover:bg-surface">Ver y gestionar</Link>
+            </li>)}</ul>
+          </div>
+        </section>
       )}
 
       {seleccionado && (

@@ -194,7 +194,7 @@ export function Instructores() {
   return (
     <AppShell activo="Instructores">
       <nav className="mb-2 text-xs text-on-surface-variant">
-        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
         <span className="mx-1.5 text-outline">/</span>
         <span className="font-semibold text-on-surface">Instructores</span>
       </nav>
@@ -210,7 +210,7 @@ export function Instructores() {
           <button
             type="button"
             disabled
-            title="Aún no implementado en el backend"
+            title="Esta opción aún no está disponible"
             className="cursor-not-allowed rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant opacity-60 dark:border-slate-700"
           >
             Exportar carga docente
@@ -218,7 +218,7 @@ export function Instructores() {
           <button
             type="button"
             disabled
-            title="Aún no implementado en el backend"
+            title="Esta opción aún no está disponible"
             className="cursor-not-allowed rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary opacity-60"
           >
             + Registrar instructor
@@ -328,7 +328,7 @@ export function Instructores() {
                   />
                 </div>
                 {cargaVigente.horasAsignadas > cargaVigente.horasMaximas && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">Supera el máximo de RF-011.</p>
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">Supera el límite de carga docente.</p>
                 )}
                 {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
                     real del backend. CargaSemanal solo trae horasAsignadas/
@@ -350,7 +350,7 @@ export function Instructores() {
                 </div>
               </>
             ) : (
-              <p className="text-xs text-on-surface-variant dark:text-slate-400">Sin tipo de contrato definido — no se puede calcular el tope de RF-011.</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">Falta el tipo de contrato para calcular el límite de carga docente.</p>
             )}
           </SeccionDrawer>
 
@@ -399,13 +399,13 @@ export function Instructores() {
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-on-tertiary-container dark:text-amber-200">Alerta de solicitud de cambio (ejemplo)</p>
                   <p className="text-xs text-on-tertiary-container/80 dark:text-amber-300/80">
-                    Un instructor solicita permuta de ambiente por cruce técnico detectado — así se vería cuando el flujo esté conectado al backend.
+                    Las solicitudes de cambio de ambiente aparecerán aquí cuando estén disponibles.
                   </p>
                 </div>
                 <button
                   type="button"
                   disabled
-                  title="Aún no implementado en el backend"
+                  title="Esta opción aún no está disponible"
                   className="shrink-0 cursor-not-allowed rounded-lg border border-outline px-2.5 py-1 text-xs font-semibold text-on-surface-variant opacity-60 dark:border-slate-700"
                 >
                   Revisar

@@ -13,11 +13,11 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-surface dark:bg-slate-900">
-      <div className="h-1.5 w-full bg-primary" />
+    <div className="flex min-h-screen flex-col bg-surface">
+      <div className="h-1 w-full bg-secondary" />
 
       <main className="flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md rounded-2xl bg-surface-container-lowest p-8 shadow-lg shadow-slate-200/60 dark:bg-slate-800 dark:shadow-slate-950/40">
+        <div className="w-full max-w-md rounded-2xl border border-outline-variant bg-surface-container-lowest p-8 shadow-sm">
           <div className="mb-6 flex items-center gap-3">
             <img src={senaLogo} alt="SENA" className="h-12 w-12 rounded-xl object-cover" />
             <div>

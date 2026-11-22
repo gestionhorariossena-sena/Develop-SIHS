@@ -108,6 +108,48 @@ def test_modelo_infactible_devuelve_none(monkeypatch):
     assert generar_horario(necesidades) is None
 
 
+def test_reserva_externa_con_solape_parcial_bloquea_la_franja(monkeypatch):
+    """Evita reproducir 07:00--09:00 contra una reserva 08:00--10:00."""
+    monkeypatch.setattr("app.scheduling.generator.PATRONES_DE_DIA", [(1,)])
+    necesidad = NecesidadHorario(
+        id_ficha=3407178, id_resultado=1, jornada="MAÑANA",
+        instructores_candidatos=["instructor-demo"], ambientes_candidatos=[201],
+    )
+    ocupados_instructor = {("instructor-demo", (time(8, 0), time(10, 0)), 1)}
+    ocupados_ambiente = {(201, (time(8, 0), time(10, 0)), 1)}
+
+    resultado = generar_horario(
+        [necesidad],
+        ocupados_instructor=ocupados_instructor,
+        ocupados_ambiente=ocupados_ambiente,
+    )
+
+    assert resultado is not None
+    bloque = resultado[0]
+    assert (bloque.hora_inicio, bloque.hora_fin) == (time(11, 0), time(13, 0))
+
+
+def test_reserva_externa_contigua_no_bloquea_la_franja(monkeypatch):
+    """08:00--10:00 puede empezar justo cuando termina 06:00--08:00."""
+    monkeypatch.setattr(
+        "app.scheduling.generator.FRANJAS_POR_JORNADA",
+        {"MAÑANA": [(time(8, 0), time(10, 0))]},
+    )
+    monkeypatch.setattr("app.scheduling.generator.PATRONES_DE_DIA", [(1,)])
+    necesidad = NecesidadHorario(
+        id_ficha=1, id_resultado=1, jornada="MAÑANA",
+        instructores_candidatos=["instructor-demo"], ambientes_candidatos=[201],
+    )
+
+    resultado = generar_horario(
+        [necesidad],
+        ocupados_instructor={("instructor-demo", (time(6, 0), time(8, 0)), 1)},
+    )
+
+    assert resultado is not None
+    assert (resultado[0].hora_inicio, resultado[0].hora_fin) == (time(8, 0), time(10, 0))
+
+
 def test_volumen_realista_no_se_cuelga_construyendo_el_modelo():
     # Reproduce el caso real que colgaba el asistente: varias fichas del
     # mismo programa compitiendo por decenas de resultados de aprendizaje

@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { CabeceraGestionHorarios } from '../components/horarios/CabeceraGestionHorarios'
 import { DrawerHorario } from '../components/horarios/DrawerHorario'
 import { GridHorario } from '../components/horario/GridHorario'
 import { GridSemanalInstructor } from '../components/horario/GridSemanalInstructor'
@@ -11,15 +12,6 @@ import { useGestionarHorariosData } from '../hooks/useGestionarHorariosData'
 import { filtrarHorarios, jornadaDeHorario } from './horario/filtrosGestionarHorarios'
 import { escribirGestionarHorariosQuery, leerGestionarHorariosQuery, normalizarRutaHorarioLegada, type GestionarHorariosQuery, type JornadaQuery } from './horario/gestionarHorariosQuery'
 import type { Ambiente, AuditoriaCrucesResponse, Ficha, Usuario } from '../types/api'
-
-// Las tres entradas de gestión conservan la misma fuente de bloques. Las
-// perspectivas por ficha, instructor y ambiente se abren desde el detalle
-// contextual de cada bloque, no se duplican como tabs de la lista global.
-const MODOS_VISTA = [
-  { etiqueta: 'Lista', ruta: '/horarios/completos', icono: 'format_list_bulleted' },
-  { etiqueta: 'Calendario', ruta: '/calendario', icono: 'calendar_month' },
-  { etiqueta: 'Conflictos', ruta: '/horarios/auditoria', icono: 'warning' },
-] as const
 
 const POR_PAGINA = 10
 
@@ -93,60 +85,19 @@ export function HorariosCompletos() {
 
   return (
     <AppShell activo="Gestionar horarios">
-      <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant dark:text-slate-400">
-        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
-        <span className="text-outline">/</span>
-        <span className="font-semibold text-primary">Vistas de Horarios</span>
-        <span className="text-outline">/</span>
-        <span>Coordinación Académica</span>
-      </nav>
+      <CabeceraGestionHorarios vista="lista" descripcion="Consulta bloques por ficha, instructor o ambiente" />
+      <p className="mb-2 text-xs tabular-nums text-on-surface-variant">{visibles.length} de {horarios.length} horarios</p>
 
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Gestionar horarios</h1>
-          <p className="text-sm text-on-surface-variant dark:text-slate-400">Cada horario con su ficha, instructor, ambiente y tema en un solo lugar.</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link to="/horarios/nuevo" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Guardar borrador</Link>
-          <Link to="/horarios/publicaciones-programadas" className="rounded-xl bg-primary px-3 py-2 text-sm font-semibold text-on-primary">Publicaciones programadas</Link>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary-container px-3 py-1 text-xs font-semibold text-on-secondary-container">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-secondary" aria-hidden="true" />
-            Auditoría de Malla Activa
-          </span>
-          <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">{visibles.length} de {horarios.length} horarios</p>
-        </div>
-      </div>
-
-      {/* Las entradas globales no sustituyen las perspectivas por entidad. */}
-      <div className="mb-4 max-w-full overflow-x-auto">
-      <nav aria-label="Cambiar vista de horarios" className="inline-flex w-max items-center gap-1 rounded-full bg-surface-container-low p-1 dark:bg-slate-900">
-        {MODOS_VISTA.map((modo) => (
-          <Link
-            key={modo.ruta}
-            to={`${modo.ruta}?${escribirGestionarHorariosQuery({ ...query, vista: modo.etiqueta === 'Lista' ? 'lista' : modo.etiqueta === 'Calendario' ? 'calendario' : 'conflictos' }).toString()}`}
-            className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-              modo.etiqueta === 'Lista'
-                ? 'bg-surface-container-lowest text-on-surface shadow-sm dark:bg-slate-800 dark:text-slate-100'
-                : 'text-on-surface-variant hover:text-on-surface dark:text-slate-400'
-            }`}
-          >
-            <span aria-hidden="true" className="material-symbols-outlined text-[18px]">{modo.icono}</span>
-            {modo.etiqueta}
-          </Link>
-        ))}
-      </nav>
-      </div>
-
-      <nav aria-label="Perspectiva de horarios" className="mb-4 flex flex-wrap gap-2">
-        {([['bloques', 'Bloques'], ['ficha', 'Por ficha'], ['instructor', 'Por instructor'], ['ambiente', 'Por ambiente']] as const).map(([perspectiva, etiqueta]) => <button key={perspectiva} type="button" onClick={() => actualizarQuery({ perspectiva })} className={`rounded-full px-3 py-1.5 text-sm font-semibold ${query.perspectiva === perspectiva ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}`}>{etiqueta}</button>)}
+      <nav aria-label="Perspectiva de horarios" className="mb-4 flex flex-wrap gap-1 border-b border-outline-variant dark:border-slate-700">
+        {([['bloques', 'Bloques'], ['ficha', 'Por ficha'], ['instructor', 'Por instructor'], ['ambiente', 'Por ambiente']] as const).map(([perspectiva, etiqueta]) => <button key={perspectiva} type="button" aria-pressed={query.perspectiva === perspectiva} onClick={() => actualizarQuery({ perspectiva })} className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary ${query.perspectiva === perspectiva ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface dark:text-slate-400'}`}>{etiqueta}</button>)}
       </nav>
 
       <div className="min-w-0">
-      <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Filtros de horarios">
+      <section className="mb-4 border-y border-outline-variant py-4 dark:border-slate-700" aria-label="Filtros de horarios">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Filtrar horarios</p>
-            {filtrosActivos > 0 && <span className="rounded-full bg-primary-container px-2 py-0.5 text-xs font-semibold text-on-primary-container">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
+            <p className="text-sm font-medium text-on-surface dark:text-slate-100">Filtrar horarios</p>
+            {filtrosActivos > 0 && <span className="rounded-md bg-primary-container px-1.5 py-0.5 font-mono text-xs tabular-nums text-on-primary-container">{filtrosActivos} activo{filtrosActivos === 1 ? '' : 's'}</span>}
             {filtrosActivos > 0 && (
               <button type="button" onClick={() => actualizarQuery({ q: undefined, jornada: undefined, idTrimestre: undefined, estado: undefined }, true)} className="text-sm font-medium text-primary hover:text-on-primary-container dark:text-sena-400">
                 Limpiar filtros
@@ -154,25 +105,26 @@ export function HorariosCompletos() {
             )}
           </div>
           <div className="flex gap-4">
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Horarios</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{horarios.length}</p></div>
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Fichas</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{new Set(horarios.map((h) => h.idFicha)).size}</p></div>
-            <div className="text-right"><p className="text-[10px] font-medium uppercase tracking-wide text-on-surface-variant">Instructores</p><p className="text-sm font-bold text-on-surface dark:text-slate-100">{new Set(horarios.map((h) => h.idInstructor)).size}</p></div>
+            <div className="text-right"><p className="text-[11px] text-on-surface-variant">Horarios</p><p className="font-mono text-sm font-medium tabular-nums text-on-surface dark:text-slate-100">{horarios.length}</p></div>
+            <div className="text-right"><p className="text-[11px] text-on-surface-variant">Fichas</p><p className="font-mono text-sm font-medium tabular-nums text-on-surface dark:text-slate-100">{new Set(horarios.map((h) => h.idFicha)).size}</p></div>
+            <div className="text-right"><p className="text-[11px] text-on-surface-variant">Instructores</p><p className="font-mono text-sm font-medium tabular-nums text-on-surface dark:text-slate-100">{new Set(horarios.map((h) => h.idInstructor)).size}</p></div>
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           <div className="md:col-span-2">
             <label htmlFor="buscar-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Buscar</label>
-            <input id="buscar-horario" value={query.q ?? ''} onChange={(evento) => actualizarQuery({ q: evento.target.value || undefined }, true)} placeholder="Ficha, programa, instructor o ambiente" className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
+            <input id="buscar-horario" value={query.q ?? ''} onChange={(evento) => actualizarQuery({ q: evento.target.value || undefined }, true)} placeholder="Ficha, programa, instructor o ambiente" className="w-full rounded-lg border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100" />
           </div>
           <div>
             <label htmlFor="filtro-jornada-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Jornada</label>
-            <select id="filtro-jornada-horario" value={query.jornada ?? 'todas'} onChange={(evento) => actualizarQuery({ jornada: evento.target.value === 'todas' ? undefined : evento.target.value as JornadaQuery }, true)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <select id="filtro-jornada-horario" value={query.jornada ?? 'todas'} onChange={(evento) => actualizarQuery({ jornada: evento.target.value === 'todas' ? undefined : evento.target.value as JornadaQuery }, true)} className="w-full rounded-lg border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todas">Todas</option>
               <option value="manana">Mañana</option><option value="tarde">Tarde</option><option value="noche">Noche</option>
             </select>
           </div>
         </div>
-        <button type="button" aria-expanded={mostrarFiltrosAvanzados} onClick={() => setMostrarFiltrosAvanzados((abiertos) => !abiertos)} className="mt-3 text-sm font-semibold text-primary hover:text-on-primary-container">
+        <button type="button" aria-expanded={mostrarFiltrosAvanzados} onClick={() => setMostrarFiltrosAvanzados((abiertos) => !abiertos)} className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-primary hover:text-on-primary-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+          <span className="material-symbols-outlined text-[16px]" aria-hidden="true">tune</span>
           {mostrarFiltrosAvanzados ? 'Ocultar filtros avanzados' : 'Más filtros'}
         </button>
         {!mostrarFiltrosAvanzados && (query.idTrimestre || query.estado) && (
@@ -186,14 +138,14 @@ export function HorariosCompletos() {
         {mostrarFiltrosAvanzados && <div className="mt-3 grid gap-3 md:grid-cols-2">
           <div>
             <label htmlFor="filtro-trimestre-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Período académico</label>
-            <select id="filtro-trimestre-horario" value={query.idTrimestre ?? 'todos'} onChange={(evento) => actualizarQuery({ idTrimestre: evento.target.value === 'todos' ? undefined : evento.target.value }, true)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <select id="filtro-trimestre-horario" value={query.idTrimestre ?? 'todos'} onChange={(evento) => actualizarQuery({ idTrimestre: evento.target.value === 'todos' ? undefined : evento.target.value }, true)} className="w-full rounded-lg border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todos">Todos</option>
               {trimestres.map((trimestre) => <option key={trimestre.idTrimestre} value={trimestre.idTrimestre}>{trimestre.nombre}</option>)}
             </select>
           </div>
           <div>
             <label htmlFor="filtro-estado-horario" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Estado</label>
-            <select id="filtro-estado-horario" value={query.estado ?? 'todos'} onChange={(evento) => actualizarQuery({ estado: evento.target.value === 'todos' ? undefined : evento.target.value as GestionarHorariosQuery['estado'] }, true)} className="w-full rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+            <select id="filtro-estado-horario" value={query.estado ?? 'todos'} onChange={(evento) => actualizarQuery({ estado: evento.target.value === 'todos' ? undefined : evento.target.value as GestionarHorariosQuery['estado'] }, true)} className="w-full rounded-lg border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="todos">Todos</option>
               <option value="publicado">Publicado</option>
               <option value="borrador">Borrador</option>
@@ -204,25 +156,29 @@ export function HorariosCompletos() {
 
       {erroresCatalogos.length > 0 && <p role="status" className="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">La tabla se muestra, pero no se pudieron cargar: {erroresCatalogos.join(', ')}. Los datos relacionados pueden aparecer como “Sin definir”.</p>}
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p> : query.perspectiva !== 'bloques' ? <PerspectivaContextual perspectiva={query.perspectiva} query={query} fichas={fichas} instructores={instructores} ambientes={ambientes} horarios={visibles} auditoria={auditoria} cargandoAuditoria={cargandoAuditoria} errorAuditoria={errorAuditoria} actualizarQuery={actualizarQuery} /> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[820px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Ambiente</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Días</th><th className="px-4 py-3">Hora</th><th className="px-4 py-3">Período académico</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando horarios…</p> : query.perspectiva !== 'bloques' ? <PerspectivaContextual perspectiva={query.perspectiva} query={query} fichas={fichas} instructores={instructores} ambientes={ambientes} horarios={visibles} auditoria={auditoria} cargandoAuditoria={cargandoAuditoria} errorAuditoria={errorAuditoria} actualizarQuery={actualizarQuery} /> : <div className="overflow-hidden rounded-2xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full text-left text-sm md:min-w-[820px]"><thead className="bg-surface text-xs text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3 font-medium">Ficha</th><th className="hidden px-4 py-3 font-medium md:table-cell">Instructor</th><th className="hidden px-4 py-3 font-medium md:table-cell">Ambiente</th><th className="hidden px-4 py-3 font-medium md:table-cell">Jornada</th><th className="hidden px-4 py-3 font-medium md:table-cell">Días</th><th className="hidden px-4 py-3 font-medium md:table-cell">Hora</th><th className="hidden px-4 py-3 font-medium md:table-cell">Período académico</th><th className="px-4 py-3 font-medium">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((horario) => {
         const color = colorParaBloque(String(horario.idHorario))
         const expandido = horario.idHorario === Number(query.idHorario)
         const jornada = jornadaDeHorario(horario)
         return (
-            <tr key={horario.idHorario} onClick={() => actualizarQuery({ idHorario: expandido ? undefined : String(horario.idHorario) })} className="cursor-pointer hover:bg-surface-container-low dark:hover:bg-slate-700/60">
-              <td className={`border-l-4 px-4 py-3 font-semibold text-on-surface dark:text-slate-100 ${color.borde}`}>
-                <button type="button" aria-expanded={expandido} aria-haspopup="dialog" aria-label={`${expandido ? 'Ocultar' : 'Ver'} detalle del horario de la ficha ${horario.fichaCodigo}`} onClick={(evento) => { evento.stopPropagation(); actualizarQuery({ idHorario: expandido ? undefined : String(horario.idHorario) }) }} className="rounded text-left font-semibold text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-primary">
+            <tr key={horario.idHorario} onClick={() => actualizarQuery({ idHorario: expandido ? undefined : String(horario.idHorario) })} className="cursor-pointer transition-colors hover:bg-surface-container-low dark:hover:bg-slate-700/60">
+              <td className={`border-l-4 px-4 py-3 font-medium text-on-surface dark:text-slate-100 ${color.borde}`}>
+                <button type="button" aria-expanded={expandido} aria-haspopup="dialog" aria-label={`${expandido ? 'Ocultar' : 'Ver'} detalle del horario de la ficha ${horario.fichaCodigo}`} onClick={(evento) => { evento.stopPropagation(); actualizarQuery({ idHorario: expandido ? undefined : String(horario.idHorario) }) }} className="rounded text-left font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-primary">
                   {horario.fichaCodigo}
                 </button>
+                <p className="mt-1 text-xs font-normal leading-relaxed text-on-surface-variant md:hidden">
+                  {nombresDias(horario.dias, diasPorId)} · {formatoHora(horario.horaInicio)}–{formatoHora(horario.horaFin)}
+                  <br />{horario.instructorNombre ?? 'Instructor sin definir'} · {horario.ambienteNombre ?? 'Ambiente sin definir'}
+                </p>
               </td>
-              <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.instructorNombre ?? 'Sin definir'}</td>
-              <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{horario.ambienteNombre ?? 'Sin definir'}</td>
-              <td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${color.fondo} ${color.texto}`}>{etiquetaJornada(jornada)}</span></td>
-              <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{nombresDias(horario.dias, diasPorId)}</td>
-              <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</td>
-              <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{trimestrePorId.get(horario.idTrimestre)?.nombre ?? 'Sin definir'}</td>
+              <td className="hidden px-4 py-3 text-on-surface-variant dark:text-slate-300 md:table-cell">{horario.instructorNombre ?? 'Sin definir'}</td>
+              <td className="hidden px-4 py-3 text-on-surface-variant dark:text-slate-300 md:table-cell">{horario.ambienteNombre ?? 'Sin definir'}</td>
+              <td className="hidden px-4 py-3 md:table-cell"><span className={`rounded-md px-2 py-1 text-xs font-medium ${color.fondo} ${color.texto}`}>{etiquetaJornada(jornada)}</span></td>
+              <td className="hidden px-4 py-3 text-on-surface-variant dark:text-slate-300 md:table-cell">{nombresDias(horario.dias, diasPorId)}</td>
+              <td className="hidden px-4 py-3 font-mono text-xs tabular-nums text-on-surface-variant dark:text-slate-300 md:table-cell">{formatoHora(horario.horaInicio)}-{formatoHora(horario.horaFin)}</td>
+              <td className="hidden px-4 py-3 text-on-surface-variant dark:text-slate-300 md:table-cell">{trimestrePorId.get(horario.idTrimestre)?.nombre ?? 'Sin definir'}</td>
               <td className="px-4 py-3">
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeEstadoPublicacion(horario.publicado)}`}>
+                <span className={`rounded-md px-2 py-1 text-xs font-medium ${badgeEstadoPublicacion(horario.publicado)}`}>
                   {horario.publicado ? 'Publicado' : 'Borrador'}
                 </span>
               </td>
@@ -231,7 +187,7 @@ export function HorariosCompletos() {
       })}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay horarios que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (
-          <div className="flex items-center justify-between border-t border-outline-variant px-4 py-3 dark:border-slate-700">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-outline-variant px-4 py-3 dark:border-slate-700">
             <p className="text-xs text-on-surface-variant dark:text-slate-400">
               Página {paginaSegura} de {totalPaginas}
             </p>
@@ -240,7 +196,7 @@ export function HorariosCompletos() {
                 type="button"
                 onClick={() => actualizarQuery({ pagina: Math.max(1, paginaSegura - 1) })}
                 disabled={paginaSegura === 1}
-                className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="rounded-lg border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Anterior
               </button>
@@ -248,7 +204,7 @@ export function HorariosCompletos() {
                 type="button"
                 onClick={() => actualizarQuery({ pagina: Math.min(totalPaginas, paginaSegura + 1) })}
                 disabled={paginaSegura === totalPaginas}
-                className="rounded-xl border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
+                className="rounded-lg border border-outline px-3 py-1.5 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
               >
                 Siguiente
               </button>
@@ -260,10 +216,14 @@ export function HorariosCompletos() {
 
       {horarioSeleccionado && (
         <DrawerHorario
+          key={horarioSeleccionado.idHorario}
           horario={horarioSeleccionado}
           ficha={fichaPorId.get(horarioSeleccionado.idFicha)}
           instructor={instructorPorId.get(horarioSeleccionado.idInstructor)}
           ambiente={ambientePorId.get(horarioSeleccionado.idAmbiente)}
+          ambientes={ambientes}
+          instructores={instructores}
+          diasSemana={diasSemana}
           sede={ambientePorId.get(horarioSeleccionado.idAmbiente) ? sedes.find((sede) => sede.idSede === ambientePorId.get(horarioSeleccionado.idAmbiente)?.idSede) : undefined}
           trimestre={trimestrePorId.get(horarioSeleccionado.idTrimestre)}
           diasPorId={diasPorId}

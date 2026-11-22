@@ -10,6 +10,7 @@ export interface CeldaAsistente {
   ambienteNombre: string
   resultadoDescripcion: string | null
   horaInicio: string
+  horaFin?: string
   dias: number[]
   /** Solo aplica a `origen: 'nuevo'` -- refleja el resultado de la
    * revalidación en vivo (POST /horarios/validar) que ya corre el
@@ -37,6 +38,7 @@ export function celdasDesdeHorarios(horarios: Horario[]): CeldaAsistente[] {
     ambienteNombre: h.ambienteNombre ?? '—',
     resultadoDescripcion: h.resultadoDescripcion,
     horaInicio: h.horaInicio,
+    horaFin: h.horaFin,
     dias: h.dias,
   }))
 }

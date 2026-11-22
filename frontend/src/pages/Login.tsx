@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { AuthLayout } from '../components/AuthLayout'
 import { FormField } from '../components/FormField'
 import { apiGet, apiPost } from '../services/api'
@@ -25,6 +25,7 @@ import type { EstadoLogin } from '../types/api'
  */
 export function Login() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [identificador, setIdentificador] = useState('')
   const [password, setPassword] = useState('')
   const [recordarme, setRecordarme] = useState(false)
@@ -120,7 +121,12 @@ export function Login() {
     }
 
     setLoading(false)
-    navigate('/dashboard')
+    const destino: unknown = location.state?.destino
+    if (typeof destino === 'string' && destino.startsWith('/') && !destino.startsWith('//') && !destino.includes('\\')) {
+      navigate(destino, { replace: true })
+    } else {
+      navigate('/dashboard')
+    }
   }
 
   return (
@@ -178,7 +184,7 @@ export function Login() {
         <button
           type="submit"
           disabled={loading || bloqueado}
-          className="w-full rounded-xl bg-primary py-3 font-semibold text-on-primary transition hover:bg-on-primary-container disabled:opacity-60"
+          className="w-full rounded-xl bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-[#0f5534] dark:hover:bg-[#8ed5a0] disabled:opacity-60"
         >
           {loading ? 'Ingresando…' : bloqueado ? 'Cuenta bloqueada temporalmente' : 'Iniciar sesión'}
         </button>

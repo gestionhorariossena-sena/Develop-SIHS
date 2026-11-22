@@ -40,6 +40,18 @@ function horarioResumen(horario: Horario) {
   return `Ficha ${horario.fichaCodigo ?? horario.idFicha} · ${horario.instructorNombre ?? 'Instructor'} · ${horario.horaInicio.slice(0, 5)}–${horario.horaFin.slice(0, 5)}`
 }
 
+function periodoInicial(horarios: Horario[], trimestres: Trimestre[], idHorario: number): string {
+  const solicitado = horarios.find((horario) => horario.idHorario === idHorario && horario.activo && !horario.publicado)
+  if (solicitado) return String(solicitado.idTrimestre)
+
+  const hoy = new Intl.DateTimeFormat('sv-SE', { timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  const conBorradores = new Set(horarios.filter((horario) => horario.activo && !horario.publicado).map((horario) => horario.idTrimestre))
+  const vigente = trimestres.find((trimestre) => trimestre.fechaInicio <= hoy && trimestre.fechaFin >= hoy)
+  if (vigente && conBorradores.has(vigente.idTrimestre)) return String(vigente.idTrimestre)
+  const masReciente = [...trimestres].filter((trimestre) => conBorradores.has(trimestre.idTrimestre)).sort((a, b) => b.fechaInicio.localeCompare(a.fechaInicio))[0]
+  return masReciente ? String(masReciente.idTrimestre) : vigente ? String(vigente.idTrimestre) : ''
+}
+
 function fechaLocalBogota(instantanea: string) {
   const partes = new Intl.DateTimeFormat('sv-SE', {
     timeZone: 'America/Bogota', year: 'numeric', month: '2-digit', day: '2-digit',
@@ -84,19 +96,23 @@ export function PublicacionesProgramadas() {
     ])
     if (resultados[0].status === 'fulfilled') setPublicaciones(resultados[0].value)
     else setError(resultados[0].reason instanceof ApiError ? resultados[0].reason.message : 'No se pudieron consultar las publicaciones.')
-    if (resultados[1].status === 'fulfilled') setTrimestres(resultados[1].value)
+    const listaTrimestres = resultados[1].status === 'fulfilled' ? resultados[1].value : []
+    if (resultados[1].status === 'fulfilled') setTrimestres(listaTrimestres)
     if (resultados[2].status === 'fulfilled') {
-      setHorarios(resultados[2].value)
-      const inicial = resultados[2].value.find((horario) => horario.idHorario === idInicial && !horario.publicado)
+      const listaHorarios = resultados[2].value
+      setHorarios(listaHorarios)
+      const inicial = listaHorarios.find((horario) => horario.idHorario === idInicial && horario.activo && !horario.publicado)
       if (inicial) {
         setPeriodo(String(inicial.idTrimestre))
         setSeleccion([inicial.idHorario])
+      } else {
+        setPeriodo((actual) => actual || periodoInicial(listaHorarios, listaTrimestres, idInicial))
       }
     }
     try {
       setDisponibilidad(await apiGet<DisponibilidadWorker>('/publicaciones-programadas/disponibilidad'))
     } catch {
-      setDisponibilidad({ habilitado: false, ultimaSenal: null, segundosDesdeSenal: null, motivo: 'No fue posible verificar la señal reciente del worker.' })
+      setDisponibilidad({ habilitado: false, ultimaSenal: null, segundosDesdeSenal: null, motivo: 'No se pudo verificar la disponibilidad del servicio de publicación.' })
     }
     setCargando(false)
   }, [idInicial])
@@ -175,13 +191,12 @@ export function PublicacionesProgramadas() {
     <AppShell activo="Publicaciones programadas">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-primary">Coordinación académica</p>
           <h1 className="text-2xl font-bold text-on-surface dark:text-slate-100">Publicaciones programadas</h1>
           <p className="mt-1 max-w-2xl text-sm text-on-surface-variant dark:text-slate-400">Prepara, revisa y publica horarios en una fecha elegida. Los instructores y aprendices no ven tus borradores.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link to="/horarios/nuevo" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Guardar borrador</Link>
-          <Link to="/horarios/historial" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Historial</Link>
+          <Link to="/horarios/nuevo" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Crear horario</Link>
+          <Link to="/horarios/historial" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Historial de horarios</Link>
           <Link to="/notificaciones" className="rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container">Notificaciones</Link>
         </div>
       </div>
@@ -197,7 +212,7 @@ export function PublicacionesProgramadas() {
         </div>
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
           <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Publicación automática</p>
-          <p className={`mt-2 text-sm font-bold ${programacionActiva ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>{programacionActiva ? 'Worker disponible' : 'Pendiente de activación'}</p>
+          <p className={`mt-2 text-sm font-bold ${programacionActiva ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>{programacionActiva ? 'Servicio disponible' : 'Pendiente de activación'}</p>
         </div>
       </div>
       {disponibilidad && !programacionActiva && (
@@ -262,7 +277,7 @@ export function PublicacionesProgramadas() {
               const periodoPub = trimestres.find((item) => item.idTrimestre === publicacion.idTrimestre)
               return <article key={publicacion.idPublicacion} className="rounded-xl border border-outline-variant p-3 dark:border-slate-700">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-on-surface dark:text-slate-100">Publicación #{publicacion.idPublicacion}</h3><span title={`Estado backend: ${publicacion.estado}`} className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estadoEstilo(publicacion.estado)}`}>{ETIQUETAS[publicacion.estado]}</span></div><p className="mt-1 text-sm text-on-surface-variant">{periodoPub?.nombre ?? `Período académico ${publicacion.idTrimestre}`} · revisión {publicacion.revision} · {publicacion.idHorarios.length} horario(s)</p><p className="text-sm text-on-surface-variant">Ejecución: {new Date(publicacion.fechaEjecucion).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'short' })} (Bogotá)</p></div>
+                  <div><div className="flex flex-wrap items-center gap-2"><h3 className="font-bold text-on-surface dark:text-slate-100">Publicación #{publicacion.idPublicacion}</h3><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${estadoEstilo(publicacion.estado)}`}>{ETIQUETAS[publicacion.estado]}</span></div><p className="mt-1 text-sm text-on-surface-variant">{periodoPub?.nombre ?? `Período académico ${publicacion.idTrimestre}`} · revisión {publicacion.revision} · {publicacion.idHorarios.length} horario(s)</p><p className="text-sm text-on-surface-variant">Ejecución: {new Date(publicacion.fechaEjecucion).toLocaleString('es-CO', { timeZone: 'America/Bogota', dateStyle: 'medium', timeStyle: 'short' })} (Bogotá)</p></div>
                   {permiteGestion && <div className="flex gap-2">{programacionActiva && <button type="button" onClick={() => iniciarReprogramacion(publicacion)} disabled={ocupado} className="rounded-lg border border-outline px-3 py-1.5 text-sm font-semibold">Reprogramar</button>}<button type="button" onClick={() => void cancelar(publicacion.idPublicacion)} disabled={ocupado} className="rounded-lg border border-red-300 px-3 py-1.5 text-sm font-semibold text-red-700 disabled:opacity-50 dark:border-red-800 dark:text-red-300">Cancelar</button></div>}
                 </div>
                 {requiereRevision && <p className="mt-2 rounded-lg bg-amber-100 p-2 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-100">Una edición invalidó la aprobación. Revisa nuevamente el conjunto y programa una nueva revisión antes de publicar.</p>}
@@ -273,7 +288,7 @@ export function PublicacionesProgramadas() {
           </div>
         )}
       </section>
-      <p className="mt-4 text-xs text-on-surface-variant">Los avisos de publicación aparecen en el centro de notificaciones cuando el backend confirma el resultado; esta pantalla no crea notificaciones locales.</p>
+      <p className="mt-4 text-xs text-on-surface-variant">Recibirás un aviso en el centro de notificaciones cuando se confirme el resultado de la publicación.</p>
     </AppShell>
   )
 }

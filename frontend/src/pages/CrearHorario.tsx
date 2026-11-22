@@ -16,7 +16,7 @@ const NAVEGACION = [
   { etiqueta: 'Crear horario', ruta: '/horarios/crear', icono: 'add_circle' },
   { etiqueta: 'Gestionar horarios', ruta: '/horarios/completos', icono: 'calendar_month' },
   { etiqueta: 'Historial y borradores', ruta: '/horarios/historial', icono: 'inventory_2' },
-  { etiqueta: 'Calendario y cruces', ruta: '/horarios/auditoria', icono: 'verified_user' },
+  { etiqueta: 'Conflictos de horarios', ruta: '/horarios/auditoria', icono: 'verified_user' },
 ]
 
 const PASOS = [
@@ -90,7 +90,7 @@ export function CrearHorario() {
 
   return (
     <AppShell activo="Crear horario">
-      <div className="-mx-4 -mt-4 min-h-[calc(100vh-4rem)] bg-surface px-4 py-4 sm:-mx-6 sm:-mt-6 sm:px-6 lg:-mx-8 lg:-mt-8 lg:px-8">
+      <div className="bg-surface">
         <div className="mx-auto max-w-[1500px]">
           <div className="mb-4 flex items-center justify-between gap-3 border-b border-outline-variant pb-3 dark:border-slate-700">
             <div className="flex min-w-0 items-center gap-2 text-sm text-on-surface-variant dark:text-slate-400">
@@ -118,7 +118,7 @@ export function CrearHorario() {
               aria-label="Navegación de programación"
               className={`${menuMovilAbierto ? 'block' : 'hidden'} mb-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-3 shadow-sm lg:mb-0 lg:block lg:self-start dark:border-slate-700 dark:bg-slate-800`}
             >
-              <p className="px-3 pb-2 pt-1 text-xs font-bold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Programación</p>
+              <p className="px-3 pb-2 pt-1 text-xs font-medium text-on-surface-variant dark:text-slate-400">Programación</p>
               <nav className="space-y-1">
                 {NAVEGACION.map((item) => {
                   const activo = item.ruta === '/horarios/crear'
@@ -142,7 +142,7 @@ export function CrearHorario() {
               </nav>
             </aside>
 
-            <main className="min-w-0 pb-8">
+            <div className="min-w-0 pb-8">
               <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h1 className="text-2xl font-bold text-on-surface dark:text-slate-100">Crear horario</h1>
@@ -210,7 +210,7 @@ export function CrearHorario() {
               </section>
 
               <section aria-label="Resumen de auditoría" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary-container/40 px-4 py-3 dark:bg-sena-950/30"><div className="flex items-center gap-3"><span className="material-symbols-outlined rounded-lg bg-surface-container-lowest p-2 text-primary dark:bg-slate-800" aria-hidden="true">shield</span><p className="text-sm text-on-surface dark:text-slate-200"><strong>Auditoría preventiva:</strong> {cargando ? 'verificando horarios guardados…' : conflictosActivos === 0 ? 'no hay cruces activos en la auditoría actual.' : `${conflictosActivos} cruce${conflictosActivos === 1 ? '' : 's'} activo${conflictosActivos === 1 ? '' : 's'} requiere${conflictosActivos === 1 ? '' : 'n'} revisión.`}</p></div><Link to="/horarios/auditoria" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary">Abrir auditoría <span className="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_forward</span></Link></section>
-            </main>
+            </div>
           </div>
         </div>
       </div>

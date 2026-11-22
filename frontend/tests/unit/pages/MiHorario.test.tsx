@@ -95,13 +95,14 @@ describe('MiHorario', () => {
     expect(await screen.findByText('No tenés clases publicadas en esa jornada.')).toBeInTheDocument()
   })
 
-  it('el botón "Abrir Detalle de Franja y Ambiente" está deshabilitado (pantalla de otro ticket, mismo epic)', async () => {
+  it('permite abrir el detalle desde un bloque del horario', async () => {
     apiGetMock.mockImplementation((path: string) =>
       path.startsWith('/usuarios/me/horarios') ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
     )
     renderConProviders(<MiHorario />)
 
-    expect(await screen.findByRole('button', { name: /Abrir Detalle de Franja y Ambiente/ })).toBeDisabled()
+    const enlaces = await screen.findAllByRole('link', { name: /Detalle/ })
+    expect(enlaces[0]).toHaveAttribute('href', expect.stringContaining('/mi-horario/detalle-franja?horario='))
   })
 
   it('el ribbon de KPIs usa GET /usuarios/{id}/carga-semanal para la carga lectiva semanal', async () => {
@@ -120,18 +121,14 @@ describe('MiHorario', () => {
     expect(apiGetMock).toHaveBeenCalledWith('/usuarios/u1/carga-semanal')
   })
 
-  it('Alertas Operativas: no inventa alertas de ejemplo y deja "Solicitar Novedad o Permuta" deshabilitado', async () => {
+  it('ofrece accesos directos a asistencia y solicitudes de cambio', async () => {
     apiGetMock.mockImplementation((path: string) =>
       path.startsWith('/usuarios/me/horarios') ? Promise.resolve([HORARIO]) : Promise.reject(new Error('no mockeado')),
     )
     renderConProviders(<MiHorario />)
 
-    expect(await screen.findByText('Alertas Operativas')).toBeInTheDocument()
-    // El mockup trae alertas de ejemplo ("Registro de Asistencia Hoy",
-    // "Permuta Aprobada") — no deben aparecer, no hay backend real todavía.
-    expect(screen.queryByText('Registro de Asistencia Hoy')).not.toBeInTheDocument()
-    expect(screen.queryByText('Permuta Aprobada')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Solicitar Novedad o Permuta/ })).toBeDisabled()
+    expect(screen.getByRole('link', { name: 'Pasar lista' })).toHaveAttribute('href', '/asistencia')
+    expect(screen.getByRole('link', { name: 'Mis solicitudes de cambio' })).toHaveAttribute('href', '/mis-solicitudes-cambio')
   })
 
   it('Mis Fichas Activas: programa y aprendices son reales; vocero/avance curricular quedan como pendientes, no inventados', async () => {
@@ -177,7 +174,7 @@ describe('MiHorario', () => {
     renderConProviders(<MiHorario />)
 
     expect(await screen.findByText('Excede el tope')).toBeInTheDocument()
-    expect(screen.getByText('Supera el máximo de RF-011')).toBeInTheDocument()
+    expect(screen.getByText('Supera el límite de carga docente')).toBeInTheDocument()
     expect(screen.queryByText('Aprobado')).not.toBeInTheDocument()
   })
 
@@ -192,7 +189,7 @@ describe('MiHorario', () => {
     })
     renderConProviders(<MiHorario />)
 
-    expect(await screen.findByText('Sin tipo de contrato definido — no hay tope de RF-011 que evaluar.')).toBeInTheDocument()
+    expect(await screen.findByText('Falta el tipo de contrato para evaluar el límite de carga docente.')).toBeInTheDocument()
     expect(screen.queryByText('Aprobado')).not.toBeInTheDocument()
   })
 
@@ -250,13 +247,9 @@ describe('MiHorario', () => {
     await screen.findByText('Todavía no tenés clases publicadas en este período académico.')
     expect(screen.queryByRole('link', { name: 'Mi horario' })).not.toBeInTheDocument()
 
-    // "Fichas" e "Instructores" ahora viven en desplegables del navbar
-    // ("Formación"/"Recursos") — hay que abrirlos para que el link exista
-    // en el DOM.
-    await usuario.click(await screen.findByRole('button', { name: 'Formación' }))
+    await usuario.click(await screen.findByRole('button', { name: 'Datos académicos' }))
     expect(await screen.findByRole('link', { name: 'Fichas' })).toBeInTheDocument()
 
-    await usuario.click(await screen.findByRole('button', { name: 'Recursos' }))
     expect(await screen.findByRole('link', { name: 'Instructores' })).toBeInTheDocument()
   })
 
@@ -277,7 +270,7 @@ describe('MiHorario', () => {
     await usuario.click(await screen.findByRole('button', { name: 'Mi trabajo' }))
     expect(await screen.findByRole('link', { name: 'Mi horario' })).toBeInTheDocument()
 
-    await usuario.click(await screen.findByRole('button', { name: 'Formación' }))
+    await usuario.click(await screen.findByRole('button', { name: 'Datos académicos' }))
     expect(await screen.findByRole('link', { name: 'Fichas' })).toBeInTheDocument()
   })
 })

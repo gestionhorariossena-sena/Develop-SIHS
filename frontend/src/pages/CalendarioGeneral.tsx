@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { CabeceraGestionHorarios } from '../components/horarios/CabeceraGestionHorarios'
 import { DrawerRelacionados } from '../components/relacionados/DrawerRelacionados'
 import { formatoHora } from '../components/relacionados/formatoBloque'
 import { apiGet, ApiError } from '../services/api'
@@ -186,34 +187,13 @@ export function CalendarioGeneral() {
   const celdas = construirCeldasMes(mesActual)
 
   return (
-    <AppShell activo="Calendario general">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Calendario general</h1>
-          <p className="text-sm text-on-surface-variant dark:text-slate-400">Todas las clases programadas de la institución, mes a mes.</p>
-        </div>
-        <Link
-          to="/horarios/historial"
-          className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container"
-        >
-          Ver historial de horarios
-        </Link>
-      </div>
+    <AppShell activo="Gestionar horarios">
+      <CabeceraGestionHorarios vista="calendario" descripcion="Consulta las clases programadas por mes" />
 
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
 
       <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1.5 rounded-xl border border-outline-variant p-1 dark:border-slate-700">
-            <span className="rounded-md bg-sena-50 px-3 py-1.5 text-sm font-semibold text-sena-700 dark:bg-sena-950/50 dark:text-sena-300">Mes</span>
-            <span
-              title="Vista semanal — aún no implementada"
-              className="cursor-not-allowed rounded-md px-3 py-1.5 text-sm font-medium text-on-surface-variant dark:text-slate-500"
-            >
-              Semana
-            </span>
-          </div>
-
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -230,7 +210,7 @@ export function CalendarioGeneral() {
             >
               Hoy
             </button>
-            <p className="w-36 text-center text-sm font-semibold text-on-surface dark:text-slate-100">
+            <p className="min-w-0 flex-1 px-1 text-center text-sm font-semibold text-on-surface dark:text-slate-100">
               {NOMBRES_MES[mesActual.getMonth()]} {mesActual.getFullYear()}
             </p>
             <button
@@ -242,10 +222,13 @@ export function CalendarioGeneral() {
               ›
             </button>
           </div>
+          <Link to="/horarios/historial" className="text-sm font-medium text-primary hover:underline">
+            Ver historial de horarios
+          </Link>
         </div>
 
         <div className="mb-4 flex flex-wrap items-end justify-end gap-4">
-          <div className="flex items-end gap-2">
+          <div className="flex flex-wrap items-end gap-2">
             <div>
               <label htmlFor="ir-fecha-dia" className="mb-1.5 block text-xs font-medium text-on-surface-variant dark:text-slate-400">Día</label>
               <select

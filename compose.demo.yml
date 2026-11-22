@@ -1,0 +1,40 @@
+name: sihs-demo
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile.dev
+    environment:
+      APP_ENV: demo
+      DATABASE_URL: ${DEMO_DATABASE_URL}
+      ALEMBIC_DATABASE_URL: ${DEMO_DATABASE_URL}
+      SUPABASE_URL: ${DEMO_SUPABASE_INTERNAL_URL}
+      SUPABASE_ANON_KEY: ${DEMO_SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${DEMO_SUPABASE_SERVICE_ROLE_KEY}
+      FRONTEND_URL: http://127.0.0.1:5173
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - 127.0.0.1:8000:8000
+    volumes:
+      - ./backend/app:/app/app
+      # Settings carga /app/.env al iniciar. El archivo local conserva las
+      # integraciones privadas, incluida GEMINI_API_KEY, fuera de la imagen
+      # y del repositorio.
+      - ./backend/.env:/app/.env:ro
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile.dev
+    environment:
+      VITE_SUPABASE_URL: http://127.0.0.1:54321
+      VITE_SUPABASE_ANON_KEY: ${DEMO_SUPABASE_ANON_KEY}
+      VITE_API_URL: http://127.0.0.1:8000/api/v1
+    ports:
+      - 127.0.0.1:5173:5173
+    volumes:
+      - ./frontend/src:/app/src
+    depends_on:
+      - backend

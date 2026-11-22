@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
 import { apiGet, apiPost, ApiError } from '../services/api'
@@ -241,7 +242,7 @@ export function PanelAdministracion() {
   return (
     <AppShell activo="Solicitudes de acceso">
       <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-        <span>Dashboard</span>
+        <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
         <span className="text-outline">/</span>
         <span className="font-semibold text-primary">Administración</span>
       </nav>
@@ -250,15 +251,14 @@ export function PanelAdministracion() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="flex flex-wrap items-center gap-3 text-2xl font-bold text-on-surface">
-            Solicitudes de Acceso al Sistema
+            Solicitudes de acceso
             <span className="inline-flex items-center gap-1.5 rounded-full border border-tertiary/30 bg-tertiary-container px-3 py-1 text-xs font-bold text-on-tertiary-container">
               <span className="h-2 w-2 rounded-full bg-tertiary" />
               {pendientes.length} pendiente{pendientes.length !== 1 ? 's' : ''} de validación
             </span>
           </h1>
           <p className="mt-1 max-w-3xl text-sm text-on-surface-variant">
-            Revisa, valida la identidad y aprueba las peticiones de registro originadas desde el portal público. Al
-            aprobar, el sistema asigna el rol vía <code className="rounded bg-surface-container px-1 py-0.5 text-xs">POST /usuario-rol/asignar</code> y despacha una credencial temporal.
+            Revisa las solicitudes de registro y, al aprobarlas, genera una credencial temporal para la persona solicitante.
           </p>
         </div>
 
@@ -389,9 +389,6 @@ export function PanelAdministracion() {
               Contraseña autogenerada de un solo uso, con cambio obligatorio antes de navegar el sistema.
             </p>
           </div>
-          <div className="border-t border-primary/20 pt-2 font-mono text-[10px] text-on-primary-container">
-            SMTP institucional — pendiente ticket de envío de credencial
-          </div>
         </div>
       </section>
 
@@ -399,13 +396,14 @@ export function PanelAdministracion() {
         {/* Columna principal: tabs + lista de solicitudes */}
         <div className="space-y-4 lg:col-span-8">
           <div className="flex flex-col items-start justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-3 shadow-sm sm:flex-row sm:items-center">
-            <div className="inline-flex rounded-lg bg-surface-container p-1 text-xs font-medium">
+            <div className="flex flex-wrap rounded-lg bg-surface-container p-1 text-xs font-medium">
               {TABS.map((tab) => (
                 <button
                   key={tab.valor}
                   type="button"
                   onClick={() => setTabActivo(tab.valor)}
-                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-all ${
+                  aria-pressed={tabActivo === tab.valor}
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
                     tabActivo === tab.valor
                       ? 'bg-surface-container-lowest font-bold text-primary shadow-sm'
                       : 'text-on-surface-variant hover:text-on-surface'
@@ -422,6 +420,7 @@ export function PanelAdministracion() {
             </div>
 
             <select
+              aria-label="Filtrar por rol solicitado"
               value={filtroRol}
               onChange={(evento) => setFiltroRol(evento.target.value === 'todos' ? 'todos' : Number(evento.target.value))}
               className="rounded-lg border border-outline-variant bg-surface-container-lowest px-2.5 py-1.5 text-xs text-on-surface"
@@ -533,7 +532,7 @@ export function PanelAdministracion() {
                             no simular que hace algo. */}
                         <select
                           disabled
-                          title="Aún no implementado en el backend"
+                          title="Esta opción aún no está disponible"
                           className="w-full cursor-not-allowed rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-xs font-medium text-on-surface-variant"
                         >
                           <option>Todas las sedes y jornadas</option>
@@ -600,9 +599,8 @@ export function PanelAdministracion() {
               <div className="flex items-start gap-2.5 rounded-lg border border-outline-variant bg-surface-container p-2">
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-container text-[10px] font-bold text-on-primary-container">1</span>
                 <div>
-                  <span className="font-semibold text-on-surface">Ejecución del Endpoint:</span>
-                  <p className="mt-0.5 font-mono text-[11px] text-on-surface-variant">POST /usuario-rol/asignar</p>
-                  <p className="mt-0.5 text-[11px]">Vincula el usuario con el rol verificado en la base de datos central.</p>
+                  <span className="font-semibold text-on-surface">Asignación de rol</span>
+                  <p className="mt-0.5 text-[11px]">El usuario recibe el rol aprobado.</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5 rounded-lg border border-outline-variant bg-surface-container p-2">
@@ -617,7 +615,7 @@ export function PanelAdministracion() {
                 <div>
                   <span className="font-semibold text-on-surface">Cambio Forzado en 1er Ingreso:</span>
                   <p className="mt-0.5 text-[11px]">
-                    <code className="rounded bg-surface-container-high px-1 text-[10px]">debe_cambiar_clave = true</code> impide navegar hasta establecer clave personal.
+                    La persona establece una contraseña personal antes de usar el sistema.
                   </p>
                 </div>
               </div>
