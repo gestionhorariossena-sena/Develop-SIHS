@@ -52,6 +52,26 @@ def test_duplicados_en_excel_invalidan_confirmacion(client, autenticar_como):
     assert respuesta.status_code == 422
 
 
+def test_excel_rechaza_documentos_duplicados(client, autenticar_como):
+    _, headers = autenticar_como("Coordinador")
+    archivo = _excel([
+        ["Laura", "laura@sena.edu.co", "12345678", "", "", ""],
+        ["Pedro", "pedro@sena.edu.co", "12345678", "", "", ""],
+    ])
+    respuesta = client.post("/api/v1/instructores/alta/importar", headers=headers, files={"archivo": ("coordinacion.xlsx", archivo)})
+    assert respuesta.status_code == 200
+    assert respuesta.json()["validas"] == 1
+    assert respuesta.json()["filas"][1]["error"] == "Documento duplicado dentro del Excel."
+
+
+def test_no_crea_cuentas_si_smtp_no_esta_configurado(client, autenticar_como, monkeypatch):
+    _, headers = autenticar_como("Coordinador")
+    monkeypatch.setattr(alta_instructores.settings, "smtp_user", "")
+    monkeypatch.setattr(alta_instructores.settings, "smtp_password", "")
+    respuesta = client.post("/api/v1/instructores/alta/", headers=headers, json=_datos())
+    assert respuesta.status_code == 503
+
+
 def test_alta_individual_crea_instructor_y_no_devuelve_clave(
     client, crear_rol, autenticar_como, db_session, monkeypatch
 ):
