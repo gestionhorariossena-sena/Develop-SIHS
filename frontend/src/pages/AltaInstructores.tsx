@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import { apiPost, apiPostForm, ApiError } from '../services/api'
+import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
 import { PanelCargaMasiva, TituloPasoCarga, botonConfirmarCarga, botonSecundarioCarga, estiloArchivoCarga, ejecutarCargaMasiva } from '../components/cargaMasiva/FlujoCargaMasiva'
 
 interface Alta {
@@ -38,6 +38,17 @@ export function AltaInstructores() {
   const [error, setError] = useState<string | null>(null)
   const [procesando, setProcesando] = useState(false)
   const [progreso, setProgreso] = useState(0)
+  const [diagnostico, setDiagnostico] = useState<{
+    smtpConfigurado: boolean
+    supabaseConfigurado: boolean
+    modoDemo: boolean
+  } | null>(null)
+
+  useEffect(() => {
+    apiGet<{ smtpConfigurado: boolean; supabaseConfigurado: boolean; modoDemo: boolean }>('/instructores/alta/diagnostico')
+      .then(setDiagnostico)
+      .catch(() => setDiagnostico(null))
+  }, [])
 
   function actualizar(campo: keyof Alta, valor: string) {
     setDatos((actual) => ({ ...actual, [campo]: valor }))
@@ -47,7 +58,9 @@ export function AltaInstructores() {
 
   function detalleError(err: unknown) {
     if (err instanceof ApiError) {
-      if (err.status === 503) return 'No se pudo completar el alta. Revisa la configuración del correo o del servicio de cuentas con administración.'
+      if (err.status === 503 && err.detail && typeof err.detail === 'object' && 'mensaje' in err.detail) {
+        return String((err.detail as { mensaje: string }).mensaje)
+      }
       return err.message
     }
     return 'No se pudo completar la operación.'
@@ -142,6 +155,14 @@ export function AltaInstructores() {
         <p className="mt-2 text-sm leading-6 text-on-surface-variant">Registra instructores individualmente o carga un Excel. El sistema valida cada fila antes de crear cuentas y enviar accesos temporales.</p>
       </header>
 
+      {diagnostico && (!diagnostico.smtpConfigurado || !diagnostico.supabaseConfigurado) && (
+        <p role="alert" className="mb-5 max-w-3xl rounded-md border border-error/30 bg-error-container p-3 text-sm text-on-error-container">
+          No es posible crear cuentas todavía:
+          {!diagnostico.smtpConfigurado && ' el correo SMTP no está configurado.'}
+          {!diagnostico.supabaseConfigurado && ' Supabase Admin no está configurado.'}
+          {diagnostico.modoDemo && ' Reinicia los servicios locales tras actualizar Docker.'}
+        </p>
+      )}
       <div role="tablist" aria-label="Método de registro" className="mb-5 inline-flex gap-1 rounded-md border border-outline-variant bg-surface-container-low p-1">
         <button role="tab" type="button" aria-selected={modo === 'individual'} onClick={() => { setModo('individual'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'individual' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Registro individual</button>
         <button role="tab" type="button" aria-selected={modo === 'excel'} onClick={() => { setModo('excel'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'excel' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Carga masiva</button>
