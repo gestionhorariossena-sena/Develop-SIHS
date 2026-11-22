@@ -143,3 +143,9 @@ La descarga utiliza datos ya consultados por el directorio, sin una llamada adic
 ### Importar un Excel de instructores de prueba
 
 En **Instructores** hay ahora tres acciones **distintas**: **Cargar instructores desde Excel** (abre directamente `/instructores/registrar?modo=excel`), **Registrar instructor** (alta manual) y **Exportar carga docente (.csv)** (descarga las horas ya calculadas; no recibe archivos). La carga masiva acepta archivos `.xlsx` con `nombre`, `correo`, `documento` y las columnas opcionales `tipoContrato`, `horasContratadasSemana`, `sigla`; muestra previa y requiere confirmación. En demo, utiliza correos ficticios y revisa las invitaciones en Mailpit. La recepción de Excel de **carga horaria docente** (asignaciones o clases planeadas) es un dominio diferente y no se interpreta como alta de usuarios; todavía requiere definir su estructura.
+
+### Aprendices y Temáticas — importación masiva (2026-11-22)
+
+- **Carga masiva de aprendices** disponible desde Fichas o el menú Datos académicos, ruta `/aprendices/carga-masiva`, para Administrador y Coordinador. Recibe XLSX con `nombre`, `correo`, `documento`, `codigoFicha` y opcionalmente `programaFormacion`. Previsualiza fichas, evita duplicados y confirma la creación del rol y el vínculo con la ficha. Ignora cualquier contraseña incluida en el Excel. Los correos de invitación requieren SMTP operativo.
+- **Temáticas → Carga masiva** permite al Administrador subir el mismo Excel curricular del módulo Programas, seleccionando el programa correspondiente. Las competencias y resultados ya existentes con la misma descripción se reutilizan. **No cargues el archivo curricular en ambos módulos**: son dos entradas a los mismos datos.
+- Detalles, orden de carga y pruebas: [Guía de cargas masivas](../docs/GUIA_CARGAS_MASIVAS.md).
