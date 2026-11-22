@@ -76,7 +76,7 @@ describe('AltaInstructores', () => {
     const hoja = new File(['contenido'], 'coordinacion.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     await usuario.upload(screen.getByLabelText('Archivo Excel de instructores'), hoja)
     await usuario.click(screen.getByRole('button', { name: 'Revisar archivo' }))
-    const seccion = await screen.findByRole('region', { name: 'Importación de instructores' })
+    const seccion = await screen.findByRole('region', { name: 'Carga masiva de instructores' })
     expect(within(seccion).getByText('Vista previa · 1 de 2 filas válidas')).toBeInTheDocument()
     expect(within(seccion).getByRole('button', { name: 'Confirmar e invitar' })).toBeDisabled()
     expect(apiPostFormMock).toHaveBeenCalledTimes(1)
