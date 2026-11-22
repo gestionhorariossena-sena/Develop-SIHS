@@ -1,15 +1,15 @@
 """Altas de instructores por gestión; la cuenta no requiere registro público."""
 import io
+import csv
+import unicodedata
 import logging
 import secrets
-from zipfile import ZipFile
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 import httpx
 from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
 from sqlalchemy.orm import Session
-from openpyxl import load_workbook
 
 from app.core.config import settings
 from app.core.database import get_db
@@ -25,7 +25,13 @@ router = APIRouter(prefix="/instructores/alta", tags=["alta-instructores"])
 logger = logging.getLogger("sihs.alta_instructores")
 MAX_ARCHIVO_BYTES = 2 * 1024 * 1024
 MAX_FILAS = 200
-COLUMNAS = ("nombre", "correo", "documento")
+COLUMNAS = ("nombre", "correo", "documento", "contrato", "horas")
+ALIAS_COLUMNAS = {
+    "tipocontrato": "contrato",
+    "horascontratadassemana": "horas",
+    "email": "correo",
+}
+
 
 
 class InstructorAlta(BaseModel):
@@ -131,69 +137,105 @@ def alta_individual(datos: InstructorAlta, db: Session = Depends(get_db), actor:
         raise HTTPException(500, "El alta falló por un error interno. Consulta el log de Docker para identificar la causa.") from exc
 
 
-def _normalizar(valor: object) -> str:
-    return str(valor).strip() if valor is not None else ""
+def _normalizar_encabezado(valor: str) -> str:
+    """Acepta espacios, guiones bajos, acentos y variaciones de mayúsculas."""
+    descompuesto = unicodedata.normalize("NFKD", valor.strip().casefold())
+    sin_acentos = "".join(c for c in descompuesto if not unicodedata.combining(c))
+    compacto = "".join(c for c in sin_acentos if c.isalnum())
+    return ALIAS_COLUMNAS.get(compacto, compacto)
 
 
-def _leer_excel(contenido: bytes) -> list[dict]:
+def _texto_csv(contenido: bytes) -> str:
     try:
-        # Un .xlsx es un ZIP: limitar también el tamaño descomprimido evita
-        # procesar archivos que parecen pequeños pero se expanden demasiado.
-        with ZipFile(io.BytesIO(contenido)) as paquete:
-            if sum(entrada.file_size for entrada in paquete.infolist()) > 20 * 1024 * 1024:
-                raise HTTPException(413, "El Excel excede el tamaño máximo de contenido permitido.")
-        libro = load_workbook(io.BytesIO(contenido), read_only=True, data_only=True, keep_links=False)
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(422, "El archivo no es un Excel .xlsx válido.") from exc
+        return contenido.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        try:
+            return contenido.decode("cp1252")
+        except UnicodeDecodeError:
+            return contenido.decode("latin-1")
+
+
+def _leer_csv(contenido: bytes) -> list[dict]:
+    texto = _texto_csv(contenido)
+    if not texto.strip():
+        raise HTTPException(422, "El CSV está vacío.")
+
+    # Probar ambos separadores con un lector CSV real; gana el encabezado
+    # con más columnas reconocibles. Esto respeta comillas y saltos de línea.
+    opciones = []
+    for separador in (",", ";"):
+        try:
+            encabezado = next(csv.reader(io.StringIO(texto, newline=""), delimiter=separador, strict=True), [])
+        except csv.Error as exc:
+            raise HTTPException(422, "El encabezado CSV tiene comillas mal formadas.") from exc
+        columnas = [_normalizar_encabezado(x) for x in encabezado]
+        conocidas = sum(col in (*COLUMNAS, "sigla") for col in columnas)
+        opciones.append((conocidas, len(columnas), separador, columnas))
+    _, _, separador, columnas = max(opciones, key=lambda opcion: (opcion[0], opcion[1]))
+    faltantes = [col for col in COLUMNAS if col not in columnas]
+    if faltantes:
+        raise HTTPException(
+            422, "Faltan columnas requeridas: " + ", ".join(faltantes)
+            + ". Usa nombre,correo,documento,contrato,horas,sigla.",
+        )
+    if len(columnas) != len(set(columnas)):
+        raise HTTPException(422, "El CSV contiene encabezados duplicados o equivalentes.")
+
+    filas: list[dict] = []
+    correos_vistos: set[str] = set()
+    documentos_vistos: set[str] = set()
     try:
-        hoja = libro.active
-        filas = hoja.iter_rows(values_only=True)
-        encabezado = next(filas, None)
-        if not encabezado:
-            raise HTTPException(422, "El Excel está vacío.")
-        columnas = [_normalizar(col).lower() for col in encabezado]
-        faltantes = [col for col in COLUMNAS if col not in columnas]
-        if faltantes:
-            raise HTTPException(422, "Faltan columnas: " + ", ".join(faltantes) + ". Descarga la plantilla para ver los encabezados esperados.")
-        resultado = []
-        for numero, valores in enumerate(filas, start=2):
-            if all(_normalizar(v) == "" for v in valores):
+        lector = csv.reader(io.StringIO(texto, newline=""), delimiter=separador, strict=True)
+        next(lector, None)
+        for valores in lector:
+            numero = lector.line_num
+            if all(not valor.strip() for valor in valores):
                 continue
-            if len(resultado) >= MAX_FILAS:
+            if len(filas) >= MAX_FILAS:
                 raise HTTPException(422, f"El máximo por archivo es {MAX_FILAS} instructores.")
-            fila = {col: _normalizar(valores[idx]) if idx < len(valores) else "" for idx, col in enumerate(columnas)}
+            if len(valores) != len(columnas):
+                filas.append({
+                    "fila": numero, "valido": False, "datos": {},
+                    "error": f"Se esperaban {len(columnas)} columnas y llegaron {len(valores)}.",
+                })
+                continue
+            fila = dict(zip(columnas, (valor.strip() for valor in valores)))
             registro = {
-                "nombre": fila.get("nombre"), "correo": fila.get("correo"),
-                "documento": fila.get("documento"),
-                "tipoContrato": fila.get("tipocontrato") or None,
-                "horasContratadasSemana": fila.get("horascontratadassemana") or None,
+                "nombre": fila.get("nombre", ""),
+                "correo": fila.get("correo", ""),
+                "documento": fila.get("documento", ""),
+                "tipoContrato": fila.get("contrato", ""),
+                "horasContratadasSemana": fila.get("horas", ""),
                 "sigla": fila.get("sigla") or None,
             }
+            errores = [
+                f"{col}: campo obligatorio"
+                for col in COLUMNAS if not fila.get(col)
+            ]
             try:
                 datos = InstructorAlta.model_validate(registro)
-                resultado.append({"fila": numero, "valido": True, "datos": datos.model_dump(mode="json"), "error": None})
+                registro = datos.model_dump(mode="json")
             except ValidationError as exc:
-                resultado.append({"fila": numero, "valido": False, "datos": registro, "error": "; ".join(str(e["loc"][-1]) + ": " + e["msg"] for e in exc.errors())})
-        correos_vistos = set()
-        documentos_vistos = set()
-        for fila in resultado:
-            correo = str(fila["datos"].get("correo") or "").lower().strip()
-            documento = str(fila["datos"].get("documento") or "").strip()
+                errores.extend(
+                    f"{item['loc'][-1]}: {item['msg']}" for item in exc.errors()
+                )
+            correo = str(registro.get("correo") or "").casefold().strip()
+            documento = str(registro.get("documento") or "").strip()
             if correo and correo in correos_vistos:
-                fila["valido"] = False
-                fila["error"] = "Correo duplicado dentro del Excel."
-            elif documento and documento in documentos_vistos:
-                fila["valido"] = False
-                fila["error"] = "Documento duplicado dentro del Excel."
+                errores.append("Correo duplicado dentro del CSV.")
+            if documento and documento in documentos_vistos:
+                errores.append("Documento duplicado dentro del CSV.")
             if correo:
                 correos_vistos.add(correo)
             if documento:
                 documentos_vistos.add(documento)
-        return resultado
-    finally:
-        libro.close()
+            filas.append({
+                "fila": numero, "valido": not errores,
+                "datos": registro, "error": "; ".join(errores) if errores else None,
+            })
+    except csv.Error as exc:
+        raise HTTPException(422, "El CSV contiene campos o comillas mal formados.") from exc
+    return filas
 
 
 @router.post("/importar")
@@ -203,12 +245,12 @@ async def importar(
     db: Session = Depends(get_db),
     actor: Usuario = Depends(require_admin_o_coordinador),
 ):
-    if not (archivo.filename or "").lower().endswith(".xlsx"):
-        raise HTTPException(422, "Selecciona un archivo .xlsx.")
+    if not (archivo.filename or "").lower().endswith(".csv"):
+        raise HTTPException(422, "Selecciona un archivo .csv.")
     contenido = await archivo.read(MAX_ARCHIVO_BYTES + 1)
     if len(contenido) > MAX_ARCHIVO_BYTES:
         raise HTTPException(413, "El archivo supera el límite de 2 MB.")
-    filas = _leer_excel(contenido)
+    filas = _leer_csv(contenido)
     if not confirmar:
         return {"confirmado": False, "filas": filas, "total": len(filas), "validas": sum(f["valido"] for f in filas)}
     if not filas or any(not f["valido"] for f in filas):
