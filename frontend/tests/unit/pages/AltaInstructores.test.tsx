@@ -21,6 +21,12 @@ describe('AltaInstructores', () => {
     apiPostFormMock.mockReset()
   })
 
+  it('abre directamente la pestaña de carga masiva desde el directorio', () => {
+    renderConProviders(<AltaInstructores />, ['/instructores/registrar?modo=excel'])
+    expect(screen.getByRole('tab', { name: 'Carga masiva' })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByLabelText('Archivo Excel de instructores')).toBeInTheDocument()
+  })
+
   it('registra un instructor individual sin revelar credenciales temporales', async () => {
     apiPostMock.mockResolvedValue({
       correo: 'juan@sena.edu.co', estado: 'creado',
