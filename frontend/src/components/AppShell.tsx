@@ -118,7 +118,6 @@ const NAV: GrupoNav[] = [
       // real es que repartir roles es del Administrador, y el menú ahora
       // dice lo mismo que el backend.
       { etiqueta: 'Usuarios', ruta: '/usuarios', soloAdmin: true },
-      { etiqueta: 'Código de instructor', ruta: '/codigo-instructor', soloGestion: true },
       { etiqueta: 'Roles', ruta: '/roles', soloAdmin: true },
       // Dos caminos de alta, cada uno con su caso (H-7):
       //  - "Solicitudes de acceso": gente SIN cuenta, que la pidió desde el
