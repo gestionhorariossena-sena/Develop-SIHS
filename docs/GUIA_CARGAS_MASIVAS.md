@@ -46,7 +46,17 @@ Desde la rama `fixes-multiples-nicol`, con dependencias instaladas:
 ```bash
 cd frontend
 
-pnpm exec vitest run tests/unit/components/ImportarArchivo.test.tsx tests/unit/components/FlujoCargaMasiva.test.tsx tests/unit/pages/AltaInstructores.test.tsx tests/unit/pages/Programas.test.tsx
+pnpm exec vitest run tests/unit/components/ImportarArchivo.test.tsx tests/unit/components/FlujoCargaMasiva.test.tsx tests/unit/pages/AltaInstructores.test.tsx tests/unit/pages/Fichas.test.tsx tests/unit/pages/Ambientes.test.tsx tests/unit/pages/Programas.test.tsx
+pnpm lint
+pnpm build
+```
+
+Para validar también los servicios de importación específicos del backend (en su entorno virtual):
+
+```bash
+cd ../backend
+python -m pytest tests/test_alta_instructores.py tests/test_competencias_importar.py -q
+cd ..
 ```
 
 Para validar el flujo end-to-end, desde la raíz:
