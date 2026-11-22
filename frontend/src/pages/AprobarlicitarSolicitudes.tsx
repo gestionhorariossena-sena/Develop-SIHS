@@ -128,22 +128,7 @@ export function AprobarlicitarSolicitudes() {
         prev.filter((u) => u.idUsuario !== usuarioSeleccionado.idUsuario)
       )
 
-      let mensaje = `${usuarioSeleccionado.nombre} ahora tiene el rol ${rolAsignado ?? 'seleccionado'}.`
-
-      // El código de instructor ya no se genera a mano desde Usuarios.tsx —
-      // se dispara acá mismo, al aprobar el rol, y queda fijo (el endpoint
-      // es idempotente: si el usuario ya tiene código, devuelve el mismo).
-      if (rolAsignado === 'Instructor') {
-        try {
-          const { codigo } = await apiPost<{ codigo: string; idUsuario: string }>(
-            '/usuarios/instructor/codigo/generar',
-            { idUsuario: usuarioSeleccionado.idUsuario },
-          )
-          mensaje += ` Código de instructor: ${codigo}.`
-        } catch {
-          mensaje += ' No se pudo generar su código de instructor — hazlo desde "Código de instructor".'
-        }
-      }
+      const mensaje = `${usuarioSeleccionado.nombre} ahora tiene el rol ${rolAsignado ?? 'seleccionado'}.`
 
       setMostrarModal(false)
       setMensajeExito(mensaje)
