@@ -58,7 +58,8 @@ describe('ImportarArchivo', () => {
 
     await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 2 filas' }))
 
-    expect(await screen.findByText(/A1: creada/)).toBeInTheDocument()
+    expect(await screen.findByText('Fila 2 · A1')).toBeInTheDocument()
+    expect(screen.getByText('Importado')).toBeInTheDocument()
     expect(await screen.findByText(/B2: Ya existe\./)).toBeInTheDocument()
     expect(onImportarFila).toHaveBeenCalledTimes(2)
     await waitFor(() => expect(onTerminado).toHaveBeenCalledTimes(1))
