@@ -45,15 +45,7 @@ Desde la rama `fixes-multiples-nicol`, con dependencias instaladas:
 
 ```bash
 cd frontend
-pnpm test -- src/tests/unit/components/ImportarArchivo.test.tsx src/tests/unit/components/FlujoCargaMasiva.test.tsx
-pnpm test -- src/tests/unit/pages/AltaInstructores.test.tsx src/tests/unit/pages/Programas.test.tsx
-pnpm lint
-pnpm build
-```
 
-**Nota:** las rutas de Vitest son `tests/unit/...` (no `src/tests/...`). Para ejecutar esos grupos en la versión actual, sustituye el comando por:
-
-```bash
 pnpm exec vitest run tests/unit/components/ImportarArchivo.test.tsx tests/unit/components/FlujoCargaMasiva.test.tsx tests/unit/pages/AltaInstructores.test.tsx tests/unit/pages/Programas.test.tsx
 ```
 
