@@ -66,6 +66,7 @@ def test_excel_rechaza_documentos_duplicados(client, autenticar_como):
 
 def test_no_crea_cuentas_si_smtp_no_esta_configurado(client, autenticar_como, monkeypatch):
     _, headers = autenticar_como("Coordinador")
+    monkeypatch.setattr(alta_instructores.settings, "app_env", "development")
     monkeypatch.setattr(alta_instructores.settings, "smtp_user", "")
     monkeypatch.setattr(alta_instructores.settings, "smtp_password", "")
     respuesta = client.post("/api/v1/instructores/alta/", headers=headers, json=_datos())
