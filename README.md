@@ -4,13 +4,15 @@ Monorepositorio de gestión de programación académica. Contiene API FastAPI, a
 
 > **Estado de esta guía (22 de noviembre de 2026):** describe la implementación presente en `fixes-multiples-nicol`, el objetivo de la demo y las comprobaciones pendientes. El informe de Codex del 22/11 identificó un desajuste **entre Compose declarado y los contenedores activos**: no equivale a una prueba de funcionamiento superada. El equipo/Codex puede estar corrigiendo el entorno simultáneamente; antes de actuar, volver a inspeccionar el estado real.
 
+> **Cambio del 22/11/2026 — CSV exclusivo para instructores:** el importador `/instructores/alta/importar` ya **no** recibe XLSX. La primera fila canónica es `nombre,correo,documento,contrato,horas,sigla` (sigla opcional; las otras cinco obligatorias). Admite coma o punto y coma, BOM UTF-8, Windows-1252/Latin-1, comillas y saltos de línea CSV válidos. Acepta encabezados equivalentes `tipoContrato`/`tipo_contrato`, `horasContratadasSemana`/`horas_contratadas_semana`, `email`. Convierte internamente a `tipoContrato` y `horasContratadasSemana`. Límite: **2 MB y 200 instructores**. El archivo del kit ahora es **`01_instructores_alta_masiva.csv`**. El registro individual sigue disponible. **No se cambiaron los formatos de Aprendices/Currículo/IA (XLSX) ni Fichas/Ambientes (CSV).**
+
 ## Objetivo de este ciclo: prueba integral antes de la sustentación
 
 Queremos demostrar con **datos piloto coherentes y reemplazables** el recorrido de SIHS: preparar catálogos académicos → importar instructores, aprendices, fichas, ambientes y plan curricular → comprobar cuentas y vínculos → generar, revisar, guardar y publicar horarios (manual o asistido con IA) → consultar los resultados según cada rol. Esta fase usa **Docker + Supabase Auth + PostgreSQL locales**: los Excel son de prueba, no registros institucionales oficiales. La IA **no reemplaza** la carga de los catálogos de referencia.
 
 No confundir los tres conceptos:
 
-- **Carga masiva de instructores:** crea cuentas de Instructor y sus datos contractuales a partir de un `.xlsx`, con invitación de acceso. **No importa horas docentes asignadas**.
+- **Carga masiva de instructores:** crea cuentas de Instructor y sus datos contractuales a partir de un `.csv`, con invitación de acceso. **No importa horas docentes asignadas**.
 - **Carga masiva de aprendices:** crea cuentas de Aprendiz y las vincula por `codigoFicha` a fichas **ya existentes**. No importar contraseñas provenientes del archivo.
 - **Exportar carga docente:** desde Instructores descarga un **CSV de salida**, calculado a partir de horarios existentes. **No recibe Excel ni asigna clases**.
 
@@ -20,7 +22,7 @@ No confundir los tres conceptos:
 | --- | --- | --- | --- |
 | Datos académicos → **Aprendices** | `/aprendices` · `frontend/src/pages/Aprendices.tsx` | Directorio de nombre, correo, documento, ficha, programa, estado, acceso; búsqueda, filtro y paginación | Administrador / Coordinador |
 | Aprendices → **Carga masiva** | `/aprendices/carga-masiva` · `frontend/src/pages/CargaAprendices.tsx` | Excel `.xlsx` → revisión de filas → confirmación individual → reporte | Administrador / Coordinador |
-| Instructores → **Cargar desde Excel** | `/instructores/registrar?modo=excel` · `frontend/src/pages/AltaInstructores.tsx` | Excel `.xlsx` con `nombre`, `correo`, `documento`; contrato, horas semanales y sigla opcionales | Administrador / Coordinador |
+| Instructores → **Cargar desde CSV** | `/instructores/registrar?modo=excel` · `frontend/src/pages/AltaInstructores.tsx` | CSV `.csv` con `nombre,correo,documento,contrato,horas` obligatorios y `sigla` opcional | Administrador / Coordinador |
 | Instructores → **Exportar carga docente** | `/instructores` · `frontend/src/utils/exportarCargaDocente.ts` | Descarga `.csv` con horas calculadas; **no es importador** | Gestión |
 | Fichas → **Carga masiva** | `/fichas` · `frontend/src/pages/Fichas.tsx` | CSV: `codigoFicha,codigoPrograma,trimestre,sede` (sede opcional) | Creación según permiso real de API |
 | Ambientes → **Carga masiva** | `/ambientes` · `frontend/src/pages/Ambientes.tsx` | CSV: `numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente` | Según permisos de API |
@@ -38,7 +40,7 @@ Los siguientes son **artefactos de prueba compartidos por separado en la convers
 
 | Orden | Nombre del archivo piloto | Dónde cargarlo |
 | --- | --- | --- |
-| 01 | `01_instructores_alta_masiva.xlsx` | Instructores → Cargar desde Excel |
+| 01 | `01_instructores_alta_masiva.csv` | Instructores → Cargar desde Excel |
 | 02 | `02_ambientes_importar.csv` | Ambientes → Carga masiva |
 | 03 | `03_fichas_importar.csv` | Fichas → Carga masiva |
 | 04 | `04_curriculo_programa_DEMO_ADSO.xlsx` | **Temáticas → Carga masiva** seleccionando `DEMO-ADSO`, **o** Programas → plan curricular (no ambos) |
@@ -98,7 +100,7 @@ En la configuración esperada, la salida incluye `APP_ENV: demo`, `SMTP: mailpit
 Secuencia de aceptación antes de la sustentación:
 
 1. **Revisar conectividad:** inicio de sesión con Administrador, salud de API, SMTP efectivo y Mailpit.
-2. **Instructores:** cargar archivo 01; validar 4 filas; confirmar; comprobar cuentas/roles y 4 invitaciones o estados específicos; ensayo de primer inicio y cambio de clave. Un 503 puede indicar SMTP o Supabase Admin; revisar el diagnóstico de la pantalla y los logs de backend.
+2. **Instructores:** cargar archivo 01 CSV con los encabezados `nombre,correo,documento,contrato,horas,sigla`; validar 4 filas; confirmar; comprobar cuentas/roles y 4 invitaciones o estados específicos; ensayo de primer inicio y cambio de clave. Un 503 puede indicar SMTP o Supabase Admin; revisar el diagnóstico de la pantalla y los logs de backend.
 3. **Ambientes y Fichas:** cargar archivos 02 y 03; verificar programa `DEMO-ADSO`, período `Demo vigente` y sede `Sede Demo SIHS` existentes. Probar duplicados y mensajes de error por fila.
 4. **Aprendices:** usar el Excel 07 desde Aprendices → Carga masiva; ficha obligatoria; confirmar, comprobar listado por ficha, rol Aprendiz, correo y acceso.
 5. **Currículo:** cargar archivo 04 **en Temáticas o Programas**; verificar competencias, resultados, horas y fase 1. No duplicarlo.
