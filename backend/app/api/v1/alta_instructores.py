@@ -42,7 +42,7 @@ class InstructorAlta(BaseModel):
 
 
 def _smtp_disponible():
-    if not settings.smtp_user or not settings.smtp_password:
+    if not EmailService.smtp_configurado():
         raise HTTPException(503, "El correo de invitaciones no está configurado. Avisa a administración antes de crear cuentas.")
 
 
