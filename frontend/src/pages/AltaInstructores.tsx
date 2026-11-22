@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { apiPost, apiPostForm, ApiError } from '../services/api'
+import { PanelCargaMasiva, TituloPasoCarga, botonConfirmarCarga, botonSecundarioCarga, estiloArchivoCarga, ejecutarCargaMasiva } from '../components/cargaMasiva/FlujoCargaMasiva'
 
 interface Alta {
   nombre: string
@@ -23,8 +24,8 @@ interface Previa { confirmado: false; filas: FilaExcel[]; total: number; validas
 const vacio: Alta = { nombre: '', correo: '', documento: '', tipoContrato: '', horasContratadasSemana: '', sigla: '' }
 const clase = 'mt-1.5 w-full min-h-10 rounded-md border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/15'
 const etiqueta = 'block text-xs font-medium text-on-surface-variant'
-const primario = 'min-h-10 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container disabled:cursor-wait disabled:opacity-60'
-const secundario = 'min-h-10 rounded-md border border-outline px-4 py-2 text-sm font-medium text-on-surface hover:bg-surface-container'
+const primario = botonConfirmarCarga
+const secundario = botonSecundarioCarga
 
 export function AltaInstructores() {
   const [modo, setModo] = useState<'individual' | 'excel'>('individual')
@@ -106,20 +107,21 @@ export function AltaInstructores() {
       // colgado detrás del timeout de una sola petición HTTP.
       setResultados([])
       setProgreso(0)
-      for (const fila of previa.filas) {
-        let resultado: Resultado
-        try {
-          resultado = await apiPost<Resultado>('/instructores/alta/', fila.datos, 45000)
-        } catch (err) {
-          resultado = {
-            correo: String(fila.datos.correo ?? ''),
-            estado: 'error',
-            detalle: detalleError(err),
+      await ejecutarCargaMasiva(
+        previa.filas,
+        async (fila) => {
+          let resultado: Resultado
+          try {
+            resultado = await apiPost<Resultado>('/instructores/alta/', fila.datos, 45000)
+          } catch (err) {
+            resultado = { correo: String(fila.datos.correo ?? ''), estado: 'error', detalle: detalleError(err) }
           }
-        }
-        setResultados((anteriores) => [...anteriores, { ...resultado, fila: fila.fila }])
-        setProgreso((anterior) => anterior + 1)
-      }
+          setResultados((anteriores) => [...anteriores, { ...resultado, fila: fila.fila }])
+          if (resultado.estado !== 'creado') throw new Error(resultado.detalle)
+        },
+        (parciales) => setProgreso(parciales.length),
+        (fila) => String(fila.datos.correo ?? ''),
+      )
       setPrevia(null)
       setArchivo(null)
       setMensaje('Importación procesada. Revisa el resultado de cada instructor.')
@@ -167,16 +169,19 @@ export function AltaInstructores() {
           </footer>
         </form>
       ) : (
-        <section aria-label="Importación de instructores" className="max-w-4xl overflow-hidden rounded-lg border border-outline-variant bg-surface-container-lowest">
-          <div className="border-b border-outline-variant p-5">
-            <h2 className="font-semibold text-on-surface">Importar archivo Excel</h2>
-            <p className="mt-1 text-sm leading-6 text-on-surface-variant">Se revisará cada fila antes de crear cuentas. El archivo debe ser .xlsx, de hasta 2 MB y 200 instructores.</p>
-            <p className="mt-2 text-xs text-on-surface-variant">Columnas requeridas: <strong>nombre, correo, documento</strong>. Opcionales: <strong>tipoContrato, horasContratadasSemana, sigla</strong>.</p>
-          </div>
-          <div className="space-y-4 p-5">
-            <label className={etiqueta}>Archivo de coordinación <input aria-label="Archivo Excel de instructores" type="file" accept=".xlsx" onChange={(e) => seleccionarArchivo(e.target.files?.[0] ?? null)} className="mt-2 block w-full text-sm text-on-surface file:mr-4 file:rounded-md file:border file:border-outline file:bg-surface-container-low file:px-4 file:py-2 file:text-sm file:font-medium" /></label>
+        <PanelCargaMasiva
+          titulo="Carga masiva de instructores"
+          descripcion="Selecciona un Excel, revisa las filas y confirma el alta de cuentas. Cada instructor recibirá una invitación independiente."
+          columnas="nombre, correo, documento (obligatorias); tipoContrato, horasContratadasSemana, sigla (opcionales)"
+          error={null}
+        >
+          <div className="space-y-4">
+            <TituloPasoCarga numero={1} titulo="Seleccionar archivo" detalle="Excel .xlsx · máximo 2 MB · hasta 200 instructores." />
+
+            <label className={etiqueta}>Archivo de coordinación <input aria-label="Archivo Excel de instructores" type="file" accept=".xlsx" onChange={(e) => seleccionarArchivo(e.target.files?.[0] ?? null)} className={estiloArchivoCarga} /></label>
             <button type="button" className={secundario} disabled={!archivo || procesando} onClick={() => void enviarExcel(false)}>{procesando ? 'Revisando…' : 'Revisar archivo'}</button>
             {previa && <div className="overflow-x-auto border-t border-outline-variant pt-4">
+              <TituloPasoCarga numero={2} titulo="Revisar datos" detalle="Los datos todavía no se han guardado. Confirma cuando todas las filas sean válidas." />
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h3 className="text-sm font-semibold text-on-surface">Vista previa · {previa.validas} de {previa.total} filas válidas</h3><button type="button" className={primario} disabled={procesando || previa.validas !== previa.total || previa.total === 0} onClick={() => void enviarExcel(true)}>{procesando ? 'Importando…' : 'Confirmar e invitar'}</button></div>
               <table className="min-w-[620px] w-full text-left text-xs">
                 <thead className="bg-surface-container-low text-on-surface-variant"><tr><th className="px-3 py-2">Fila</th><th className="px-3 py-2">Nombre</th><th className="px-3 py-2">Correo</th><th className="px-3 py-2">Validación</th></tr></thead>
@@ -184,12 +189,12 @@ export function AltaInstructores() {
               </table>
             </div>}
           </div>
-        </section>
+        </PanelCargaMasiva>
       )}
 
       {modo === 'excel' && procesando && previa && progreso > 0 && <p role="status" className="mt-4 text-sm text-on-surface-variant">Enviando invitaciones: {progreso} de {previa.total} instructores procesados.</p>}
       {resultados.length > 0 && <section aria-label="Resultados del registro" className="mt-6 max-w-4xl border-t border-outline-variant pt-4">
-        <h2 className="mb-3 text-base font-semibold text-on-surface">Resultado del proceso</h2>
+        <TituloPasoCarga numero={3} titulo="Resultado de la importación" detalle="Revisa los correos enviados, omitidos y pendientes." />
         <ul className="divide-y divide-outline-variant rounded-md border border-outline-variant bg-surface-container-lowest">{resultados.map((r, i) => <li key={`${r.correo}-${i}`} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 text-sm"><div><p className="font-medium text-on-surface">{r.correo}</p><p className="mt-1 text-xs text-on-surface-variant">{r.detalle}</p></div><span className={`text-xs font-semibold ${r.estado === 'creado' ? 'text-primary' : 'text-tertiary'}`}>{r.estado === 'creado' ? 'Invitado' : r.estado.replaceAll('_', ' ')}</span></li>)}</ul>
       </section>}
     </AppShell>
