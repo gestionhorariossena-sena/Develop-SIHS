@@ -221,9 +221,6 @@ export function HorariosCompletos() {
           ficha={fichaPorId.get(horarioSeleccionado.idFicha)}
           instructor={instructorPorId.get(horarioSeleccionado.idInstructor)}
           ambiente={ambientePorId.get(horarioSeleccionado.idAmbiente)}
-          ambientes={ambientes}
-          instructores={instructores}
-          diasSemana={diasSemana}
           sede={ambientePorId.get(horarioSeleccionado.idAmbiente) ? sedes.find((sede) => sede.idSede === ambientePorId.get(horarioSeleccionado.idAmbiente)?.idSede) : undefined}
           trimestre={trimestrePorId.get(horarioSeleccionado.idTrimestre)}
           diasPorId={diasPorId}
@@ -232,7 +229,6 @@ export function HorariosCompletos() {
           cargandoConflictos={cargandoAuditoria}
           errorConflictos={errorAuditoria}
           onCerrar={() => actualizarQuery({ idHorario: undefined })}
-          onActualizar={actualizarHorario}
         />
       )}
     </AppShell>
