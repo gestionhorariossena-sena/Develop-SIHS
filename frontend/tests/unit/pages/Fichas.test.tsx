@@ -351,17 +351,17 @@ describe('Fichas', () => {
       apiPostMock.mockClear()
     })
 
-    it('el botón "Importar CSV" abre y cierra el panel de importación', async () => {
+    it('el botón "Carga masiva" abre y cierra el panel de importación', async () => {
       mockeaFichasYPerfil(FICHAS)
       const usuario = userEvent.setup()
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
-      expect(screen.getByText(/Columnas esperadas/)).toBeInTheDocument()
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
+      expect(screen.getByText(/Columnas:/)).toBeInTheDocument()
 
       await usuario.click(screen.getByRole('button', { name: 'Cerrar' }))
-      expect(screen.queryByText(/Columnas esperadas/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Columnas:/)).not.toBeInTheDocument()
     })
 
     it('sube un CSV, previsualiza las filas y al confirmar crea cada ficha resolviendo programa/trimestre a sus ids', async () => {
@@ -371,7 +371,7 @@ describe('Fichas', () => {
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
       const csv = 'codigoFicha,codigoPrograma,trimestre,sede\nFICHA-NUEVA,ADSO,Trimestre 3,'
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
 
@@ -386,7 +386,8 @@ describe('Fichas', () => {
         idTrimestre: 1,
         idSede: null,
       }))
-      expect(await screen.findByText(/FICHA-NUEVA: creada/)).toBeInTheDocument()
+      expect(await screen.findByText('Fila 2 · FICHA-NUEVA')).toBeInTheDocument()
+      expect(screen.getByText('Importado')).toBeInTheDocument()
     })
 
     it('si el CSV referencia un programa que no existe, reporta el error en esa fila sin romper las demás', async () => {
@@ -396,7 +397,7 @@ describe('Fichas', () => {
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
       const csv = 'codigoFicha,codigoPrograma,trimestre,sede\nFICHA-A,NOEXISTE,Trimestre 3,\nFICHA-B,ADSO,Trimestre 3,'
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
       await screen.findByText(/Se encontraron/)
@@ -404,7 +405,7 @@ describe('Fichas', () => {
       await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 2 filas' }))
 
       expect(await screen.findByText(/FICHA-A: No existe el programa "NOEXISTE"\./)).toBeInTheDocument()
-      expect(await screen.findByText(/FICHA-B: creada/)).toBeInTheDocument()
+      expect(await screen.findByText('Fila 3 · FICHA-B')).toBeInTheDocument()
       expect(apiPostMock).toHaveBeenCalledTimes(1)
     })
 
@@ -414,7 +415,7 @@ describe('Fichas', () => {
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv('codigoFicha,codigoPrograma\nFICHA-X,ADSO'))
 
       expect(await screen.findByText(/le faltan estas columnas: trimestre/)).toBeInTheDocument()
