@@ -161,7 +161,7 @@ export function AltaInstructores() {
               <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h3 className="text-sm font-semibold text-on-surface">Vista previa · {previa.validas} de {previa.total} filas válidas</h3><button type="button" className={primario} disabled={procesando || previa.validas !== previa.total || previa.total === 0} onClick={() => void enviarExcel(true)}>{procesando ? 'Importando…' : 'Confirmar e invitar'}</button></div>
               <table className="min-w-[620px] w-full text-left text-xs">
                 <thead className="bg-surface-container-low text-on-surface-variant"><tr><th className="px-3 py-2">Fila</th><th className="px-3 py-2">Nombre</th><th className="px-3 py-2">Correo</th><th className="px-3 py-2">Validación</th></tr></thead>
-                <tbody className="divide-y divide-outline-variant">{previa.filas.map((f) => <tr key={f.fila}><td className="px-3 py-3 tabular-nums">{f.fila}</td><td className="px-3 py-3">{String(f.datos.nombre ?? '')}</td><td className="px-3 py-3">{String(f.datos.correo ?? '')}</td><td className={`px-3 py-3 ${f.valido ? 'text-primary' : 'text-error'}`}>{f.valido ? 'Lista para importar' : f.error}</td></tr>)}</tbody>
+                <tbody className="divide-y divide-outline-variant">{previa.filas.map((f) => <tr key={f.fila}><td className="px-3 py-3 tabular-nums">{f.fila}</td><td className="px-3 py-3">{String(f.datos.nombre ?? '')}</td><td className="px-3 py-3">{String(f.datos.correo ?? '')}</td><td className={`px-3 py-3 ${f.valido ? 'text-primary' : 'text-error'}`}>{f.valido ? 'Formato válido' : f.error}</td></tr>)}</tbody>
               </table>
             </div>}
           </div>
