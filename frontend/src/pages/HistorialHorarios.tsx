@@ -215,6 +215,7 @@ export function HistorialHorarios() {
         periodo: idPeriodo !== undefined ? nombrePeriodo(idPeriodo) : 'Sin período vinculado',
         cantidad: vinculados.length || snapshot.bloques.length,
         borradores: vinculados.filter((h) => !h.publicado).length,
+        tieneEstado: vinculados.length > 0,
         programa: snapshot.programaNombre ?? 'Sin programa vinculado',
         fecha: snapshot.fechaCreacion,
         snapshot,
@@ -227,6 +228,7 @@ export function HistorialHorarios() {
       periodo: nombrePeriodo(grupo.bloques[0].idTrimestre),
       cantidad: grupo.bloques.length,
       borradores: grupo.bloques.filter((h) => !h.publicado).length,
+      tieneEstado: grupo.bloques.length > 0,
       programa: 'Horario de ficha',
       fecha: grupo.fecha,
       grupo,
@@ -303,7 +305,7 @@ export function HistorialHorarios() {
                         </td>
                         <td className="px-4 py-3 text-on-surface-variant">{entrada.periodo}</td>
                         <td className="px-4 py-3 text-on-surface-variant">
-                          {entrada.borradores > 0 ? `${entrada.borradores} sin publicar` : entrada.cantidad > 0 && entrada.tipo === 'importado' ? 'Publicado' : 'Consultar horario'}
+                          {!entrada.tieneEstado ? 'Sin estado verificable' : entrada.borradores > 0 ? `${entrada.borradores} sin publicar` : 'Publicado'}
                         </td>
                         <td className="px-4 py-3 text-on-surface-variant">{entrada.cantidad}</td>
                         <td className="px-4 py-3 text-on-surface-variant">{formatearFecha(entrada.fecha)}</td>
