@@ -404,7 +404,7 @@ describe('Fichas', () => {
 
       await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 2 filas' }))
 
-      expect(await screen.findByText(/FICHA-A: No existe el programa "NOEXISTE"\./)).toBeInTheDocument()
+      expect(await screen.findByText('No existe el programa "NOEXISTE".')).toBeInTheDocument()
       expect(await screen.findByText('Fila 3 · FICHA-B')).toBeInTheDocument()
       expect(apiPostMock).toHaveBeenCalledTimes(1)
     })

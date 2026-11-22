@@ -40,7 +40,7 @@ describe('ImportarArchivo', () => {
     const usuario = userEvent.setup()
     const importar = vi.fn()
     render(<ImportarArchivo columnas={COLUMNAS} onImportarFila={importar} onCerrar={() => {}} />)
-    await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv('codigo,nombre\\nA1,Ana\\nB2,'))
+    await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv('codigo,nombre\nA1,Ana\nB2,'))
     expect(await screen.findByText(/requieren corrección/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Confirmar importación de 2 filas' })).toBeDisabled()
     expect(importar).not.toHaveBeenCalled()
@@ -70,7 +70,7 @@ describe('ImportarArchivo', () => {
 
     expect(await screen.findByText('Fila 2 · A1')).toBeInTheDocument()
     expect(screen.getByText('Importado')).toBeInTheDocument()
-    expect(await screen.findByText(/B2: Ya existe\./)).toBeInTheDocument()
+    expect(await screen.findByText('Ya existe.')).toBeInTheDocument()
     expect(onImportarFila).toHaveBeenCalledTimes(2)
     await waitFor(() => expect(onTerminado).toHaveBeenCalledTimes(1))
   })

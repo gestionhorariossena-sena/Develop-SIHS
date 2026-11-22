@@ -6,7 +6,9 @@ import { renderConProviders } from '../../helpers/renderConProviders'
 
 const apiPostMock = vi.fn()
 const apiPostFormMock = vi.fn()
+const apiGetMock = vi.fn()
 vi.mock('../../../src/services/api', () => ({
+  apiGet: (...args: unknown[]) => apiGetMock(...args),
   apiPost: (...args: unknown[]) => apiPostMock(...args),
   apiPostForm: (...args: unknown[]) => apiPostFormMock(...args),
   ApiError: class ApiError extends Error {
@@ -19,6 +21,12 @@ describe('AltaInstructores', () => {
   beforeEach(() => {
     apiPostMock.mockReset()
     apiPostFormMock.mockReset()
+    apiGetMock.mockReset()
+    apiGetMock.mockImplementation((ruta: string) => {
+      if (ruta === '/usuarios/me') return Promise.resolve({ idUsuario: 'admin', nombre: 'Administrador', roles: [{ nombre: 'Administrador' }] })
+      if (ruta === '/notificaciones/') return Promise.resolve([])
+      return Promise.resolve([])
+    })
   })
 
   it('abre directamente la pestaña de carga masiva desde el directorio', () => {
