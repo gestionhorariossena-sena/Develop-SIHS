@@ -1,4 +1,49 @@
-# 🧪 SIHS · Semana 4 — El API desde cuatro ángulos
+# SIHS — Sistema Integral de Horarios SENA
+
+Monorepositorio de gestión de programación académica. Contiene API FastAPI, aplicación web React/TypeScript, cliente Flutter y recursos para pruebas y demostraciones locales.
+
+> **Estado de esta guía:** actualizado contra `fixes-multiples-nicol` y el commit `e4024b2` (21 de noviembre de 2026). Describe código existente, no certifica que todos los servicios o pruebas estén funcionando en este momento.
+
+## Dónde empezar
+
+| Área | Documentación |
+| --- | --- |
+| Web (React, Vite, TypeScript y Tailwind v4) | [frontend/README.md](frontend/README.md) y [estructura](frontend/ESTRUCTURA.md) |
+| API (FastAPI, SQLAlchemy, Supabase Auth) | [backend/README.md](backend/README.md) |
+| App Flutter (instructor y aprendiz) | [mobile/README.md](mobile/README.md) |
+| Base de datos y migraciones | [database/README.md](database/README.md) |
+| Demo local desechable | [DEMO_LOCAL.md](DEMO_LOCAL.md) |
+| Guía visual vigente | [Guía de marca v3](docs-sihs/Diseño/GUIA_DE_MARCA.md) |
+| Arquitectura y requisitos | [Índice documental](docs-sihs/README.md) |
+| Testing | [docs-testing/README.md](docs-testing/README.md) |
+
+## Funcionamiento actual
+
+- **Gestión:** administrador y coordinador pueden consultar programación, crear horarios manualmente en `/horarios/nuevo`, consultar importación con IA en `/horarios/asistente-ia`, revisar horarios, calendario, conflictos, historial y publicaciones programadas.
+- **Datos académicos:** fichas, programas, temáticas, instructores, ambientes y sedes.
+- **Autoservicio:** instructor y aprendiz cuentan con pantallas de horario y asistencia acordes a sus permisos; Flutter ofrece la consulta y las operaciones móviles descritas en su propia guía.
+- **Autorización:** Supabase Auth autentica; la API valida permisos por rol. Ocultar una ruta o menú en React no reemplaza los controles de backend.
+- **Carga inicial:** `AppRouter.tsx` usa importaciones diferidas de páginas y `App.tsx` muestra un fallback mediante `Suspense`.
+- **Horario:** el generador valida solapamientos de intervalos, incluidos cruces parciales. La prueba local con PostgreSQL está separada de las pruebas ordinarias.
+
+## Trabajar en la rama de este ciclo
+
+Las actualizaciones de este ciclo se hacen exclusivamente en `fixes-multiples-nicol`. No se debe cambiar de rama ni integrar en `main` o `develop` sin una instrucción explícita.
+
+```bash
+git branch --show-current
+git pull origin fixes-multiples-nicol
+```
+
+## Nota sobre documentación histórica
+
+El material de **Semana 4** que sigue fue redactado para el bootcamp de testing y conserva su valor como consigna histórica. **No describe el estado ni el flujo de ramas vigente de SIHS.**
+
+---
+
+## Archivo histórico: Semana 4
+
+### SIHS · Semana 4 — El API desde cuatro ángulos
 
 > **Rama base:** `semana-4` · **Equipo:** Nicol, David, Dayana y Edith · **Reto:** ≥4 tests nuevos de API por persona + 1 mutante detectado por persona · **Tiempo estimado:** 3 h · **Piso de cobertura:** 50 % en frontend y backend, **sin reducir umbrales heredados superiores**.
 
