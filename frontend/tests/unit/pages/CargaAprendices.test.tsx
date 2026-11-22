@@ -45,7 +45,7 @@ describe('CargaAprendices', () => {
     const panel = await screen.findByRole('region', { name: 'Importar aprendices' })
     expect(within(panel).getByText('3407178')).toBeInTheDocument()
     expect(apiPostMock).not.toHaveBeenCalled()
-    await usuario.click(within(panel).getByRole('button', { name: 'Confirmar importación de 1 aprendices' }))
+    await usuario.click(within(panel).getByRole('button', { name: 'Confirmar importación de 1 aprendiz' }))
     await waitFor(() => expect(apiPostMock).toHaveBeenCalledWith('/aprendices/alta/',
       expect.objectContaining({ codigoFicha: '3407178' }), 45000))
     expect(await screen.findByText(/Carga finalizada/)).toBeInTheDocument()
@@ -64,7 +64,7 @@ describe('CargaAprendices', () => {
     await usuario.upload(screen.getByLabelText('Archivo Excel de aprendices'), fichero())
     await usuario.click(screen.getByRole('button', { name: 'Revisar archivo' }))
     expect(await screen.findByText('La ficha no existe.')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Confirmar importación de 1 aprendices' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Confirmar importación de 1 aprendiz' })).toBeDisabled()
     expect(apiPostMock).not.toHaveBeenCalled()
   })
 })
