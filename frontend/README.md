@@ -123,7 +123,7 @@ Los instructores **no se registran por su cuenta** en `/registro`. Esa pantalla 
 
 Desde **Instructores → Registrar instructores**, Administrador y Coordinador pueden dar de alta personas de forma individual o con un archivo `.xlsx`. La nueva ruta `/instructores/registrar` está protegida con los roles de Gestión y consume `POST /instructores/alta/` o `POST /instructores/alta/importar`.
 
-La importación ofrece una **vista previa obligatoria** antes de confirmar. No se guardan contraseñas en el frontend ni se devuelven en las respuestas. Los resultados distinguen cuentas creadas, duplicados y correos pendientes. No confundir formato de archivo válido con cuenta nueva garantizada: el sistema también verifica duplicados en la base de datos y Supabase Auth.
+La importación ofrece una **vista previa obligatoria** antes de confirmar. Después de confirmar, el frontend procesa cada instructor con solicitudes individuales y muestra el progreso/resultados; así un Excel grande no depende del timeout de una sola petición. Si el proceso se interrumpe, se puede repetir el archivo: las cuentas ya existentes se omiten en lugar de recibir contraseñas nuevas. No se guardan contraseñas en el frontend ni se devuelven en las respuestas. Los resultados distinguen cuentas creadas, duplicados y correos pendientes. No confundir formato de archivo válido con cuenta nueva garantizada: el sistema también verifica duplicados en la base de datos y Supabase Auth.
 
 **Encabezados provisionales del Excel:** `nombre`, `correo`, `documento` (obligatorios), `tipoContrato`, `horasContratadasSemana`, `sigla` (opcionales). Esta plantilla debe ajustarse al Excel real de coordinación cuando se facilite una muestra; no se presume compatibilidad con formatos no revisados.
 
