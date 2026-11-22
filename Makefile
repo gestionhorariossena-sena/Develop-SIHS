@@ -37,7 +37,8 @@ demo-urls:
 	  'API (salud):      http://127.0.0.1:8000/api/v1/health' \
 	  'Supabase API:     http://127.0.0.1:54321' \
 	  'Supabase Studio:  http://127.0.0.1:54323' \
-	  'Mailpit:          http://127.0.0.1:54324'
+	  'Correo SIHS demo: http://127.0.0.1:8025' \
+	  'Correo Supabase:  http://127.0.0.1:54324'
 
 demo-info: demo-urls
 	@printf '%s\n' \
