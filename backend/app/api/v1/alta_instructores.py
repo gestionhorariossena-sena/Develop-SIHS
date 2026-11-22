@@ -84,7 +84,7 @@ def _alta(db: Session, datos: InstructorAlta, actor: Usuario) -> dict:
         return {"correo": correo, "estado": "requiere_revision", "detalle": "La cuenta de acceso se creó, pero el perfil no pudo completarse. Contacta soporte."}
 
     try:
-        EmailService.enviar_credencial_temporal(
+        EmailService.enviar_alta_instructor(
             destinatario_email=correo, destinatario_nombre=datos.nombre,
             password_temporal=clave,
         )
