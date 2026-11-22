@@ -63,7 +63,7 @@ function formatoHora(hora: string) {
 export function HorariosCompletos() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = normalizarRutaHorarioLegada('/horarios/completos', searchParams) ?? leerGestionarHorariosQuery(searchParams)
-  const { horarios, fichas, instructores, ambientes, sedes, trimestres, diasSemana, auditoria, cargandoAuditoria, errorAuditoria, cargando, error, erroresCatalogos, actualizarHorario } = useGestionarHorariosData()
+  const { horarios, fichas, instructores, ambientes, sedes, trimestres, diasSemana, auditoria, cargandoAuditoria, errorAuditoria, cargando, error, erroresCatalogos } = useGestionarHorariosData()
   const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false)
   function actualizarQuery(cambios: Partial<GestionarHorariosQuery>, reiniciarPagina = false) { setSearchParams(escribirGestionarHorariosQuery({ ...query, ...cambios, pagina: reiniciarPagina ? 1 : (cambios.pagina ?? query.pagina) })) }
 
