@@ -173,7 +173,7 @@ def listar_instructores(
     usuario=Depends(require_lectura_catalogo),
 ):
     """Solo usuarios con rol Instructor, ordenados por nombre. Antes cada
-    pantalla (Instructores, Vista por instructores, Código de instructor)
+    pantalla (Instructores, Vista por instructores)
     pedía /usuarios/ completo y filtraba el rol en el navegador. Va antes
     de /{id_usuario} para que "instructores" no se lea como un UUID."""
     return InstructorService.listar(db, busqueda=busqueda, id_especialidad=id_especialidad)
