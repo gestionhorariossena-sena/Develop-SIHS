@@ -5,6 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from app.models.programa import Programa
 from app.models.trimestre import Trimestre
 from app.models.sede import Sede
+from app.models.ficha import Ficha
 from app.repositories.ficha_repository import FichaRepository
 
 from app.core.database import get_db
@@ -47,12 +48,30 @@ def crear_ficha(
     if data.idSede is not None and not db.get(Sede, data.idSede):
         raise HTTPException(422, "La sede seleccionada no existe.")
     try:
-        ficha = FichaService.crear(db, data)
-        AuditoriaService.registrar(db, usuario=usuario, accion="CREAR", entidad="fichas", id_entidad=ficha.idFicha)
+        ficha = Ficha(
+            codigoFicha=data.codigoFicha.strip(),
+            idPrograma=data.idPrograma, idTrimestre=data.idTrimestre,
+            idSede=data.idSede,
+            fechaInicioLectiva=data.fechaInicioLectiva,
+            fechaFinLectiva=data.fechaFinLectiva,
+            fechaInicioProductiva=data.fechaInicioProductiva,
+            fechaFinProductiva=data.fechaFinProductiva,
+            faseActual=data.faseActual,
+        )
+        db.add(ficha)
+        db.flush()
+        AuditoriaService.registrar_transaccional(
+            db, usuario=usuario, accion="CREAR", entidad="fichas", id_entidad=ficha.idFicha,
+        )
+        db.commit()
+        db.refresh(ficha)
         return ficha
     except IntegrityError as exc:
         db.rollback()
         raise HTTPException(409, "La ficha ya existe o una referencia es inválida. Actualiza el catálogo y vuelve a importar.") from exc
+    except Exception:
+        db.rollback()
+        raise
 
 
 @router.get("/", response_model=list[FichaResponse])
