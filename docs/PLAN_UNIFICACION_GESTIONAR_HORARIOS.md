@@ -1,5 +1,7 @@
 # Plan de unificación: Gestionar horarios
 
+> **Seguimiento (2026-11-21):** el commit `e4024b2` incorpora `CabeceraGestionHorarios.tsx` con enlaces Lista (`/horarios/completos`), Calendario (`/calendario`) y Conflictos (`/horarios/auditoria`), además de ajustes en las páginas correspondientes. Esto es **avance parcial de presentación/navegación**, no cierre del objetivo de ruta única o de centralización de todas las consultas. `gestionarHorariosQuery.ts` todavía describe sus redirecciones como futuras y `AppRouter.tsx` mantiene rutas separadas. El análisis original de 2026-11-14 que sigue es histórico; verificar su tabla de rutas con código actual.
+
 Fecha: 2026-11-14
 
 Rama analizada: `fixes-multiples-nicol`
