@@ -11,6 +11,19 @@ class SmtpNoConfiguradoError(RuntimeError):
 
 
 class EmailService:
+    @staticmethod
+    def correo_demo_local() -> bool:
+        """Solo el contenedor demo puede enviar a SMTP local sin TLS/login."""
+        return (
+            settings.app_env == "demo"
+            and settings.smtp_host == "host.docker.internal"
+            and settings.smtp_port == 54325
+        )
+
+    @staticmethod
+    def smtp_configurado() -> bool:
+        return EmailService.correo_demo_local() or bool(settings.smtp_user and settings.smtp_password)
+
     """Punto único de envío de correo transaccional propio del backend (no
     confundir con los correos nativos de Supabase Auth, ej. recuperación de
     contraseña, que van por otra vía). Ver la decisión de arquitectura en
@@ -94,19 +107,18 @@ class EmailService:
 
     @staticmethod
     def _enviar(destinatario_email: str, asunto: str, cuerpo_texto_plano: str) -> None:
-        if not settings.smtp_user or not settings.smtp_password:
-            raise SmtpNoConfiguradoError(
-                "SMTP_USER/SMTP_PASSWORD no configurados — no se puede enviar correo todavía "
-                "(depende del ticket de recuperación de contraseña, mismo Epic)."
-            )
+        if not EmailService.smtp_configurado():
+            raise SmtpNoConfiguradoError("No se ha configurado SMTP para invitaciones.")
 
         mensaje = MIMEMultipart()
-        mensaje["From"] = f"{settings.smtp_from_nombre} <{settings.smtp_user}>"
+        remitente = settings.smtp_user or "sihs-demo@localhost.test"
+        mensaje["From"] = f"{settings.smtp_from_nombre} <{remitente}>"
         mensaje["To"] = destinatario_email
         mensaje["Subject"] = asunto
         mensaje.attach(MIMEText(cuerpo_texto_plano, "plain", "utf-8"))
 
         with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as servidor:
-            servidor.starttls()
-            servidor.login(settings.smtp_user, settings.smtp_password)
-            servidor.sendmail(settings.smtp_user, [destinatario_email], mensaje.as_string())
+            if not EmailService.correo_demo_local():
+                servidor.starttls()
+                servidor.login(settings.smtp_user, settings.smtp_password)
+            servidor.sendmail(remitente, [destinatario_email], mensaje.as_string())
