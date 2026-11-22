@@ -110,3 +110,9 @@ El listado principal de Historial es **por horario de ficha y período**, no por
 - **Añadir asignaciones en el constructor** abre `/horarios/nuevo?idFicha=<idFicha>` para precargar la ficha. No convierte automáticamente los bloques importados en un snapshot del constructor.
 - El historial no es el módulo de **publicaciones programadas**: este último administra fechas futuras, mientras que publicar/despublicar desde el historial cambia el estado actual.
 
+
+### Registro de instructores sin código previo (2026-11-21)
+
+El formulario público `/registro` permite solicitar el rol **Instructor** con datos personales y especialidad; **no exige un código `INS-*`** ni consulta endpoints de validación de códigos. La cuenta se crea mediante Supabase Auth con `rol_solicitado: Instructor` en los metadatos; el rol real se asigna posteriormente por un Administrador desde **Usuarios sin rol**. La selección de rol del solicitante nunca constituye autorización por sí misma.
+
+Se retiraron la página `/codigo-instructor`, su acceso en el menú y el paso de generación al aprobar un rol. Permanecen los códigos históricos almacenados en usuarios por compatibilidad de esquema, sin ser utilizados como credenciales o requisito de registro. La solicitud separada de acceso a Coordinador mantiene su propio flujo de aprobación.
