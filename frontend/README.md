@@ -116,3 +116,16 @@ El listado principal de Historial es **por horario de ficha y período**, no por
 El formulario público `/registro` permite solicitar el rol **Instructor** con datos personales y especialidad; **no exige un código `INS-*`** ni consulta endpoints de validación de códigos. La cuenta se crea mediante Supabase Auth con `rol_solicitado: Instructor` en los metadatos; el rol real se asigna posteriormente por un Administrador desde **Usuarios sin rol**. La selección de rol del solicitante nunca constituye autorización por sí misma.
 
 Se retiraron la página `/codigo-instructor`, su acceso en el menú y el paso de generación al aprobar un rol. Permanecen los códigos históricos almacenados en usuarios por compatibilidad de esquema, sin ser utilizados como credenciales o requisito de registro. La solicitud separada de acceso a Coordinador mantiene su propio flujo de aprobación.
+
+## Alta institucional de instructores (2026-11-21)
+
+Los instructores **no se registran por su cuenta** en `/registro`. Esa pantalla queda para Aprendiz; la solicitud de acceso de Coordinador permanece separada.
+
+Desde **Instructores → Registrar instructores**, Administrador y Coordinador pueden dar de alta personas de forma individual o con un archivo `.xlsx`. La nueva ruta `/instructores/registrar` está protegida con los roles de Gestión y consume `POST /instructores/alta/` o `POST /instructores/alta/importar`.
+
+La importación ofrece una **vista previa obligatoria** antes de confirmar. No se guardan contraseñas en el frontend ni se devuelven en las respuestas. Los resultados distinguen cuentas creadas, duplicados y correos pendientes. No confundir formato de archivo válido con cuenta nueva garantizada: el sistema también verifica duplicados en la base de datos y Supabase Auth.
+
+**Encabezados provisionales del Excel:** `nombre`, `correo`, `documento` (obligatorios), `tipoContrato`, `horasContratadasSemana`, `sigla` (opcionales). Esta plantilla debe ajustarse al Excel real de coordinación cuando se facilite una muestra; no se presume compatibilidad con formatos no revisados.
+
+Si SMTP no está configurado, la API no permite iniciar nuevas altas. Si la cuenta se crea pero falla el envío, se informa del fallo sin exponer la clave; la vía de recuperación disponible es Recuperar contraseña.
+
