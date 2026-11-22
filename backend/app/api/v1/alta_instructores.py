@@ -2,7 +2,7 @@
 import io
 import logging
 import secrets
-from zipfile import BadZipFile, ZipFile
+from zipfile import ZipFile
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
@@ -119,7 +119,7 @@ def _leer_excel(contenido: bytes) -> list[dict]:
         libro = load_workbook(io.BytesIO(contenido), read_only=True, data_only=True, keep_links=False)
     except HTTPException:
         raise
-    except (BadZipFile, ValueError, OSError) as exc:
+    except Exception as exc:
         raise HTTPException(422, "El archivo no es un Excel .xlsx válido.") from exc
     try:
         hoja = libro.active
