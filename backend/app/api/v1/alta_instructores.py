@@ -12,7 +12,6 @@ from openpyxl import load_workbook
 
 from app.core.database import get_db
 from app.core.supabase_auth import require_admin_o_coordinador
-from app.core.config import settings
 from app.models.usuario import Usuario
 from app.repositories.usuario_repository import UsuarioRepository
 from app.models.rol import Rol
