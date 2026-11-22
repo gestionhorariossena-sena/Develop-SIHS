@@ -197,7 +197,7 @@ export function Tematicas() {
       {esAdmin && mostrarCarga && <CargaMasivaTematicas
         programas={programas}
         idPrograma={idPrograma}
-        onTerminado={() => { setRecarga(n => n + 1); setMostrarCarga(false) }}
+        onTerminado={() => setRecarga(n => n + 1)}
         onCerrar={() => setMostrarCarga(false)}
       />}
 
