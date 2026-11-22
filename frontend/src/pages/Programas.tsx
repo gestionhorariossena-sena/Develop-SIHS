@@ -110,7 +110,7 @@ export function Programas() {
     let resultadosCreados = 0
     const errores: string[] = []
 
-    await ejecutarCargaMasiva(
+    const resumenCompetencias = await ejecutarCargaMasiva(
       previewCurriculo.competencias,
       async (competencia) => {
         const creada = await apiPost<CompetenciaFormacionResponse>('/competencias-formacion/', {
@@ -135,6 +135,10 @@ export function Programas() {
       (parciales) => setResultadoImportacion(`Procesadas ${parciales.length} de ${previewCurriculo.competencias.length} competencias…`),
       competencia => competencia.descripcion.split('\n')[0],
     )
+    for (const fallo of resumenCompetencias.filter(item => !item.ok)) {
+      errores.push(fallo.mensaje ?? 'No se pudo importar la competencia.')
+    }
+
 
 
     setResultadoImportacion(
