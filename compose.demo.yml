@@ -13,6 +13,11 @@ services:
       SUPABASE_ANON_KEY: ${DEMO_SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${DEMO_SUPABASE_SERVICE_ROLE_KEY}
       FRONTEND_URL: http://127.0.0.1:5173
+      # Correo de demo: SMTP local Supabase/Mailpit, no Gmail real.
+      SMTP_HOST: host.docker.internal
+      SMTP_PORT: 54325
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
     extra_hosts:
       - host.docker.internal:host-gateway
     ports:
