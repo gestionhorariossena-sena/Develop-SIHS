@@ -255,12 +255,13 @@ export function HistorialHorarios() {
 
   return (
     <AppShell activo="Historial de horarios">
-      <div className="mb-6 print:hidden">
-        <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Historial de horarios</h1>
-        <p className="text-sm text-on-surface-variant dark:text-slate-400">
-          Consulta horarios guardados desde el creador o el cargador de IA. Abre uno para ver sus clases y gestionarlo.
+      <header className="mb-8 max-w-3xl print:hidden">
+        <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-primary">Programación académica</p>
+        <h1 className="text-2xl font-bold tracking-tight text-on-surface sm:text-3xl">Historial de horarios</h1>
+        <p className="mt-2 text-sm leading-6 text-on-surface-variant">
+          Consulta los horarios por ficha y período. Abre uno para revisar su distribución semanal, modificar asignaciones o administrar su publicación.
         </p>
-      </div>
+      </header>
 
       {(error || errorReales) && (
         <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300 print:hidden">
@@ -280,13 +281,16 @@ export function HistorialHorarios() {
 
           {entradasHistorial.length > 0 && (
             <section aria-label="Horarios por ficha y período">
-              <h2 className="mb-1 text-base font-semibold text-on-surface">Horarios guardados</h2>
-              <p className="mb-3 text-sm text-on-surface-variant">
-                Cada fila representa un horario de una ficha y período académico. Abre el horario para consultar sus clases y realizar modificaciones puntuales.
-              </p>
-              <div className="overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-lg font-semibold text-on-surface">Horarios guardados</h2>
+                  <p className="mt-1 text-sm text-on-surface-variant">Un registro por horario. Las clases se consultan dentro de cada uno.</p>
+                </div>
+                <span className="text-xs font-medium tabular-nums text-on-surface-variant">{entradasHistorial.length} horario{entradasHistorial.length === 1 ? '' : 's'}</span>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-outline-variant bg-surface-container-lowest">
                 <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant">
+                  <thead className="border-b border-outline-variant bg-surface-container-low text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
                     <tr>
                       <th scope="col" className="px-4 py-3">Ficha</th>
                       <th scope="col" className="px-4 py-3">Período académico</th>
@@ -298,18 +302,20 @@ export function HistorialHorarios() {
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
                     {entradasHistorial.map((entrada) => (
-                      <tr key={entrada.clave} className="hover:bg-surface">
-                        <td className="px-4 py-3">
-                          <div className="font-semibold text-on-surface">{entrada.ficha}</div>
-                          <div className="mt-0.5 text-xs text-on-surface-variant">{entrada.tipo === 'creador' ? entrada.programa : 'Cargador de IA / asignaciones individuales'}</div>
+                      <tr key={entrada.clave} className="transition-colors hover:bg-surface-container-low/60">
+                        <td className="px-4 py-4">
+                          <div className="font-semibold tracking-tight text-on-surface">{entrada.ficha}</div>
+                          <div className="mt-1 max-w-64 truncate text-xs text-on-surface-variant" title={entrada.tipo === 'creador' ? entrada.programa : 'Importado / clases independientes'}>{entrada.tipo === 'creador' ? entrada.programa : 'Importado / clases independientes'}</div>
                         </td>
                         <td className="px-4 py-3 text-on-surface-variant">{entrada.periodo}</td>
-                        <td className="px-4 py-3 text-on-surface-variant">
-                          {!entrada.tieneEstado ? 'Sin estado verificable' : entrada.borradores > 0 ? `${entrada.borradores} sin publicar` : 'Publicado'}
+                        <td className="px-4 py-4">
+                          <span className={`inline-flex rounded-md px-2 py-1 text-xs font-medium ${!entrada.tieneEstado ? 'bg-surface-container text-on-surface-variant' : entrada.borradores > 0 ? 'bg-tertiary-container text-on-tertiary-container' : 'bg-primary-container text-on-primary-container'}`}>
+                            {!entrada.tieneEstado ? 'Sin estado verificable' : entrada.borradores > 0 ? `${entrada.borradores} sin publicar` : 'Publicado'}
+                          </span>
                         </td>
-                        <td className="px-4 py-3 text-on-surface-variant">{entrada.cantidad}</td>
-                        <td className="px-4 py-3 text-on-surface-variant">{formatearFecha(entrada.fecha)}</td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4 font-medium tabular-nums text-on-surface">{entrada.cantidad}</td>
+                        <td className="px-4 py-4 text-xs tabular-nums text-on-surface-variant">{formatearFecha(entrada.fecha)}</td>
+                        <td className="px-4 py-4">
                           {entrada.tipo === 'creador' ? (
                             confirmandoSnapshotId === entrada.snapshot.idHorarioGuardado ? (
                               <div className="flex flex-wrap items-center gap-2">
@@ -319,13 +325,13 @@ export function HistorialHorarios() {
                               </div>
                             ) : (
                               <div className="flex flex-wrap items-center gap-2">
-                                <button type="button" onClick={() => { setSeleccionadoId(entrada.snapshot.idHorarioGuardado); setGrupoSeleccionadoId(null) }} className="rounded-lg border border-outline px-3 py-2 text-xs font-semibold">Ver horario</button>
-                                <Link to={`/horarios/nuevo?editar=${entrada.snapshot.idHorarioGuardado}`} className="rounded-lg border border-outline px-3 py-2 text-xs font-semibold">Modificar</Link>
-                                <button type="button" onClick={() => setConfirmandoSnapshotId(entrada.snapshot.idHorarioGuardado)} aria-label={`Borrar horario de ${entrada.ficha}`} className="rounded-lg border border-outline px-3 py-2 text-xs text-error">Borrar</button>
+                                <button type="button" onClick={() => { setSeleccionadoId(entrada.snapshot.idHorarioGuardado); setGrupoSeleccionadoId(null) }} className="inline-flex min-h-9 items-center rounded-md bg-primary px-3 py-2 text-xs font-semibold text-on-primary hover:bg-on-primary-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Ver horario</button>
+                                <Link to={`/horarios/nuevo?editar=${entrada.snapshot.idHorarioGuardado}`} className="inline-flex min-h-9 items-center rounded-md border border-outline px-3 py-2 text-xs font-medium text-on-surface hover:bg-surface-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Modificar</Link>
+                                <button type="button" onClick={() => setConfirmandoSnapshotId(entrada.snapshot.idHorarioGuardado)} aria-label={`Borrar horario de ${entrada.ficha}`} className="inline-flex min-h-9 items-center rounded-md px-3 py-2 text-xs text-error hover:bg-error-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-error">Borrar</button>
                               </div>
                             )
                           ) : (
-                            <button type="button" onClick={() => { setGrupoSeleccionadoId(entrada.grupo.clave); setSeleccionadoId(null) }} aria-label={`Ver horario de ${entrada.ficha}`} className="rounded-lg border border-outline px-3 py-2 text-xs font-semibold">Ver horario</button>
+                            <button type="button" onClick={() => { setGrupoSeleccionadoId(entrada.grupo.clave); setSeleccionadoId(null) }} aria-label={`Ver horario de ${entrada.ficha}`} className="inline-flex min-h-9 items-center rounded-md bg-primary px-3 py-2 text-xs font-semibold text-on-primary hover:bg-on-primary-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">Ver horario</button>
                           )}
                         </td>
                       </tr>
