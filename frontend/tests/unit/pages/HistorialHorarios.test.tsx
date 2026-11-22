@@ -113,6 +113,7 @@ describe('HistorialHorarios', () => {
     renderConProviders(<HistorialHorarios />, ['/horarios/historial?idHorario=2'])
     const grupo = await screen.findByRole('region', { name: 'Horario de FICHA-SUELTA' })
     expect(within(grupo).getByRole('link', { name: 'Ver detalle' })).toHaveAttribute('href', '/horarios/completos?idHorario=2')
+    expect(within(grupo).getByRole('link', { name: 'Añadir asignaciones en el constructor' })).toHaveAttribute('href', '/horarios/nuevo?idFicha=2')
     await usuario.click(within(grupo).getByRole('button', { name: 'Despublicar bloques' }))
     expect(apiPatchMock).toHaveBeenCalledWith('/horarios/2/estado', { publicado: false })
     await usuario.click(within(grupo).getByRole('button', { name: 'Borrar bloque' }))
