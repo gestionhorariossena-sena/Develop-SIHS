@@ -8,8 +8,7 @@ ROL_INSTRUCTOR = "Instructor"
 
 class NoEsInstructorError(Exception):
     """La operación solo tiene sentido para alguien con rol Instructor
-    (código de registro, fortalezas). Antes se aceptaba cualquier usuario
-    y se podía, por ejemplo, emitir un código de instructor a un aprendiz."""
+    (como administrar sus especialidades)."""
 
 
 def es_instructor(usuario) -> bool:
@@ -34,7 +33,6 @@ class InstructorService:
                 if termino in instructor.nombre.lower()
                 or termino in (instructor.email or "").lower()
                 or termino in (instructor.sigla or "").lower()
-                or termino in (instructor.codigoInstructor or "").lower()
             ]
 
         if id_especialidad is not None:
