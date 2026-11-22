@@ -42,7 +42,7 @@ export function CargaMasivaTematicas({ programas, idPrograma, onTerminado, onCer
       // El mismo Excel puede haberse importado antes desde Programas:
       // reutilizar competencias y resultados existentes evita duplicados.
       const existentes = await apiGet<TematicaCompetencia[]>(`/tematicas/?id_programa=${programa}`)
-      const normalizar = (valor: string) => valor.trim().toLocaleLowerCase('es-CO').replace(/\\s+/g, ' ')
+      const normalizar = (valor: string) => valor.trim().toLocaleLowerCase('es-CO').replace(/\s+/g, ' ')
       const porDescripcion = new Map(existentes.map(item => [normalizar(item.descripcion), item]))
       const resultado = await ejecutarCargaMasiva(
         previa.competencias,
