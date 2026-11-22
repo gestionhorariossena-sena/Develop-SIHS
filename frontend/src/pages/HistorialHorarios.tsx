@@ -201,6 +201,39 @@ export function HistorialHorarios() {
   // igual que pidió, solo que por la vía de "es uno nuevo de verdad".
   const snapshotsOrdenados = [...(horarios ?? [])].sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion))
 
+  // Una fila por horario, no una fila por bloque. Los snapshots del creador
+  // mantienen su identidad; las asignaciones sin snapshot forman un horario
+  // operativo por ficha y período, independientemente de cuántas clases haya.
+  const entradasHistorial = [
+    ...snapshotsOrdenados.map((snapshot) => {
+      const vinculados = (horariosReales ?? []).filter((h) => snapshot.idsHorarios?.includes(h.idHorario))
+      const idPeriodo = vinculados[0]?.idTrimestre
+      return {
+        tipo: 'creador' as const,
+        clave: `creador:${snapshot.idHorarioGuardado}`,
+        ficha: snapshot.ficha,
+        periodo: idPeriodo !== undefined ? nombrePeriodo(idPeriodo) : 'Sin período vinculado',
+        cantidad: vinculados.length || snapshot.bloques.length,
+        borradores: vinculados.filter((h) => !h.publicado).length,
+        programa: snapshot.programaNombre ?? 'Sin programa vinculado',
+        fecha: snapshot.fechaCreacion,
+        snapshot,
+      }
+    }),
+    ...gruposImportados.map((grupo) => ({
+      tipo: 'importado' as const,
+      clave: `importado:${grupo.clave}`,
+      ficha: grupo.ficha,
+      periodo: nombrePeriodo(grupo.bloques[0].idTrimestre),
+      cantidad: grupo.bloques.length,
+      borradores: grupo.bloques.filter((h) => !h.publicado).length,
+      programa: 'Horario de ficha',
+      fecha: grupo.fecha,
+      grupo,
+    })),
+  ].sort((a, b) => b.fecha.localeCompare(a.fecha))
+
+
   // Vista de "Horario completo": ya NO se dibuja desde el blob congelado
   // (`seleccionado.bloques`/`grid`, tal como quedó al guardarlo) sino con
   // los horarios reales vigentes vía `idsHorarios` — así se ven los
@@ -243,103 +276,59 @@ export function HistorialHorarios() {
             </p>
           )}
 
-          {snapshotsOrdenados.length > 0 && (
-            <section aria-label="Horarios completos del creador">
-            <h2 className="mb-3 text-base font-semibold text-on-surface">Horarios del creador</h2>
-            <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
-                  <tr>
-                    <th scope="col" className="px-4 py-3">Ficha</th>
-                    <th scope="col" className="px-4 py-3">Detalle</th>
-                    <th scope="col" className="px-4 py-3">Creado por</th>
-                    <th scope="col" className="px-4 py-3">Fecha</th>
-                    <th scope="col" className="px-4 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant dark:divide-slate-700">
-                  {snapshotsOrdenados.map((h) => (
-                    <tr key={`snap-${h.idHorarioGuardado}`} className="hover:bg-surface dark:hover:bg-slate-700/60">
-                      <td className="px-4 py-3 font-medium text-on-surface dark:text-slate-100">
-                        {h.ficha}
-                        <span className="ml-2 rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
-                          Horario completo
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">
-                        {h.programaNombre ?? 'Sin programa vinculado'}
-                      </td>
-                      <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{h.creadorNombre ?? '—'}</td>
-                      <td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{formatearFecha(h.fechaCreacion)}</td>
-                      <td className="px-4 py-3 text-right">
-                        {confirmandoSnapshotId === h.idHorarioGuardado ? (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <span className="text-xs text-on-surface-variant dark:text-slate-400">¿Borrar?</span>
-                            <button
-                              type="button"
-                              onClick={() => void confirmarEliminarSnapshot(h.idHorarioGuardado)}
-                              disabled={borrandoSnapshotId === h.idHorarioGuardado}
-                              aria-label={`Confirmar borrar horario de ${h.ficha}`}
-                              className="rounded bg-red-600 px-2 py-1 text-[11px] font-semibold text-white hover:bg-red-700 disabled:opacity-60"
-                            >
-                              {borrandoSnapshotId === h.idHorarioGuardado ? 'Borrando…' : 'Sí, borrar'}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmandoSnapshotId(null)}
-                              aria-label={`Cancelar borrar horario de ${h.ficha}`}
-                              className="rounded border border-outline px-2 py-1 text-[11px] font-medium text-on-surface-variant hover:bg-surface dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setSeleccionadoId(h.idHorarioGuardado)}
-                              className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-                            >
-                              Ver horario
-                            </button>
-                            <Link
-                              to={`/horarios/nuevo?editar=${h.idHorarioGuardado}`}
-                              className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700"
-                            >
-                              Modificar
-                            </Link>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmandoSnapshotId(h.idHorarioGuardado)}
-                              aria-label={`Borrar horario de ${h.ficha}`}
-                              className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface-variant hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-red-950/50"
-                            >
-                              Borrar
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            </section>
-          )}
-          {gruposImportados.length > 0 && (
-            <section aria-label="Horarios del cargador y otros bloques" className={snapshotsOrdenados.length ? 'mt-7' : ''}>
-              <h2 className="mb-1 text-base font-semibold text-on-surface">Horarios del cargador y otros bloques</h2>
-              <p className="mb-3 text-sm text-on-surface-variant">Bloques guardados sin un horario completo del creador, agrupados por ficha y período académico.</p>
+          {entradasHistorial.length > 0 && (
+            <section aria-label="Horarios por ficha y período">
+              <h2 className="mb-1 text-base font-semibold text-on-surface">Horarios guardados</h2>
+              <p className="mb-3 text-sm text-on-surface-variant">
+                Cada fila representa un horario de una ficha y período académico. Abre el horario para consultar sus clases y realizar modificaciones puntuales.
+              </p>
               <div className="overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
-                <table className="w-full min-w-[640px] text-left text-sm">
-                  <thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant"><tr><th className="px-4 py-3">Ficha</th><th className="px-4 py-3">Período académico</th><th className="px-4 py-3">Bloques</th><th className="px-4 py-3">Último guardado</th><th className="px-4 py-3" /></tr></thead>
-                  <tbody className="divide-y divide-outline-variant">{gruposImportados.map((grupo) => <tr key={grupo.clave}>
-                    <td className="px-4 py-3 font-semibold text-on-surface">{grupo.ficha}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{nombrePeriodo(grupo.bloques[0].idTrimestre)}</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{grupo.bloques.length} · {grupo.bloques.filter((h) => !h.publicado).length} en borrador</td>
-                    <td className="px-4 py-3 text-on-surface-variant">{formatearFecha(grupo.fecha)}</td>
-                    <td className="px-4 py-3 text-right"><button type="button" onClick={() => { setGrupoSeleccionadoId(grupo.clave); setSeleccionadoId(null) }} className="rounded-xl border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface">Ver bloques</button></td>
-                  </tr>)}</tbody>
+                <table className="w-full min-w-[760px] text-left text-sm">
+                  <thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant">
+                    <tr>
+                      <th scope="col" className="px-4 py-3">Ficha</th>
+                      <th scope="col" className="px-4 py-3">Período académico</th>
+                      <th scope="col" className="px-4 py-3">Estado</th>
+                      <th scope="col" className="px-4 py-3">Clases</th>
+                      <th scope="col" className="px-4 py-3">Último guardado</th>
+                      <th scope="col" className="px-4 py-3">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant">
+                    {entradasHistorial.map((entrada) => (
+                      <tr key={entrada.clave} className="hover:bg-surface">
+                        <td className="px-4 py-3">
+                          <div className="font-semibold text-on-surface">{entrada.ficha}</div>
+                          <div className="mt-0.5 text-xs text-on-surface-variant">{entrada.tipo === 'creador' ? entrada.programa : 'Cargador de IA / asignaciones individuales'}</div>
+                        </td>
+                        <td className="px-4 py-3 text-on-surface-variant">{entrada.periodo}</td>
+                        <td className="px-4 py-3 text-on-surface-variant">
+                          {entrada.borradores > 0 ? `${entrada.borradores} sin publicar` : entrada.cantidad > 0 && entrada.tipo === 'importado' ? 'Publicado' : 'Consultar horario'}
+                        </td>
+                        <td className="px-4 py-3 text-on-surface-variant">{entrada.cantidad}</td>
+                        <td className="px-4 py-3 text-on-surface-variant">{formatearFecha(entrada.fecha)}</td>
+                        <td className="px-4 py-3">
+                          {entrada.tipo === 'creador' ? (
+                            confirmandoSnapshotId === entrada.snapshot.idHorarioGuardado ? (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs text-on-surface-variant">¿Borrar horario?</span>
+                                <button type="button" disabled={borrandoSnapshotId === entrada.snapshot.idHorarioGuardado} onClick={() => void confirmarEliminarSnapshot(entrada.snapshot.idHorarioGuardado)} aria-label={`Confirmar borrar horario de ${entrada.ficha}`} className="rounded-lg bg-error px-3 py-2 text-xs font-semibold text-on-primary">Confirmar</button>
+                                <button type="button" onClick={() => setConfirmandoSnapshotId(null)} aria-label={`Cancelar borrar horario de ${entrada.ficha}`} className="rounded-lg border border-outline px-3 py-2 text-xs">Cancelar</button>
+                              </div>
+                            ) : (
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button type="button" onClick={() => { setSeleccionadoId(entrada.snapshot.idHorarioGuardado); setGrupoSeleccionadoId(null) }} className="rounded-lg border border-outline px-3 py-2 text-xs font-semibold">Ver horario</button>
+                                <Link to={`/horarios/nuevo?editar=${entrada.snapshot.idHorarioGuardado}`} className="rounded-lg border border-outline px-3 py-2 text-xs font-semibold">Modificar</Link>
+                                <button type="button" onClick={() => setConfirmandoSnapshotId(entrada.snapshot.idHorarioGuardado)} aria-label={`Borrar horario de ${entrada.ficha}`} className="rounded-lg border border-outline px-3 py-2 text-xs text-error">Borrar</button>
+                              </div>
+                            )
+                          ) : (
+                            <button type="button" onClick={() => { setGrupoSeleccionadoId(entrada.grupo.clave); setSeleccionadoId(null) }} className="rounded-lg border border-outline px-3 py-2 text-xs font-semibold">Ver horario</button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
               </div>
             </section>
@@ -358,19 +347,19 @@ export function HistorialHorarios() {
                 disabled={publicando}
                 className="rounded-xl border border-primary px-3 py-2 text-sm font-semibold text-primary disabled:opacity-60"
               >
-                {publicando ? 'Guardando…' : grupoSeleccionado.bloques.every((bloque) => bloque.publicado) ? 'Despublicar bloques' : 'Publicar bloques'}
+                {publicando ? 'Guardando…' : grupoSeleccionado.bloques.every((bloque) => bloque.publicado) ? 'Despublicar horario' : 'Publicar horario'}
               </button>
               <ExportarPdfButton />
             </div>
           </div>
           <div className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-            <h2 className="text-lg font-semibold text-on-surface">Ficha {grupoSeleccionado.ficha}</h2>
+            <h2 className="text-lg font-semibold text-on-surface">Horario de la ficha {grupoSeleccionado.ficha}</h2>
             <p className="text-sm text-on-surface-variant">{grupoSeleccionado.bloques.length} bloque{grupoSeleccionado.bloques.length === 1 ? '' : 's'} guardado{grupoSeleccionado.bloques.length === 1 ? '' : 's'} · {nombrePeriodo(grupoSeleccionado.bloques[0].idTrimestre)}</p>
           </div>
           <div className="mb-4 overflow-x-auto rounded-xl border border-outline-variant bg-surface-container-lowest p-4"><div className="min-w-[760px]"><GridAsistente celdas={celdasDesdeHorarios(grupoSeleccionado.bloques)} soloFranjasOcupadas /></div></div>
           <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 print:hidden">
-            <h3 className="mb-2 font-semibold text-on-surface">Bloques de esta ficha</h3>
-            <p className="mb-3 text-sm text-on-surface-variant">Estos bloques se guardaron sin un horario completo del constructor. Puedes modificar o borrar clases individuales y administrar su publicación aquí. Para añadir nuevas asignaciones utiliza el constructor, seleccionando esta misma ficha y período.</p>
+            <h3 className="mb-2 font-semibold text-on-surface">Clases de este horario</h3>
+            <p className="mb-3 text-sm text-on-surface-variant">Este horario contiene asignaciones del cargador o clases individuales, agrupadas por ficha y período. Puedes modificar o borrar clases individuales y administrar su publicación aquí. Para añadir asignaciones, abre el constructor con esta ficha seleccionada.</p>
             <Link to={`/horarios/nuevo?idFicha=${grupoSeleccionado.bloques[0].idFicha}`} className="mb-3 inline-flex rounded-xl border border-outline px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface">Añadir asignaciones en el constructor</Link>
             <ul className="divide-y divide-outline-variant">{grupoSeleccionado.bloques.map((bloque) => <li key={bloque.idHorario} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
               <div><p className="font-semibold text-on-surface">{bloque.resultadoDescripcion ?? bloque.resultadoCodigo ?? `Bloque #${bloque.idHorario}`}</p><p className="text-on-surface-variant">{bloque.dias.map((dia) => diasPorId[dia] ?? dia).join(', ')} · {formatearHora(bloque.horaInicio)}–{formatearHora(bloque.horaFin)} · {bloque.instructorNombre ?? 'Sin instructor'} · {bloque.publicado ? 'Publicado' : 'Borrador'}</p></div>
