@@ -82,3 +82,5 @@ Usa los usuarios ficticios que muestra `make demo-info`, carga pequeños archivo
 **Carga masiva** incorpora registros desde archivos (Fichas, Ambientes, Instructores y plan curricular). **Exportar carga docente** es una operación de salida desde el directorio de Instructores: genera un CSV con las horas semanales calculadas por las clases programadas, para todos los registros filtrados. No es un quinto importador ni requiere subir un archivo.
 
 Pruebas específicas: `pnpm exec vitest run tests/unit/utils/exportarCargaDocente.test.ts tests/unit/pages/Instructores.test.tsx` desde `frontend/`.
+
+**Accesos desde Instructores:** `Cargar instructores desde Excel` abre la pestaña de importación directamente; `Registrar instructor` abre el formulario manual; `Exportar carga docente (.csv)` genera un archivo de salida con las clases existentes. No confundir la recepción de registros de instructores con una futura importación de horas o asignaciones docentes.
