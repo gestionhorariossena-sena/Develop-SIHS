@@ -16,8 +16,10 @@ class EmailService:
         """Solo el contenedor demo puede enviar a SMTP local sin TLS/login."""
         return (
             settings.app_env == "demo"
-            and settings.smtp_host == "host.docker.internal"
-            and settings.smtp_port == 54325
+            and (
+                (settings.smtp_host == "mailpit" and settings.smtp_port == 1025)
+                or (settings.smtp_host == "host.docker.internal" and settings.smtp_port == 54325)
+            )
         )
 
     @staticmethod
