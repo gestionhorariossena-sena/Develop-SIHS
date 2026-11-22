@@ -88,7 +88,30 @@ describe('HistorialHorarios', () => {
     expect(within(horario).getByText('8:00 a.m')).toBeInTheDocument()
     expect(within(horario).getByText('– 10:00 a.m')).toBeInTheDocument()
     expect(within(horario).getAllByText(/Fredy Ardila/).length).toBeGreaterThan(0)
-    expect(within(horario).getByRole('link', { name: 'Ver y gestionar' })).toHaveAttribute('href', '/horarios/completos?idHorario=2')
+    expect(within(horario).getByRole('link', { name: 'Ver detalle' })).toHaveAttribute('href', '/horarios/completos?idHorario=2')
+  })
+
+  it('abre directamente el horario completo al llegar con idHorario desde Gestionar horarios', async () => {
+    mockeaBase()
+    renderConProviders(<HistorialHorarios />, ['/horarios/historial?idHorario=1'])
+    expect(await screen.findByText('Clases de este horario')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Modificar' })).toHaveAttribute('href', '/horarios/nuevo?editar=10')
+    expect(screen.getByRole('button', { name: 'Despublicar' })).toBeInTheDocument()
+  })
+
+  it('abre directamente el grupo del cargador y permite publicar y borrar un bloque', async () => {
+    mockeaBase([CLASE_SUELTA], [])
+    apiPatchMock.mockResolvedValue({ ...CLASE_SUELTA, publicado: false })
+    apiDeleteMock.mockResolvedValue(undefined)
+    const usuario = userEvent.setup()
+    renderConProviders(<HistorialHorarios />, ['/horarios/historial?idHorario=2'])
+    const grupo = await screen.findByRole('region', { name: 'Horario de FICHA-SUELTA' })
+    expect(within(grupo).getByRole('link', { name: 'Ver detalle' })).toHaveAttribute('href', '/horarios/completos?idHorario=2')
+    await usuario.click(within(grupo).getByRole('button', { name: 'Despublicar bloques' }))
+    expect(apiPatchMock).toHaveBeenCalledWith('/horarios/2/estado', { publicado: false })
+    await usuario.click(within(grupo).getByRole('button', { name: 'Borrar bloque' }))
+    await usuario.click(within(grupo).getByRole('button', { name: 'Confirmar borrar' }))
+    expect(apiDeleteMock).toHaveBeenCalledWith('/horarios/2')
   })
 
   it('el botón "Modificar" de la lista enlaza al creador en modo edición', async () => {
