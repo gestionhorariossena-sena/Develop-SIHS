@@ -98,3 +98,12 @@ pnpm build
 ```
 
 `pnpm test:e2e` delega en `../e2e`; se necesitan sus dependencias y el entorno que requiera cada escenario. No dar por hecho que las pruebas de login funcionan sin credenciales de prueba apropiadas.
+
+### Flujo de edición y publicación desde Historial (2026-11-21)
+
+- El detalle de un bloque en **Gestionar horarios** es de consulta: «Abrir en historial» navega a `/horarios/historial?idHorario=<id>` y abre el conjunto que contiene el bloque.
+- Si el bloque pertenece a un horario completo del constructor, el historial ofrece **Modificar** (`/horarios/nuevo?editar=<idHorarioGuardado>`), publicación del conjunto, gestión de clases, borrado y exportación.
+- Para bloques del cargador sin snapshot, el historial agrupa por ficha y período: ofrece edición individual de instructor, ambiente, RAP, jornada, horas y días, publicación/despublicación del grupo y borrado de bloques. La edición mantiene el estado de publicación y pasa por validaciones del backend.
+- **Añadir asignaciones en el constructor** abre `/horarios/nuevo?idFicha=<idFicha>` para precargar la ficha. No convierte automáticamente los bloques importados en un snapshot del constructor.
+- El historial no es el módulo de **publicaciones programadas**: este último administra fechas futuras, mientras que publicar/despublicar desde el historial cambia el estado actual.
+
