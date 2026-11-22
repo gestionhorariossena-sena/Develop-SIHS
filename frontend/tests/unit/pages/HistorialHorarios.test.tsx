@@ -91,7 +91,7 @@ describe('HistorialHorarios', () => {
     const usuario = userEvent.setup()
     renderConProviders(<HistorialHorarios />)
     expect(await screen.findByText('FICHA-SUELTA')).toBeInTheDocument()
-    await usuario.click(screen.getByRole('button', { name: 'Ver horario' }))
+    await usuario.click(screen.getByRole('button', { name: 'Ver horario de FICHA-SUELTA' }))
     const horario = screen.getByRole('region', { name: 'Horario de FICHA-SUELTA' })
     expect(within(horario).getByText('8:00 a.m')).toBeInTheDocument()
     expect(within(horario).getByText('– 10:00 a.m')).toBeInTheDocument()
