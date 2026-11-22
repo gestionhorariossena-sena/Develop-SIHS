@@ -76,3 +76,9 @@ Usa los usuarios ficticios que muestra `make demo-info`, carga pequeños archivo
 - Consistencia visual: mismas jerarquías y nombres, lectura móvil, mensajes de error accionables y estados de confirmación deshabilitados durante el procesamiento.
 
 **Pendiente de validar en el entorno de ejecución:** esta refactorización no incluye ejecución real de Docker, correo ni Vitest desde el conector GitHub. El éxito de un commit no sustituye esos controles.
+
+## Diferencia entre cargar y exportar
+
+**Carga masiva** incorpora registros desde archivos (Fichas, Ambientes, Instructores y plan curricular). **Exportar carga docente** es una operación de salida desde el directorio de Instructores: genera un CSV con las horas semanales calculadas por las clases programadas, para todos los registros filtrados. No es un quinto importador ni requiere subir un archivo.
+
+Pruebas específicas: `pnpm exec vitest run tests/unit/utils/exportarCargaDocente.test.ts tests/unit/pages/Instructores.test.tsx` desde `frontend/`.
