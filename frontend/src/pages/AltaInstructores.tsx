@@ -46,7 +46,7 @@ export function AltaInstructores() {
 
   useEffect(() => {
     apiGet<{ smtpConfigurado: boolean; supabaseConfigurado: boolean; modoDemo: boolean }>('/instructores/alta/diagnostico')
-      .then(setDiagnostico)
+      .then(valor => { if (typeof valor?.smtpConfigurado === 'boolean' && typeof valor?.supabaseConfigurado === 'boolean') setDiagnostico(valor) })
       .catch(() => setDiagnostico(null))
   }, [])
 
