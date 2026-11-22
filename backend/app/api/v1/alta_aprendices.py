@@ -14,7 +14,6 @@ from openpyxl import load_workbook
 from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.core.database import get_db
 from app.core.supabase_auth import require_admin_o_coordinador
 from app.models.ficha_usuario import FichaUsuario
