@@ -323,7 +323,7 @@ export function HistorialHorarios() {
                               </div>
                             )
                           ) : (
-                            <button type="button" onClick={() => { setGrupoSeleccionadoId(entrada.grupo.clave); setSeleccionadoId(null) }} className="rounded-lg border border-outline px-3 py-2 text-xs font-semibold">Ver horario</button>
+                            <button type="button" onClick={() => { setGrupoSeleccionadoId(entrada.grupo.clave); setSeleccionadoId(null) }} aria-label={`Ver horario de ${entrada.ficha}`} className="rounded-lg border border-outline px-3 py-2 text-xs font-semibold">Ver horario</button>
                           )}
                         </td>
                       </tr>
