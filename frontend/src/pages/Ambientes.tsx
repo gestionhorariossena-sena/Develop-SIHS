@@ -326,6 +326,7 @@ export function Ambientes() {
 
  {mostrarImportar && (
  <ImportarArchivo
+ entidad="ambientes"
  columnas={COLUMNAS_IMPORTAR_AMBIENTE}
  onImportarFila={importarFilaAmbiente}
  onTerminado={refrescarAmbientesTrasImportar}
