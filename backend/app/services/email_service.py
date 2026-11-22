@@ -37,6 +37,23 @@ class EmailService:
         EmailService._enviar(destinatario_email, asunto, cuerpo)
 
     @staticmethod
+    def enviar_alta_instructor(*, destinatario_email: str, destinatario_nombre: str, password_temporal: str) -> None:
+        """Invitación por gestión; no presupone que el docente solicitó acceso."""
+        asunto = "Tu cuenta de instructor en SIHS"
+        acceso = f"Accede a {settings.frontend_url.rstrip('/')}/login\\n" if settings.frontend_url else "Ingresa al portal SIHS de tu centro.\\n"
+        cuerpo = (
+            f"Hola {destinatario_nombre},\\n\\n"
+            "Coordinación académica ha creado tu cuenta de instructor en SIHS.\\n"
+            f"Usuario: {destinatario_email}\\n"
+            f"Contraseña temporal: {password_temporal}\\n\\n"
+            f"{acceso}"
+            "Al iniciar sesión deberás cambiar la contraseña temporal por una propia.\\n"
+            "No compartas estas credenciales. Si no reconoces esta invitación, contacta a coordinación.\\n\\n"
+            "SIHS SENA — Gestión de Horarios"
+        )
+        EmailService._enviar(destinatario_email, asunto, cuerpo)
+
+    @staticmethod
     def enviar_rechazo_solicitud(*, destinatario_email: str, destinatario_nombre: str, motivo_rechazo: str) -> None:
         asunto = "Tu solicitud de acceso a SIHS SENA no fue aprobada"
         cuerpo = (
