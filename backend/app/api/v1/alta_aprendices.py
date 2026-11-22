@@ -156,7 +156,7 @@ def crear_aprendiz(
     error = _revisar_fila(db, datos)
     if error:
         return {"correo": correo, "estado": "omitido", "detalle": error}
-    if not settings.smtp_user or not settings.smtp_password:
+    if not EmailService.smtp_configurado():
         raise HTTPException(503, "Configura SMTP para enviar las credenciales temporales.")
     try:
         if buscar_usuario_supabase_por_email(correo):
