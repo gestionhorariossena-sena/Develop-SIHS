@@ -87,3 +87,16 @@ El repositorio también incluye `backend/Dockerfile.dev`, `compose.demo.yml`, `s
 El sistema **ya no utiliza códigos de instructor para el alta**. Se retiraron los endpoints `POST /usuarios/instructor/codigo/generar` y `POST /usuarios/instructor/codigo/validar` y sus esquemas/servicios de emisión. El registro de Instructor ocurre en Supabase Auth y el Administrador asigna el rol real mediante el flujo de `usuario-rol`; solicitar un rol en metadatos no confiere permisos. Las operaciones académicas siguen utilizando `idUsuario` (UUID) y relaciones de rol, no el código de registro.
 
 Los campos históricos `usuarios.codigoInstructor` y `idTrimestre` no se borraron de base de datos para evitar pérdida de datos o cambios destructivos de migración. No deben interpretarse como requisito de acceso.
+
+## Alta institucional de instructores (2026-11-21)
+
+El router `/api/v1/instructores/alta` permite a **Administrador y Coordinador** crear cuentas, asignarles el rol `Instructor` y enviarles credenciales temporales mediante SMTP. No acepta peticiones de Instructor o Aprendiz.
+
+- `POST /api/v1/instructores/alta/`: alta individual con nombre, correo, documento y datos opcionales de contrato/horas/sigla.
+- `POST /api/v1/instructores/alta/importar`: recibe `multipart/form-data` con `archivo` .xlsx; `confirmar=false` devuelve la previa sin efectos; `confirmar=true` procesa hasta 200 filas si todas son válidas.
+- Tamaño máximo: 2 MB. Columnas obligatorias: `nombre`, `correo`, `documento`; opcionales: `tipoContrato`, `horasContratadasSemana`, `sigla`. La estructura oficial de Excel de coordinación está **pendiente de recibir y validar**.
+- Se rechaza silenciosamente la reutilización de una identidad existente: un correo ya presente en Supabase Auth o documento/correo existentes en SIHS devuelven estado `omitido` sin cambiar contraseñas ni roles.
+- Las cuentas nuevas se crean con `debeCambiarClave=True`; el frontend obliga a cambiar la clave inicial. `EmailService.enviar_alta_instructor` envía usuario y clave al correo del instructor; el secreto nunca forma parte de las respuestas API ni de las auditorías.
+- `SMTP_USER` y `SMTP_PASSWORD` deben configurarse en el backend antes de realizar altas. El correo se intenta tras confirmar la creación. Si falla, el resultado es `correo_pendiente` y el instructor debe usar el flujo de recuperación de contraseña o soporte administrativo.
+- El sistema **no implementa caducidad temporal real** de la contraseña: se fuerza el cambio en primer acceso, pero no se anuncia una expiración de horas sin respaldo técnico. Configurar/verificar SMTP, Supabase Service Role y el dominio frontend antes de producción.
+
