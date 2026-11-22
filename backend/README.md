@@ -73,3 +73,11 @@ La suite rechaza cualquier host, puerto, nombre de base o credenciales que no
 sean los del contenedor desechable. Incluye una prueba de persistencia JSONB en
 `HorarioGuardadoRepository` y una prueba HTTP autenticada que publica un
 horario y verifica que solo el instructor asignado lo recibe en `Mi horario`.
+
+## Actualización de generación y entorno local (2026-11-21)
+
+En `app/scheduling/generator.py`, el bloqueo de recursos compara intervalos de tiempo por **solapamiento real**, no solo por igualdad de franjas. Dos clases que se tocan en el límite (por ejemplo 06:00–08:00 y 08:00–10:00) no se superponen, mientras que 07:00–09:00 y 08:00–10:00 sí. Hay casos unitarios en `tests/test_scheduling_generator.py`.
+
+Desde la raíz y con Docker disponible, `make test-run` levanta un PostgreSQL aislado y ejecuta `tests/test_real_postgres.py`; `make test-down` lo elimina. Es una opción Unix/Make alternativa a los comandos PowerShell anteriores. No usar credenciales de bases reales para esta suite.
+
+El repositorio también incluye `backend/Dockerfile.dev`, `compose.demo.yml`, `supabase/config.toml` y un seed sintético para el [entorno local de demo](../DEMO_LOCAL.md). Esta configuración de demo es distinta del entorno remoto y no sustituye las migraciones Alembic de operaciones habituales. No se ha certificado en esta actualización documental que el stack levante correctamente de extremo a extremo.
