@@ -59,3 +59,27 @@ def test_preview_valida_ficha_antes_de_crear(client, autenticar_como):
     assert respuesta.status_code == 200
     assert respuesta.json()["validas"] == 0
     assert "no existe" in respuesta.json()["filas"][0]["error"].lower()
+
+
+
+def test_directorio_muestra_aprendiz_y_ficha(client, db_session, crear_ficha, crear_usuario, crear_rol, autenticar_como):
+    from app.models.ficha_usuario import FichaUsuario
+    ficha = crear_ficha(codigo="3407178")
+    rol = crear_rol("Aprendiz")
+    aprendiz = crear_usuario(nombre="Aprendiz Demo 01", roles=[rol])
+    db_session.add(FichaUsuario(idFicha=ficha.idFicha, idUsuario=aprendiz.idUsuario))
+    db_session.commit()
+
+    _, headers = autenticar_como("Coordinador")
+    respuesta = client.get("/api/v1/aprendices/alta/", headers=headers)
+    assert respuesta.status_code == 200, respuesta.text
+    datos = respuesta.json()
+    registro = next(x for x in datos if x["idUsuario"] == str(aprendiz.idUsuario))
+    assert registro["codigoFicha"] == "3407178"
+    assert registro["programa"] == ficha.programa.nombrePrograma
+    assert registro["nombre"] == "Aprendiz Demo 01"
+
+
+def test_directorio_protegido_para_instructores(client, autenticar_como):
+    _, headers = autenticar_como("Instructor")
+    assert client.get("/api/v1/aprendices/alta/", headers=headers).status_code == 403
