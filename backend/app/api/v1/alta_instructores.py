@@ -6,6 +6,7 @@ from zipfile import ZipFile
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+import httpx
 from pydantic import BaseModel, EmailStr, Field, ValidationError, field_validator
 from sqlalchemy.orm import Session
 from openpyxl import load_workbook
@@ -43,8 +44,19 @@ class InstructorAlta(BaseModel):
 
 def _smtp_disponible():
     if not EmailService.smtp_configurado():
-        raise HTTPException(503, "El correo de invitaciones no está configurado. Avisa a administración antes de crear cuentas.")
+        raise HTTPException(
+            503, {"motivo": "smtp", "mensaje": "No está configurado el correo para enviar invitaciones. Si estás en Docker demo, reinicia la configuración SMTP local."},
+        )
 
+
+@router.get("/diagnostico")
+def diagnosticar_alta(actor: Usuario = Depends(require_admin_o_coordinador)):
+    """Solo configuración, sin exponer credenciales ni consultar cuentas de terceros."""
+    return {
+        "smtpConfigurado": EmailService.smtp_configurado(),
+        "modoDemo": settings.app_env == "demo",
+        "supabaseConfigurado": bool(settings.supabase_url and settings.supabase_service_role_key),
+    }
 
 def _alta(db: Session, datos: InstructorAlta, actor: Usuario) -> dict:
     correo = str(datos.correo).strip().lower()
@@ -98,11 +110,25 @@ def _alta(db: Session, datos: InstructorAlta, actor: Usuario) -> dict:
 @router.post("/")
 def alta_individual(datos: InstructorAlta, db: Session = Depends(get_db), actor: Usuario = Depends(require_admin_o_coordinador)):
     _smtp_disponible()
+    if not settings.supabase_url or not settings.supabase_service_role_key:
+        raise HTTPException(503, {"motivo": "supabase", "mensaje": "Faltan las variables de Supabase Auth del backend. Comprueba la configuración de Docker demo."})
     try:
         return _alta(db, datos, actor)
+    except httpx.HTTPStatusError as exc:
+        logger.exception("Supabase Admin rechazó el alta de instructor")
+        estado = exc.response.status_code
+        detalle = (
+            "Supabase Auth rechazó las credenciales administrativas. Comprueba SUPABASE_SERVICE_ROLE_KEY y SUPABASE_URL."
+            if estado in (401, 403) else
+            "Supabase Auth devolvió un error. Comprueba que el servicio local esté iniciado y las variables de Docker correspondan al mismo proyecto."
+        )
+        raise HTTPException(503, {"motivo": "supabase", "mensaje": detalle}) from exc
+    except (httpx.RequestError, ValueError, KeyError) as exc:
+        logger.exception("Falló la conexión o respuesta de Supabase Admin")
+        raise HTTPException(503, {"motivo": "supabase", "mensaje": "No se pudo conectar con Supabase Auth. Revisa DEMO_SUPABASE_INTERNAL_URL, la clave de servicio y que Supabase local esté iniciado."}) from exc
     except Exception as exc:
         logger.exception("Falló el alta de instructor")
-        raise HTTPException(503, "No se pudo completar el alta. Comprueba la configuración del servidor.") from exc
+        raise HTTPException(500, "El alta falló por un error interno. Consulta el log de Docker para identificar la causa.") from exc
 
 
 def _normalizar(valor: object) -> str:
