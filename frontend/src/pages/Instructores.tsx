@@ -184,7 +184,13 @@ export function Instructores() {
           </h1>
           <p className="text-sm text-on-surface-variant dark:text-slate-400">Planta de instructores y especialidades asignadas.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/instructores/registrar?modo=excel"
+            className="inline-flex min-h-10 items-center rounded-md border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            Cargar instructores desde Excel
+          </Link>
           <button
             type="button"
             disabled={cargando || !horariosDisponibles || visibles.length === 0}
@@ -202,7 +208,7 @@ export function Instructores() {
             Exportar carga docente (.csv)
           </button>
           <Link to="/instructores/registrar" className="inline-flex min-h-10 items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container">
-            Registrar instructores
+            Registrar instructor
           </Link>
         </div>
       </div>
