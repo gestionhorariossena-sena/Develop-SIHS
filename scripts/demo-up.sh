@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Supabase CLI ejecuta los servicios oficiales (Postgres, Auth, API, Studio y
-# Mailpit). El frontend y backend se ejecutan en Compose y reciben únicamente
+# Supabase CLI ejecuta Postgres, Auth, API, Studio y su propio buzón SMTP.
+# Compose incorpora además Mailpit dedicado a las invitaciones de SIHS.
+# El frontend y backend reciben únicamente
 # las credenciales efímeras del stack local.
 supabase start >/dev/null
 
