@@ -78,3 +78,14 @@ En `compose.demo.yml`, el backend usa `APP_ENV=demo`, `SMTP_HOST=host.docker.int
 4. Prueba el acceso con la contraseña temporal mostrada **en el correo de prueba**, no en SIHS. Verifica que la aplicación obliga a cambiarla.
 
 Este flujo no entrega correos a Gmail desde la demo: solo captura mensajes en el servidor de pruebas. Si se usa una configuración SMTP real en otro entorno, conserva STARTTLS y autenticación.
+
+
+### Actualización: Mailpit incluido en compose.demo.yml (2026-11-22)
+
+El SMTP de pruebas del backend ya **no depende del puerto 54325 de Supabase CLI**.
+`compose.demo.yml` inicia un servicio `mailpit` en la misma red que el backend.
+Usa `SMTP_HOST=mailpit`, `SMTP_PORT=1025`, sin login/STARTTLS **solo en APP_ENV=demo**.
+La bandeja accesible desde el navegador está en **http://127.0.0.1:8025**.
+El puerto 54324 de Supabase local puede seguir mostrando otros mensajes nativos de Supabase Auth; no confundas ambos buzones.
+Recrea la demo para aplicar los valores: `docker compose -f compose.demo.yml up -d --build`.
+Verifica `docker compose -f compose.demo.yml logs --tail=100 backend mailpit` si falla el envío.
