@@ -31,3 +31,13 @@ def test_demo_no_permite_host_remoto_sin_credenciales(monkeypatch):
     monkeypatch.setattr(settings, "smtp_password", "")
     assert not EmailService.correo_demo_local()
     assert not EmailService.smtp_configurado()
+
+
+def test_mailpit_del_compose_demo_no_exige_tls_ni_login(monkeypatch):
+    monkeypatch.setattr(settings, "app_env", "demo")
+    monkeypatch.setattr(settings, "smtp_host", "mailpit")
+    monkeypatch.setattr(settings, "smtp_port", 1025)
+    monkeypatch.setattr(settings, "smtp_user", "")
+    monkeypatch.setattr(settings, "smtp_password", "")
+    assert EmailService.correo_demo_local() is True
+    assert EmailService.smtp_configurado() is True
