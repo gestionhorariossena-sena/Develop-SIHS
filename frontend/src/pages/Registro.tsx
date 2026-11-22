@@ -39,7 +39,6 @@ export function Registro() {
   const [confirmarPassword, setConfirmarPassword] = useState('')
   const [rol, setRol] = useState<RolSolicitado>('Instructor')
   const [pasoRegistro, setPasoRegistro] = useState<'rol' | 'datos'>('rol')
-  const [codigoInstructor, setCodigoInstructor] = useState('')
   const [especialidad, setEspecialidad] = useState('')
   const [codigoFicha, setCodigoFicha] = useState('')
   const [programaFormacion, setProgramaFormacion] = useState('')
@@ -47,7 +46,6 @@ export function Registro() {
   const [error, setError] = useState<string | null>(null)
   const [errorConfirmacion, setErrorConfirmacion] = useState(false)
   const [errorPolitica, setErrorPolitica] = useState(false)
-  const [errorCodigoInstructor, setErrorCodigoInstructor] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const [mostrarSolicitudCoordinador, setMostrarSolicitudCoordinador] = useState(false)
@@ -56,7 +54,6 @@ export function Registro() {
     event.preventDefault()
     setError(null)
     setErrorPolitica(false)
-    setErrorCodigoInstructor(null)
 
     if (password !== confirmarPassword) {
       setErrorConfirmacion(true)
@@ -66,8 +63,8 @@ export function Registro() {
       setError('El número de documento es obligatorio.')
       return
     }
-    if (rol === 'Instructor' && (!codigoInstructor.trim() || !especialidad.trim())) {
-      setError('Completa el código de instructor y la especialidad.')
+    if (rol === 'Instructor' && !especialidad.trim()) {
+      setError('Completa la especialidad.')
       return
     }
     if (rol === 'Aprendiz' && (!codigoFicha.trim() || !programaFormacion.trim())) {
@@ -77,27 +74,6 @@ export function Registro() {
     if (!aceptaPolitica) {
       setErrorPolitica(true)
       return
-    }
-
-    if (rol === 'Instructor') {
-      setLoading(true)
-      try {
-        // Endpoint público: solo dice si el código sirve, no a quién pertenece.
-        const validacion = await apiPost<{ valido: boolean; codigo: string | null }>(
-          '/usuarios/instructor/codigo/validar',
-          { codigo: codigoInstructor.trim() },
-        )
-
-        if (!validacion.valido) {
-          setLoading(false)
-          setErrorCodigoInstructor('El código de instructor no es válido o no existe.')
-          return
-        }
-      } catch {
-        setLoading(false)
-        setErrorCodigoInstructor('No se pudo validar el código de instructor en este momento.')
-        return
-      }
     }
 
     setLoading(true)
@@ -114,7 +90,6 @@ export function Registro() {
           telefono: telefono.trim(),
           rol_solicitado: rol,
           ...(rol === 'Instructor' && {
-            codigo_instructor: codigoInstructor.trim(),
             especialidad: especialidad.trim(),
           }),
           ...(rol === 'Aprendiz' && {
@@ -266,35 +241,16 @@ export function Registro() {
         {errorConfirmacion && <p id="error-confirmacion" role="alert" className="mb-4 text-sm text-error">Las contraseñas no coinciden. Revisa la confirmación.</p>}
 
         {rol === 'Instructor' && (
-          <div className="space-y-3">
-            <div className="rounded-xl border border-primary/30 bg-primary-container px-3 py-2 text-sm text-on-primary-container">
-              El código de instructor lo entrega la coordinación y debe coincidir con el generado
-              para el registro del docente.
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-              <FormField
-                id="codigoInstructor"
-                label="Código de instructor"
-                placeholder="Ej. INS-7Q3F8R"
-                value={codigoInstructor}
-                onChange={(e) => { setCodigoInstructor(e.target.value); setErrorCodigoInstructor(null) }}
-                aria-invalid={Boolean(errorCodigoInstructor)}
-                aria-describedby={errorCodigoInstructor ? 'error-codigo-instructor' : undefined}
-                required
-              />
-              {errorCodigoInstructor && <p id="error-codigo-instructor" role="alert" className="mb-3 text-sm text-error">{errorCodigoInstructor}</p>}
-              </div>
-              <FormField
-                id="especialidad"
-                label="Especialidad"
-                placeholder="Ej. Teleinformática"
-                value={especialidad}
-                onChange={(e) => setEspecialidad(e.target.value)}
-                required
-              />
-            </div>
+          <div className="mb-4">
+            <FormField
+              id="especialidad"
+              label="Especialidad"
+              placeholder="Ej. Teleinformática"
+              value={especialidad}
+              onChange={(e) => setEspecialidad(e.target.value)}
+              required
+            />
+            <p className="mt-1 text-xs text-on-surface-variant">El administrador verificará tu solicitud antes de asignarte el rol de Instructor.</p>
           </div>
         )}
 
