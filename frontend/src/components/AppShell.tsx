@@ -94,6 +94,7 @@ const NAV: GrupoNav[] = [
     grupo: 'Datos académicos',
     items: [
       { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
+      { etiqueta: 'Carga masiva de aprendices', ruta: '/aprendices/carga-masiva', soloGestion: true },
       { etiqueta: 'Programas', ruta: '/programas', soloGestion: true },
       { etiqueta: 'Temáticas', ruta: '/tematicas', soloGestion: true },
       { etiqueta: 'Instructores', ruta: '/instructores', soloGestion: true },
