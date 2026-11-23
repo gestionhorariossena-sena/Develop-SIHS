@@ -5,6 +5,7 @@ from app.models.ambiente import Ambiente
 from app.models.coordinacion import Coordinacion
 from app.models.dia_semana import DiaSemana
 from app.models.ficha import Ficha
+from app.models.ficha_usuario import FichaUsuario
 from app.models.horario import Horario, horario_dia
 from app.models.jornada import Jornada
 from app.models.programa import Programa
@@ -26,6 +27,7 @@ def _crear_tablas_extra(db_session):
         Jornada.__table__,
         DiaSemana.__table__,
         Ficha.__table__,
+        FichaUsuario.__table__,
         ResultadoAprendizaje.__table__,
         Horario.__table__,
         horario_dia,
