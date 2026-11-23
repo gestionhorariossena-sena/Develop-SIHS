@@ -78,6 +78,7 @@ function iconoEtapa(etapa: Etapa) {
 export function Fichas() {
   const [searchParams] = useSearchParams()
   const idDesdeUrl = searchParams.get('id')
+  const idProgramaDesdeUrl = searchParams.get('idPrograma')
   const [fichas, setFichas] = useState<Ficha[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [sede, setSede] = useState('todas')
@@ -94,9 +95,9 @@ export function Fichas() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [perfil, setPerfil] = useState<Usuario | null>(null)
-  const [modalAbierto, setModalAbierto] = useState(false)
+  const [modalAbierto, setModalAbierto] = useState(searchParams.get('crear') === '1')
   const [editandoId, setEditandoId] = useState<number | null>(null)
-  const [form, setForm] = useState<FichaForm>(FORM_VACIO)
+  const [form, setForm] = useState<FichaForm>(() => ({ ...FORM_VACIO, idPrograma: idProgramaDesdeUrl && Number.isInteger(Number(idProgramaDesdeUrl)) && Number(idProgramaDesdeUrl) > 0 ? idProgramaDesdeUrl : '' }))
   const [guardando, setGuardando] = useState(false)
   const [pestanaDrawer, setPestanaDrawer] = useState<PestanaFicha>('informacion')
   const [accionesAbiertasPara, setAccionesAbiertasPara] = useState<number | null>(null)
@@ -257,7 +258,7 @@ export function Fichas() {
 
   function abrirCrear() {
     setEditandoId(null)
-    setForm(FORM_VACIO)
+    setForm({ ...FORM_VACIO, idPrograma: idProgramaDesdeUrl && Number.isInteger(Number(idProgramaDesdeUrl)) && Number(idProgramaDesdeUrl) > 0 ? idProgramaDesdeUrl : '' })
     setError(null)
     setModalAbierto(true)
   }
@@ -508,6 +509,12 @@ export function Fichas() {
               </div>
             )}
           </dl>}
+
+          {pestanaDrawer === 'informacion' && <div className="flex flex-wrap gap-2 border-t border-outline-variant pt-4">
+            <Link to={`/programas?id=${seleccionada.idPrograma}`} className="rounded-md border border-outline px-3 py-2 text-sm font-medium text-on-surface hover:bg-surface-container">Ver programa</Link>
+            <Link to={`/aprendices?ficha=${encodeURIComponent(seleccionada.codigoFicha)}`} className="rounded-md border border-outline px-3 py-2 text-sm font-medium text-on-surface hover:bg-surface-container">Ver aprendices de esta ficha</Link>
+            <Link to={`/aprendices/carga-masiva?ficha=${encodeURIComponent(seleccionada.codigoFicha)}`} className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-on-primary hover:bg-on-primary-container">Cargar aprendices</Link>
+          </div>}
 
           {pestanaDrawer === 'relacionados' && (cargandoHorarios ? (
             <p className="text-sm text-on-surface-variant dark:text-slate-400">Cargando relacionados…</p>

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { ejecutarCargaMasiva } from '../../../src/components/cargaMasiva/FlujoCargaMasiva'
+import { ejecutarCargaMasiva } from '../../../src/components/cargaMasiva/utilidadesCargaMasiva'
 
 describe('ejecutarCargaMasiva', () => {
   it('continúa tras una fila inválida y notifica el progreso con resultados independientes', async () => {

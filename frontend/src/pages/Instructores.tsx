@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { SeccionAmbientesAsignados, SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
 import { GridHorario } from '../components/horario/GridHorario'
@@ -213,28 +214,12 @@ export function Instructores() {
         </div>
       </div>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Total instructores</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{instructores.length}</p>
-          <p className="mt-1 text-xs text-on-surface-variant">{activos} activos</p>
-        </div>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Con carga completa</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{conCargaCompleta}</p>
-          <p className="mt-1 text-xs text-on-surface-variant">{instructores.length ? Math.round((conCargaCompleta / instructores.length) * 100) : 0}% asignados</p>
-        </div>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Disponibles asignación</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{disponibles}</p>
-          <p className="mt-1 text-xs text-on-surface-variant">sin horario asignado en este período académico</p>
-        </div>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Horas semanales totales</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{horasAsignadasTotales.toLocaleString('es-CO')} h</p>
-          <p className="mt-1 text-xs text-on-surface-variant">Capacidad {horasMaximasTotales.toLocaleString('es-CO')} h · contratadas {horasContratadasTotales.toLocaleString('es-CO')} h</p>
-        </div>
-      </div>
+      <IndicadoresResumen titulo="Resumen de instructores" className="mb-4" items={[
+        { etiqueta: 'Instructores', valor: instructores.length, detalle: `${activos} activos`, icono: 'groups' },
+        { etiqueta: 'Con carga completa', valor: conCargaCompleta, detalle: `${instructores.length ? Math.round((conCargaCompleta / instructores.length) * 100) : 0}% asignados`, icono: 'assignment_turned_in' },
+        { etiqueta: 'Disponibles para asignación', valor: disponibles, detalle: 'Sin horario en este período', icono: 'person_add' },
+        { etiqueta: 'Horas semanales', valor: `${horasAsignadasTotales.toLocaleString('es-CO')} h`, detalle: `Capacidad ${horasMaximasTotales.toLocaleString('es-CO')} h · contratadas ${horasContratadasTotales.toLocaleString('es-CO')} h`, icono: 'schedule' },
+      ]} />
 
       <p className="mb-3 text-sm text-on-surface-variant">{visibles.length} de {instructores.length} instructores</p>
 

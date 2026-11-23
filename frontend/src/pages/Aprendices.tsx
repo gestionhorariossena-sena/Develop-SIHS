@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { apiGet, ApiError } from '../services/api'
 
@@ -18,11 +18,12 @@ interface AprendizListado {
 const campo = 'min-h-10 w-full rounded-md border border-outline bg-surface-container-lowest px-3 py-2 text-sm text-on-surface outline-none focus:border-primary focus:ring-2 focus:ring-primary/15'
 
 export function Aprendices() {
+  const [searchParams] = useSearchParams()
   const [aprendices, setAprendices] = useState<AprendizListado[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busqueda, setBusqueda] = useState('')
-  const [ficha, setFicha] = useState('todas')
+  const [ficha, setFicha] = useState(searchParams.get('ficha') ?? 'todas')
   const [pagina, setPagina] = useState(1)
 
   async function actualizar() {
@@ -37,7 +38,14 @@ export function Aprendices() {
       setCargando(false)
     }
   }
-  useEffect(() => { void actualizar() }, [])
+  useEffect(() => {
+    let activo = true
+    apiGet<AprendizListado[]>('/aprendices/alta/')
+      .then((registros) => { if (activo) setAprendices(registros) })
+      .catch((err) => { if (activo) setError(err instanceof ApiError ? err.message : 'No se pudo consultar el directorio de aprendices.') })
+      .finally(() => { if (activo) setCargando(false) })
+    return () => { activo = false }
+  }, [])
 
   const fichas = useMemo(
     () => Array.from(new Set(aprendices.map(a => a.codigoFicha).filter((v): v is string => Boolean(v)))).sort(),
@@ -90,6 +98,7 @@ export function Aprendices() {
         <select value={ficha} onChange={e => { setFicha(e.target.value); setPagina(1) }} className={`mt-1.5 ${campo}`}>
           <option value="todas">Todas las fichas</option>
           <option value="sin">Sin ficha asignada</option>
+          {ficha !== 'todas' && ficha !== 'sin' && !fichas.includes(ficha) && <option value={ficha}>{ficha}</option>}
           {fichas.map(codigo => <option key={codigo} value={codigo}>{codigo}</option>)}
         </select>
       </label>

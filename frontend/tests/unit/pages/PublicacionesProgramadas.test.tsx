@@ -54,7 +54,7 @@ describe('PublicacionesProgramadas', () => {
     renderConProviders(<PublicacionesProgramadas />)
     expect(await screen.findByText('Publicación programada no disponible')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Crear horario' })).toHaveAttribute('href', '/horarios/nuevo')
-    expect(screen.getByRole('link', { name: 'Historial de horarios' })).toHaveAttribute('href', '/horarios/historial')
+    expect(screen.getByRole('link', { name: 'Registro y versiones' })).toHaveAttribute('href', '/horarios/historial')
     await userEvent.selectOptions(screen.getByLabelText('Período académico'), '3')
     expect(screen.getByLabelText(/Ficha F-100/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Abrir calendario' })).toBeEnabled()

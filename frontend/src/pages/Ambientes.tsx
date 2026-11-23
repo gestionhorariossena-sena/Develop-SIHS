@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
@@ -278,27 +279,13 @@ export function Ambientes() {
  </div>
 
  {resumenPorTipo.length > 0 && !cargando && (
- <div className="mb-4 grid gap-3 sm:grid-cols-2">
- {resumenPorTipo.map((item) => (
- <div key={item.tipo} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
- <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant capitalize">Ambientes {item.tipo}s</p>
- <div className="mt-1 flex items-baseline justify-between">
- <p className="text-2xl font-bold text-on-surface">
- {item.disponibles}<span className="text-base font-medium text-on-surface-variant">/{item.total} disponibles</span>
- </p>
- <p className="text-sm font-semibold text-primary">{item.pctDisponible}%</p>
- </div>
- <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
- <div className="h-full rounded-full bg-primary" style={{ width: `${item.pctDisponible}%` }} />
- </div>
- {item.primerDisponible && (
- <p className="mt-2 text-xs text-on-surface-variant">
- Disponible: <span className="font-semibold text-on-surface">{item.primerDisponible.nombreAmbiente} · {item.primerDisponible.numeroAmbiente}</span>
- </p>
- )}
- </div>
- ))}
- </div>
+ <IndicadoresResumen titulo="Disponibilidad por tipo de ambiente" className="mb-4" items={resumenPorTipo.map((item) => ({
+ etiqueta: `Ambientes ${item.tipo}s`,
+ valor: <>{item.disponibles}<span className="ml-1 text-base text-on-surface-variant">/ {item.total}</span></>,
+ detalle: `${item.pctDisponible}% disponibles${item.primerDisponible ? ` · ${item.primerDisponible.nombreAmbiente} ${item.primerDisponible.numeroAmbiente}` : ''}`,
+ progreso: item.pctDisponible,
+ icono: 'meeting_room',
+ }))} />
  )}
 
  {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato real

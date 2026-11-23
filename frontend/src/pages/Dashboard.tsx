@@ -84,7 +84,7 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
 
   // Si hoy no hay formación, mostrar el próximo día con sesiones en lugar
   // de presentar un tablero vacío pese a tener programación registrada.
-  const proximoDiaProgramado = useMemo(() => {
+  const proximoDiaProgramado = (() => {
     if (horariosHoy.length > 0 || horariosActivos.length === 0) return null
     for (let desplazamiento = 1; desplazamiento <= 7; desplazamiento++) {
       const fecha = new Date()
@@ -97,13 +97,12 @@ export function Dashboard({ esAdministrador = false }: { esAdministrador?: boole
       if (sesiones.length > 0) return { fecha, sesiones }
     }
     return null
-  }, [horariosHoy, horariosActivos, diasSemana])
+  })()
 
   const sesionesVisibles = proximoDiaProgramado?.sesiones ?? horariosHoy
-  const filas = useMemo(() => {
-    if (filtro === 'todos') return sesionesVisibles
-    return sesionesVisibles.filter((h) => jornadasPorId.get(h.idJornada) === filtro)
-  }, [sesionesVisibles, filtro, jornadasPorId])
+  const filas = filtro === 'todos'
+    ? sesionesVisibles
+    : sesionesVisibles.filter((h) => jornadasPorId.get(h.idJornada) === filtro)
 
   const desglosePorJornada = useMemo(() => {
     const conteos = new Map<string, number>()

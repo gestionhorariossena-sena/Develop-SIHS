@@ -1,10 +1,8 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import {
-  PanelCargaMasiva, TituloPasoCarga, botonConfirmarCarga,
-  botonSecundarioCarga, estiloArchivoCarga, ejecutarCargaMasiva,
-} from '../components/cargaMasiva/FlujoCargaMasiva'
+import { PanelCargaMasiva, TituloPasoCarga } from '../components/cargaMasiva/FlujoCargaMasiva'
+import { botonConfirmarCarga, botonSecundarioCarga, estiloArchivoCarga, ejecutarCargaMasiva } from '../components/cargaMasiva/utilidadesCargaMasiva'
 import { apiPost, apiPostForm, ApiError } from '../services/api'
 
 interface FilaAprendiz {
@@ -24,6 +22,8 @@ interface RespuestaAlta { correo: string; estado: string; detalle: string }
 interface Resultado extends RespuestaAlta { fila: number }
 
 export function CargaAprendices() {
+  const [searchParams] = useSearchParams()
+  const fichaObjetivo = searchParams.get('ficha')
   const [archivo, setArchivo] = useState<File | null>(null)
   const [previa, setPrevia] = useState<Previa | null>(null)
   const [resultados, setResultados] = useState<Resultado[]>([])
@@ -96,7 +96,7 @@ export function CargaAprendices() {
     }
   }
 
-  return <AppShell activo="Aprendices">
+  return <AppShell activo="Datos académicos">
     <nav className="mb-5 text-xs text-on-surface-variant">
       <Link to="/aprendices" className="hover:text-primary">Aprendices</Link>
       <span className="mx-2">/</span>
@@ -110,6 +110,8 @@ export function CargaAprendices() {
         Cada cuenta recibirá una contraseña temporal y quedará asociada a su ficha.
       </p>
     </header>
+
+    {fichaObjetivo && <p className="mb-5 rounded-lg border border-outline-variant bg-surface-container-low px-4 py-3 text-sm text-on-surface">Ficha seleccionada: <strong>{fichaObjetivo}</strong>. Incluye este código en la columna <code>codigoFicha</code> de cada fila del Excel; la carga validará la coincidencia antes de crear cuentas.</p>}
 
     <PanelCargaMasiva
       titulo="Importar aprendices"

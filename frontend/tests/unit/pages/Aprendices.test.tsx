@@ -21,7 +21,7 @@ describe('Aprendices', () => {
   beforeEach(() => {
     apiGetMock.mockReset()
     apiGetMock.mockImplementation((ruta: string) =>
-      ruta === '/aprendices/alta/' ? Promise.resolve(datos) : Promise.resolve([]),
+      ruta === '/aprendices/alta/' ? Promise.resolve(datos) : ruta === '/usuarios/me' ? Promise.resolve({ idUsuario: 'admin', nombre: 'Administrador', roles: [{ idRol: 1, nombre: 'Administrador' }] }) : Promise.resolve([]),
     )
   })
 

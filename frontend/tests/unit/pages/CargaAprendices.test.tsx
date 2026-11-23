@@ -23,7 +23,7 @@ describe('CargaAprendices', () => {
     apiGetMock.mockReset()
     apiPostMock.mockReset()
     apiPostFormMock.mockReset()
-    apiGetMock.mockResolvedValue([])
+    apiGetMock.mockImplementation((ruta: string) => ruta === '/usuarios/me' ? Promise.resolve({ idUsuario: 'admin', nombre: 'Administrador', roles: [{ idRol: 1, nombre: 'Administrador' }] }) : Promise.resolve([]))
   })
 
   it('muestra vista previa, vincula aprendiz con ficha y confirma una cuenta', async () => {

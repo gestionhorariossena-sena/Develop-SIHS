@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { SeccionAmbientesAsignados } from '../components/relacionados/SeccionesInstructor'
 import { apiGet, ApiError } from '../services/api'
 import type { CargaSemanal, DiaSemana, Ficha, Horario, Usuario } from '../types/api'
 import type { Jornada } from './horario/tipos'
+import { proximaClase } from './horario/vistaReal'
 
 const DIAS_SEMANA_STRIP = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
@@ -71,16 +73,6 @@ function minutosHasta(horaInicio: string, horaActual: string): number {
   return hIni * 60 + mIni - (hAct * 60 + mAct)
 }
 
-const fechaHoy = (() => {
-  const texto = new Date().toLocaleDateString('es-CO', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  })
-  return capitalizar(texto)
-})()
-
 /**
  * Home del Instructor tras iniciar sesión (`/dashboard`, ver
  * DashboardRouter.tsx) — antes todo usuario caía en el mismo Dashboard.tsx
@@ -99,8 +91,10 @@ const fechaHoy = (() => {
  * solo recortada a "hoy" en vez de la semana completa.
  */
 export function DashboardInstructor() {
+  const [ahora, setAhora] = useState(() => new Date())
   const [horarios, setHorarios] = useState<Horario[] | null>(null)
   const [perfil, setPerfil] = useState<Usuario | null>(null)
+  const [errorPerfil, setErrorPerfil] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [fichas, setFichas] = useState<Ficha[]>([])
   const [diasSemana, setDiasSemana] = useState<DiaSemana[]>([])
@@ -109,13 +103,25 @@ export function DashboardInstructor() {
   const [errorCarga, setErrorCarga] = useState(false)
 
   useEffect(() => {
+    const actualizar = () => setAhora(new Date())
+    const intervalo = window.setInterval(actualizar, 30_000)
+    window.addEventListener('focus', actualizar)
+    return () => {
+      window.clearInterval(intervalo)
+      window.removeEventListener('focus', actualizar)
+    }
+  }, [])
+
+  useEffect(() => {
     apiGet<Horario[]>('/usuarios/me/horarios')
       .then(setHorarios)
       .catch((err: unknown) => setError(err instanceof ApiError ? err.message : 'No se pudo cargar tu horario.'))
 
-    apiGet<Usuario>('/usuarios/me').then(setPerfil).catch(() => {})
+    apiGet<Usuario>('/usuarios/me').then(setPerfil).catch(() => setErrorPerfil(true))
     apiGet<Ficha[]>('/fichas/').then(setFichas).catch(() => {})
-    apiGet<DiaSemana[]>('/dias-semana/').then(setDiasSemana).catch(() => {})
+    apiGet<DiaSemana[]>('/dias-semana/').then(setDiasSemana).catch(() => {
+      setDiasSemana(DIAS_SEMANA_STRIP.map((nombreDia, indice) => ({ idDia: indice + 1, nombreDia })))
+    })
   }, [])
 
   useEffect(() => {
@@ -126,12 +132,15 @@ export function DashboardInstructor() {
       .catch(() => setErrorCarga(true))
   }, [perfil])
 
-  const horaActual = useMemo(() => new Date().toTimeString().slice(0, 8), [])
+  const horaActual = ahora.toTimeString().slice(0, 8)
+  const fechaHoy = capitalizar(ahora.toLocaleDateString('es-CO', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  }))
 
   const idDiaHoy = useMemo(() => {
-    const nombreHoy = capitalizar(new Date().toLocaleDateString('es-CO', { weekday: 'long' }))
+    const nombreHoy = capitalizar(ahora.toLocaleDateString('es-CO', { weekday: 'long' }))
     return diasSemana.find((d) => d.nombreDia === nombreHoy)?.idDia ?? null
-  }, [diasSemana])
+  }, [diasSemana, ahora])
 
   const nombreDiaHoy = useMemo(
     () => diasSemana.find((d) => d.idDia === idDiaHoy)?.nombreDia ?? '',
@@ -139,6 +148,7 @@ export function DashboardInstructor() {
   )
 
   const horariosActivos = useMemo(() => (horarios ?? []).filter((h) => h.activo), [horarios])
+  const siguienteClase = useMemo(() => proximaClase(horariosActivos, ahora), [horariosActivos, ahora])
 
   const horariosHoy = useMemo(() => {
     if (idDiaHoy === null) return []
@@ -156,27 +166,14 @@ export function DashboardInstructor() {
   }, [fichas])
 
   const fichasActivas = useMemo(() => new Set(horariosActivos.map((h) => h.idFicha)), [horariosActivos])
-  const fichasActivasCompletas = useMemo(
-    () => fichas.filter((f) => fichasActivas.has(f.idFicha)),
-    [fichas, fichasActivas],
-  )
   const aprendicesConvocados = useMemo(
     () => [...fichasActivas].reduce((total, idFicha) => total + (aprendicesPorFicha[idFicha] ?? 0), 0),
     [fichasActivas, aprendicesPorFicha],
   )
-  const programasUnicos = useMemo(
-    () => [...new Set(fichasActivasCompletas.map((f) => f.programa.nombrePrograma))],
-    [fichasActivasCompletas],
-  )
-
-  const ambientesAsignados = useMemo(
-    () => [...new Set(horariosActivos.map((h) => h.ambienteNombre).filter((n): n is string => Boolean(n)))],
-    [horariosActivos],
-  )
 
   const horasSemanales = useMemo(() => {
     if (!horarios) return 0
-    return horarios.reduce((total, h) => total + duracionHoras(h.horaInicio, h.horaFin) * h.dias.length, 0)
+    return horarios.filter((h) => h.activo).reduce((total, h) => total + duracionHoras(h.horaInicio, h.horaFin) * h.dias.length, 0)
   }, [horarios])
 
   const cargandoCarga = Boolean(perfil) && !cargaSemanal && !errorCarga
@@ -197,13 +194,9 @@ export function DashboardInstructor() {
     () => horariosHoy.reduce((total, h) => total + duracionHoras(h.horaInicio, h.horaFin), 0),
     [horariosHoy],
   )
-  const ambientesHoy = useMemo(
-    () => [...new Set(horariosHoy.map((h) => h.ambienteNombre).filter((n): n is string => Boolean(n)))],
-    [horariosHoy],
-  )
 
-  const diasDeLaSemana = useMemo(() => semanaDe(new Date()), [])
-  const hoyTexto = new Date().toDateString()
+  const diasDeLaSemana = useMemo(() => semanaDe(ahora), [ahora])
+  const hoyTexto = ahora.toDateString()
 
   return (
     <AppShell activo="Inicio">
@@ -218,7 +211,7 @@ export function DashboardInstructor() {
           </span>
           <div>
             <h1 className="mb-1 text-2xl font-bold text-on-surface">
-              Hola, {perfil ? perfil.nombre.split(' ')[0] : '…'}
+              Clases de hoy
             </h1>
             <div className="flex flex-wrap items-center gap-2 text-sm text-on-surface-variant">
               {perfil?.tipoContrato && ETIQUETA_CONTRATO[perfil.tipoContrato] && (
@@ -226,7 +219,7 @@ export function DashboardInstructor() {
                   {ETIQUETA_CONTRATO[perfil.tipoContrato]}
                 </span>
               )}
-              <span>{fechaHoy}</span>
+              <span>{fechaHoy}{perfil ? ` · ${perfil.nombre}` : ''}</span>
             </div>
           </div>
         </div>
@@ -244,109 +237,33 @@ export function DashboardInstructor() {
             className="flex items-center gap-1.5 rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container-high"
           >
             <span className="material-symbols-outlined text-[18px]">calendar_month</span>
-            Ver Horario Semanal
+            Ver horario semanal
           </Link>
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Carga Lectiva Semanal</p>
-            <span className="material-symbols-outlined text-[18px] text-primary">schedule</span>
-          </div>
-          {!perfil ? (
-            <p className="text-sm text-on-surface-variant">Cargando…</p>
-          ) : cargandoCarga ? (
-            <p className="text-sm text-on-surface-variant">Calculando…</p>
-          ) : errorCarga ? (
-            <p className="text-2xl font-bold text-on-surface">
-              {horasSemanales}
-              <span className="ml-1 text-sm font-medium text-on-surface-variant">hrs (estimado)</span>
-            </p>
-          ) : (
-            <>
-              <p className="text-2xl font-bold text-on-surface">
-                {cargaSemanal?.horasAsignadas}
-                <span className="ml-1 text-sm font-medium text-on-surface-variant">
-                  {cargaSemanal?.horasMaximas != null ? `/ ${cargaSemanal.horasMaximas} hrs` : 'hrs'}
-                </span>
-              </p>
-              {cargaSemanal?.horasMaximas != null && (
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-container">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${Math.min(100, Math.round((cargaSemanal.horasAsignadas / cargaSemanal.horasMaximas) * 100))}%` }}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
+      <IndicadoresResumen titulo="Resumen de mi jornada" className="mb-4" items={[
+        {
+          etiqueta: 'Carga semanal', icono: 'schedule',
+          valor: !perfil ? '—' : cargandoCarga ? '…' : errorCarga ? `${horasSemanales} h` : `${cargaSemanal?.horasAsignadas ?? 0} h`,
+          detalle: !perfil ? (errorPerfil ? 'Carga no disponible' : 'Cargando…') : cargandoCarga ? 'Calculando…' : errorCarga ? 'Estimado según el horario visible' : cargaSemanal?.horasMaximas != null ? `Límite: ${cargaSemanal.horasMaximas} h` : 'Sin límite definido',
+          progreso: cargaSemanal?.horasMaximas ? cargaSemanal.horasAsignadas / cargaSemanal.horasMaximas * 100 : undefined,
+        },
+        {
+          etiqueta: 'Fichas activas', icono: 'groups', valor: horarios ? fichasActivas.size : '—',
+          detalle: horarios && aprendicesConvocados > 0 ? `${aprendicesConvocados} aprendices convocados` : undefined,
+        },
+        {
+          etiqueta: 'Sesiones de hoy', icono: 'event_available', valor: horarios ? sesionesHoy.length : '—',
+          detalle: horarios && sesionesHoy.length > 0 ? `${enCursoHoy} en curso · ${pendientesHoy} pendientes · ${horasHoy} h` : undefined,
+        },
+      ]} />
 
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Estatus Normativo</p>
-            <span className="material-symbols-outlined text-[18px] text-primary">verified_user</span>
-          </div>
-          {!perfil || cargandoCarga ? (
-            <p className="text-sm text-on-surface-variant">{!perfil ? 'Cargando…' : 'Calculando…'}</p>
-          ) : errorCarga ? (
-            <p className="text-sm text-on-surface-variant">No se pudo validar el límite de carga docente.</p>
-          ) : cargaSemanal?.horasMaximas == null ? (
-            <p className="text-sm text-on-surface-variant">Sin tipo de contrato definido.</p>
-          ) : excedeTopeRf011 ? (
-            <p className="text-2xl font-bold text-red-600">Excede el tope</p>
-          ) : (
-            <p className="text-2xl font-bold text-primary">Aprobado</p>
-          )}
-        </div>
-
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Fichas Activas</p>
-            <span className="material-symbols-outlined text-[18px] text-secondary">groups</span>
-          </div>
-          <p className="text-2xl font-bold text-on-surface">
-            {horarios ? fichasActivas.size : '—'}
-            <span className="ml-1 text-sm font-medium text-on-surface-variant">{fichasActivas.size === 1 ? 'ficha' : 'fichas'}</span>
-          </p>
-          {horarios && aprendicesConvocados > 0 && (
-            <p className="mt-1 text-xs text-on-surface-variant">{aprendicesConvocados} aprendices convocados</p>
-          )}
-          {programasUnicos.length > 0 && (
-            <p className="mt-1 truncate text-xs text-on-surface-variant" title={programasUnicos.join(', ')}>
-              {programasUnicos.join(', ')}
-            </p>
-          )}
-        </div>
-
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Clases de Hoy</p>
-            <span className="material-symbols-outlined text-[18px] text-on-surface-variant">event_available</span>
-          </div>
-          <p className="text-2xl font-bold text-on-surface">
-            {horarios ? sesionesHoy.length : '—'}
-            <span className="ml-1 text-sm font-medium text-on-surface-variant">{sesionesHoy.length === 1 ? 'sesión' : 'sesiones'}</span>
-          </p>
-          {horarios && sesionesHoy.length > 0 && (
-            <p className="mt-1 flex flex-wrap items-center gap-1 text-xs text-on-surface-variant">
-              {enCursoHoy > 0 && (
-                <span className="rounded-full bg-primary-container px-2 py-0.5 font-semibold text-on-primary-container">
-                  {enCursoHoy} en curso
-                </span>
-              )}
-              {pendientesHoy > 0 && <span>{pendientesHoy} pendiente{pendientesHoy === 1 ? '' : 's'}</span>}
-            </p>
-          )}
-          {horarios && sesionesHoy.length > 0 && (
-            <p className="mt-1 text-xs text-on-surface-variant">
-              Total hoy: {horasHoy}h{ambientesHoy.length > 0 ? ` · ${ambientesHoy.join(' y ')}` : ''}
-            </p>
-          )}
-        </div>
-      </div>
+      {excedeTopeRf011 && (
+        <p className="mb-4 rounded-xl border border-error/30 bg-error-container px-4 py-3 text-sm text-on-error-container" role="status">
+          La carga semanal supera el máximo de {cargaSemanal?.horasMaximas} horas. Consulta con coordinación.
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 lg:col-span-2">
@@ -355,7 +272,7 @@ export function DashboardInstructor() {
               <h2 className="text-base font-semibold text-on-surface">
                 Mis clases de hoy <span className="font-normal text-on-surface-variant">({sesionesHoy.length} {sesionesHoy.length === 1 ? 'bloque' : 'bloques'})</span>
               </h2>
-              <p className="text-xs text-on-surface-variant">Agenda ordenada cronológicamente con franjas, ambiente asignado y estado de la sesión.</p>
+              <p className="text-xs text-on-surface-variant">Franjas, fichas y ambientes de tu jornada.</p>
             </div>
             <span className="flex items-center gap-1.5 rounded-full bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
@@ -366,7 +283,17 @@ export function DashboardInstructor() {
           {!horarios && !error ? (
             <p className="py-16 text-center text-sm text-on-surface-variant">Cargando tu horario…</p>
           ) : sesionesHoy.length === 0 ? (
-            <p className="py-16 text-center text-sm text-on-surface-variant">No tenés clases programadas hoy.</p>
+            <div className="rounded-xl bg-surface-container-low px-5 py-6">
+              <p className="text-sm font-semibold text-on-surface">No tienes clases programadas hoy</p>
+              {siguienteClase ? (
+                <p className="mt-1 text-sm text-on-surface-variant">
+                  Tu siguiente clase es el {siguienteClase.fecha.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}, de {siguienteClase.horario.horaInicio.slice(0, 5)} a {siguienteClase.horario.horaFin.slice(0, 5)}, con la ficha {siguienteClase.horario.fichaCodigo ?? siguienteClase.horario.idFicha}.
+                </p>
+              ) : (
+                <p className="mt-1 text-sm text-on-surface-variant">Consulta el horario semanal para revisar tus asignaciones.</p>
+              )}
+              <Link to="/mi-horario" className="mt-3 inline-flex text-sm font-semibold text-primary hover:underline">Ver horario semanal →</Link>
+            </div>
           ) : (
             <ul className="space-y-3">
               {sesionesHoy.map(({ horario, estado }) => {
@@ -460,57 +387,10 @@ export function DashboardInstructor() {
         </div>
 
         <div className="flex flex-col gap-6">
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
-            <div className="mb-3 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[18px] text-primary">bolt</span>
-              <p className="text-sm font-semibold text-on-surface">Accesos rápidos</p>
-            </div>
-            <div className="flex flex-col gap-1">
-              <Link to="/mi-horario" className="flex items-start justify-between gap-2 rounded-lg px-2 py-2 hover:bg-surface-container">
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">Ver mi horario semanal completo</p>
-                  <p className="text-xs text-on-surface-variant">Matriz de lunes a sábado con franjas</p>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-on-surface-variant">chevron_right</span>
-              </Link>
-              <Link to="/mi-horario" className="flex items-start justify-between gap-2 rounded-lg px-2 py-2 hover:bg-surface-container">
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">Ver mis ambientes asignados</p>
-                  <p className="truncate text-xs text-on-surface-variant" title={ambientesAsignados.join(', ')}>
-                    {ambientesAsignados.length > 0 ? ambientesAsignados.join(', ') : 'Sin ambientes asignados'}
-                  </p>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-on-surface-variant">chevron_right</span>
-              </Link>
-              <div
-                title="Disponible cuando exista el módulo de Solicitudes de cambio/permuta (mismo epic que MiHorario.tsx)"
-                className="flex cursor-not-allowed items-start justify-between gap-2 rounded-lg px-2 py-2 opacity-50"
-              >
-                <div>
-                  <p className="text-sm font-semibold text-on-surface">Solicitar novedad o permuta</p>
-                  <p className="text-xs text-on-surface-variant">Gestión formal de cambios de franja</p>
-                </div>
-                <span className="material-symbols-outlined text-[16px] text-on-surface-variant">lock</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
-            <div className="mb-1 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[18px] text-tertiary">notification_important</span>
-                <p className="text-sm font-semibold text-on-surface">Alertas Operativas</p>
-              </div>
-              <span className="rounded-full bg-surface-container px-2 py-0.5 text-[11px] font-semibold text-on-surface-variant">0 pendientes</span>
-            </div>
-            <p
-              className="mt-2 text-sm text-on-surface-variant"
-              title="Disponible cuando existan el Módulo de Asistencia y Solicitudes de cambio/permuta (mismo epic que MiHorario.tsx)"
-            >
-              Todavía no hay alertas de asistencia ni de permutas conectadas — esta sección se activa cuando esos
-              módulos estén disponibles.
-            </p>
-          </div>
+          <Link to="/mis-solicitudes-cambio" className="flex items-center justify-between rounded-xl border border-outline-variant bg-surface-container-lowest p-4 text-sm font-semibold text-on-surface transition-colors hover:bg-surface-container-low focus-visible:outline-2 focus-visible:outline-primary">
+            Mis solicitudes de cambio
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">chevron_right</span>
+          </Link>
 
           <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
             <SeccionAmbientesAsignados horarios={horariosActivos} />

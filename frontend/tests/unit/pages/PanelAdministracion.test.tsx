@@ -113,7 +113,7 @@ describe('PanelAdministracion', () => {
     expect(await screen.findByText('Maritza Benítez Cardona')).toBeInTheDocument()
     // SOLICITUD_APROBADA se resolvió "ahora" (mismo mes) — cuenta como
     // "Aprobadas Este Mes"; SOLICITUD_RECHAZADA no cuenta acá.
-    const tarjetaAprobadas = screen.getByText('Aprobadas Este Mes').closest('div')!.parentElement!
+    const tarjetaAprobadas = screen.getByText('Aprobadas este mes').closest('div')!.parentElement!
     expect(within(tarjetaAprobadas).getByText('1')).toBeInTheDocument()
   })
 

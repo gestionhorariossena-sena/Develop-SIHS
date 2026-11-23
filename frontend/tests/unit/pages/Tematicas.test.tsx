@@ -79,6 +79,13 @@ describe('Tematicas', () => {
     apiDeleteMock.mockReset()
   })
 
+  it('abre el currículo filtrado al llegar desde un programa', async () => {
+    mockear()
+    renderConProviders(<Tematicas />, ['/tematicas?idPrograma=7'])
+    expect(await screen.findByRole('combobox', { name: 'Programa' })).toHaveValue('7')
+    await waitFor(() => expect(apiGetMock).toHaveBeenCalledWith('/tematicas/?id_programa=7'))
+  })
+
   it('lista competencias con su resumen y despliega los resultados', async () => {
     mockear()
     const usuario = userEvent.setup()
@@ -86,7 +93,7 @@ describe('Tematicas', () => {
 
     expect(await screen.findByText('220501 · Programar software')).toBeInTheDocument()
     expect(apiGetMock).toHaveBeenCalledWith('/tematicas/')
-    expect(screen.getByText('Resultados sin programar').nextSibling).toHaveTextContent('1')
+    expect(screen.getByText('Resultados sin programar').parentElement?.nextElementSibling).toHaveTextContent('1')
     expect(screen.queryByText('Codificar módulos')).not.toBeInTheDocument()
 
     await usuario.click(screen.getByText('220501 · Programar software'))

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { apiGet, ApiError } from '../services/api'
 import type { Aviso, Ficha, Horario, MiAsistencia as MiAsistenciaDatos, Notificacion, Usuario } from '../types/api'
 import { proximaClase } from './horario/vistaReal'
@@ -36,11 +37,6 @@ const VER_TEXTO: Record<string, string> = {
   '/avisos': 'Ver todos',
   '/notificaciones': 'Ver todas',
 }
-
-const fechaHoy = (() => {
-  const texto = new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-  return texto.charAt(0).toUpperCase() + texto.slice(1)
-})()
 
 function diaLegible(fecha: Date): string {
   const nombres = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
@@ -81,18 +77,20 @@ export function DashboardAprendiz() {
   const [asistencia, setAsistencia] = useState<MiAsistenciaDatos | null>(null)
   const [avisos, setAvisos] = useState<Aviso[]>([])
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([])
+  const [errorHorario, setErrorHorario] = useState(false)
+  const [sinFicha, setSinFicha] = useState(false)
 
   useEffect(() => {
     apiGet<Usuario>('/usuarios/me').then(setPerfil).catch(() => setPerfil(null))
     apiGet<Ficha>('/ficha-usuario/mi-ficha')
       .then(setFicha)
       .catch((err: unknown) => {
-        // Sin ficha vinculada (404) u otro error: la tarjeta de ficha
-        // simplemente no se muestra, no bloquea el resto del home.
-        if (!(err instanceof ApiError)) throw err
+        if (err instanceof ApiError && err.status === 404) setSinFicha(true)
       })
 
-    apiGet<Horario[]>('/ficha-usuario/mi-horario').then(setHorarios).catch(() => setHorarios([]))
+    apiGet<Horario[]>('/ficha-usuario/mi-horario').then(setHorarios).catch((err: unknown) => {
+      if (!(err instanceof ApiError && err.status === 404)) setErrorHorario(true)
+    })
     apiGet<MiAsistenciaDatos>('/asistencias/mias').then(setAsistencia).catch(() => setAsistencia(null))
     apiGet<Aviso[]>('/avisos/').then(setAvisos).catch(() => setAvisos([]))
     apiGet<Notificacion[]>('/notificaciones/').then(setNotificaciones).catch(() => setNotificaciones([]))
@@ -108,8 +106,8 @@ export function DashboardAprendiz() {
     return [...mapa.values()]
   }, [horarios])
 
-  const ultimoAviso = avisos[0] ?? null
-  const ultimaNotificacion = notificaciones[0] ?? null
+  const ultimoAviso = [...avisos].sort((a, b) => b.fechaPublicacion.localeCompare(a.fechaPublicacion))[0] ?? null
+  const ultimaNotificacion = [...notificaciones].sort((a, b) => b.fechaCreacion.localeCompare(a.fechaCreacion))[0] ?? null
   const notificacionesSinLeer = notificaciones.filter((n) => !n.leida).length
 
   const resumenAsistencia = asistencia?.resumen
@@ -134,10 +132,8 @@ export function DashboardAprendiz() {
   return (
     <AppShell activo="Inicio">
       <div className="mb-6">
-        <h1 className="mb-1 text-2xl font-bold text-on-surface">
-          {perfil ? `Hola, ${perfil.nombre.split(' ')[0]}` : 'Hola'}
-        </h1>
-        <p className="text-sm text-on-surface-variant">{fechaHoy}</p>
+        <h1 className="mb-1 text-2xl font-semibold text-on-surface">Mi jornada</h1>
+        <p className="text-sm text-on-surface-variant">{perfil?.nombre ? `${perfil.nombre} · ` : ''}{new Date().toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
       </div>
 
       {ficha && (
@@ -154,44 +150,34 @@ export function DashboardAprendiz() {
         </div>
       )}
 
-      <p className="mb-6 max-w-2xl text-sm text-on-surface-variant">
-        Un vistazo rápido a lo que necesitas antes de entrar a cada pantalla.
-      </p>
+      {sinFicha && (
+        <p className="mb-6 rounded-xl border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm text-on-surface-variant">
+          Aún no tienes una ficha vinculada. <Link to="/mi-horario-aprendiz" className="font-semibold text-primary underline">Vincula tu ficha</Link> para ver tus clases.
+        </p>
+      )}
+      {errorHorario && !sinFicha && (
+        <p className="mb-6 rounded-xl border border-error/30 bg-error-container px-4 py-3 text-sm text-on-error-container" role="alert">
+          No pudimos cargar tu horario. <Link to="/mi-horario-aprendiz" className="font-semibold underline">Abrir mi horario</Link> para intentarlo de nuevo.
+        </p>
+      )}
 
       {mostrarAsistencia && (
-        <Link
-          to="/mi-asistencia"
-          className="mb-6 flex flex-wrap items-center gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest px-5 py-4 transition hover:border-primary/40 hover:shadow-sm"
-        >
-          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-container text-on-primary-container">
-            <span className="material-symbols-outlined text-[22px]" aria-hidden="true">fact_check</span>
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Mi asistencia</span>
-            <span className="block text-sm font-semibold text-on-surface">
-              {resumenAsistencia.registradas} sesión{resumenAsistencia.registradas === 1 ? '' : 'es'} registrada
-              {resumenAsistencia.registradas === 1 ? '' : 's'} este trimestre
-            </span>
-          </span>
-          <span className="font-display text-2xl font-bold text-on-surface">{resumenAsistencia.porcentaje}%</span>
-          <span className="text-xs text-on-surface-variant">mínimo {UMBRAL_ASISTENCIA}%</span>
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-bold ${
-              asistenciaAlDia ? 'bg-primary-container text-on-primary-container' : 'bg-error-container text-on-error-container'
-            }`}
-          >
-            {asistenciaAlDia ? 'Al día' : 'Por debajo del mínimo'}
-          </span>
-          <span className="material-symbols-outlined text-on-surface-variant" aria-hidden="true">chevron_right</span>
+        <Link to="/mi-asistencia" className="mb-6 block rounded-lg px-3 transition-colors hover:bg-surface-container-low focus-visible:outline-2 focus-visible:outline-primary">
+          <IndicadoresResumen titulo="Mi asistencia" items={[
+            { etiqueta: 'Asistencia', valor: `${resumenAsistencia.porcentaje}%`, icono: 'fact_check', progreso: resumenAsistencia.porcentaje,
+              detalle: `${asistenciaAlDia ? 'Al día' : 'Por debajo del mínimo'} · mínimo ${UMBRAL_ASISTENCIA}%` },
+            { etiqueta: 'Sesiones registradas', valor: resumenAsistencia.registradas, icono: 'calendar_today',
+              detalle: 'Este trimestre · Ver detalle de asistencia →' },
+          ]} />
         </Link>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
         {ACCESOS.map((acceso) => (
           <Link
             key={acceso.ruta}
             to={acceso.ruta}
-            className="flex flex-col gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 transition hover:border-primary/40 hover:shadow-sm"
+            className={`flex flex-col gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 transition-colors hover:border-primary/40 hover:bg-surface-container-low focus-visible:outline-2 focus-visible:outline-primary ${acceso.ruta === '/mi-horario-aprendiz' ? 'lg:col-span-3' : ''}`}
           >
             <span className="flex items-start gap-4">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-container text-on-primary-container">
@@ -205,11 +191,13 @@ export function DashboardAprendiz() {
 
             {acceso.ruta === '/mi-horario-aprendiz' && (
               <span className="rounded-lg bg-surface-container-low px-3 py-2 text-xs">
-                {proxima ? (
+                {errorHorario ? (
+                  <span className="text-on-surface-variant">Horario temporalmente no disponible</span>
+                ) : proxima ? (
                   <>
-                    <span className="block font-semibold uppercase tracking-wide text-on-surface-variant">Próxima clase</span>
+                    <span className="block font-medium text-on-surface-variant">Próxima clase</span>
                     <span className="block font-semibold text-on-surface">
-                      {proxima.horario.resultadoCodigo ?? proxima.horario.resultadoDescripcion ?? 'Clase'}
+                      {proxima.horario.resultadoDescripcion ?? proxima.horario.resultadoCodigo ?? 'Clase'}
                     </span>
                     <span className="block text-on-surface-variant">
                       {diaLegible(proxima.fecha)} · {formatearHora(proxima.horario.horaInicio)} – {formatearHora(proxima.horario.horaFin)}
@@ -226,7 +214,7 @@ export function DashboardAprendiz() {
               <span className="rounded-lg bg-surface-container-low px-3 py-2 text-xs">
                 {instructores.length > 0 ? (
                   <>
-                    <span className="block font-semibold uppercase tracking-wide text-on-surface-variant">
+                    <span className="block font-medium text-on-surface-variant">
                       {instructores.length} instructor{instructores.length === 1 ? '' : 'es'} asignado{instructores.length === 1 ? '' : 's'}
                     </span>
                     <span className="block text-on-surface-variant">{instructores.slice(0, 3).join(' · ')}{instructores.length > 3 ? ` y ${instructores.length - 3} más` : ''}</span>
@@ -241,7 +229,7 @@ export function DashboardAprendiz() {
               <span className="rounded-lg bg-surface-container-low px-3 py-2 text-xs">
                 {ultimoAviso ? (
                   <>
-                    <span className="block font-semibold uppercase tracking-wide text-on-surface-variant">
+                    <span className="block font-medium text-on-surface-variant">
                       {ETIQUETA_CATEGORIA_AVISO[ultimoAviso.categoria]}
                     </span>
                     <span className="block truncate font-semibold text-on-surface">{ultimoAviso.titulo}</span>
@@ -257,7 +245,7 @@ export function DashboardAprendiz() {
               <span className="rounded-lg bg-surface-container-low px-3 py-2 text-xs">
                 {ultimaNotificacion ? (
                   <>
-                    <span className="block font-semibold uppercase tracking-wide text-on-surface-variant">
+                    <span className="block font-medium text-on-surface-variant">
                       {notificacionesSinLeer > 0 ? `${notificacionesSinLeer} sin leer` : 'Al día'}
                     </span>
                     <span className="block truncate text-on-surface-variant">{ultimaNotificacion.mensaje}</span>

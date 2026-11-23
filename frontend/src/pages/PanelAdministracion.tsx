@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { apiGet, apiPost, ApiError } from '../services/api'
 import type { Rol, SolicitudAcceso, SolicitudAccesoAprobada } from '../types/api'
 
@@ -316,81 +317,14 @@ export function PanelAdministracion() {
         <p className="mb-4 rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm text-on-error-container">{error}</p>
       )}
 
-      {/* Tarjetas de métricas */}
-      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex flex-col justify-between rounded-xl border border-tertiary/30 bg-surface-container-lowest p-4 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-on-surface-variant">
-            <span className="font-medium">Pendientes de Aprobación</span>
-            <span className="rounded-lg bg-tertiary-container p-1.5 text-on-tertiary-container">
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">pending_actions</span>
-            </span>
-          </div>
-          <div className="my-2">
-            <div className="text-3xl font-bold text-on-surface">{pendientes.length}</div>
-            <p className="mt-0.5 text-[11px] font-medium text-on-surface-variant">
-              {desglosePendientesPorRol || 'Sin solicitudes pendientes'}
-            </p>
-          </div>
-          <div className="flex items-center gap-1 border-t border-outline-variant pt-2 text-[11px] text-on-surface-variant">
-            <span aria-hidden="true" className="material-symbols-outlined text-[13px]">schedule</span>
-            <span>{tiempoPromedioEnColaHoras != null ? `Tiempo prom. en cola: ${tiempoPromedioEnColaHoras} horas` : 'Sin solicitudes en cola'}</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-on-surface-variant">
-            <span className="font-medium">Aprobadas Este Mes</span>
-            <span className="rounded-lg bg-primary-container p-1.5 text-on-primary-container">
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">check_circle</span>
-            </span>
-          </div>
-          <div className="my-2">
-            <div className="text-3xl font-bold text-on-surface">{aprobadasEsteMes.length}</div>
-            <p className="mt-0.5 text-[11px] font-medium text-on-surface-variant">Credenciales temporales despachadas</p>
-          </div>
-          {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
-              real del backend: no hay forma de saber si la persona ya
-              cambió su clave en el primer login (ni siquiera existe todavía
-              `debe_cambiar_clave`), así que no se muestra un % inventado. */}
-          <div className="border-t border-outline-variant pt-2 text-[11px] text-on-surface-variant">
-            <span>Cambio de clave forzado en el primer ingreso</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-on-surface-variant">
-            <span className="font-medium">Rechazadas con Justificación</span>
-            <span className="rounded-lg bg-error-container p-1.5 text-on-error-container">
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">block</span>
-            </span>
-          </div>
-          <div className="my-2">
-            <div className="text-3xl font-bold text-on-surface">{rechazadas.length}</div>
-            <p className="mt-0.5 text-[11px] text-on-surface-variant">Todas con motivo formal registrado</p>
-          </div>
-          <div className="border-t border-outline-variant pt-2 text-[11px] text-on-surface-variant">
-            <span>Notificación remitida al solicitante</span>
-          </div>
-        </div>
-
-        {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
-            real del backend: es texto informativo estático sobre el
-            protocolo de seguridad, no una cifra derivada de datos. */}
-        <div className="flex flex-col justify-between rounded-xl border border-primary/30 bg-primary-container/40 p-4 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-on-primary-container">
-            <span className="font-semibold">Protocolo de Seguridad</span>
-            <span className="rounded-lg bg-primary-container p-1.5 text-on-primary-container">
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">verified_user</span>
-            </span>
-          </div>
-          <div className="my-2">
-            <div className="text-xs font-semibold text-on-primary-container">Autenticación Forzada 1er Ingreso</div>
-            <p className="mt-1 text-[11px] leading-snug text-on-primary-container">
-              Contraseña autogenerada de un solo uso, con cambio obligatorio antes de navegar el sistema.
-            </p>
-          </div>
-        </div>
-      </section>
+      <IndicadoresResumen titulo="Resumen de solicitudes de acceso" className="mb-6" items={[
+        {
+          etiqueta: 'Pendientes de aprobación', valor: pendientes.length, icono: 'pending_actions',
+          detalle: <><span>{desglosePendientesPorRol || 'Sin solicitudes pendientes'}</span>{tiempoPromedioEnColaHoras != null && <> · Promedio en cola: {tiempoPromedioEnColaHoras} h</>}</>,
+        },
+        { etiqueta: 'Aprobadas este mes', valor: aprobadasEsteMes.length, detalle: 'Credenciales temporales generadas', icono: 'check_circle' },
+        { etiqueta: 'Rechazadas con justificación', valor: rechazadas.length, detalle: 'Con motivo registrado', icono: 'block' },
+      ]} />
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         {/* Columna principal: tabs + lista de solicitudes */}

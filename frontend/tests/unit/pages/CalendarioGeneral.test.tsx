@@ -63,7 +63,7 @@ describe('CalendarioGeneral', () => {
     const hoy = new Date()
     expect(await screen.findByText(`${NOMBRES_MES[hoy.getMonth()]} ${hoy.getFullYear()}`)).toBeInTheDocument()
 
-    const link = screen.getByRole('link', { name: 'Ver historial de horarios' })
+    const link = screen.getByRole('link', { name: 'Ver registro y versiones' })
     expect(link).toHaveAttribute('href', '/horarios/historial')
   })
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { apiGet, apiPost, ApiError } from '../services/api'
@@ -31,15 +31,18 @@ const ESTADOS: { valor: EstadoAsistencia; etiqueta: string; activo: string; inac
   },
 ]
 
+const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+
 /** Lunes de la semana de una fecha, para movernos de semana en semana. */
 function inicioDeSemana(fecha: Date): Date {
   const lunes = new Date(fecha)
+  lunes.setHours(0, 0, 0, 0)
   lunes.setDate(lunes.getDate() - ((lunes.getDay() + 6) % 7))
   return lunes
 }
 
 function aISO(fecha: Date): string {
-  return fecha.toISOString().slice(0, 10)
+  return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`
 }
 
 function formatFechaLarga(iso: string): string {
@@ -59,15 +62,22 @@ function iniciales(nombre: string): string {
   return ((palabras[0]?.[0] ?? '') + (palabras[1]?.[0] ?? '')).toUpperCase()
 }
 
-/** El día de la semana en que se dicta un bloque, para saber qué fecha
- * ofrecer: un horario de los lunes no se puede pasar un martes. */
-function fechaDeLaSesion(horario: Horario, semana: Date): string | null {
-  const idDia = horario.dias?.[0]
-  if (!idDia) return null
-
+function fechaDeLaSesion(horario: Horario, semana: Date, idDia: number | null): string | null {
+  if (idDia == null || !horario.dias.includes(idDia)) return null
   const fecha = new Date(semana)
   fecha.setDate(fecha.getDate() + (idDia - 1))
   return aISO(fecha)
+}
+
+function ultimaSesionProgramada(horario: Horario, hoy: Date): Date | null {
+  for (let diasAtras = 0; diasAtras < 7; diasAtras += 1) {
+    const candidata = new Date(hoy)
+    candidata.setHours(0, 0, 0, 0)
+    candidata.setDate(candidata.getDate() - diasAtras)
+    const idDia = candidata.getDay() || 7
+    if (horario.dias.includes(idDia)) return candidata
+  }
+  return null
 }
 
 /**
@@ -96,6 +106,7 @@ export function AsistenciaInstructor() {
   const [horarios, setHorarios] = useState<Horario[]>([])
   const [idHorario, setIdHorario] = useState<number | null>(idPedido)
   const [semana, setSemana] = useState(() => inicioDeSemana(new Date()))
+  const [idDia, setIdDia] = useState<number | null>(null)
 
   const [sesion, setSesion] = useState<SesionAsistencia | null>(null)
   const [marcas, setMarcas] = useState<Record<string, EstadoAsistencia>>({})
@@ -103,27 +114,44 @@ export function AsistenciaInstructor() {
   const [busqueda, setBusqueda] = useState('')
 
   const [cargando, setCargando] = useState(true)
+  const [cargandoSesion, setCargandoSesion] = useState(false)
+  const [revisionManual, setRevisionManual] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [mensajeExito, setMensajeExito] = useState<string | null>(null)
+  const revisionSesion = useRef(0)
 
   const horarioElegido = horarios.find((h) => h.idHorario === idHorario) ?? null
-  const fecha = horarioElegido ? fechaDeLaSesion(horarioElegido, semana) : null
+  const fecha = horarioElegido ? fechaDeLaSesion(horarioElegido, semana, idDia) : null
+  const diasDelHorario = [...new Set(horarioElegido?.dias ?? [])].filter((dia) => dia >= 1 && dia <= 7).sort((a, b) => a - b)
+  const semanaSiguiente = new Date(semana)
+  semanaSiguiente.setDate(semana.getDate() + 7)
+  const diasDisponiblesSiguiente = diasDelHorario.filter((dia) => {
+    const fechaDia = horarioElegido ? fechaDeLaSesion(horarioElegido, semanaSiguiente, dia) : null
+    return fechaDia != null && fechaDia <= aISO(new Date())
+  })
+
+  function elegirHorario(horario: Horario) {
+    const ultima = ultimaSesionProgramada(horario, new Date())
+    setIdHorario(horario.idHorario)
+    setIdDia(ultima ? ultima.getDay() || 7 : null)
+    if (ultima) setSemana(inicioDeSemana(ultima))
+    setBusqueda('')
+    setMensajeExito(null)
+  }
 
   useEffect(() => {
     apiGet<Horario[]>('/usuarios/me/horarios')
       .then((lista) => {
         setHorarios(lista)
-        // El id de la URL solo vale si esa clase es suya; si no, se cae a
-        // la primera en vez de dejar la pantalla pidiendo un 404. Ojo con
-        // el `previo`: arranca con el id de la URL, así que conservarlo a
-        // ciegas dejaría fijado justamente el id ajeno que se descarta.
-        const esSuyo = (id: number | null) => id != null && lista.some((h) => h.idHorario === id)
-        setIdHorario((previo) => {
-          if (esSuyo(idPedido)) return idPedido
-          if (esSuyo(previo)) return previo
-          return lista[0]?.idHorario ?? null
-        })
+        // Un id ajeno en la URL vuelve a la primera clase propia.
+        const elegido = lista.find((h) => h.idHorario === idPedido) ?? lista[0]
+        if (elegido) {
+          const ultima = ultimaSesionProgramada(elegido, new Date())
+          setIdHorario(elegido.idHorario)
+          setIdDia(ultima ? ultima.getDay() || 7 : null)
+          if (ultima) setSemana(inicioDeSemana(ultima))
+        } else setIdHorario(null)
         setError(null)
       })
       .catch((err: unknown) => {
@@ -132,33 +160,45 @@ export function AsistenciaInstructor() {
       .finally(() => setCargando(false))
   }, [idPedido])
 
-  const cargarSesion = useCallback(() => {
-    if (!idHorario || !fecha) return
-
-    apiGet<SesionAsistencia>(`/asistencias/sesion?idHorario=${idHorario}&fecha=${fecha}`)
-      .then((datos) => {
-        setSesion(datos)
-        setError(null)
-        // Lo ya registrado entra como estado inicial: pasar lista otra vez
-        // es corregir, no empezar de cero.
-        const previas: Record<string, EstadoAsistencia> = {}
-        const referencias: Record<string, string> = {}
-        for (const aprendiz of datos.aprendices) {
-          if (aprendiz.estado) previas[aprendiz.idUsuario] = aprendiz.estado
-          if (aprendiz.referenciaExcusa) referencias[aprendiz.idUsuario] = aprendiz.referenciaExcusa
-        }
-        setMarcas(previas)
-        setExcusas(referencias)
-      })
-      .catch((err: unknown) => {
-        setSesion(null)
-        setError(err instanceof ApiError ? err.message : 'No se pudo cargar la sesión.')
-      })
-  }, [idHorario, fecha])
-
   useEffect(() => {
-    cargarSesion()
-  }, [cargarSesion])
+    if (!idHorario || !fecha) return
+    const revision = ++revisionSesion.current
+
+    // La carga inicia en una microtarea para evitar cambios de estado
+    // sincrónicos dentro del efecto y descartar respuestas de otra fecha.
+    queueMicrotask(() => {
+      if (revision !== revisionSesion.current) return
+      setCargandoSesion(true)
+      setSesion(null)
+      setMarcas({})
+      setExcusas({})
+      setError(null)
+
+      apiGet<SesionAsistencia>(`/asistencias/sesion?idHorario=${idHorario}&fecha=${fecha}`)
+        .then((datos) => {
+          if (revision !== revisionSesion.current) return
+          setSesion(datos)
+          setError(null)
+          const previas: Record<string, EstadoAsistencia> = {}
+          const referencias: Record<string, string> = {}
+          for (const aprendiz of datos.aprendices) {
+            if (aprendiz.estado) previas[aprendiz.idUsuario] = aprendiz.estado
+            if (aprendiz.referenciaExcusa) referencias[aprendiz.idUsuario] = aprendiz.referenciaExcusa
+          }
+          setMarcas(previas)
+          setExcusas(referencias)
+        })
+        .catch((err: unknown) => {
+          if (revision !== revisionSesion.current) return
+          setSesion(null)
+          setError(err instanceof ApiError ? err.message : 'No se pudo cargar la sesión.')
+        })
+        .finally(() => {
+          if (revision === revisionSesion.current) setCargandoSesion(false)
+        })
+    })
+    return () => { revisionSesion.current += 1 }
+  }, [idHorario, fecha, revisionManual])
 
   const visibles = useMemo(() => {
     const termino = busqueda.trim().toLowerCase()
@@ -196,21 +236,21 @@ export function AsistenciaInstructor() {
   }
 
   async function guardar() {
-    if (!sesion || !fecha || guardando) return
+    if (!sesion || !fecha || sesion.idHorario !== idHorario || sesion.fechaSesion !== fecha || guardando || cargandoSesion || conteo.sinMarcar > 0) return
 
     setGuardando(true)
     setError(null)
 
     try {
-      const lista: MarcaAsistencia[] = Object.entries(marcas).map(([idUsuarioAprendiz, estado]) => ({
-        idUsuarioAprendiz,
-        estado,
-        referenciaExcusa: estado === 'excusa' ? (excusas[idUsuarioAprendiz] ?? null) : null,
+      const lista: MarcaAsistencia[] = sesion.aprendices.map((aprendiz) => ({
+        idUsuarioAprendiz: aprendiz.idUsuario,
+        estado: marcas[aprendiz.idUsuario],
+        referenciaExcusa: marcas[aprendiz.idUsuario] === 'excusa' ? (excusas[aprendiz.idUsuario]?.trim() || null) : null,
       }))
 
       await apiPost('/asistencias/sesion', { idHorario: sesion.idHorario, fechaSesion: fecha, marcas: lista })
       setMensajeExito('Asistencia guardada.')
-      cargarSesion()
+      setRevisionManual((actual) => actual + 1)
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'No se pudo guardar la asistencia.')
     } finally {
@@ -218,7 +258,14 @@ export function AsistenciaInstructor() {
     }
   }
 
-  const hayCambios = Object.keys(marcas).length > 0
+  const hayCambios = sesion?.aprendices.some((aprendiz) =>
+    marcas[aprendiz.idUsuario] !== (aprendiz.estado ?? undefined)
+    || (marcas[aprendiz.idUsuario] === 'excusa' && (excusas[aprendiz.idUsuario] ?? '').trim() !== (aprendiz.referenciaExcusa ?? '')),
+  ) ?? false
+
+  function puedeCambiarSesion() {
+    return !hayCambios || window.confirm('Hay cambios de asistencia sin guardar. ¿Descartarlos y cambiar de sesión?')
+  }
 
   return (
     <AppShell activo="Asistencia">
@@ -265,7 +312,10 @@ export function AsistenciaInstructor() {
               <select
                 id="sesion"
                 value={idHorario ?? ''}
-                onChange={(e) => setIdHorario(Number(e.target.value))}
+                onChange={(e) => {
+                  const elegido = horarios.find((h) => h.idHorario === Number(e.target.value))
+                  if (elegido && puedeCambiarSesion()) elegirHorario(elegido)
+                }}
                 className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
               >
                 {horarios.map((h) => (
@@ -277,6 +327,25 @@ export function AsistenciaInstructor() {
               </select>
             </div>
 
+            <div className="min-w-40">
+              <label htmlFor="dia-sesion" className="mb-1 block text-xs font-semibold text-on-surface-variant">Día de clase</label>
+              <select
+                id="dia-sesion"
+                value={idDia ?? ''}
+                onChange={(e) => {
+                  if (!puedeCambiarSesion()) return
+                  setIdDia(Number(e.target.value))
+                  setMensajeExito(null)
+                }}
+                className="w-full rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface"
+              >
+                {diasDelHorario.map((dia) => {
+                  const fechaDia = horarioElegido ? fechaDeLaSesion(horarioElegido, semana, dia) : null
+                  return <option key={dia} value={dia} disabled={fechaDia != null && fechaDia > aISO(new Date())}>{DIAS[dia - 1]}</option>
+                })}
+              </select>
+            </div>
+
             <div>
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">
                 Fecha de la sesión
@@ -285,7 +354,11 @@ export function AsistenciaInstructor() {
                 <button
                   type="button"
                   aria-label="Semana anterior"
-                  onClick={() => setSemana((s) => new Date(s.getTime() - 7 * 86400000))}
+                  onClick={() => {
+                    if (!puedeCambiarSesion()) return
+                    setSemana((s) => { const anterior = new Date(s); anterior.setDate(s.getDate() - 7); return anterior })
+                    setMensajeExito(null)
+                  }}
                   className="grid h-9 w-9 place-items-center rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container dark:border-slate-600"
                 >
                   ‹
@@ -296,8 +369,14 @@ export function AsistenciaInstructor() {
                 <button
                   type="button"
                   aria-label="Semana siguiente"
-                  onClick={() => setSemana((s) => new Date(s.getTime() + 7 * 86400000))}
-                  className="grid h-9 w-9 place-items-center rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container dark:border-slate-600"
+                  onClick={() => {
+                    if (diasDisponiblesSiguiente.length === 0 || !puedeCambiarSesion()) return
+                    if (idDia == null || !diasDisponiblesSiguiente.includes(idDia)) setIdDia(diasDisponiblesSiguiente.at(-1) ?? null)
+                    setSemana(semanaSiguiente)
+                    setMensajeExito(null)
+                  }}
+                  disabled={diasDisponiblesSiguiente.length === 0}
+                  className="grid h-9 w-9 place-items-center rounded-xl border border-outline-variant text-on-surface-variant hover:bg-surface-container disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-600"
                 >
                   ›
                 </button>
@@ -325,6 +404,8 @@ export function AsistenciaInstructor() {
             )}
           </div>
         )}
+
+        {cargandoSesion && <p className="mb-4 text-sm text-on-surface-variant" role="status">Cargando la lista de esta sesión…</p>}
 
         {sesion && sesion.aprendices.length === 0 && (
           <div className="rounded-xl border border-tertiary/30 bg-tertiary-container px-4 py-8 text-center text-sm text-on-tertiary-container">
@@ -429,7 +510,7 @@ export function AsistenciaInstructor() {
               <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3">
                 <p className="text-sm text-on-surface-variant dark:text-slate-400">
                   {conteo.sinMarcar > 0
-                    ? `${conteo.sinMarcar} sin marcar`
+                    ? `${conteo.sinMarcar} sin marcar · completa la lista antes de guardar`
                     : 'Todos marcados'}
                   {mensajeExito && <span className="ml-2 font-semibold text-primary">{mensajeExito}</span>}
                 </p>
@@ -437,7 +518,7 @@ export function AsistenciaInstructor() {
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={cargarSesion}
+                    onClick={() => setRevisionManual((actual) => actual + 1)}
                     disabled={guardando}
                     className="rounded-xl px-4 py-2 text-sm font-semibold text-on-surface-variant hover:bg-surface-container disabled:opacity-50 dark:text-slate-300"
                   >
@@ -446,7 +527,7 @@ export function AsistenciaInstructor() {
                   <button
                     type="button"
                     onClick={() => void guardar()}
-                    disabled={!hayCambios || guardando}
+                    disabled={!hayCambios || conteo.sinMarcar > 0 || guardando || cargandoSesion}
                     className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {guardando ? 'Guardando…' : 'Guardar asistencia'}

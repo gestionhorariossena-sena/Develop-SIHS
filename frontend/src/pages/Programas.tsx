@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
-import { ejecutarCargaMasiva, PanelCargaMasiva, TituloPasoCarga, botonConfirmarCarga, estiloArchivoCarga } from '../components/cargaMasiva/FlujoCargaMasiva'
+import { PanelCargaMasiva, TituloPasoCarga } from '../components/cargaMasiva/FlujoCargaMasiva'
+import { ejecutarCargaMasiva, botonConfirmarCarga, estiloArchivoCarga } from '../components/cargaMasiva/utilidadesCargaMasiva'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
 import type {
@@ -10,6 +11,7 @@ import type {
   Ficha,
   PreviewCurriculoResponse,
   Programa,
+  Usuario,
   ResultadoAprendizajeCreate,
 } from '../types/api'
 
@@ -22,6 +24,7 @@ export function Programas() {
   const [searchParams] = useSearchParams()
   const idDesdeUrl = searchParams.get('id')
   const [programas, setProgramas] = useState<Programa[]>([])
+  const [perfil, setPerfil] = useState<Usuario | null>(null)
   const [fichas, setFichas] = useState<Ficha[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [nivelFormacion, setNivelFormacion] = useState('todos')
@@ -63,6 +66,7 @@ export function Programas() {
     apiGet<Ficha[]>('/fichas/')
       .then(setFichas)
       .catch(() => {})
+    apiGet<Usuario>('/usuarios/me').then(setPerfil).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idDesdeUrl no cambia en la vida del componente.
   }, [])
 
@@ -313,6 +317,11 @@ export function Programas() {
             <div><dt className="text-on-surface-variant dark:text-slate-400">Estado</dt><dd className="mt-1 font-medium text-on-surface dark:text-slate-100">{seleccionado.activo ? 'Activo' : 'Inactivo'}</dd></div>
             <div><dt className="text-on-surface-variant dark:text-slate-400">Fichas asociadas</dt><dd className="mt-1 font-medium text-on-surface dark:text-slate-100">{fichasDelSeleccionado.length}</dd></div>
           </dl>
+
+          <div className="flex flex-wrap gap-2 border-t border-outline-variant pt-4">
+            <Link to={`/tematicas?idPrograma=${seleccionado.idPrograma}`} className="rounded-md border border-outline px-3 py-2 text-sm font-medium text-on-surface hover:bg-surface-container">Ver temáticas del programa</Link>
+            {perfil?.roles.some((rol) => rol.nombre === 'Administrador') && <Link to={`/fichas?crear=1&idPrograma=${seleccionado.idPrograma}`} className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-on-primary hover:bg-on-primary-container">Crear ficha para este programa</Link>}
+          </div>
 
           <SeccionDrawer titulo="Competencias y resultados de aprendizaje">
             <PanelCargaMasiva

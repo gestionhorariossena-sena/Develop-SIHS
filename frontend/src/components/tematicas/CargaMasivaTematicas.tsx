@@ -1,7 +1,8 @@
 import { useState, type ChangeEvent } from 'react'
 import { apiGet, apiPost, apiPostForm, ApiError } from '../../services/api'
 import type { CompetenciaFormacionResponse, PreviewCurriculoResponse, Programa, TematicaCompetencia } from '../../types/api'
-import { PanelCargaMasiva, TituloPasoCarga, botonConfirmarCarga, estiloArchivoCarga, ejecutarCargaMasiva, ResumenCargaMasiva, type ResultadoCargaMasiva } from '../cargaMasiva/FlujoCargaMasiva'
+import { PanelCargaMasiva, TituloPasoCarga, ResumenCargaMasiva } from '../cargaMasiva/FlujoCargaMasiva'
+import { botonConfirmarCarga, estiloArchivoCarga, ejecutarCargaMasiva, type ResultadoCargaMasiva } from '../cargaMasiva/utilidadesCargaMasiva'
 
 interface Props { programas: Programa[]; idPrograma: number | null; onTerminado: () => void; onCerrar: () => void }
 
@@ -61,6 +62,7 @@ export function CargaMasivaTematicas({ programas, idPrograma, onTerminado, onCer
             }
             porDescripcion.set(clave, previaCompetencia)
           }
+          if (!previaCompetencia) throw new Error('No se pudo preparar la competencia para importar sus resultados.')
           for (const item of competencia.resultados) {
             if (previaCompetencia.resultados.some(actual => normalizar(actual.descripcion) === normalizar(item.descripcion))) continue
             await apiPost('/resultados-aprendizaje/', {

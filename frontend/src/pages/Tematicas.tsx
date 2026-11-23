@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { CargaMasivaTematicas } from '../components/tematicas/CargaMasivaTematicas'
 import { apiDelete, apiGet, apiPost, apiPut, ApiError } from '../services/api'
 import type { Programa, TematicaCompetencia, TematicaResultado, Usuario } from '../types/api'
@@ -39,9 +41,13 @@ function enteroONulo(valor: string): number | null {
 }
 
 export function Tematicas() {
+  const [searchParams] = useSearchParams()
   const [programas, setProgramas] = useState<Programa[]>([])
   const [perfil, setPerfil] = useState<Usuario | null>(null)
-  const [idPrograma, setIdPrograma] = useState<number | null>(null)
+  const [idPrograma, setIdPrograma] = useState<number | null>(() => {
+    const valor = Number(searchParams.get('idPrograma'))
+    return Number.isInteger(valor) && valor > 0 ? valor : null
+  })
   const [busqueda, setBusqueda] = useState('')
   const [tematicas, setTematicas] = useState<TematicaCompetencia[]>([])
   const [abiertas, setAbiertas] = useState<Set<number>>(new Set())
@@ -201,19 +207,12 @@ export function Tematicas() {
         onCerrar={() => setMostrarCarga(false)}
       />}
 
-      <section className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {[
-          ['Competencias', resumen.competencias],
-          ['Resultados de aprendizaje', resumen.resultados],
-          ['Horas del pénsum', resumen.horas],
-          ['Resultados sin programar', resumen.sinProgramar],
-        ].map(([etiqueta, valor]) => (
-          <div key={etiqueta} className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{etiqueta}</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-slate-100">{valor}</p>
-          </div>
-        ))}
-      </section>
+      <IndicadoresResumen titulo="Resumen de temáticas" className="mb-6" items={[
+        { etiqueta: 'Competencias', valor: resumen.competencias, icono: 'category' },
+        { etiqueta: 'Resultados de aprendizaje', valor: resumen.resultados, icono: 'school' },
+        { etiqueta: 'Horas del pénsum', valor: resumen.horas, icono: 'schedule' },
+        { etiqueta: 'Resultados sin programar', valor: resumen.sinProgramar, icono: 'pending_actions' },
+      ]} />
 
       <div className="mb-6 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row dark:border-slate-700 dark:bg-slate-800">
         <label className="flex-1 text-sm text-slate-700 dark:text-slate-300">

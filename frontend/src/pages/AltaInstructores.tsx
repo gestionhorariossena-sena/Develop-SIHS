@@ -2,7 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
-import { PanelCargaMasiva, TituloPasoCarga, botonConfirmarCarga, botonSecundarioCarga, estiloArchivoCarga, ejecutarCargaMasiva } from '../components/cargaMasiva/FlujoCargaMasiva'
+import { PanelCargaMasiva, TituloPasoCarga } from '../components/cargaMasiva/FlujoCargaMasiva'
+import { botonConfirmarCarga, botonSecundarioCarga, estiloArchivoCarga, ejecutarCargaMasiva } from '../components/cargaMasiva/utilidadesCargaMasiva'
 
 interface Alta {
   nombre: string
@@ -165,7 +166,7 @@ export function AltaInstructores() {
       )}
       <div role="tablist" aria-label="Método de registro" className="mb-5 inline-flex gap-1 rounded-md border border-outline-variant bg-surface-container-low p-1">
         <button role="tab" type="button" aria-selected={modo === 'individual'} onClick={() => { setModo('individual'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'individual' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Registro individual</button>
-        <button role="tab" type="button" aria-selected={modo === 'csv'} onClick={() => { setModo('csv'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'excel' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Carga masiva</button>
+        <button role="tab" type="button" aria-selected={modo === 'csv'} onClick={() => { setModo('csv'); setError(null) }} className={`rounded px-4 py-2 text-sm font-medium ${modo === 'csv' ? 'bg-surface-container-lowest text-on-surface shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}>Carga masiva</button>
       </div>
 
       {error && <p role="alert" className="mb-4 max-w-3xl rounded-md border border-error/30 bg-error-container p-3 text-sm text-on-error-container">{error}</p>}
@@ -214,7 +215,7 @@ export function AltaInstructores() {
         </PanelCargaMasiva>
       )}
 
-      {modo === 'excel' && procesando && previa && progreso > 0 && <p role="status" className="mt-4 text-sm text-on-surface-variant">Enviando invitaciones: {progreso} de {previa.total} instructores procesados.</p>}
+      {modo === 'csv' && procesando && previa && progreso > 0 && <p role="status" className="mt-4 text-sm text-on-surface-variant">Enviando invitaciones: {progreso} de {previa.total} instructores procesados.</p>}
       {resultados.length > 0 && <section aria-label="Resultados del registro" className="mt-6 max-w-4xl border-t border-outline-variant pt-4">
         <TituloPasoCarga numero={3} titulo="Resultado de la importación" detalle="Revisa los correos enviados, omitidos y pendientes." />
         <ul className="divide-y divide-outline-variant rounded-md border border-outline-variant bg-surface-container-lowest">{resultados.map((r, i) => <li key={`${r.correo}-${i}`} className="flex flex-wrap items-start justify-between gap-3 px-4 py-3 text-sm"><div><p className="font-medium text-on-surface">{r.correo}</p><p className="mt-1 text-xs text-on-surface-variant">{r.detalle}</p></div><span className={`text-xs font-semibold ${r.estado === 'creado' ? 'text-primary' : 'text-tertiary'}`}>{r.estado === 'creado' ? 'Invitado' : r.estado.replaceAll('_', ' ')}</span></li>)}</ul>

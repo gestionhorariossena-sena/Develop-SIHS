@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { SelectorFechaHora } from '../components/horario/SelectorFechaHora'
 import { apiGet, apiPost, apiPut, ApiError } from '../services/api'
 import type { Horario, Trimestre } from '../types/api'
@@ -201,20 +202,11 @@ export function PublicacionesProgramadas() {
         </div>
       </div>
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Borradores activos</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{horarios.filter((horario) => horario.activo && !horario.publicado).length}</p>
-        </div>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Pendientes de publicación o revisión</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{pendientes}</p>
-        </div>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Publicación automática</p>
-          <p className={`mt-2 text-sm font-bold ${programacionActiva ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>{programacionActiva ? 'Servicio disponible' : 'Pendiente de activación'}</p>
-        </div>
-      </div>
+      <IndicadoresResumen titulo="Resumen de publicaciones" className="mb-5" items={[
+        { etiqueta: 'Borradores activos', valor: horarios.filter((horario) => horario.activo && !horario.publicado).length, icono: 'edit_note' },
+        { etiqueta: 'Pendientes de publicación o revisión', valor: pendientes, icono: 'pending_actions' },
+        { etiqueta: 'Publicación automática', valor: <span className="font-sans text-base">{programacionActiva ? 'Servicio disponible' : 'Pendiente de activación'}</span>, icono: 'event_available' },
+      ]} />
       {disponibilidad && !programacionActiva && (
         <section className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100" role="status" aria-live="polite">
           <span aria-hidden="true" className="material-symbols-outlined mt-0.5">info</span>

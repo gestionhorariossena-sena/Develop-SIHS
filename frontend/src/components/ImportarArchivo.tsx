@@ -1,9 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { parsearCsv, type FilaCsv } from '../utils/csv'
-import {
-  ejecutarCargaMasiva, PanelCargaMasiva, ResumenCargaMasiva, TituloPasoCarga,
-  botonConfirmarCarga, estiloArchivoCarga, type ResultadoCargaMasiva,
-} from './cargaMasiva/FlujoCargaMasiva'
+import { PanelCargaMasiva, ResumenCargaMasiva, TituloPasoCarga } from './cargaMasiva/FlujoCargaMasiva'
+import { ejecutarCargaMasiva, botonConfirmarCarga, estiloArchivoCarga, type ResultadoCargaMasiva } from './cargaMasiva/utilidadesCargaMasiva'
 
 export interface ColumnaImportar {
   clave: string

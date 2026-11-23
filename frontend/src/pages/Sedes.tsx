@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { apiDelete, apiGet, apiPost, apiPut, ApiError } from '../services/api'
 import type { Ambiente, Sede, Usuario } from '../types/api'
 
@@ -191,22 +192,15 @@ export function Sedes() {
  )}
  </div>
 
- <div className="mb-6 grid gap-4 sm:grid-cols-3">
- <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 ">
- <p className="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Sedes registradas</p>
- <p className="mt-2 text-3xl font-bold text-on-surface">{sedes.length}</p>
- </div>
- <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 ">
- <p className="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Ambientes asociados</p>
- <p className="mt-2 text-3xl font-bold text-on-surface">{totalAmbientes}</p>
- </div>
- <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-5 ">
- <p className="text-xs font-medium uppercase tracking-wide text-on-surface-variant">Principales</p>
- <p className="mt-2 text-3xl font-bold text-on-surface">
- {sedes.filter((sede) => sede.tipoSede === 'principal').length}
- </p>
- </div>
- </div>
+ <IndicadoresResumen
+ titulo="Resumen de sedes"
+ className="mb-6"
+ items={[
+ { etiqueta: 'Sedes registradas', valor: sedes.length, icono: 'location_city' },
+ { etiqueta: 'Ambientes asociados', valor: totalAmbientes, icono: 'meeting_room' },
+ { etiqueta: 'Sedes principales', valor: sedes.filter((sede) => sede.tipoSede === 'principal').length, icono: 'domain' },
+ ]}
+ />
 
  <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 ">
  <div className="grid gap-3 md:grid-cols-2">

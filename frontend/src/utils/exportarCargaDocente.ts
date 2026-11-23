@@ -28,7 +28,7 @@ function celdaCsv(valor: string | number): string {
 
 export function construirCsvCargaDocente(instructores: Usuario[], horarios: Horario[]): string {
   const columnas = [
-    'Instructor', 'Correo', 'Documento', 'Especialidades', 'Contrato',
+    'Instructor', 'Correo', 'Especialidades', 'Contrato',
     'Horas contratadas por semana', 'Horas asignadas por semana',
     'Límite semanal', 'Horas disponibles', 'Porcentaje de ocupación', 'Estado',
   ]
@@ -36,7 +36,7 @@ export function construirCsvCargaDocente(instructores: Usuario[], horarios: Hora
     const asignadas = horasDeInstructor(instructor.idUsuario, horarios)
     const limite = limiteInstructor(instructor)
     return [
-      instructor.nombre, instructor.email, instructor.numeroDocumento || '',
+      instructor.nombre, instructor.email,
       instructor.especialidades.map(item => item.nombre).join(', '),
       instructor.tipoContrato || 'Sin definir', instructor.horasContratadasSemana ?? '',
       Number(asignadas.toFixed(2)), limite, Number((limite - asignadas).toFixed(2)),

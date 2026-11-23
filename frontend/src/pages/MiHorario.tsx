@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { GridSemanalInstructor } from '../components/horario/GridSemanalInstructor'
 import { SeccionAmbientesAsignados } from '../components/relacionados/SeccionesInstructor'
@@ -265,102 +266,28 @@ export function MiHorario() {
         </div>
       )}
 
-      {/* Ribbon de KPIs: Carga Lectiva Semanal (SCRUM-49), Fichas Activas,
-          Ambientes en Uso y Estatus Normativo RF-011 — todo derivado de
-          datos ya reales. */}
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Carga Lectiva Semanal</p>
-            <span className="material-symbols-outlined text-[18px] text-primary">schedule</span>
-          </div>
-          {!perfil ? (
-            <p className="text-sm text-on-surface-variant">Cargando…</p>
-          ) : cargandoCarga ? (
-            <p className="text-sm text-on-surface-variant">Calculando…</p>
-          ) : errorCarga ? (
-            <p className="text-2xl font-bold text-on-surface">
-              {horasSemanales}
-              <span className="ml-1 text-sm font-medium text-on-surface-variant">hrs (estimado)</span>
-            </p>
-          ) : (
-            <>
-              <p className="text-2xl font-bold text-on-surface">
-                {cargaSemanal?.horasAsignadas}
-                <span className="ml-1 text-sm font-medium text-on-surface-variant">
-                  {cargaSemanal?.horasMaximas != null ? `/ ${cargaSemanal.horasMaximas} hrs semanales` : 'hrs'}
-                </span>
-              </p>
-              {cargaSemanal?.horasMaximas != null && (
-                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-container">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${Math.min(100, Math.round((cargaSemanal.horasAsignadas / cargaSemanal.horasMaximas) * 100))}%` }}
-                  />
-                </div>
-              )}
-            </>
-          )}
-        </div>
+      <IndicadoresResumen titulo="Resumen de mi horario" className="mb-4" items={[
+        {
+          etiqueta: 'Carga semanal', icono: 'schedule',
+          valor: !perfil ? '—' : cargandoCarga ? '…' : errorCarga ? `${horasSemanales} h` : `${cargaSemanal?.horasAsignadas ?? 0} h`,
+          detalle: !perfil ? 'Cargando…' : cargandoCarga ? 'Calculando…' : errorCarga ? 'Estimado según el horario visible' : cargaSemanal?.horasMaximas != null ? `Límite: ${cargaSemanal.horasMaximas} h` : 'Sin límite definido',
+          progreso: cargaSemanal?.horasMaximas ? cargaSemanal.horasAsignadas / cargaSemanal.horasMaximas * 100 : undefined,
+        },
+        {
+          etiqueta: 'Fichas activas', icono: 'groups', valor: horarios ? fichasActivas.size : '—',
+          detalle: horarios && aprendicesConvocados > 0 ? `${aprendicesConvocados} aprendices convocados` : undefined,
+        },
+        { etiqueta: 'Ambientes en uso', icono: 'domain', valor: horarios ? ambientesEnUso.size : '—' },
+      ]} />
 
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Fichas Activas</p>
-            <span className="material-symbols-outlined text-[18px] text-secondary">groups</span>
-          </div>
-          <p className="text-2xl font-bold text-on-surface">
-            {horarios ? fichasActivas.size : '—'}
-            <span className="ml-1 text-sm font-medium text-on-surface-variant">{fichasActivas.size === 1 ? 'ficha' : 'fichas'}</span>
-          </p>
-          {horarios && aprendicesConvocados > 0 && (
-            <p className="mt-1 text-xs text-on-surface-variant">{aprendicesConvocados} aprendices convocados</p>
-          )}
-        </div>
-
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Ambientes en Uso</p>
-            <span className="material-symbols-outlined text-[18px] text-on-surface-variant">domain</span>
-          </div>
-          <p className="text-2xl font-bold text-on-surface">{horarios ? ambientesEnUso.size : '—'}</p>
-        </div>
-
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Estatus Normativo</p>
-            <span className="material-symbols-outlined text-[18px] text-primary">verified_user</span>
-          </div>
-          {!perfil || cargandoCarga ? (
-            <p className="text-sm text-on-surface-variant">{!perfil ? 'Cargando…' : 'Calculando…'}</p>
-          ) : errorCarga ? (
-            <p className="text-sm text-on-surface-variant">No se pudo validar el límite de carga docente.</p>
-          ) : cargaSemanal?.horasMaximas == null ? (
-            <p className="text-sm text-on-surface-variant">Falta el tipo de contrato para evaluar el límite de carga docente.</p>
-          ) : excedeTopeRf011 ? (
-            <>
-              <p className="text-2xl font-bold text-red-600">
-                Excede el tope
-                <span className="ml-1 text-sm font-medium text-on-surface-variant">Tope {cargaSemanal.horasMaximas}h</span>
-              </p>
-              <p className="mt-1 flex items-center gap-1 text-xs font-medium text-red-600">
-                <span className="material-symbols-outlined text-[15px]">error</span>
-                Supera el límite de carga docente
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="text-2xl font-bold text-primary">
-                Aprobado
-                <span className="ml-1 text-sm font-medium text-on-surface-variant">Tope {cargaSemanal.horasMaximas}h</span>
-              </p>
-              <p className="mt-1 flex items-center gap-1 text-xs font-medium text-secondary">
-                <span className="material-symbols-outlined text-[15px]">check_circle</span>
-                Validado por Coordinación Académica
-              </p>
-            </>
-          )}
-        </div>
-      </div>
+      {perfil && !cargandoCarga && (
+        <p className={`mb-4 text-sm ${excedeTopeRf011 ? 'text-error' : 'text-on-surface-variant'}`} role={excedeTopeRf011 ? 'alert' : 'status'}>
+          {errorCarga ? 'No se pudo validar el límite de carga docente.'
+            : cargaSemanal?.horasMaximas == null ? 'Falta el tipo de contrato para evaluar el límite de carga docente.'
+              : excedeTopeRf011 ? `Excede el tope de ${cargaSemanal.horasMaximas} h. Supera el límite de carga docente.`
+                : `Dentro del límite de ${cargaSemanal.horasMaximas} h semanales.`}
+        </p>
+      )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">

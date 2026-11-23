@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderConProviders } from '../../helpers/renderConProviders'
 import { MiHorario } from '../../../src/pages/MiHorario'
@@ -105,7 +105,7 @@ describe('MiHorario', () => {
     expect(enlaces[0]).toHaveAttribute('href', expect.stringContaining('/mi-horario/detalle-franja?horario='))
   })
 
-  it('el ribbon de KPIs usa GET /usuarios/{id}/carga-semanal para la carga lectiva semanal', async () => {
+  it('el resumen usa GET /usuarios/{id}/carga-semanal para la carga semanal', async () => {
     apiGetMock.mockImplementation((path: string) => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', tipoContrato: 'planta', roles: [{ idRol: 1, nombre: 'Instructor' }] })
@@ -116,8 +116,9 @@ describe('MiHorario', () => {
     })
     renderConProviders(<MiHorario />)
 
-    expect(await screen.findByText('/ 32 hrs semanales')).toBeInTheDocument()
-    expect(screen.getByText('12')).toBeInTheDocument()
+    const resumen = within(await screen.findByRole('region', { name: 'Resumen de mi horario' }))
+    expect(await resumen.findByText('12 h')).toBeInTheDocument()
+    expect(resumen.getByText('Límite: 32 h')).toBeInTheDocument()
     expect(apiGetMock).toHaveBeenCalledWith('/usuarios/u1/carga-semanal')
   })
 
@@ -146,7 +147,7 @@ describe('MiHorario', () => {
     expect(screen.getByRole('button', { name: /Contactar/ })).toBeDisabled()
   })
 
-  it('Estatus Normativo RF-011: dentro del tope muestra "Aprobado"', async () => {
+  it('dentro del tope muestra el límite calculado sin atribuir una aprobación', async () => {
     apiGetMock.mockImplementation((path: string) => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', tipoContrato: 'planta', roles: [{ idRol: 1, nombre: 'Instructor' }] })
@@ -157,12 +158,11 @@ describe('MiHorario', () => {
     })
     renderConProviders(<MiHorario />)
 
-    expect(await screen.findByText('Aprobado')).toBeInTheDocument()
-    expect(screen.getByText('Validado por Coordinación Académica')).toBeInTheDocument()
-    expect(screen.getByText('Tope 32h')).toBeInTheDocument()
+    expect(await screen.findByText('Dentro del límite de 32 h semanales.')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Resumen de mi horario' })).toBeInTheDocument()
   })
 
-  it('Estatus Normativo RF-011: sobre el tope NO inventa "Aprobado", muestra el estado real de alerta', async () => {
+  it('sobre el tope muestra el estado real de alerta', async () => {
     apiGetMock.mockImplementation((path: string) => {
       if (path === '/usuarios/me') {
         return Promise.resolve({ idUsuario: 'u1', nombre: 'Erick', email: 'e@example.com', tipoContrato: 'planta', roles: [{ idRol: 1, nombre: 'Instructor' }] })
@@ -173,9 +173,9 @@ describe('MiHorario', () => {
     })
     renderConProviders(<MiHorario />)
 
-    expect(await screen.findByText('Excede el tope')).toBeInTheDocument()
-    expect(screen.getByText('Supera el límite de carga docente')).toBeInTheDocument()
-    expect(screen.queryByText('Aprobado')).not.toBeInTheDocument()
+    expect(await screen.findByRole('alert')).toHaveTextContent('Excede el tope de 32 h')
+    expect(screen.getByRole('alert')).toHaveTextContent('Supera el límite de carga docente')
+    expect(screen.queryByText('Dentro del límite de 32 h semanales.')).not.toBeInTheDocument()
   })
 
   it('Estatus Normativo RF-011: sin tipoContrato no hay tope que evaluar, no muestra "Aprobado"', async () => {
@@ -190,7 +190,7 @@ describe('MiHorario', () => {
     renderConProviders(<MiHorario />)
 
     expect(await screen.findByText('Falta el tipo de contrato para evaluar el límite de carga docente.')).toBeInTheDocument()
-    expect(screen.queryByText('Aprobado')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Dentro del límite/)).not.toBeInTheDocument()
   })
 
   it('sin clases publicadas, muestra el mensaje correspondiente', async () => {
@@ -240,7 +240,6 @@ describe('MiHorario', () => {
       if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([])
       return Promise.reject(new Error('no mockeado'))
     })
-    const usuario = userEvent.setup()
     renderConProviders(<MiHorario />)
 
     await screen.findByText('Todavía no tenés clases publicadas en este período académico.')

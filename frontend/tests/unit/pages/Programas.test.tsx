@@ -30,6 +30,7 @@ function mockeaBase(programas: Programa[] = PROGRAMAS, fichas: Ficha[] = [FICHA_
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/programas/') return Promise.resolve(programas)
     if (path === '/fichas/') return Promise.resolve(fichas)
+    if (path === '/usuarios/me') return Promise.resolve({ idUsuario: 'u1', nombre: 'Admin', roles: [{ idRol: 1, nombre: 'Administrador' }] })
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -87,6 +88,8 @@ describe('Programas', () => {
     const panel = screen.getByRole('dialog', { name: 'Análisis y Desarrollo de Software' })
     expect(within(panel).getByText('3228973 B')).toBeInTheDocument()
     expect(within(panel).getByText('Período académico: Trimestre 3')).toBeInTheDocument()
+    expect(within(panel).getByRole('link', { name: 'Ver temáticas del programa' })).toHaveAttribute('href', '/tematicas?idPrograma=1')
+    expect(within(panel).getByRole('link', { name: 'Crear ficha para este programa' })).toHaveAttribute('href', '/fichas?crear=1&idPrograma=1')
   })
 
   it('un programa sin fichas asociadas muestra el mensaje correspondiente en el drawer', async () => {

@@ -89,6 +89,13 @@ function mockeaFichasConHorarios(fichas: unknown, todosLosHorarios: Horario[] = 
 }
 
 describe('Fichas', () => {
+  beforeEach(() => { apiGetMock.mockClear() })
+  it('abre la creación con el programa seleccionado desde su detalle', async () => {
+    mockeaFichasYPerfil(FICHAS)
+    renderConProviders(<Fichas />, ['/fichas?crear=1&idPrograma=1'])
+    expect(await screen.findByRole('heading', { name: 'Nueva ficha' })).toBeInTheDocument()
+    expect(screen.getByLabelText('ID del programa')).toHaveValue(1)
+  })
   it('permite crear y editar desde la fila con el payload del schema y refresca la lista', async () => {
     mockeaFichasYPerfil(FICHAS)
     apiPostMock.mockResolvedValue({ ...FICHAS[0], idFicha: 3, codigoFicha: 'Nueva' })
@@ -204,11 +211,11 @@ describe('Fichas', () => {
     await usuario.click(screen.getByText('3228973 B'))
     const panel = screen.getByRole('dialog', { name: '3228973 B' })
     const cerrar = within(panel).getByRole('button', { name: 'Cerrar' })
-    const ultimaPestana = within(panel).getByRole('tab', { name: 'Acciones' })
+    const ultimoEnlace = within(panel).getByRole('link', { name: 'Cargar aprendices' })
 
     cerrar.focus()
     await usuario.keyboard('{Shift>}{Tab}{/Shift}')
-    expect(ultimaPestana).toHaveFocus()
+    expect(ultimoEnlace).toHaveFocus()
 
     await usuario.keyboard('{Tab}')
     expect(cerrar).toHaveFocus()
@@ -339,6 +346,7 @@ describe('Fichas', () => {
         if (path === '/programas/') return Promise.resolve([FICHAS[0].programa, FICHAS[1].programa])
         if (path === '/trimestres/') return Promise.resolve([FICHAS[0].trimestre, FICHAS[1].trimestre])
         if (path === '/sedes') return Promise.resolve([])
+        if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
         return Promise.reject(new Error('no mockeado en este test'))
       })
     }
