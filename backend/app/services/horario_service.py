@@ -453,6 +453,71 @@ class HorarioService:
         return guardado
 
     @staticmethod
+    def publicar_lote(db, *, id_trimestre: int, id_instructor=None, usuario=None) -> dict:
+        """Publica todos los borradores activos del período, opcionalmente de un instructor.
+
+        Una transacción y una notificación por ficha/instructor: no un PATCH
+        ni un commit por bloque. Si hay una publicación programada pendiente,
+        se rechaza el lote entero para no publicar una revisión a medias.
+        """
+        from app.services.auditoria_service import AuditoriaService
+        from app.models.ficha_usuario import FichaUsuario
+
+        consulta = db.query(Horario).filter(
+            Horario.idTrimestre == id_trimestre,
+            Horario.activo.is_(True),
+            Horario.publicado.is_(False),
+        )
+        if id_instructor is not None:
+            consulta = consulta.filter(Horario.idInstructor == id_instructor)
+        horarios = consulta.order_by(Horario.idHorario).with_for_update().all()
+        if not horarios:
+            return {"publicados": 0, "instructores": 0, "fichas": 0}
+
+        ids = [horario.idHorario for horario in horarios]
+        if HorarioService._publicaciones_programadas(db, ids, bloquear=True):
+            raise PublicacionProgramadaPendienteError(
+                "El lote contiene bloques reservados para una publicación programada. "
+                "Cancela o revisa esa programación antes de publicar el horario completo."
+            )
+
+        # Actualización en una sola sentencia, sin repetir llamadas HTTP.
+        db.query(Horario).filter(Horario.idHorario.in_(ids)).update(
+            {Horario.publicado: True}, synchronize_session=False,
+        )
+        fichas = {horario.idFicha for horario in horarios}
+        instructor_ficha = {(horario.idInstructor, horario.idFicha) for horario in horarios}
+        codigos = dict(db.query(Ficha.idFicha, Ficha.codigoFicha).filter(Ficha.idFicha.in_(fichas)).all())
+
+        for id_ficha, id_aprendiz in db.query(FichaUsuario.idFicha, FichaUsuario.idUsuario).filter(
+            FichaUsuario.idFicha.in_(fichas)
+        ).all():
+            NotificacionService.crear_agrupada_transaccional(
+                db, id_usuario=id_aprendiz, tipo=TIPO_HORARIO,
+                mensaje=f"Ya está publicado el horario de tu ficha {codigos[id_ficha]}. Míralo en «Mi horario».",
+                entidad_relacionada="fichas", id_entidad_relacionada=id_ficha,
+            )
+        for instructor, id_ficha in instructor_ficha:
+            NotificacionService.crear_agrupada_transaccional(
+                db, id_usuario=instructor, tipo=TIPO_HORARIO,
+                mensaje=f"Se publicó tu horario con la ficha {codigos[id_ficha]}. Ya aparece en «Mi horario».",
+                entidad_relacionada="fichas", id_entidad_relacionada=id_ficha,
+            )
+
+        AuditoriaService.registrar_transaccional(
+            db, usuario=usuario, accion="PUBLICAR_LOTE", entidad="horarios",
+            id_entidad=id_trimestre,
+            detalle=f"Período {id_trimestre}; instructor {id_instructor or 'todos'}; "
+                    f"{len(ids)} bloques; {len(instructor_ficha)} combinaciones instructor-ficha",
+        )
+        db.commit()
+        return {
+            "publicados": len(ids),
+            "instructores": len({horario.idInstructor for horario in horarios}),
+            "fichas": len(fichas),
+        }
+
+    @staticmethod
     def _publicaciones_programadas(db, ids_horarios: list[int], *, bloquear: bool):
         if not ids_horarios:
             return []
