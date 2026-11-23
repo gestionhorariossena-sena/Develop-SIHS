@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { apiGet, ApiError } from '../services/api'
 import type { Ambiente, AuditoriaCrucesResponse, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
 
-interface GestionarHorariosData { horarios: Horario[]; fichas: Ficha[]; instructores: Usuario[]; ambientes: Ambiente[]; sedes: Sede[]; trimestres: Trimestre[]; diasSemana: DiaSemana[]; auditoria: AuditoriaCrucesResponse | null; cargandoAuditoria: boolean; errorAuditoria: string | null; cargando: boolean; error: string | null; erroresCatalogos: string[]; actualizarHorario: (horario: Horario) => void }
-const VACIO: GestionarHorariosData = { horarios: [], fichas: [], instructores: [], ambientes: [], sedes: [], trimestres: [], diasSemana: [], auditoria: null, cargandoAuditoria: true, errorAuditoria: null, cargando: true, error: null, erroresCatalogos: [], actualizarHorario: () => {} }
+interface GestionarHorariosData { horarios: Horario[]; fichas: Ficha[]; instructores: Usuario[]; ambientes: Ambiente[]; sedes: Sede[]; trimestres: Trimestre[]; diasSemana: DiaSemana[]; auditoria: AuditoriaCrucesResponse | null; cargandoAuditoria: boolean; errorAuditoria: string | null; cargando: boolean; error: string | null; erroresCatalogos: string[]; actualizarHorario: (horario: Horario) => void; marcarLotePublicado: (idTrimestre: number, idInstructor?: string) => void }
+const VACIO: GestionarHorariosData = { horarios: [], fichas: [], instructores: [], ambientes: [], sedes: [], trimestres: [], diasSemana: [], auditoria: null, cargandoAuditoria: true, errorAuditoria: null, cargando: true, error: null, erroresCatalogos: [], actualizarHorario: () => {}, marcarLotePublicado: () => {} }
 
 /** Carga en paralelo los recursos independientes de la vista global. */
 export function useGestionarHorariosData(): GestionarHorariosData {
@@ -31,5 +31,16 @@ export function useGestionarHorariosData(): GestionarHorariosData {
       })
     return () => { activo = false }
   }, [])
-  return { ...datos, actualizarHorario: (actualizado) => setDatos((anterior) => ({ ...anterior, horarios: anterior.horarios.map((horario) => horario.idHorario === actualizado.idHorario ? actualizado : horario) })) }
+  return {
+    ...datos,
+    actualizarHorario: (actualizado) => setDatos((anterior) => ({
+      ...anterior, horarios: anterior.horarios.map((horario) => horario.idHorario === actualizado.idHorario ? actualizado : horario),
+    })),
+    marcarLotePublicado: (idTrimestre, idInstructor) => setDatos((anterior) => ({
+      ...anterior,
+      horarios: anterior.horarios.map((horario) =>
+        horario.idTrimestre === idTrimestre && (!idInstructor || horario.idInstructor === idInstructor)
+          && horario.activo && !horario.publicado ? { ...horario, publicado: true } : horario),
+    })),
+  }
 }
