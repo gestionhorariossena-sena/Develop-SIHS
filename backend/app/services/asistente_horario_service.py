@@ -28,6 +28,7 @@ from app.ai.tasks.classify_document import clasificar_columnas
 from app.models.ambiente import Ambiente
 from app.models.competencia_formacion import CompetenciaFormacion
 from app.models.ficha import Ficha
+from app.models.ficha_usuario import FichaUsuario
 from app.models.horario import Horario, horario_dia
 from app.models.resultado_aprendizaje import ResultadoAprendizaje
 from app.models.usuario import Usuario
@@ -708,10 +709,22 @@ def generar_propuesta(
     fichas_sin_curriculo: list[str] = []
     fichas_ya_programadas: list[str] = []
     fichas_sin_ambiente: list[str] = []
+    fichas_sin_aprendices: list[str] = []
+
+    # Un horario llega al aprendiz por ficha_usuario, no por una asignación
+    # directa al bloque. Evitar propuestas de fichas sin destinatarios.
+    fichas_con_aprendices = {
+        id_ficha for (id_ficha,) in db.query(FichaUsuario.idFicha)
+        .filter(FichaUsuario.idFicha.in_(ids_ficha)).distinct().all()
+    }
 
     for id_ficha in ids_ficha:
         ficha = fichas_por_id.get(id_ficha)
         if not ficha:
+            continue
+
+        if id_ficha not in fichas_con_aprendices:
+            fichas_sin_aprendices.append(ficha.codigoFicha)
             continue
 
         ids_ambiente = catalogo.ids_ambiente_de(ficha)
@@ -745,9 +758,18 @@ def generar_propuesta(
                 "aprendizaje (competencias) definidos todavía -- no hay nada que programar hasta que "
                 "se cargue ese contenido curricular."
             )
+        elif fichas_sin_aprendices:
+            mensaje = (
+                f"No se generaron horarios: {len(fichas_sin_aprendices)} ficha(s) "
+                f"({', '.join(fichas_sin_aprendices)}) no tienen aprendices vinculados. "
+                "Vincula al menos un aprendiz a cada ficha antes de programarla."
+            )
         else:
             mensaje = "Las fichas seleccionadas ya tienen todos sus resultados programados."
-        return GenerarPropuestaResponse(bloques=[], factible=True, mensaje=mensaje)
+        return GenerarPropuestaResponse(
+            bloques=[], factible=not fichas_sin_aprendices, mensaje=mensaje,
+            fichasSinProgramar=fichas_sin_aprendices,
+        )
 
     asignaciones, fichas_sin_programar, resultados_sin_programar = _generar_bloques_por_ficha(
         necesidades_por_ficha,
@@ -848,6 +870,12 @@ def generar_propuesta(
             "incluir porque su programa todavía no tiene resultados de aprendizaje cargados -- hay que "
             "cargar ese contenido curricular antes de poder programarlas."
         )
+    if fichas_sin_aprendices:
+        partes.append(
+            f"{len(fichas_sin_aprendices)} ficha(s) ({', '.join(fichas_sin_aprendices)}) "
+            "no tienen aprendices vinculados y se excluyeron de la propuesta. "
+            "Vincula al menos un aprendiz a cada ficha antes de programarla."
+        )
     if fichas_sin_ambiente:
         partes.append(
             f"{len(fichas_sin_ambiente)} ficha(s) ({', '.join(fichas_sin_ambiente)}) no se pudieron "
@@ -856,7 +884,8 @@ def generar_propuesta(
 
     mensaje = " ".join(partes)
     return GenerarPropuestaResponse(
-        bloques=bloques, factible=True, mensaje=mensaje, fichasSinProgramar=codigos_fichas_sin_programar
+        bloques=bloques, factible=True, mensaje=mensaje,
+        fichasSinProgramar=codigos_fichas_sin_programar + fichas_sin_aprendices
     )
 
 
