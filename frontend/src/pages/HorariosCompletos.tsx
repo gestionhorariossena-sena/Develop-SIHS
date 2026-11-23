@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { apiPost, ApiError } from '../services/api'
 import { useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
 import { CabeceraGestionHorarios } from '../components/horarios/CabeceraGestionHorarios'
@@ -63,8 +64,13 @@ function formatoHora(hora: string) {
 export function HorariosCompletos() {
   const [searchParams, setSearchParams] = useSearchParams()
   const query = normalizarRutaHorarioLegada('/horarios/completos', searchParams) ?? leerGestionarHorariosQuery(searchParams)
-  const { horarios, fichas, instructores, ambientes, sedes, trimestres, diasSemana, auditoria, cargandoAuditoria, errorAuditoria, cargando, error, erroresCatalogos, actualizarHorario } = useGestionarHorariosData()
+  const { horarios, fichas, instructores, ambientes, sedes, trimestres, diasSemana, auditoria, cargandoAuditoria, errorAuditoria, cargando, error, erroresCatalogos, actualizarHorario, marcarLotePublicado } = useGestionarHorariosData()
   const [mostrarFiltrosAvanzados, setMostrarFiltrosAvanzados] = useState(false)
+  const [periodoPublicar, setPeriodoPublicar] = useState('')
+  const [instructorPublicar, setInstructorPublicar] = useState('')
+  const [publicandoLote, setPublicandoLote] = useState(false)
+  const [resultadoLote, setResultadoLote] = useState<string | null>(null)
+  const [errorLote, setErrorLote] = useState<string | null>(null)
   function actualizarQuery(cambios: Partial<GestionarHorariosQuery>, reiniciarPagina = false) { setSearchParams(escribirGestionarHorariosQuery({ ...query, ...cambios, pagina: reiniciarPagina ? 1 : (cambios.pagina ?? query.pagina) })) }
 
   const fichaPorId = new Map(fichas.map((ficha) => [ficha.idFicha, ficha]))
@@ -81,12 +87,63 @@ export function HorariosCompletos() {
   const paginaSegura = Math.min(query.pagina, totalPaginas)
   const inicioPagina = (paginaSegura - 1) * POR_PAGINA
   const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
+  // Publicación por período completo, independiente de la paginación y los filtros.
+  const trimestreLote = Number(periodoPublicar || query.idTrimestre || trimestres.find((t) => t.estado === 'activo')?.idTrimestre || 0)
+  const instructorLote = query.perspectiva === 'instructor' && query.idInstructor ? query.idInstructor : instructorPublicar
+  const instructorElegido = instructores.find((i) => i.idUsuario === instructorLote)
+  const borradoresLote = horarios.filter((h) => h.idTrimestre === trimestreLote && h.activo && !h.publicado && (!instructorLote || h.idInstructor === instructorLote))
+
+  async function publicarHorarioCompleto() {
+    if (!trimestreLote || borradoresLote.length === 0 || publicandoLote) return
+    const destino = instructorLote ? 'de ' + (instructorElegido?.nombre ?? 'este instructor') : 'de TODOS los instructores'
+    if (!window.confirm('¿Publicar ' + borradoresLote.length + ' bloques ' + destino + ' del período seleccionado? Los instructores y aprendices podrán consultarlos.')) return
+    setPublicandoLote(true)
+    setErrorLote(null)
+    setResultadoLote(null)
+    try {
+      const resultado = await apiPost<{ publicados: number; instructores: number; fichas: number }>('/horarios/publicar-lote', {
+        idTrimestre: trimestreLote,
+        ...(instructorLote ? { idInstructor: instructorLote } : {}),
+      })
+      marcarLotePublicado(trimestreLote, instructorLote || undefined)
+      setResultadoLote('Se publicaron ' + resultado.publicados + ' bloques de ' + resultado.instructores + ' instructor(es) en ' + resultado.fichas + ' ficha(s).')
+    } catch (error) {
+      setErrorLote(error instanceof ApiError ? error.message : 'No se pudo publicar el lote. No se modificaron los horarios.')
+    } finally {
+      setPublicandoLote(false)
+    }
+  }
+
   const horarioSeleccionado = query.idHorario ? horarios.find((horario) => horario.idHorario === Number(query.idHorario)) : undefined
 
   return (
     <AppShell activo="Gestionar horarios">
       <CabeceraGestionHorarios vista="lista" descripcion="Revisa, ajusta y publica bloques sin salir de la programación." />
       <p className="mb-2 text-xs tabular-nums text-on-surface-variant">{visibles.length} de {horarios.length} horarios</p>
+
+      <section aria-label="Publicación de horarios completos" className="mb-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
+        <h2 className="text-base font-semibold text-on-surface">Publicar horarios completos</h2>
+        <p className="mb-3 text-sm text-on-surface-variant">Publica todos los borradores activos de un instructor o de todo un período en una sola operación. No depende de los bloques visibles en esta página.</p>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex min-w-48 flex-col gap-1 text-sm text-on-surface">Período académico
+            <select aria-label="Período para publicar" value={trimestreLote || ''} onChange={(e) => setPeriodoPublicar(e.target.value)} className="rounded-lg border border-outline bg-surface-container-lowest px-3 py-2">
+              <option value="">Selecciona período</option>
+              {trimestres.map((t) => <option key={t.idTrimestre} value={t.idTrimestre}>{t.nombre}</option>)}
+            </select>
+          </label>
+          <label className="flex min-w-52 flex-col gap-1 text-sm text-on-surface">Alcance
+            <select aria-label="Instructor para publicar" value={instructorLote} disabled={query.perspectiva === 'instructor' && Boolean(query.idInstructor)} onChange={(e) => setInstructorPublicar(e.target.value)} className="rounded-lg border border-outline bg-surface-container-lowest px-3 py-2">
+              <option value="">Todos los instructores del período</option>
+              {instructores.map((i) => <option key={i.idUsuario} value={i.idUsuario}>{i.nombre}</option>)}
+            </select>
+          </label>
+          <button type="button" disabled={!trimestreLote || borradoresLote.length === 0 || publicandoLote || cargando} onClick={() => void publicarHorarioCompleto()} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-on-primary disabled:cursor-not-allowed disabled:opacity-50">
+            {publicandoLote ? 'Publicando…' : 'Publicar horario completo (' + borradoresLote.length + ')'}
+          </button>
+        </div>
+        {resultadoLote && <p role="status" className="mt-3 text-sm text-emerald-700">{resultadoLote}</p>}
+        {errorLote && <p role="alert" className="mt-3 text-sm text-red-700">{errorLote}</p>}
+      </section>
 
       <nav aria-label="Perspectiva de horarios" className="mb-4 flex flex-wrap gap-1 border-b border-outline-variant dark:border-slate-700">
         {([['bloques', 'Bloques'], ['ficha', 'Por ficha'], ['instructor', 'Por instructor'], ['ambiente', 'Por ambiente']] as const).map(([perspectiva, etiqueta]) => <button key={perspectiva} type="button" aria-pressed={query.perspectiva === perspectiva} onClick={() => actualizarQuery({ perspectiva })} className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-primary ${query.perspectiva === perspectiva ? 'border-primary text-primary' : 'border-transparent text-on-surface-variant hover:text-on-surface dark:text-slate-400'}`}>{etiqueta}</button>)}
