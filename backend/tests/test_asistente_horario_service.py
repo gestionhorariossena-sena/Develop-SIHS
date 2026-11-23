@@ -35,6 +35,7 @@ def _crear_tablas_extra(db_session):
             Coordinacion.__table__, Programa.__table__, Trimestre.__table__, Sede.__table__,
             Ambiente.__table__, Ficha.__table__, CompetenciaFormacion.__table__,
             ResultadoAprendizaje.__table__, Horario.__table__, horario_dia,
+            FichaUsuario.__table__,
         ],
     )
 
