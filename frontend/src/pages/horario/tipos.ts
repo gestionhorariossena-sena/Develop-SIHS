@@ -33,6 +33,12 @@ export interface BloqueClase {
   idAmbiente?: number
   /** ID relacional conservado al editar un snapshot existente. */
   idHorarioOriginal?: number
+  /** Estado real del horario persistido (SCRUM-197) -- `undefined` para un
+   * bloque que todavía no se guardó (el Constructor no decide esto, lo
+   * decide `NuevoHorario` al guardar). Deja ver en las vistas de consulta
+   * de solo lectura (Fichas/Instructores/Ambientes) cuáles bloques todavía
+   * no llegan a los consumidores. */
+  publicado?: boolean
 }
 
 /** Coordenada de una celda del grid: índice de bloque horario + índice de día. */

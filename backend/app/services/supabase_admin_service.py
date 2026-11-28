@@ -52,3 +52,17 @@ def crear_o_recuperar_usuario_supabase(email: str, password: str) -> tuple[dict,
 
     respuesta.raise_for_status()
     raise RuntimeError(f"No se pudo crear ni encontrar el usuario de Supabase para {email}")
+
+
+def eliminar_usuario_supabase(id_usuario: str) -> None:
+    """Elimina una identidad creada por una importación reversible.
+
+    Esta operación solo se invoca después de comprobar que el perfil local
+    sigue siendo exclusivamente del lote y no tiene dependencias.
+    """
+    respuesta = httpx.delete(
+        f"{settings.supabase_url}/auth/v1/admin/users/{id_usuario}",
+        headers=_headers(),
+        timeout=15,
+    )
+    respuesta.raise_for_status()

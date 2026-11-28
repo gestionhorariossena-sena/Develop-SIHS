@@ -6,7 +6,7 @@ import { ExportarPdfButton } from '../components/ExportarPdfButton'
 import { GridSemanalInstructor } from '../components/horario/GridSemanalInstructor'
 import { SeccionAmbientesAsignados } from '../components/relacionados/SeccionesInstructor'
 import { apiGet, ApiError } from '../services/api'
-import type { CargaSemanal, Ficha, Horario, Usuario } from '../types/api'
+import type { CargaSemanal, Ficha, Horario, Trimestre, Usuario } from '../types/api'
 import type { Jornada } from './horario/tipos'
 
 const TODAS_LAS_JORNADAS: Jornada[] = ['Mañana', 'Tarde', 'Noche']
@@ -132,6 +132,8 @@ export function MiHorario() {
   const [perfil, setPerfil] = useState<Usuario | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [filtroJornada, setFiltroJornada] = useState<Jornada | 'todas'>('todas')
+  const [periodosHorario, setPeriodosHorario] = useState<Trimestre[]>([])
+  const [filtroTrimestre, setFiltroTrimestre] = useState<number | 'todos'>('todos')
   const [semanaInicio, setSemanaInicio] = useState(() => inicioSemana(new Date()))
   const [revisionHorario, setRevisionHorario] = useState(0)
   const [actualizandoHorario, setActualizandoHorario] = useState(false)
@@ -145,7 +147,12 @@ export function MiHorario() {
     let vigente = true
     const semanaFin = new Date(semanaInicio)
     semanaFin.setDate(semanaFin.getDate() + 4)
-    const query = `?fechaInicio=${isoLocal(semanaInicio)}&fechaFin=${isoLocal(semanaFin)}`
+    const params = new URLSearchParams({
+      fechaInicio: isoLocal(semanaInicio),
+      fechaFin: isoLocal(semanaFin),
+    })
+    if (filtroTrimestre !== 'todos') params.set('idTrimestre', String(filtroTrimestre))
+    const query = `?${params.toString()}`
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setActualizandoHorario(true)
     setError(null)
@@ -156,7 +163,7 @@ export function MiHorario() {
       })
       .finally(() => { if (vigente) setActualizandoHorario(false) })
     return () => { vigente = false }
-  }, [semanaInicio, revisionHorario])
+  }, [semanaInicio, revisionHorario, filtroTrimestre])
 
   useEffect(() => {
     apiGet<Usuario>('/usuarios/me')
@@ -164,6 +171,9 @@ export function MiHorario() {
       .catch(() => {})
 
     apiGet<Ficha[]>('/fichas/').then(setFichas).catch(() => {})
+    apiGet<Trimestre[]>('/usuarios/me/periodos-horario')
+      .then(setPeriodosHorario)
+      .catch(() => setPeriodosHorario([]))
   }, [])
 
   // La carga semanal (SCRUM-49) requiere el propio idUsuario — se pide
@@ -290,7 +300,38 @@ export function MiHorario() {
       )}
 
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <label htmlFor="filtro-trimestre" className="text-xs font-semibold text-on-surface-variant">
+            Trimestre
+          </label>
+          <select
+            id="filtro-trimestre"
+            aria-label="Filtrar por trimestre"
+            value={filtroTrimestre}
+            onChange={(event) => {
+              const valor = event.target.value
+              if (valor === 'todos') {
+                setFiltroTrimestre('todos')
+                return
+              }
+              const id = Number(valor)
+              setFiltroTrimestre(id)
+              const periodo = periodosHorario.find((item) => item.idTrimestre === id)
+              if (periodo) {
+                setSemanaInicio(inicioSemana(new Date(`${periodo.fechaInicio}T12:00:00`)))
+              }
+            }}
+            className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-xs font-semibold text-on-surface focus:border-primary focus:outline-none"
+          >
+            <option value="todos">Todos los trimestres</option>
+            {periodosHorario.map((periodo) => (
+              <option key={periodo.idTrimestre} value={periodo.idTrimestre}>
+                {periodo.nombre}
+              </option>
+            ))}
+          </select>
+
+          <div className="flex flex-wrap gap-2">
           {FILTROS_JORNADA.map((filtro) => (
             <button
               key={filtro.valor}
@@ -305,6 +346,7 @@ export function MiHorario() {
               {filtro.etiqueta}
             </button>
           ))}
+          </div>
         </div>
 
         <div className="flex min-w-0 flex-wrap items-center gap-2">

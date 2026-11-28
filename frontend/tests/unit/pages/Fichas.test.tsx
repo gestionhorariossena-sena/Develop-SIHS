@@ -46,12 +46,14 @@ const FICHAS: Ficha[] = [
   },
 ]
 
-const { apiGetMock, apiPostMock, apiPutMock } = vi.hoisted(() => ({ apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPutMock: vi.fn() }))
+const { apiGetMock, apiPostMock, apiPutMock, apiDeleteMock } = vi.hoisted(() => ({ apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPutMock: vi.fn(), apiDeleteMock: vi.fn() }))
 const PERFIL_ADMIN = { idUsuario: 'admin', nombre: 'Administrador', email: 'admin@test.com', estado: 'activo', fechaRegistro: '2026-01-01', roles: [{ idRol: 1, nombre: 'Administrador' }], especialidades: [] }
+const PERFIL_COORDINADOR = { ...PERFIL_ADMIN, idUsuario: 'coord', nombre: 'Ana', roles: [{ idRol: 2, nombre: 'Coordinador' }] }
 vi.mock('../../../src/services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
   apiPost: (...args: unknown[]) => apiPostMock(...args),
   apiPut: (...args: unknown[]) => apiPutMock(...args),
+  apiDelete: (...args: unknown[]) => apiDeleteMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -77,13 +79,13 @@ const HORARIOS: Horario[] = [
 
 const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }]
 
-function mockeaFichasConHorarios(fichas: unknown, todosLosHorarios: Horario[] = HORARIOS) {
+function mockeaFichasConHorarios(fichas: unknown, todosLosHorarios: Horario[] = HORARIOS, perfil: typeof PERFIL_ADMIN = PERFIL_ADMIN) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/fichas/') return Promise.resolve(fichas)
     if (path === '/fichas/1/horarios') return Promise.resolve(HORARIOS)
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
     if (path === '/horarios/') return Promise.resolve(todosLosHorarios)
-    if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
+    if (path === '/usuarios/me') return Promise.resolve(perfil)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -238,6 +240,38 @@ describe('Fichas', () => {
     // grid y en las secciones de instructores/ambientes (SCRUM-68).
     expect(within(panel).getAllByText('Erick Granados').length).toBeGreaterThan(0)
     expect(within(panel).getAllByText('Ambiente 101').length).toBeGreaterThan(0)
+  })
+
+  // SCRUM-197: la vista de consulta de la ficha mezclaba borrador y
+  // publicado sin distinguirlos -- un coordinador no podía saber, mirando
+  // el grid, cuál bloque todavía no le llega al instructor/aprendiz.
+  it('un bloque en borrador se distingue del publicado en el grid de consulta', async () => {
+    const horarioPublicado: Horario = { ...HORARIOS[0] }
+    const horarioBorrador: Horario = {
+      ...HORARIOS[0], idHorario: 2, horaInicio: '09:00:00', horaFin: '12:00:00', publicado: false,
+      instructorNombre: 'Fredy Ardila', ambienteNombre: 'Ambiente 202', resultadoCodigo: 'RA-2',
+    }
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/fichas/') return Promise.resolve(FICHAS)
+      if (path === '/fichas/1/horarios') return Promise.resolve([horarioPublicado, horarioBorrador])
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/horarios/') return Promise.resolve([horarioPublicado, horarioBorrador])
+      if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
+      return Promise.reject(new Error('no mockeado en este test'))
+    })
+    const usuario = userEvent.setup()
+    renderConProviders(<Fichas />)
+    await screen.findByText('3228973 B')
+    await usuario.click(screen.getByText('3228973 B'))
+
+    const panel = screen.getByRole('dialog', { name: '3228973 B' })
+    await usuario.click(within(panel).getByRole('tab', { name: 'Horario' }))
+    await within(panel).findByText('Horario semanal')
+
+    // Solo el bloque sin publicar lleva la insignia -- el publicado no.
+    expect(within(panel).getAllByText('Borrador')).toHaveLength(1)
+    expect(within(panel).getByLabelText(/RA-2.*borrador/)).toBeInTheDocument()
+    expect(within(panel).queryByLabelText(/RA-9.*borrador/)).not.toBeInTheDocument()
   })
 
   it('muestra instructores/temas/ambientes derivados de los horarios de la ficha', async () => {
@@ -428,6 +462,35 @@ describe('Fichas', () => {
 
       expect(await screen.findByText(/le faltan estas columnas: trimestre/)).toBeInTheDocument()
       expect(screen.queryByText(/Se encontraron/)).not.toBeInTheDocument()
+    })
+  })
+
+  // SCRUM-198: el borrado seguro de ficha es solo de Administrador.
+  describe('SCRUM-198: borrado seguro de ficha', () => {
+    it('un Administrador ve la opción de eliminar la ficha en la pestaña Acciones', async () => {
+      mockeaFichasConHorarios(FICHAS)
+      const usuario = userEvent.setup()
+      renderConProviders(<Fichas />)
+      await screen.findByText('3228973 B')
+      await usuario.click(screen.getByText('3228973 B'))
+
+      const panel = screen.getByRole('dialog', { name: '3228973 B' })
+      await usuario.click(within(panel).getByRole('tab', { name: 'Acciones' }))
+
+      expect(within(panel).getByRole('button', { name: /Eliminar ficha 3228973 B/ })).toBeInTheDocument()
+    })
+
+    it('un Coordinador no ve la opción de eliminar la ficha', async () => {
+      mockeaFichasConHorarios(FICHAS, HORARIOS, PERFIL_COORDINADOR)
+      const usuario = userEvent.setup()
+      renderConProviders(<Fichas />)
+      await screen.findByText('3228973 B')
+      await usuario.click(screen.getByText('3228973 B'))
+
+      const panel = screen.getByRole('dialog', { name: '3228973 B' })
+      await usuario.click(within(panel).getByRole('tab', { name: 'Acciones' }))
+
+      expect(within(panel).queryByRole('button', { name: /Eliminar ficha/ })).not.toBeInTheDocument()
     })
   })
 })

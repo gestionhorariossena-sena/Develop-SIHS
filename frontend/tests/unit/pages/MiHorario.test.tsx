@@ -60,6 +60,38 @@ describe('MiHorario', () => {
     await waitFor(() => expect(llamadasDeHorario()).toHaveLength(llamadasIniciales + 3))
   })
 
+  it('filtra por trimestre y consulta el backend con idTrimestre', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/me/periodos-horario') {
+        return Promise.resolve([
+          {
+            idTrimestre: 2,
+            nombre: 'Trimestre anterior',
+            fechaInicio: '2026-04-01',
+            fechaFin: '2026-06-30',
+            estado: 'finalizado',
+          },
+        ])
+      }
+      if (path.startsWith('/usuarios/me/horarios')) return Promise.resolve([HORARIO])
+      return Promise.reject(new Error('no mockeado'))
+    })
+    const usuario = userEvent.setup()
+    renderConProviders(<MiHorario />)
+
+    const selector = await screen.findByRole('combobox', { name: 'Filtrar por trimestre' })
+    await usuario.selectOptions(selector, '2')
+
+    await waitFor(() => {
+      expect(apiGetMock).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /^\/usuarios\/me\/horarios\?fechaInicio=\d{4}-\d{2}-\d{2}&fechaFin=\d{4}-\d{2}-\d{2}&idTrimestre=2$/,
+        ),
+      )
+    })
+    expect(selector).toHaveValue('2')
+  })
+
   it('Actualiza el horario de la semana actual sin recargar la página', async () => {
     let solicitudes = 0
     apiGetMock.mockImplementation((path: string) => {

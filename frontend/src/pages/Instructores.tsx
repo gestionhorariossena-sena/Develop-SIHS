@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { EliminacionSegura } from '../components/EliminacionSegura'
 import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { SeccionAmbientesAsignados, SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
@@ -46,6 +47,10 @@ export function Instructores() {
   const [seleccionado, setSeleccionado] = useState<Usuario | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // SCRUM-198: mismo patrón que Fichas.tsx/Ambientes.tsx -- el borrado
+  // seguro es solo de Administrador en el backend (require_admin).
+  const [perfil, setPerfil] = useState<Usuario | null>(null)
+  const puedeGestionar = perfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
 
   const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
   const [errorCarga, setErrorCarga] = useState(false)
@@ -60,6 +65,7 @@ export function Instructores() {
   const [diasPorId, setDiasPorId] = useState<Record<number, string>>({})
 
   useEffect(() => {
+    apiGet<Usuario>('/usuarios/me').then(setPerfil).catch(() => {})
     // El backend ya devuelve solo rol Instructor y ordenados por nombre.
     apiGet<Usuario[]>('/usuarios/instructores')
       .then((soloInstructores) => {
@@ -385,6 +391,17 @@ export function Instructores() {
                 </button>
               </div>
             </>
+          )}
+
+          {puedeGestionar && (
+            <div className="mt-3 border-t border-outline-variant pt-3 dark:border-slate-700">
+              <EliminacionSegura
+                tipo="instructor"
+                id={seleccionado.idUsuario}
+                nombre={seleccionado.nombre}
+                onEliminado={() => { setInstructores((previo) => previo.filter((item) => item.idUsuario !== seleccionado.idUsuario)); setSeleccionado(null) }}
+              />
+            </div>
           )}
         </DrawerRelacionados>
       )}

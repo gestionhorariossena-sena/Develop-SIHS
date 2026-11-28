@@ -1,0 +1,26 @@
+documento,nombre,correo,contrato,horas,rol,estado,especialidades,origen,origen_horas,origen_especialidades
+1000000001,Cristian Buitrago,cristian.buitrago@sena.edu.co,planta,32,Instructor,activo,Gestión comercial,excel,derivado,inventado
+1000000002,Uldarico Andrade,uldarico.andrade@sena.edu.co,planta,32,Instructor,activo,Comercio exterior;Producción audiovisual,excel,derivado,inventado
+1000000003,Fernando Galindo,fernando.galindo@sena.edu.co,planta,32,Instructor,activo,Producción audiovisual;Mercadeo digital,excel,derivado,inventado
+1000000004,Juan Pablo Navarro,juan.pablo.navarro@sena.edu.co,planta,32,Instructor,activo,Gestión comercial,excel,derivado,inventado
+1000000005,Luis Eduardo Vallejo,luis.eduardo.vallejo@sena.edu.co,planta,32,Instructor,activo,Mercadeo digital,excel,derivado,inventado
+1000000006,Helen Sanes,helen.sanes@sena.edu.co,planta,32,Instructor,activo,Redes y telecomunicaciones;Producción audiovisual,excel,derivado,inventado
+1000000007,Wilson Cardenas,wilson.cardenas@sena.edu.co,planta,32,Instructor,activo,Logística y cadena de suministro;Redes y telecomunicaciones,excel,derivado,inventado
+1000000008,Hector Salamanca,hector.salamanca@sena.edu.co,planta,32,Instructor,activo,Gestión comercial,excel,derivado,inventado
+1000000009,Luis Humberto Gonzalez,luis.humberto.gonzalez@sena.edu.co,planta,32,Instructor,activo,Infraestructura TI,excel,derivado,inventado
+1000000010,Laura Mantilla,laura.mantilla@sena.edu.co,planta,32,Instructor,activo,Producción audiovisual;Redes y telecomunicaciones,excel,derivado,inventado
+1000000011,Adriana Vega,adriana.vega@sena.edu.co,planta,32,Instructor,activo,Gestión de inventarios;Producción audiovisual,excel,derivado,inventado
+1000000012,Elizabeth Dominguez,elizabeth.dominguez@sena.edu.co,planta,32,Instructor,activo,Producción audiovisual,excel,derivado,inventado
+1000000015,Eduardo Foglia,eduardo.foglia@sena.edu.co,contrato,40,Instructor,activo,Gestión de inventarios;Producción audiovisual,excel,derivado,inventado
+1000000016,Sandra Rueda,sandra.rueda@sena.edu.co,contrato,40,Instructor,activo,Gestión de inventarios,excel,derivado,inventado
+1000000017,Erick Granados,erick.granados@sena.edu.co,contrato,40,Instructor,activo,Infraestructura TI;Producción audiovisual,excel,derivado,inventado
+1000000018,Jennifer Fajardo,jennifer.fajardo@sena.edu.co,contrato,40,Instructor,activo,Gestión de inventarios,excel,derivado,inventado
+1000000019,Gabriel Jarro,gabriel.jarro@sena.edu.co,contrato,40,Instructor,activo,Desarrollo de software,excel,derivado,inventado
+1000000020,Anderson Ortiz,anderson.ortiz@sena.edu.co,contrato,40,Instructor,activo,Mercadeo digital,excel,derivado,inventado
+1000000021,David Camelo,david.camelo@sena.edu.co,contrato,40,Instructor,activo,Redes y telecomunicaciones,excel,derivado,inventado
+1000000022,Catalina Alba,catalina.alba@sena.edu.co,contrato,40,Instructor,activo,Logística y cadena de suministro,excel,derivado,inventado
+1000000023,Hernan Castro,hernan.castro@sena.edu.co,contrato,40,Instructor,activo,Logística y cadena de suministro,excel,derivado,inventado
+1000000024,Laura Ximena Barrios,laura.ximena.barrios@sena.edu.co,contrato,40,Instructor,activo,Gestión comercial;Mercadeo digital,excel,derivado,inventado
+1000000025,Gregorio Lozano,gregorio.lozano@sena.edu.co,contrato,40,Instructor,activo,Comercio exterior,excel,derivado,inventado
+1000000026,William Sanabria,william.sanabria@sena.edu.co,contrato,40,Instructor,activo,Logística y cadena de suministro;Gestión comercial,excel,derivado,inventado
+1000000027,Nicol Neira,Nicol.neira07@sena.edu.co,planta,32,Instructor,activo,Desarrollo de software,excel,derivado,inventado

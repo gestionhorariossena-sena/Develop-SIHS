@@ -1,4 +1,5 @@
 import smtplib
+from typing import Protocol
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -8,6 +9,22 @@ from app.core.config import settings
 class SmtpNoConfiguradoError(RuntimeError):
     """SMTP_USER/SMTP_PASSWORD todavía no están en el .env — ver
     _Docs/Documentación general/DECISION_ENVIO_CREDENCIAL_TEMPORAL.md."""
+
+
+class TransporteCorreo(Protocol):
+    """Puerto del proyecto: el servicio depende del contrato, no de smtplib."""
+
+    def enviar(self, *, remitente: str, destinatario: str, mensaje: str) -> None: ...
+
+
+class TransporteSMTP:
+    """Adaptador real SMTP; los tests del servicio sustituyen este borde."""
+
+    def enviar(self, *, remitente: str, destinatario: str, mensaje: str) -> None:
+        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=15) as servidor:
+            servidor.starttls()
+            servidor.login(settings.smtp_user, settings.smtp_password)
+            servidor.sendmail(remitente, [destinatario], mensaje)
 
 
 class EmailService:
@@ -34,6 +51,11 @@ class EmailService:
     El endpoint de aprobación de solicitudes de acceso (otro ticket del
     mismo Epic SCRUM-96) debe invocar este servicio en vez de armar el
     correo inline."""
+
+    @staticmethod
+    def _crear_transporte() -> TransporteCorreo:
+        """Punto de inyección: permite probar sin SMTP real."""
+        return TransporteSMTP()
 
     @staticmethod
     def enviar_credencial_temporal(*, destinatario_email: str, destinatario_nombre: str, password_temporal: str) -> None:

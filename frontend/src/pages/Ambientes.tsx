@@ -9,6 +9,7 @@ import { indexarPorAmbiente, opcionesFichaAmbiente, opcionesInstructor } from '.
 import { SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
 import { SeccionInstructoresAsignados } from '../components/relacionados/SeccionesFicha'
 import { ImportarArchivo, type ColumnaImportar } from '../components/ImportarArchivo'
+import { EliminacionSegura } from '../components/EliminacionSegura'
 import { apiGet, apiPost, apiPut, ApiError } from '../services/api'
 import type { AuditoriaConflicto, Ambiente, Coordinacion, DiaSemana, Ficha, Horario, Sede, Usuario } from '../types/api'
 import type { FilaCsv } from '../utils/csv'
@@ -501,6 +502,17 @@ export function Ambientes() {
  <SeccionInstructoresAsignados horarios={horariosVigentes ?? []} diasPorId={diasPorId} />
  <SeccionTemasQueDicta horarios={horariosVigentes ?? []} />
  </>
+ )}
+
+ {puedeGestionar && (
+ <div className="mt-5 border-t border-outline-variant pt-4">
+ <EliminacionSegura
+ tipo="ambiente"
+ id={seleccionado.idAmbiente}
+ nombre={seleccionado.nombreAmbiente}
+ onEliminado={() => { setAmbientes((previo) => previo.filter((a) => a.idAmbiente !== seleccionado.idAmbiente)); setSeleccionado(null) }}
+ />
+ </div>
  )}
  </DrawerRelacionados>
  )}

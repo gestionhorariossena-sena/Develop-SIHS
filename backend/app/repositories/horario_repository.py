@@ -236,6 +236,26 @@ class HorarioRepository:
         return query.all()
 
     @staticmethod
+    def obtener_periodos_publicados_por_instructor(db: Session, id_instructor):
+        """Períodos en los que el instructor tiene clases vigentes publicadas.
+
+        Se usa para poblar el filtro de trimestre de "Mi horario" sin exponer
+        el catálogo administrativo completo al rol Instructor.
+        """
+        return (
+            db.query(Trimestre)
+            .join(Horario, Horario.idTrimestre == Trimestre.idTrimestre)
+            .filter(
+                Horario.idInstructor == id_instructor,
+                Horario.activo.is_(True),
+                Horario.publicado.is_(True),
+            )
+            .distinct()
+            .order_by(Trimestre.fechaInicio.desc(), Trimestre.idTrimestre.desc())
+            .all()
+        )
+
+    @staticmethod
     def obtener_por_ficha(db: Session, id_ficha: int) -> list[Horario]:
         """GET /fichas/{id}/horarios (SCRUM-47), /ficha-usuario/mi-horario
         del Aprendiz y la grilla semanal de GET /fichas/{id}/pdf

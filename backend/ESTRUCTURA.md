@@ -1,110 +1,152 @@
-# Estructura del backend — qué es cada cosa
+# Estructura del backend — estado actual
 
-Guía para entender el código sin tener que preguntar. Si van a programar un
-módulo nuevo (ver `OBJETIVO_Y_SERVICIOS_FALTANTES.md`), este documento les
-dice exactamente qué archivos crear y en qué orden, usando `roles` como
-ejemplo real que ya funciona.
+El backend de SIHS usa **FastAPI + SQLAlchemy + Pydantic** sobre PostgreSQL
+(Supabase). Está organizado por capas para separar rutas, reglas de negocio y
+acceso a datos.
+
+## Flujo de una petición
+
+```text
+api/v1/*.py  →  services/*.py  →  repositories/*.py  →  models/*.py
+   rutas            reglas            consultas             tablas
+```
+
+Los `schemas/` de Pydantic definen los contratos de entrada y salida.
 
 ## Mapa de carpetas
 
 ```text
 backend/
 ├── app/
-│   ├── main.py              # Arranca la app y registra las rutas. Solo se toca para agregar un módulo nuevo.
-│   ├── core/                 # Configuración y piezas transversales (no son "un módulo", las usa todo el proyecto)
-│   │   ├── config.py          # Lee las variables de .env (URLs, contraseñas, claves)
-│   │   ├── database.py        # Conexión a Supabase (SQLAlchemy) — engine, sesión, Base
-│   │   └── supabase_auth.py   # Verifica el token de login y controla permisos por rol
-│   ├── models/                # Un archivo por tabla — le dice a SQLAlchemy cómo es cada tabla
-│   ├── schemas/                # Un archivo por módulo — la forma de los datos que entran/salen de la API
-│   ├── repositories/           # Un archivo por módulo — las consultas a la base de datos, sin lógica de negocio
-│   ├── services/                # Un archivo por módulo — la lógica de negocio (reglas, validaciones)
-│   └── api/v1/                   # Un archivo por módulo — las rutas HTTP (lo que llama el frontend)
-├── tests/                    # Pruebas automáticas
-├── requirements.txt          # Librerías de Python que hay que instalar
-├── .env / .env.example       # Credenciales (real / plantilla)
-├── PENDIENTE_MVP.md           # Qué falta para el demo de 24h
-└── OBJETIVO_Y_SERVICIOS_FALTANTES.md  # Qué falta para cumplir el proyecto completo
+│   ├── main.py
+│   ├── api/v1/
+│   ├── core/
+│   ├── models/
+│   ├── repositories/
+│   ├── schemas/
+│   ├── services/
+│   └── workers/
+├── tests/
+├── alembic/
+├── requirements.txt
+└── .env.example
 ```
 
-## El patrón: 4 capas, siempre en el mismo orden
+## Responsabilidad de cada capa
 
-Una petición HTTP pasa por 4 capas, cada una con una responsabilidad y nada
-más que esa:
+- **models:** definición ORM de las tablas y relaciones.
+- **repositories:** consultas y persistencia. No deciden reglas de negocio.
+- **services:** reglas, validaciones, transacciones y coordinación entre
+  repositorios.
+- **api/v1:** endpoints HTTP, dependencias de autenticación y traducción de
+  errores a respuestas HTTP.
+- **schemas:** validación y serialización.
+- **workers:** procesos que deben ejecutarse fuera de una petición normal.
 
-```text
-api/v1/*.py  →  services/*.py  →  repositories/*.py  →  models/*.py
-   (ruta)         (reglas)          (consulta a BD)      (tabla)
-```
+## Módulos funcionales actuales
 
-- **`models/`** — define la tabla. No tiene lógica, solo columnas.
-- **`repositories/`** — solo consultas (`SELECT`, `INSERT`, etc.). Nunca
-  decide si algo está permitido o no, solo ejecuta.
-- **`services/`** — aquí van las reglas: "¿existe ya este rol?", "¿el
-  usuario tiene permiso?", "¿este horario cruza con otro?". Usa el
-  repositorio, nunca toca la base de datos directamente.
-- **`api/v1/`** — la ruta HTTP. Recibe la petición, llama al service,
-  devuelve la respuesta. No debería tener lógica de negocio adentro.
+El backend ya incluye, entre otros:
 
-Y **`schemas/`** (Pydantic) no es una capa de flujo, es la forma de los
-datos: qué puede entrar en un `POST` y qué se devuelve en la respuesta.
+- usuarios, roles y relación usuario-rol;
+- solicitudes de acceso;
+- sedes, ambientes, jornadas y días de semana;
+- coordinaciones, programas, trimestres y fichas;
+- vínculo ficha-usuario;
+- competencias, resultados, temáticas, guías y actividades;
+- horarios y horarios guardados;
+- asistencias;
+- auditoría de cruces;
+- avisos y notificaciones;
+- mensajería;
+- anotaciones de horario;
+- solicitudes de cambio;
+- publicaciones programadas.
 
-## Ejemplo completo: cómo está armado `roles` (cópienlo para un módulo nuevo)
+Todos los routers se registran en `app/main.py` bajo el prefijo
+`/api/v1`.
 
-| Archivo | Qué hace | Lo esencial |
-|---|---|---|
-| `app/models/rol.py` | Define la tabla `roles` | `class Rol(Base): __tablename__ = "roles"` + sus columnas |
-| `app/schemas/rol.py` | Qué datos acepta/devuelve la API | `RolCreate` (lo que llega en un POST), `RolResponse` (lo que se devuelve) |
-| `app/repositories/rol_repository.py` | Consultas SQL puras | `obtener_todos`, `obtener_por_id`, `crear`, `actualizar`, `eliminar` |
-| `app/services/rol_service.py` | Reglas de negocio | Llama al repositorio; acá iría, por ejemplo, "no permitir nombres repetidos" si hiciera falta |
-| `app/api/v1/roles.py` | Rutas HTTP | `GET /roles`, `POST /roles`, etc. — protegidas con `require_admin` |
+## Horarios: reglas relevantes
 
-**Para crear un módulo nuevo (ej. `ambientes`), copien esos 5 archivos,
-cambien "Rol"/"rol" por "Ambiente"/"ambiente" y ajusten las columnas según
-`database/01_creacion.sql`.** Al final, en `app/main.py` agreguen 2 líneas
-(el `import` del router y el `app.include_router(...)`), igual que están
-`roles_router` y `usuarios_router`.
+La lógica principal vive en `services/horario_service.py` y servicios
+relacionados.
 
-## `app/core/` — lo que no es un módulo pero todo módulo necesita
+- Cruces por ficha, instructor y ambiente.
+- Validación entre ficha y período académico.
+- Control de resultados repetidos según las reglas del proyecto.
+- Diferenciación entre horario activo/inactivo y publicado/borrador.
+- Consulta de horarios personales solo sobre información publicada.
+- Edición segura de snapshots de horarios.
+- Conservación histórica cuando existen dependencias operativas.
 
-- **`config.py`**: lee `backend/.env` (URL de Supabase, contraseña de la BD,
-  claves). Si agregan una variable nueva al `.env`, tienen que declararla
-  acá también o Python la ignora.
-- **`database.py`**: crea la conexión a Supabase y define `get_db()`, la
-  función que cada ruta usa para hablar con la base de datos
-  (`db: Session = Depends(get_db)`).
-- **`supabase_auth.py`**: valida el token que manda el frontend contra
-  Supabase (no contra nuestra base de datos) y expone:
-  - `get_current_user` — quién está haciendo la petición.
-  - `require_admin`, `require_coordinador`, `require_instructor`,
-    `require_aprendiz` — para proteger una ruta a un rol específico, se usa
-    así: `usuario = Depends(require_admin)` como parámetro de la ruta.
+La eliminación de un snapshot no debe dejar horarios activos huérfanos. Si
+una clase posee dependencias históricas (por ejemplo asistencia), se conserva
+para trazabilidad pero deja de participar como horario vigente.
 
-## Cosas que ya NO existen (y por qué, para que no las busquen)
+## Asistencia
 
-- **No hay `app/modules/`** (así estaba organizado el backend del proyecto
-  anterior, por carpeta-por-módulo). Acá está organizado por capa (todos
-  los `models` juntos, todos los `services` juntos) — es el esqueleto que
-  ya traía este repo, se mantuvo así.
-- **No hay capa de "controller" separada.** Las rutas en `api/v1/` hacen
-  directamente lo que el proyecto anterior hacía en `controller.py` — una
-  capa menos que mantener, es el estilo estándar de FastAPI.
-- **No hay `password` en `usuarios` ni tabla `password_reset_tokens`.** Eso
-  lo maneja Supabase Auth, no nuestro código (ver
-  `_Docs/Documentación general/AUDITORIA_TECNICA.md` sección 6 si quieren el
-  porqué completo).
+El módulo de asistencia valida que el instructor corresponda al bloque y que
+la fecha seleccionada sea una sesión válida del horario. La interfaz puede
+registrar asistencia en cualquiera de los días asociados a una clase
+multidía.
 
-## Cómo probar mientras programan
+## Publicaciones programadas
 
-No hace falta escribir frontend para probar un endpoint nuevo:
+`app/workers/publicacion_programada_worker.py` procesa publicaciones
+programadas. Puede ejecutarse como worker embebido cuando la configuración
+lo habilita. Las ediciones de horarios relacionadas con una publicación
+pendiente deben mantener la consistencia de revisión.
+
+## Autenticación y permisos
+
+`app/core/supabase_auth.py` valida la sesión de Supabase y expone
+dependencias de autorización. Entre las más usadas están las de
+Administrador, Coordinador, Instructor, Aprendiz y lectura/gestión de
+catálogos.
+
+El backend es la autoridad final de permisos; ocultar una pantalla en el
+frontend no sustituye las validaciones del endpoint.
+
+## Cómo crear o extender un módulo
+
+Para un módulo con CRUD normal:
+
+1. Crear o modificar el modelo en `app/models/`.
+2. Definir schemas en `app/schemas/`.
+3. Implementar consultas en `app/repositories/`.
+4. Implementar reglas en `app/services/`.
+5. Exponer las rutas en `app/api/v1/`.
+6. Registrar el router en `app/main.py` si es un módulo nuevo.
+7. Agregar migración de Alembic cuando cambie el esquema.
+8. Agregar pruebas en `tests/`.
+
+Evitar poner reglas de negocio directamente en el router o consultas SQL
+dentro de componentes del frontend.
+
+## Pruebas
+
+La suite de backend se ejecuta con:
 
 ```bash
 cd backend
-source .venv/bin/activate
+pip install -r requirements.txt
+pytest -v
+```
+
+Los tests usan una base aislada cuando corresponde y cubren autenticación,
+roles, fichas, horarios, cruces, publicaciones, asistencia, notificaciones y
+otros módulos.
+
+GitHub Actions ejecuta `pytest -v` automáticamente en cada push y Pull
+Request.
+
+## Desarrollo local
+
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Abran `http://127.0.0.1:8000/docs` — ahí sale cada ruta, con botón
-"Try it out". Para las rutas protegidas, hace falta un token de Supabase
-(login normal desde donde sea, o ver el bootstrap del primer Administrador
-en `PENDIENTE_MVP.md`) y pegarlo en el botón "Authorize" de arriba.
+Swagger queda disponible en `http://127.0.0.1:8000/docs`.

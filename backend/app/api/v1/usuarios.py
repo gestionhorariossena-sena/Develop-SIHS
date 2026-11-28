@@ -2,7 +2,7 @@ from uuid import UUID
 from datetime import date
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -16,6 +16,7 @@ from app.core.supabase_auth import (
 )
 from app.models.usuario import Usuario
 from app.schemas.horario import HorarioResponse
+from app.schemas.trimestre import TrimestreResponse
 from app.schemas.usuario import (
     CargaSemanalResponse,
     UsuarioEspecialidadesUpdate,
@@ -32,8 +33,47 @@ from app.services.instructor_service import (
 )
 from app.services.pdf_service import PdfService
 from app.services.usuario_service import UsuarioService
+from app.services.importacion_instructores_service import ImportacionInstructoresService
+from app.schemas.importacion_instructores import (
+    LoteImportacionInstructorResponse,
+    PrevisualizacionImportacionInstructores,
+    ResultadoEliminacionLoteInstructores,
+    ResultadoImportacionInstructores,
+)
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
+
+
+@router.post("/instructores/importar/previsualizar", response_model=PrevisualizacionImportacionInstructores)
+async def previsualizar_importacion_instructores(archivo: UploadFile, db: Session = Depends(get_db), usuario=Depends(require_admin)):
+    if not (archivo.filename or "").lower().endswith(".csv"):
+        raise HTTPException(status_code=422, detail="Selecciona un archivo CSV.")
+    validos, errores = ImportacionInstructoresService.leer_csv(await archivo.read())
+    validos, existentes = ImportacionInstructoresService.excluir_existentes(db, validos)
+    errores.extend(existentes)
+    return {"validos": validos, "errores": errores}
+
+
+@router.post("/instructores/importar", response_model=ResultadoImportacionInstructores)
+async def importar_instructores(archivo: UploadFile, db: Session = Depends(get_db), usuario=Depends(require_admin)):
+    if not (archivo.filename or "").lower().endswith(".csv"):
+        raise HTTPException(status_code=422, detail="Selecciona un archivo CSV.")
+    return ImportacionInstructoresService.importar(db, await archivo.read(), usuario.idUsuario)
+
+
+@router.get("/instructores/importar/lotes", response_model=list[LoteImportacionInstructorResponse])
+def listar_lotes_importacion_instructores(db: Session = Depends(get_db), usuario=Depends(require_admin)):
+    return ImportacionInstructoresService.listar_lotes(db)
+
+
+@router.delete("/instructores/importar/lotes/{id_lote}", response_model=ResultadoEliminacionLoteInstructores)
+def eliminar_lote_importacion_instructores(id_lote: UUID, db: Session = Depends(get_db), usuario=Depends(require_admin)):
+    try:
+        return ImportacionInstructoresService.eliminar_lote(db, id_lote)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from None
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from None
 
 
 @router.get("/me", response_model=UsuarioResponse)
@@ -106,6 +146,7 @@ def iniciar_sesion_por_documento(data: UsuarioLoginDocumentoRequest, db: Session
 def obtener_mis_horarios(
     fecha_inicio: date | None = Query(default=None, alias="fechaInicio"),
     fecha_fin: date | None = Query(default=None, alias="fechaFin"),
+    id_trimestre: int | None = Query(default=None, alias="idTrimestre", ge=1),
     db: Session = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
@@ -122,7 +163,22 @@ def obtener_mis_horarios(
         raise HTTPException(status_code=422, detail="fechaInicio no puede ser posterior a fechaFin.")
 
     return HorarioService.obtener_publicados_por_instructor(
-        db, usuario.idUsuario, fecha_inicio=fecha_inicio, fecha_fin=fecha_fin
+        db,
+        usuario.idUsuario,
+        fecha_inicio=fecha_inicio,
+        fecha_fin=fecha_fin,
+        id_trimestre=id_trimestre,
+    )
+
+
+@router.get("/me/periodos-horario", response_model=list[TrimestreResponse])
+def obtener_periodos_de_mi_horario(
+    db: Session = Depends(get_db),
+    usuario: Usuario = Depends(get_current_user),
+):
+    """Períodos donde el usuario tiene clases activas y publicadas."""
+    return HorarioService.obtener_periodos_publicados_por_instructor(
+        db, usuario.idUsuario
     )
 
 

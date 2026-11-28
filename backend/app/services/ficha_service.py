@@ -28,7 +28,7 @@ class FichaService:
 
     @staticmethod
     def actualizar(db, id_ficha, data):
-        ficha = FichaRepository.obtener_por_id(db, id_ficha)
+        ficha = FichaRepository.obtener_por_id_para_actualizar(db, id_ficha)
 
         if not ficha:
             return None

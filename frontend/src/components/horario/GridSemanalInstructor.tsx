@@ -76,7 +76,19 @@ export function GridSemanalInstructor({ horarios, jornadasVisibles, aprendicesPo
                   bloques.map((bloque) => {
                     const aprendices = aprendicesPorFicha[bloque.idFicha]
                     return (
-                      <div key={bloque.idHorario} className="flex flex-col gap-1 rounded-lg bg-primary-container/60 p-2 text-left">
+                      <div
+                        key={bloque.idHorario}
+                        className="relative flex flex-col gap-1 rounded-lg bg-primary-container/60 p-2 text-left"
+                        aria-label={bloque.publicado === false ? 'Bloque en borrador, aún no visible para el instructor ni el aprendiz' : undefined}
+                      >
+                        {bloque.publicado === false && (
+                          <span
+                            aria-hidden="true"
+                            className="absolute right-1.5 top-1.5 rounded-full bg-amber-500 px-1 py-px text-[8px] font-bold uppercase leading-none text-white"
+                          >
+                            Borrador
+                          </span>
+                        )}
                         <span className="w-max rounded bg-primary px-1.5 py-0.5 font-mono text-[10px] font-bold text-on-primary">
                           {bloque.fichaCodigo ?? `Ficha ${bloque.idFicha}`}
                         </span>
