@@ -131,9 +131,9 @@ export function Login() {
 
   return (
     <AuthLayout>
-      <h1 className="mb-2 text-2xl font-bold text-on-surface dark:text-slate-100">Iniciar sesión</h1>
-      <p className="mb-6 text-sm text-on-surface-variant dark:text-slate-400">
-        Acceso para administradores, coordinadores, instructores y aprendices del Centro de Gestión de Mercados, Logística y TI.
+      <h1 className="mb-2 text-2xl font-medium text-on-surface">Iniciar sesión</h1>
+      <p className="mb-6 text-sm leading-6 text-on-surface-variant">
+        Consulta y gestiona los horarios del Centro de Gestión de Mercados, Logística y TI.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -141,7 +141,7 @@ export function Login() {
           id="identificador"
           label="Correo institucional o número de documento"
           type="text"
-          placeholder="correo@sena.edu.co o número de documento"
+          placeholder="Correo o documento"
           value={identificador}
           onChange={(e) => {
             setIdentificador(e.target.value)
@@ -162,21 +162,21 @@ export function Login() {
           required
         />
 
-        <div className="mb-5 flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2 text-on-surface-variant dark:text-slate-300">
-            <input type="checkbox" checked={recordarme} onChange={(evento) => setRecordarme(evento.target.checked)} className="h-4 w-4 rounded border-outline bg-surface-container-lowest text-primary dark:border-slate-700 dark:bg-slate-900" />
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+          <label className="flex items-center gap-2 text-on-surface-variant">
+            <input type="checkbox" checked={recordarme} onChange={(evento) => setRecordarme(evento.target.checked)} className="h-4 w-4 rounded border-outline bg-surface-container-lowest text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary" />
             Recordarme
           </label>
-          <Link to="/recuperar-contrasena" className="font-medium text-primary hover:underline">
+          <Link to="/recuperar-contrasena" className="font-medium text-primary hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
             ¿Olvidaste tu contraseña?
           </Link>
         </div>
-        <p className="-mt-3 mb-5 text-xs text-on-surface-variant dark:text-slate-400">
+        <p className="mb-6 text-xs leading-5 text-on-surface-variant">
           Si marcas «Recordarme», la sesión seguirá disponible al reabrir el navegador. Por seguridad, se cerrará tras 15 minutos de inactividad mientras uses la aplicación.
         </p>
 
         {error && (
-          <p role="alert" className="mb-4 text-sm text-error">
+          <p role="alert" className="mb-4 rounded-lg bg-error-container px-3 py-2 text-sm text-on-error-container">
             {error}
           </p>
         )}
@@ -184,7 +184,7 @@ export function Login() {
         <button
           type="submit"
           disabled={loading || bloqueado}
-          className="w-full rounded-xl bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-[#0f5534] dark:hover:bg-[#8ed5a0] disabled:opacity-60"
+          className="w-full rounded-lg bg-primary py-3 font-medium text-on-primary transition-[filter] hover:brightness-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-60"
         >
           {loading ? 'Ingresando…' : bloqueado ? 'Cuenta bloqueada temporalmente' : 'Iniciar sesión'}
         </button>

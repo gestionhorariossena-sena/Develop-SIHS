@@ -5,6 +5,7 @@ set -euo pipefail
 # Compose incorpora además Mailpit dedicado a las invitaciones de SIHS.
 # El frontend y backend reciben únicamente
 # las credenciales efímeras del stack local.
+"$(dirname "$0")/ensure-docker.sh"
 supabase start >/dev/null
 
 eval "$(supabase status -o env)"

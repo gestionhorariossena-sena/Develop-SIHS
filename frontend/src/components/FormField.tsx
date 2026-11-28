@@ -11,7 +11,7 @@ export function FormField({ label, id, type, ...inputProps }: FormFieldProps) {
 
   return (
     <div className="mb-4">
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-on-surface-variant dark:text-slate-300">
+      <label htmlFor={id} className="mb-2 block text-sm font-medium text-on-surface">
         {label}
       </label>
       <div className="relative">
@@ -19,14 +19,14 @@ export function FormField({ label, id, type, ...inputProps }: FormFieldProps) {
           id={id}
           type={isPassword && showPassword ? 'text' : type}
           {...inputProps}
-          className={`w-full rounded-xl border border-outline px-3.5 py-2.5 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none ${isPassword ? 'pr-10' : ''}`}
+          className={`w-full rounded-lg border border-outline bg-surface-container-lowest px-3 py-3 text-on-surface placeholder:text-on-surface-variant focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none ${isPassword ? 'pr-10' : ''}`}
         />
         {isPassword && (
           <button
             type="button"
             onClick={() => setShowPassword((v) => !v)}
             aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
-            className="absolute inset-y-0 right-0 flex items-center px-3 text-on-surface-variant hover:text-on-surface"
+            className="absolute inset-y-0 right-0 flex items-center rounded-r-lg px-3 text-on-surface-variant transition-colors hover:text-on-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             <span className="material-symbols-outlined text-[20px]">
               {showPassword ? 'visibility_off' : 'visibility'}
