@@ -13,16 +13,16 @@ interface AuthLayoutProps {
  */
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col bg-surface dark:bg-slate-900">
-      <div className="h-1.5 w-full bg-primary" />
+    <div className="flex min-h-screen flex-col bg-surface">
+      <div className="h-1 w-full bg-secondary" />
 
-      <main className="flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md rounded-2xl bg-surface-container-lowest p-8 shadow-lg shadow-slate-200/60 dark:bg-slate-800 dark:shadow-slate-950/40">
-          <div className="mb-6 flex items-center gap-3">
-            <img src={senaLogo} alt="SENA" className="h-12 w-12 rounded-xl object-cover" />
+      <main className="flex flex-1 items-center justify-center px-4 py-8 sm:py-12">
+        <div className="w-full max-w-md rounded-2xl border border-outline-variant bg-surface-container-lowest p-6 shadow-sm sm:p-8">
+          <div className="mb-6 flex items-center gap-3 border-b border-outline-variant pb-6">
+            <img src={senaLogo} alt="SENA" className="h-12 w-12 rounded-lg object-contain" />
             <div>
-              <p className="font-semibold text-on-surface dark:text-slate-100">Sistema de Horarios</p>
-              <p className="text-sm text-on-surface-variant dark:text-slate-400">SIHS · CGMLTI</p>
+              <p className="font-medium text-on-surface">Sistema de Horarios</p>
+              <p className="text-sm text-on-surface-variant">SIHS · CGMLTI</p>
             </div>
           </div>
 

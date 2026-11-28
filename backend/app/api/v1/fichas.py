@@ -1,6 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from app.models.programa import Programa
+from app.models.trimestre import Trimestre
+from app.models.sede import Sede
+from app.models.ficha import Ficha
+from app.repositories.ficha_repository import FichaRepository
 
 from app.core.database import get_db
 from app.core.supabase_auth import (
@@ -31,9 +37,41 @@ def crear_ficha(
     db: Session = Depends(get_db),
     usuario=Depends(require_admin),
 ):
-    ficha = FichaService.crear(db, data)
-    AuditoriaService.registrar(db, usuario=usuario, accion="CREAR", entidad="fichas", id_entidad=ficha.idFicha)
-    return ficha
+    # Validar referencias ANTES de escribir: las FK inválidas y los
+    # códigos repetidos se convierten en errores concretos, no HTTP 500.
+    if FichaRepository.obtener_por_codigo(db, data.codigoFicha.strip()):
+        raise HTTPException(409, f"La ficha {data.codigoFicha} ya existe.")
+    if not db.get(Programa, data.idPrograma):
+        raise HTTPException(422, "El programa seleccionado no existe en esta base.")
+    if not db.get(Trimestre, data.idTrimestre):
+        raise HTTPException(422, "El período académico seleccionado no existe.")
+    if data.idSede is not None and not db.get(Sede, data.idSede):
+        raise HTTPException(422, "La sede seleccionada no existe.")
+    try:
+        ficha = Ficha(
+            codigoFicha=data.codigoFicha.strip(),
+            idPrograma=data.idPrograma, idTrimestre=data.idTrimestre,
+            idSede=data.idSede,
+            fechaInicioLectiva=data.fechaInicioLectiva,
+            fechaFinLectiva=data.fechaFinLectiva,
+            fechaInicioProductiva=data.fechaInicioProductiva,
+            fechaFinProductiva=data.fechaFinProductiva,
+            faseActual=data.faseActual,
+        )
+        db.add(ficha)
+        db.flush()
+        AuditoriaService.registrar_transaccional(
+            db, usuario=usuario, accion="CREAR", entidad="fichas", id_entidad=ficha.idFicha,
+        )
+        db.commit()
+        db.refresh(ficha)
+        return ficha
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(409, "La ficha ya existe o una referencia es inválida. Actualiza el catálogo y vuelve a importar.") from exc
+    except Exception:
+        db.rollback()
+        raise
 
 
 @router.get("/", response_model=list[FichaResponse])

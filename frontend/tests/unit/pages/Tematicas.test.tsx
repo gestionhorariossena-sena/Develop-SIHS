@@ -44,11 +44,13 @@ function perfil(rol: string): Usuario {
 
 const apiGetMock = vi.fn()
 const apiPostMock = vi.fn()
+const apiPostFormMock = vi.fn()
 const apiPutMock = vi.fn()
 const apiDeleteMock = vi.fn()
 vi.mock('../../../src/services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
   apiPost: (...args: unknown[]) => apiPostMock(...args),
+  apiPostForm: (...args: unknown[]) => apiPostFormMock(...args),
   apiPut: (...args: unknown[]) => apiPutMock(...args),
   apiDelete: (...args: unknown[]) => apiDeleteMock(...args),
   ApiError: class ApiError extends Error {
@@ -72,8 +74,16 @@ describe('Tematicas', () => {
   beforeEach(() => {
     apiGetMock.mockReset()
     apiPostMock.mockReset()
+    apiPostFormMock.mockReset()
     apiPutMock.mockReset()
     apiDeleteMock.mockReset()
+  })
+
+  it('abre el currículo filtrado al llegar desde un programa', async () => {
+    mockear()
+    renderConProviders(<Tematicas />, ['/tematicas?idPrograma=7'])
+    expect(await screen.findByRole('combobox', { name: 'Programa' })).toHaveValue('7')
+    await waitFor(() => expect(apiGetMock).toHaveBeenCalledWith('/tematicas/?id_programa=7'))
   })
 
   it('lista competencias con su resumen y despliega los resultados', async () => {
@@ -83,7 +93,7 @@ describe('Tematicas', () => {
 
     expect(await screen.findByText('220501 · Programar software')).toBeInTheDocument()
     expect(apiGetMock).toHaveBeenCalledWith('/tematicas/')
-    expect(screen.getByText('Resultados sin programar').nextSibling).toHaveTextContent('1')
+    expect(screen.getByText('Resultados sin programar').parentElement?.nextElementSibling).toHaveTextContent('1')
     expect(screen.queryByText('Codificar módulos')).not.toBeInTheDocument()
 
     await usuario.click(screen.getByText('220501 · Programar software'))
@@ -145,6 +155,36 @@ describe('Tematicas', () => {
       numeroFase: 1,
       idGuia: 3,
     })
+  })
+
+  it('permite importar el Excel curricular desde Temáticas sin duplicar lo existente', async () => {
+    mockear()
+    apiPostFormMock.mockResolvedValue({
+      nombreArchivo: '04_curriculo_programa_DEMO_ADSO.xlsx', hoja: 'TRIM I',
+      totalCompetencias: 1, totalResultados: 2,
+      competencias: [{
+        descripcion: 'Programar software',
+        resultados: [
+          { descripcion: 'Codificar módulos', horasAsignadas: 40, numeroFase: 1 },
+          { descripcion: 'Resultado nuevo', horasAsignadas: 20, numeroFase: 1 },
+        ],
+      }],
+    })
+    apiPostMock.mockResolvedValue({ idResultado: 21 })
+    const usuario = userEvent.setup()
+    renderConProviders(<Tematicas />)
+    await screen.findByText('220501 · Programar software')
+    await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
+    await usuario.selectOptions(screen.getByLabelText('Programa para importar temáticas'), '7')
+    await usuario.upload(screen.getByLabelText('Archivo Excel de temáticas'), new File(['excel'], '04_curriculo_programa_DEMO_ADSO.xlsx'))
+    expect(await screen.findByText(/1 competencias y 2 resultados detectados/)).toBeInTheDocument()
+    expect(apiPostMock).not.toHaveBeenCalled()
+    await usuario.click(screen.getByRole('button', { name: 'Confirmar carga masiva' }))
+    await waitFor(() => expect(apiPostMock).toHaveBeenCalledTimes(1))
+    expect(apiPostMock).toHaveBeenCalledWith('/resultados-aprendizaje/', expect.objectContaining({
+      idCompetencia: 1, descripcion: 'Resultado nuevo', numeroFase: 1,
+    }))
+    expect(apiPostMock).not.toHaveBeenCalledWith('/competencias-formacion/', expect.anything())
   })
 
   it('un coordinador ve las temáticas pero no las acciones de edición', async () => {

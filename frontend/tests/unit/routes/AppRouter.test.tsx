@@ -95,7 +95,7 @@ describe('AppRouter · roles por ruta', () => {
 
     renderRuta('/horarios/asistente-ia')
 
-    expect(await screen.findByText(/^Hola/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Mi jornada' })).toBeInTheDocument()
     expect(screen.queryByText('Asistente de Programación')).not.toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalledWith(expect.stringContaining('/asistente'))
   })
@@ -109,7 +109,7 @@ describe('AppRouter · roles por ruta', () => {
 
     renderRuta('/horarios/publicaciones-programadas')
 
-    expect(await screen.findByText(/^Hola/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Mi jornada' })).toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalledWith('/publicaciones-programadas/')
   })
 
@@ -122,7 +122,7 @@ describe('AppRouter · roles por ruta', () => {
 
     renderRuta('/fichas')
 
-    expect(await screen.findByText(/^Hola/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Mi jornada' })).toBeInTheDocument()
     expect(screen.queryByText('Directorio de Fichas de Caracterización')).not.toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalledWith('/fichas/')
   })
@@ -136,7 +136,7 @@ describe('AppRouter · roles por ruta', () => {
 
     renderRuta('/panel-administracion')
 
-    expect(await screen.findByText(/^Hola/)).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Mi jornada' })).toBeInTheDocument()
     expect(apiGetMock).not.toHaveBeenCalledWith('/solicitudes-acceso/')
   })
 

@@ -71,7 +71,7 @@ describe('ModalCruce', () => {
       />,
     )
 
-    expect(screen.getByText('Regla institucional (RF-011)')).toBeInTheDocument()
+    expect(screen.getByText('Límite de carga docente')).toBeInTheDocument()
     expect(screen.getByText(CONFLICTO_RF011.mensaje)).toBeInTheDocument()
     expect(screen.getAllByText(/institucional/i).length).toBeGreaterThan(0)
 
@@ -91,7 +91,7 @@ describe('ModalCruce', () => {
 
     expect(screen.getByText('Instructor ocupado')).toBeInTheDocument()
     expect(screen.getByText(CONFLICTO_INSTRUCTOR.mensaje)).toBeInTheDocument()
-    expect(screen.getByText('Regla institucional (RF-011)')).toBeInTheDocument()
+    expect(screen.getByText('Límite de carga docente')).toBeInTheDocument()
     expect(screen.getByText(CONFLICTO_RF011.mensaje)).toBeInTheDocument()
 
     expect(screen.getByRole('button', { name: 'Programar de todas formas' })).toBeInTheDocument()

@@ -1,43 +1,49 @@
+import { lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { Presentacion } from '../pages/Presentacion'
 import { Login } from '../pages/Login'
-import { Registro } from '../pages/Registro'
-import { RecuperarContrasena } from '../pages/RecuperarContrasena'
-import { RestablecerContrasena } from '../pages/RestablecerContrasena'
-import { DashboardRouter } from '../pages/DashboardRouter'
-import { NuevoHorario } from '../pages/NuevoHorario'
-import { CrearHorario } from '../pages/CrearHorario'
-import { AsistenteHorarios } from '../pages/AsistenteHorarios'
-import { HistorialHorarios } from '../pages/HistorialHorarios'
-import { CalendarioGeneral } from '../pages/CalendarioGeneral'
-import { HorariosCompletos } from '../pages/HorariosCompletos'
-import { AuditoriaCruces } from '../pages/AuditoriaCruces'
-import { Ambientes } from '../pages/Ambientes'
-import { Sedes } from '../pages/Sedes'
-import { Instructores } from '../pages/Instructores'
-import { Fichas } from '../pages/Fichas'
-import { RedirigirVistaLegada } from '../pages/horario/RedirigirVistaLegada'
-import { MiHorario } from '../pages/MiHorario'
-import { MiHorarioAprendiz } from '../pages/MiHorarioAprendiz'
-import { DetalleFranjaAmbiente } from '../pages/DetalleFranjaAmbiente'
-import { Usuarios } from '../pages/Usuarios'
-import { CodigoInstructor } from '../pages/CodigoInstructor'
-import { Roles } from '../pages/Roles'
-import { AprobarlicitarSolicitudes } from '../pages/AprobarlicitarSolicitudes'
-import { PanelAdministracion } from '../pages/PanelAdministracion'
 import { ProtectedRoute } from './ProtectedRoute'
-import { Programas } from '../pages/Programas'
-import { Tematicas } from '../pages/Tematicas'
-import { CambiosHorario } from '../pages/CambiosHorario'
-import { Avisos } from '../pages/Avisos'
-import { MensajesAprendiz } from '../pages/MensajesAprendiz'
-import { AsistenciaInstructor } from '../pages/AsistenciaInstructor'
-import { MiAsistencia } from '../pages/MiAsistencia'
-import { CambiarClaveObligatorio } from '../pages/CambiarClaveObligatorio'
-import { Notificaciones } from '../pages/Notificaciones'
-import { PublicacionesProgramadas } from '../pages/PublicacionesProgramadas'
-import { MisSolicitudesCambioHorario } from '../pages/MisSolicitudesCambioHorario'
-import { CargaMasivaInstructores } from '../pages/CargaMasivaInstructores'
+
+const Registro = lazy(() => import('../pages/Registro').then((modulo) => ({ default: modulo.Registro })))
+const RecuperarContrasena = lazy(() => import('../pages/RecuperarContrasena').then((modulo) => ({ default: modulo.RecuperarContrasena })))
+const RestablecerContrasena = lazy(() => import('../pages/RestablecerContrasena').then((modulo) => ({ default: modulo.RestablecerContrasena })))
+const DashboardRouter = lazy(() => import('../pages/DashboardRouter').then((modulo) => ({ default: modulo.DashboardRouter })))
+const NuevoHorario = lazy(() => import('../pages/NuevoHorario').then((modulo) => ({ default: modulo.NuevoHorario })))
+const CrearHorario = lazy(() => import('../pages/CrearHorario').then((modulo) => ({ default: modulo.CrearHorario })))
+const AsistenteHorarios = lazy(() => import('../pages/AsistenteHorarios').then((modulo) => ({ default: modulo.AsistenteHorarios })))
+const HistorialHorarios = lazy(() => import('../pages/HistorialHorarios').then((modulo) => ({ default: modulo.HistorialHorarios })))
+const CalendarioGeneral = lazy(() => import('../pages/CalendarioGeneral').then((modulo) => ({ default: modulo.CalendarioGeneral })))
+const HorariosCompletos = lazy(() => import('../pages/HorariosCompletos').then((modulo) => ({ default: modulo.HorariosCompletos })))
+const AuditoriaCruces = lazy(() => import('../pages/AuditoriaCruces').then((modulo) => ({ default: modulo.AuditoriaCruces })))
+const Ambientes = lazy(() => import('../pages/Ambientes').then((modulo) => ({ default: modulo.Ambientes })))
+const Sedes = lazy(() => import('../pages/Sedes').then((modulo) => ({ default: modulo.Sedes })))
+const DatosAcademicos = lazy(() => import('../pages/DatosAcademicos').then((modulo) => ({ default: modulo.DatosAcademicos })))
+const Instructores = lazy(() => import('../pages/Instructores').then((modulo) => ({ default: modulo.Instructores })))
+const AltaInstructores = lazy(() => import('../pages/AltaInstructores').then((modulo) => ({ default: modulo.AltaInstructores })))
+const CargaAprendices = lazy(() => import('../pages/CargaAprendices').then((modulo) => ({ default: modulo.CargaAprendices })))
+const Aprendices = lazy(() => import('../pages/Aprendices').then((modulo) => ({ default: modulo.Aprendices })))
+const VistaInstructores = lazy(() => import('../pages/VistaInstructores').then((modulo) => ({ default: modulo.VistaInstructores })))
+const Fichas = lazy(() => import('../pages/Fichas').then((modulo) => ({ default: modulo.Fichas })))
+const VistaFichas = lazy(() => import('../pages/VistaFichas').then((modulo) => ({ default: modulo.VistaFichas })))
+const VistaAmbientes = lazy(() => import('../pages/VistaAmbientes').then((modulo) => ({ default: modulo.VistaAmbientes })))
+const MiHorario = lazy(() => import('../pages/MiHorario').then((modulo) => ({ default: modulo.MiHorario })))
+const MiHorarioAprendiz = lazy(() => import('../pages/MiHorarioAprendiz').then((modulo) => ({ default: modulo.MiHorarioAprendiz })))
+const DetalleFranjaAmbiente = lazy(() => import('../pages/DetalleFranjaAmbiente').then((modulo) => ({ default: modulo.DetalleFranjaAmbiente })))
+const Usuarios = lazy(() => import('../pages/Usuarios').then((modulo) => ({ default: modulo.Usuarios })))
+const Roles = lazy(() => import('../pages/Roles').then((modulo) => ({ default: modulo.Roles })))
+const AprobarlicitarSolicitudes = lazy(() => import('../pages/AprobarlicitarSolicitudes').then((modulo) => ({ default: modulo.AprobarlicitarSolicitudes })))
+const PanelAdministracion = lazy(() => import('../pages/PanelAdministracion').then((modulo) => ({ default: modulo.PanelAdministracion })))
+const Programas = lazy(() => import('../pages/Programas').then((modulo) => ({ default: modulo.Programas })))
+const Tematicas = lazy(() => import('../pages/Tematicas').then((modulo) => ({ default: modulo.Tematicas })))
+const CambiosHorario = lazy(() => import('../pages/CambiosHorario').then((modulo) => ({ default: modulo.CambiosHorario })))
+const Avisos = lazy(() => import('../pages/Avisos').then((modulo) => ({ default: modulo.Avisos })))
+const MensajesAprendiz = lazy(() => import('../pages/MensajesAprendiz').then((modulo) => ({ default: modulo.MensajesAprendiz })))
+const AsistenciaInstructor = lazy(() => import('../pages/AsistenciaInstructor').then((modulo) => ({ default: modulo.AsistenciaInstructor })))
+const MiAsistencia = lazy(() => import('../pages/MiAsistencia').then((modulo) => ({ default: modulo.MiAsistencia })))
+const CambiarClaveObligatorio = lazy(() => import('../pages/CambiarClaveObligatorio').then((modulo) => ({ default: modulo.CambiarClaveObligatorio })))
+const Notificaciones = lazy(() => import('../pages/Notificaciones').then((modulo) => ({ default: modulo.Notificaciones })))
+const PublicacionesProgramadas = lazy(() => import('../pages/PublicacionesProgramadas').then((modulo) => ({ default: modulo.PublicacionesProgramadas })))
+const MisSolicitudesCambioHorario = lazy(() => import('../pages/MisSolicitudesCambioHorario').then((modulo) => ({ default: modulo.MisSolicitudesCambioHorario })))
 
 /**
  * Quién puede abrir cada pantalla. Mismo criterio que usa el navbar para
@@ -244,6 +250,14 @@ export function AppRouter() {
         }
       />
       <Route
+        path="/datos-academicos"
+        element={
+          <ProtectedRoute roles={GESTION}>
+            <DatosAcademicos />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/ambientes"
         element={
           <ProtectedRoute roles={GESTION}>
@@ -267,15 +281,17 @@ export function AppRouter() {
           </ProtectedRoute>
         }
       />
-      <Route path="/instructores/carga-masiva" element={<ProtectedRoute roles={ADMIN}><CargaMasivaInstructores /></ProtectedRoute>} />
+            <Route path="/instructores/registrar" element={<ProtectedRoute roles={GESTION}><AltaInstructores /></ProtectedRoute>} />
       <Route
         path="/vista-instructores"
         element={
           <ProtectedRoute roles={GESTION}>
-            <RedirigirVistaLegada />
+            <VistaInstructores />
           </ProtectedRoute>
         }
       />
+      <Route path="/aprendices" element={<ProtectedRoute roles={GESTION}><Aprendices /></ProtectedRoute>} />
+      <Route path="/aprendices/carga-masiva" element={<ProtectedRoute roles={GESTION}><CargaAprendices /></ProtectedRoute>} />
       <Route
         path="/fichas"
         element={
@@ -288,7 +304,7 @@ export function AppRouter() {
         path="/vista-fichas"
         element={
           <ProtectedRoute roles={GESTION}>
-            <RedirigirVistaLegada />
+            <VistaFichas />
           </ProtectedRoute>
         }
       />
@@ -312,7 +328,7 @@ export function AppRouter() {
         path="/vista-ambientes"
         element={
           <ProtectedRoute roles={GESTION}>
-            <RedirigirVistaLegada />
+            <VistaAmbientes />
           </ProtectedRoute>
         }
       />
@@ -323,14 +339,6 @@ export function AppRouter() {
         element={
           <ProtectedRoute roles={ADMIN}>
             <Usuarios />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/codigo-instructor"
-        element={
-          <ProtectedRoute roles={GESTION}>
-            <CodigoInstructor />
           </ProtectedRoute>
         }
       />

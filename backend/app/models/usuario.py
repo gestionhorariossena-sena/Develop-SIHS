@@ -48,9 +48,8 @@ class Usuario(Base):
     tipoContrato = Column(String(20))
     horasContratadasSemana = Column(Integer)
     codigoInstructor = Column(String(20), unique=True, nullable=True)
-    # Trimestre en el que se generó codigoInstructor. El código queda fijo
-    # una vez creado (no se regenera) — no es un historial de códigos por
-    # trimestre, solo registra en cuál se emitió el único código vigente.
+    # Campo histórico: trimestre asociado al código antiguo de instructor.
+    # El alta actual no emite códigos ni depende de este campo.
     idTrimestre = Column(Integer, ForeignKey("trimestres.idTrimestre"), nullable=True)
     # Sigla/iniciales cortas (ej. "DC", "LM") — así referencian instructores
     # ambas coordinaciones en sus horarios reales, distinto de

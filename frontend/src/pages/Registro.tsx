@@ -5,27 +5,13 @@ import { FormField } from '../components/FormField'
 import { apiPost, ApiError } from '../services/api'
 import { supabase } from '../services/supabaseClient'
 
-type RolSolicitado = 'Instructor' | 'Aprendiz'
 type TipoDocumento = 'CC' | 'CE' | 'TI' | 'PAS'
 
 /**
- * El registro también habla directo con Supabase Auth (supabase.auth.signUp).
- * El rol elegido en el formulario NO asigna un rol real todavía — se guarda
- * como metadata del usuario (rol_solicitado) para que un Administrador lo
- * revise y lo asigne de verdad después con POST /usuario-rol/asignar (ver
- * backend/app/api/v1/usuario_rol.py). Por eso el mensaje de éxito dice
- * "quedó pendiente de aprobación" en vez de meter a la persona directo al
- * dashboard — coincide con lo que dice el mockup 02-registro.png.
- *
- * "Coordinador" salió de este selector (pedido 2026-09-07): un registro
- * directo con contraseña propia era demasiado abierto para un rol que
- * administra el resto del sistema. En su lugar, "¿Eres coordinador?
- * Solicita acceso" abre un formulario corto (nombre, correo, documento,
- * motivo) que llama a `POST /solicitudes-acceso/` — endpoint público del
- * ticket "[Backend] Endpoints /solicitudes-acceso" (mismo Epic SCRUM-96).
- * Este paso NO crea cuenta de Supabase Auth: solo registra la solicitud
- * para que un Administrador la apruebe desde el Panel de Administración,
- * que es quien de verdad crea la cuenta y envía la credencial temporal.
+ * Registro público exclusivo de Aprendiz. Instructores se dan de alta
+ * por Administrador/Coordinador desde /instructores/registrar y reciben
+ * credenciales temporales por correo; no se auto-registran.
+ * Solicitudes de Coordinador conservan el formulario corto separado.
  */
 export function Registro() {
   const navigate = useNavigate()
@@ -37,17 +23,12 @@ export function Registro() {
   const [telefono, setTelefono] = useState('')
   const [password, setPassword] = useState('')
   const [confirmarPassword, setConfirmarPassword] = useState('')
-  const [rol, setRol] = useState<RolSolicitado>('Instructor')
-  const [pasoRegistro, setPasoRegistro] = useState<'rol' | 'datos'>('rol')
-  const [codigoInstructor, setCodigoInstructor] = useState('')
-  const [especialidad, setEspecialidad] = useState('')
   const [codigoFicha, setCodigoFicha] = useState('')
   const [programaFormacion, setProgramaFormacion] = useState('')
   const [aceptaPolitica, setAceptaPolitica] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [errorConfirmacion, setErrorConfirmacion] = useState(false)
   const [errorPolitica, setErrorPolitica] = useState(false)
-  const [errorCodigoInstructor, setErrorCodigoInstructor] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
   const [mostrarSolicitudCoordinador, setMostrarSolicitudCoordinador] = useState(false)
@@ -56,7 +37,6 @@ export function Registro() {
     event.preventDefault()
     setError(null)
     setErrorPolitica(false)
-    setErrorCodigoInstructor(null)
 
     if (password !== confirmarPassword) {
       setErrorConfirmacion(true)
@@ -66,38 +46,13 @@ export function Registro() {
       setError('El número de documento es obligatorio.')
       return
     }
-    if (rol === 'Instructor' && (!codigoInstructor.trim() || !especialidad.trim())) {
-      setError('Completa el código de instructor y la especialidad.')
-      return
-    }
-    if (rol === 'Aprendiz' && (!codigoFicha.trim() || !programaFormacion.trim())) {
+    if (!codigoFicha.trim() || !programaFormacion.trim()) {
       setError('Completa el código de ficha y el programa de formación.')
       return
     }
     if (!aceptaPolitica) {
       setErrorPolitica(true)
       return
-    }
-
-    if (rol === 'Instructor') {
-      setLoading(true)
-      try {
-        // Endpoint público: solo dice si el código sirve, no a quién pertenece.
-        const validacion = await apiPost<{ valido: boolean; codigo: string | null }>(
-          '/usuarios/instructor/codigo/validar',
-          { codigo: codigoInstructor.trim() },
-        )
-
-        if (!validacion.valido) {
-          setLoading(false)
-          setErrorCodigoInstructor('El código de instructor no es válido o no existe.')
-          return
-        }
-      } catch {
-        setLoading(false)
-        setErrorCodigoInstructor('No se pudo validar el código de instructor en este momento.')
-        return
-      }
     }
 
     setLoading(true)
@@ -112,15 +67,9 @@ export function Registro() {
           tipo_documento: tipoDocumento,
           numero_documento: numeroDocumento.trim(),
           telefono: telefono.trim(),
-          rol_solicitado: rol,
-          ...(rol === 'Instructor' && {
-            codigo_instructor: codigoInstructor.trim(),
-            especialidad: especialidad.trim(),
-          }),
-          ...(rol === 'Aprendiz' && {
-            codigo_ficha: codigoFicha.trim(),
-            programa_formacion: programaFormacion.trim(),
-          }),
+          rol_solicitado: 'Aprendiz',
+          codigo_ficha: codigoFicha.trim(),
+          programa_formacion: programaFormacion.trim(),
         },
       },
     })
@@ -138,46 +87,11 @@ export function Registro() {
     <AuthLayout>
       <h1 className="mb-2 text-2xl font-bold text-on-surface dark:text-slate-100">Crear cuenta</h1>
       <p className="mb-6 text-sm text-on-surface-variant dark:text-slate-400">
-        Tu solicitud será validada por la coordinación académica del centro.
+        Los instructores reciben su acceso desde coordinación. Si eres aprendiz, completa tus datos para solicitar tu cuenta.
       </p>
 
       <form onSubmit={handleSubmit}>
-        {pasoRegistro === 'rol' ? <>
-        <div className="mb-5">
-          <p id="rol-label" className="mb-2 text-sm font-medium text-on-surface-variant dark:text-slate-300">
-            Paso 1 de 2 · Selecciona tu rol
-          </p>
-          <div role="radiogroup" aria-labelledby="rol-label" className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {(['Instructor', 'Aprendiz'] as const).map((opcion) => (
-              <button
-                key={opcion}
-                type="button"
-                role="radio"
-                aria-checked={rol === opcion}
-                onClick={() => setRol(opcion)}
-                className={`rounded-xl border px-4 py-3 text-left transition-all ${
-                  rol === opcion
-                    ? 'border-primary bg-primary-container shadow-sm ring-1 ring-primary dark:bg-sena-950/50'
-                    : 'border-outline bg-surface-container-lowest hover:border-outline-variant hover:bg-surface-container-low dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700'
-                }`}
-              >
-                <span className="block text-base font-semibold text-on-surface dark:text-slate-100">{opcion}</span>
-                <span className="mt-1 block text-xs text-on-surface-variant dark:text-slate-400">
-                  {opcion === 'Instructor' ? 'Consulta su carga' : 'Consulta su ficha'}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-        <button type="button" onClick={() => setPasoRegistro('datos')} className="w-full rounded-xl bg-primary py-3 font-semibold text-on-primary transition hover:bg-on-primary-container">
-          Continuar como {rol.toLowerCase()}
-        </button>
-        </> : <>
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Paso 2 de 2 · Datos de {rol.toLowerCase()}</p>
-          <button type="button" onClick={() => setPasoRegistro('rol')} className="text-sm font-semibold text-primary hover:underline">Cambiar rol</button>
-        </div>
-
+        <p className="mb-5 text-sm font-medium text-on-surface">Registro para aprendices</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <FormField
             id="nombres"
@@ -265,41 +179,7 @@ export function Registro() {
         </div>
         {errorConfirmacion && <p id="error-confirmacion" role="alert" className="mb-4 text-sm text-error">Las contraseñas no coinciden. Revisa la confirmación.</p>}
 
-        {rol === 'Instructor' && (
-          <div className="space-y-3">
-            <div className="rounded-xl border border-primary/30 bg-primary-container px-3 py-2 text-sm text-on-primary-container">
-              El código de instructor lo entrega la coordinación y debe coincidir con el generado
-              para el registro del docente.
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-              <FormField
-                id="codigoInstructor"
-                label="Código de instructor"
-                placeholder="Ej. INS-7Q3F8R"
-                value={codigoInstructor}
-                onChange={(e) => { setCodigoInstructor(e.target.value); setErrorCodigoInstructor(null) }}
-                aria-invalid={Boolean(errorCodigoInstructor)}
-                aria-describedby={errorCodigoInstructor ? 'error-codigo-instructor' : undefined}
-                required
-              />
-              {errorCodigoInstructor && <p id="error-codigo-instructor" role="alert" className="mb-3 text-sm text-error">{errorCodigoInstructor}</p>}
-              </div>
-              <FormField
-                id="especialidad"
-                label="Especialidad"
-                placeholder="Ej. Teleinformática"
-                value={especialidad}
-                onChange={(e) => setEspecialidad(e.target.value)}
-                required
-              />
-            </div>
-          </div>
-        )}
-
-        {rol === 'Aprendiz' && (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <FormField
               id="codigoFicha"
               label="Código de ficha"
@@ -316,7 +196,6 @@ export function Registro() {
               required
             />
           </div>
-        )}
 
         <label className="mb-5 flex items-start gap-2 text-sm text-on-surface-variant">
           <input
@@ -349,7 +228,6 @@ export function Registro() {
         >
           {loading ? 'Enviando…' : 'Registrarme'}
         </button>
-        </>}
       </form>
 
       <p className="mt-4 text-center text-sm text-on-surface-variant">

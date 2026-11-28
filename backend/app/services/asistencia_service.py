@@ -132,6 +132,14 @@ class AsistenciaService:
                 "Hay marcas de personas que no están matriculadas en esta ficha", 422
             )
 
+        ids_marcados = [m.idUsuarioAprendiz for m in data.marcas]
+        if len(ids_marcados) != len(set(ids_marcados)):
+            raise AsistenciaError("Una persona aparece más de una vez en la lista", 422)
+        if not matriculados:
+            raise AsistenciaError("Esta ficha no tiene aprendices vinculados para pasar lista", 422)
+        if set(ids_marcados) != matriculados:
+            raise AsistenciaError("Marca a todos los aprendices de la ficha antes de guardar", 422)
+
         previas = {
             a.idUsuarioAprendiz: a
             for a in AsistenciaRepository.obtener_de_sesion(db, data.idHorario, data.fechaSesion)

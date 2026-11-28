@@ -95,6 +95,33 @@ _Opcion = tuple[tuple[time, time], tuple[int, ...], str, int]
 _SlotOcupado = tuple[str | int, tuple[time, time], int]
 
 
+def _se_solapan(franja_a: tuple[time, time], franja_b: tuple[time, time]) -> bool:
+    """Indica si dos intervalos se cruzan; los intervalos contiguos no.
+
+    La base valida con esta misma regla: ``inicio_a < fin_b`` y
+    ``fin_a > inicio_b``. No basta con comparar tuplas de franjas: una
+    reserva manual de 08:00--10:00 también debe bloquear la opción del
+    asistente 07:00--09:00.
+    """
+    return franja_a[0] < franja_b[1] and franja_a[1] > franja_b[0]
+
+
+def _recurso_esta_ocupado(
+    ocupados: set[_SlotOcupado],
+    recurso: str | int,
+    franja: tuple[time, time],
+    dias: tuple[int, ...],
+) -> bool:
+    """Devuelve si ``recurso`` tiene una reserva que se solapa en un día."""
+    dias_propuestos = set(dias)
+    return any(
+        recurso == recurso_ocupado
+        and dia in dias_propuestos
+        and _se_solapan(franja, franja_ocupada)
+        for recurso_ocupado, franja_ocupada, dia in ocupados
+    )
+
+
 def _opciones_validas(
     necesidad: NecesidadHorario,
     ocupados_instructor: set[_SlotOcupado] | None = None,
@@ -116,9 +143,9 @@ def _opciones_validas(
         for patron in PATRONES_DE_DIA
         for instructor in necesidad.instructores_candidatos
         for ambiente in necesidad.ambientes_candidatos
-        if not any((instructor, franja, dia) in ocupados_instructor for dia in patron)
-        and not any((ambiente, franja, dia) in ocupados_ambiente for dia in patron)
-        and not any((necesidad.id_ficha, franja, dia) in ocupados_ficha for dia in patron)
+        if not _recurso_esta_ocupado(ocupados_instructor, instructor, franja, patron)
+        and not _recurso_esta_ocupado(ocupados_ambiente, ambiente, franja, patron)
+        and not _recurso_esta_ocupado(ocupados_ficha, necesidad.id_ficha, franja, patron)
     ]
 
 

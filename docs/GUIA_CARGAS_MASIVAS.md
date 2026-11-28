@@ -1,0 +1,132 @@
+# Cargas masivas de SIHS — interfaz y lógica compartidas
+
+Actualizado para `fixes-multiples-nicol` (2026-11-21).
+
+> **Actualización 22/11/2026 — Instructores:** ahora utiliza **solo CSV**, no XLSX. Encabezados canónicos: `nombre,correo,documento,contrato,horas,sigla`; las cinco primeras columnas son obligatorias. `sigla` es opcional. El backend acepta separadores `,` o `;`, UTF-8 con o sin BOM, Windows-1252/Latin-1 y campos CSV entrecomillados. Son equivalentes `tipoContrato`/`tipo_contrato`, `horasContratadasSemana`/`horas_contratadas_semana` y `email`. Mapea `contrato` a `tipoContrato` y `horas` a `horasContratadasSemana`. Límite 2 MB y 200 filas. El archivo piloto vigente es `01_instructores_alta_masiva.csv`; la subida se hace con el selector CSV del navegador y `FormData` (sin rutas Docker, WSL ni Windows). **Previsualizar no crea cuentas ni envía correos**. La confirmación sigue usando `POST /instructores/alta/` por fila. Las demás importaciones no cambiaron de formato.
+
+## Alcance
+
+Los cargadores de **Fichas**, **Ambientes**, **Instructores** y **Plan curricular (Programas)** usan el término **Carga masiva**, el mismo flujo de selección → revisión → confirmación → resultado y las mismas primitivas de presentación.
+
+**Excepción deliberada:** el asistente de horarios con IA (`/horarios/asistente-ia`) mantiene su propio wizard y motor de interpretación/generación; no fue modificado por esta unificación.
+
+| Entrada | Archivo | Validación y confirmación | Persistencia |
+| --- | --- | --- | --- |
+| Fichas → Carga masiva | CSV | Encabezados exactos, campos obligatorios por fila y vista previa | Un `POST /fichas/` por fila; resolución de programa/período/sede existente |
+| Ambientes → Carga masiva | CSV | Encabezados exactos, campos obligatorios por fila y vista previa | Un `POST /ambientes` por fila; resolución de sede existente |
+| Instructores → Registrar instructores → Carga masiva | CSV | CSV validado en servidor, revisión antes de alta y duplicados | Un `POST /instructores/alta/` por fila; cuenta nueva e invitación |
+| Programas → plan curricular → Carga masiva | Excel pedagógico | Vista previa especializada de competencias y resultados | Un `POST /competencias-formacion/` por competencia y resultados asociados |
+
+Los pasos tienen comportamientos compartidos, pero los **esquemas, permisos y reglas de negocio no se homogeneizan por la fuerza**. La validación estructural de un CSV no garantiza que un ID de catálogo exista: los errores de API de cada fila aparecen en el resultado.
+
+## Código reutilizado
+
+- `frontend/src/components/cargaMasiva/FlujoCargaMasiva.tsx`:
+  - `PanelCargaMasiva`: contenedor, encabezado y estados de error/éxito.
+  - `TituloPasoCarga`: jerarquía de selección, revisión y resultado.
+  - `ResumenCargaMasiva`: resultado con filas correctas/fallidas.
+  - `ejecutarCargaMasiva`: ejecutor secuencial que informa progreso, aísla errores de cada elemento y devuelve resultados completos.
+  - Clases Tailwind compartidas para campos y botones, usando los tokens de [marca SIHS](../docs-sihs/Diseño/GUIA_DE_MARCA.md).
+- `frontend/src/components/ImportarArchivo.tsx` es el adaptador CSV de Fichas y Ambientes y conserva las reglas específicas mediante `onImportarFila`.
+- `frontend/src/pages/AltaInstructores.tsx` usa la vista previa del backend, el mismo ejecutor y los resultados individuales de invitación.
+- `frontend/src/pages/Programas.tsx` utiliza el mismo contenedor y el ejecutor para competencias; cada una procesa sus resultados asociados.
+- `backend/app/api/v1/alta_instructores.py` interpreta CSV de instructores y `backend/app/services/curriculo_service.py` interpreta el Excel curricular; sus formatos son deliberadamente distintos. No se mezclaron heurísticas de un archivo curricular con datos de identidad.
+
+## Reglas compartidas
+
+1. Ningún cargador crea registros antes de que el usuario confirme.
+2. Los archivos se revisan y se muestran errores de formato/columnas antes de confirmar; los errores de relación o duplicados que solo conoce el servidor se registran por elemento.
+3. Una fila fallida no interrumpe necesariamente las restantes. En los resultados se distingue lo confirmado de lo fallido para decidir qué repetir.
+4. No mostrar datos secretos ni contraseñas temporales en la vista previa.
+5. Mantener permisos en el backend: mostrar un botón no autoriza a importar.
+6. En local pueden utilizarse datos ficticios y reiniciar la base Docker; no mezclar un `.env` remoto con la demo local.
+
+## Cómo probar antes de la sustentación
+
+Desde la rama `fixes-multiples-nicol`, con dependencias instaladas:
+
+```bash
+cd frontend
+
+pnpm exec vitest run tests/unit/components/ImportarArchivo.test.tsx tests/unit/components/FlujoCargaMasiva.test.tsx tests/unit/pages/AltaInstructores.test.tsx tests/unit/pages/Fichas.test.tsx tests/unit/pages/Ambientes.test.tsx tests/unit/pages/Programas.test.tsx
+pnpm lint
+pnpm build
+```
+
+Para validar también los servicios de importación específicos del backend (en su entorno virtual):
+
+```bash
+cd ../backend
+python -m pytest tests/test_alta_instructores.py tests/test_competencias_importar.py -q
+cd ..
+```
+
+Para validar el flujo end-to-end, desde la raíz:
+
+```bash
+make demo-up
+make demo-info
+```
+
+Usa los usuarios ficticios que muestra `make demo-info`, carga pequeños archivos de prueba y comprueba tanto los registros nuevos en la base local como el correo en **Mailpit** (http://127.0.0.1:54324). Para devolver la demo a su estado inicial usa `make demo-reset` **únicamente sobre la base local de demostración**.
+
+### Casos mínimos de aceptación
+
+- Fichas/Ambientes: CSV válido, columnas faltantes, celda obligatoria vacía, duplicado y ejecución parcial.
+- Instructores: perfil Administrador y Coordinador, rechazo a Instructor/Aprendiz, Excel válido e inválido, duplicados, invitación y cambio obligatorio de contraseña.
+- Currículo: Excel pedagógico válido, contenidos repetidos, fallo al crear un resultado sin bloquear todo el lote.
+- Consistencia visual: mismas jerarquías y nombres, lectura móvil, mensajes de error accionables y estados de confirmación deshabilitados durante el procesamiento.
+
+**Pendiente de validar en el entorno de ejecución:** esta refactorización no incluye ejecución real de Docker, correo ni Vitest desde el conector GitHub. El éxito de un commit no sustituye esos controles.
+
+## Diferencia entre cargar y exportar
+
+**Carga masiva** incorpora registros desde archivos (Fichas, Ambientes, Instructores y plan curricular). **Exportar carga docente** es una operación de salida desde el directorio de Instructores: genera un CSV con las horas semanales calculadas por las clases programadas, para todos los registros filtrados. No es un quinto importador ni requiere subir un archivo.
+
+Pruebas específicas: `pnpm exec vitest run tests/unit/utils/exportarCargaDocente.test.ts tests/unit/pages/Instructores.test.tsx` desde `frontend/`.
+
+**Accesos desde Instructores:** `Cargar instructores desde Excel` abre la pestaña de importación directamente; `Registrar instructor` abre el formulario manual; `Exportar carga docente (.csv)` genera un archivo de salida con las clases existentes. No confundir la recepción de registros de instructores con una futura importación de horas o asignaciones docentes.
+
+## Importación de aprendices (2026-11-22)
+
+La pantalla **Fichas → Cargar aprendices** (también en Datos académicos → Carga masiva de aprendices) acepta `.xlsx` con las columnas `nombre`, `correo`, `documento`, `codigoFicha`; `programaFormacion` es opcional. Por compatibilidad con el Excel piloto, se ignora la columna `claveDemoLocal`: **nunca se importan contraseñas del archivo**.
+
+- La vista previa `POST /api/v1/aprendices/alta/importar` valida estructura, filas repetidas, usuario existente, ficha y programa; no crea cuentas.
+- La confirmación `POST /api/v1/aprendices/alta/` crea la identidad en Supabase Auth local, perfil en PostgreSQL, asigna rol Aprendiz, vincula la ficha y envía invitación con clave temporal.
+- Solo Administrador y Coordinador pueden importar. Los duplicados se omiten sin modificar cuentas existentes. Si SMTP no está configurado, las altas no deben iniciarse.
+- En el kit piloto, primero importa `03_fichas_importar.csv`, luego usa `07_aprendices_datos_de_prueba_NO_IMPORTABLE.xlsx`. **El nombre antiguo del archivo quedó desactualizado: ahora sí puede subirse al nuevo cargador**. No ejecutes la semilla SQL `08` si utilizas este cargador, pues crearías registros duplicados.
+- Verifica login, cambio de clave en primer acceso, `/mi-horario-aprendiz`, ficha asignada y notificaciones. En Docker, usa solo Supabase local y un servidor SMTP de pruebas.
+
+## Carga curricular desde Temáticas (2026-11-22)
+
+**El archivo `04_curriculo_programa_DEMO_ADSO.xlsx` contiene competencias y resultados de aprendizaje.** Debe cargarse **una sola vez**: puedes hacerlo desde **Programas → DEMO-ADSO → Competencias / plan curricular → Carga masiva**, o desde **Temáticas → Carga masiva**, eligiendo el programa de destino `DEMO-ADSO`. Ambos utilizan el parser `POST /competencias-formacion/importar-vista-previa`.
+
+La nueva pantalla de Temáticas reutiliza competencias y resultados cuya descripción coincida dentro del mismo programa, evitando duplicados evidentes. La vista previa es obligatoria y solo un Administrador puede confirmar, según los permisos actuales de escritura de competencias/resultados. Si hay errores parciales, revisar qué quedó guardado antes de repetir.
+
+Pruebas pertinentes:
+```bash
+cd backend
+python -m pytest tests/test_alta_aprendices.py -q
+cd ../frontend
+pnpm exec vitest run tests/unit/pages/CargaAprendices.test.tsx tests/unit/pages/Tematicas.test.tsx
+pnpm lint
+pnpm build
+```
+
+
+## Fallos al importar (2026-11-22)
+
+- **Instructores**: la pantalla consulta `GET /api/v1/instructores/alta/diagnostico`, restringido a Administrador/Coordinador. Detecta SMTP o claves de Supabase vacías. Los fallos de Supabase Auth (401/403, URL incorrecta, conexión) ahora se clasifican, no se confunden con fallos SMTP; los detalles sensibles quedan solo en logs.
+- **Fichas**: `POST /api/v1/fichas/` devuelve **409** si el código ya existe, **422** si faltan referencias a Programa/Período/Sede y **403** si la cuenta no es Administrador. Antes las violaciones de clave foránea podían aparecer como error 500. Solo Administrador ve el botón de importación (mismo rol del endpoint).
+- **Aprendices**: ruta de directorio `/aprendices`, carga masiva en `/aprendices/carga-masiva`. El servidor devuelve perfil, ficha, programa y estado de primer cambio de clave.
+- **Archivo SQL piloto**: las cuatro filas de la semilla `08_aprendices_semilla_local.sql` se convirtieron a `SIHS_aprendices_desde_semilla_importable.xlsx` para carga por la interfaz. Los correos `.local` se cambiaron a `@example.com`, porque `EmailStr` rechaza dominios locales. No ejecutes el SQL y el XLSX sobre la misma base.
+- **Docker**: Mailpit ahora corre como servicio en `compose.demo.yml`; las invitaciones están en http://127.0.0.1:8025, no en Gmail. Ejecuta `docker compose -f compose.demo.yml up -d --build` para aplicar configuración.
+
+Pruebas recomendadas:
+```bash
+cd backend
+python -m pytest tests/test_alta_instructores.py tests/test_alta_aprendices.py tests/test_fichas_importacion_errores.py tests/test_email_demo.py -q
+cd ../frontend
+pnpm exec vitest run tests/unit/pages/Aprendices.test.tsx tests/unit/pages/CargaAprendices.test.tsx tests/unit/pages/AltaInstructores.test.tsx tests/unit/pages/Fichas.test.tsx
+pnpm build
+```

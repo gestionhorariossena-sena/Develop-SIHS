@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { AppShell } from '../components/AppShell'
@@ -127,22 +128,7 @@ export function AprobarlicitarSolicitudes() {
         prev.filter((u) => u.idUsuario !== usuarioSeleccionado.idUsuario)
       )
 
-      let mensaje = `${usuarioSeleccionado.nombre} ahora tiene el rol ${rolAsignado ?? 'seleccionado'}.`
-
-      // El código de instructor ya no se genera a mano desde Usuarios.tsx —
-      // se dispara acá mismo, al aprobar el rol, y queda fijo (el endpoint
-      // es idempotente: si el usuario ya tiene código, devuelve el mismo).
-      if (rolAsignado === 'Instructor') {
-        try {
-          const { codigo } = await apiPost<{ codigo: string; idUsuario: string }>(
-            '/usuarios/instructor/codigo/generar',
-            { idUsuario: usuarioSeleccionado.idUsuario },
-          )
-          mensaje += ` Código de instructor: ${codigo}.`
-        } catch {
-          mensaje += ' No se pudo generar su código de instructor — hazlo desde "Código de instructor".'
-        }
-      }
+      const mensaje = `${usuarioSeleccionado.nombre} ahora tiene el rol ${rolAsignado ?? 'seleccionado'}.`
 
       setMostrarModal(false)
       setMensajeExito(mensaje)
@@ -158,7 +144,7 @@ export function AprobarlicitarSolicitudes() {
 
   if (noAutorizado) {
     return (
-      <AppShell activo="Aprobar solicitudes de registro">
+      <AppShell activo="Usuarios sin rol">
         <div className="flex items-center justify-center py-24">
           <div className="max-w-sm text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-error-container text-error">
@@ -182,9 +168,9 @@ export function AprobarlicitarSolicitudes() {
     : usuariosSinRol
 
   return (
-    <AppShell activo="Aprobar solicitudes de registro">
+    <AppShell activo="Usuarios sin rol">
       <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-        <span>Dashboard</span>
+        <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
         <span className="text-outline">/</span>
         <span className="font-semibold text-primary">Solicitudes y Auditoría</span>
       </nav>
@@ -196,7 +182,7 @@ export function AprobarlicitarSolicitudes() {
             <span aria-hidden="true" className="material-symbols-outlined">badge</span>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-on-surface">Aprobar solicitudes de registro</h1>
+            <h1 className="text-2xl font-bold text-on-surface">Usuarios sin rol</h1>
             <p className="text-sm text-on-surface-variant">
               Usuarios que ya se registraron y están a la espera de que les asignes un rol.
             </p>

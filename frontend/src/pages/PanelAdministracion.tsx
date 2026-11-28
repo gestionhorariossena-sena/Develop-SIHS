@@ -1,5 +1,7 @@
+import { Link } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { apiGet, apiPost, ApiError } from '../services/api'
 import type { Rol, SolicitudAcceso, SolicitudAccesoAprobada } from '../types/api'
 
@@ -241,7 +243,7 @@ export function PanelAdministracion() {
   return (
     <AppShell activo="Solicitudes de acceso">
       <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-        <span>Dashboard</span>
+        <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
         <span className="text-outline">/</span>
         <span className="font-semibold text-primary">Administración</span>
       </nav>
@@ -250,15 +252,14 @@ export function PanelAdministracion() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="flex flex-wrap items-center gap-3 text-2xl font-bold text-on-surface">
-            Solicitudes de Acceso al Sistema
+            Solicitudes de acceso
             <span className="inline-flex items-center gap-1.5 rounded-full border border-tertiary/30 bg-tertiary-container px-3 py-1 text-xs font-bold text-on-tertiary-container">
               <span className="h-2 w-2 rounded-full bg-tertiary" />
               {pendientes.length} pendiente{pendientes.length !== 1 ? 's' : ''} de validación
             </span>
           </h1>
           <p className="mt-1 max-w-3xl text-sm text-on-surface-variant">
-            Revisa, valida la identidad y aprueba las peticiones de registro originadas desde el portal público. Al
-            aprobar, el sistema asigna el rol vía <code className="rounded bg-surface-container px-1 py-0.5 text-xs">POST /usuario-rol/asignar</code> y despacha una credencial temporal.
+            Revisa las solicitudes de registro y, al aprobarlas, genera una credencial temporal para la persona solicitante.
           </p>
         </div>
 
@@ -316,96 +317,27 @@ export function PanelAdministracion() {
         <p className="mb-4 rounded-xl border border-error/20 bg-error-container px-4 py-3 text-sm text-on-error-container">{error}</p>
       )}
 
-      {/* Tarjetas de métricas */}
-      <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex flex-col justify-between rounded-xl border border-tertiary/30 bg-surface-container-lowest p-4 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-on-surface-variant">
-            <span className="font-medium">Pendientes de Aprobación</span>
-            <span className="rounded-lg bg-tertiary-container p-1.5 text-on-tertiary-container">
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">pending_actions</span>
-            </span>
-          </div>
-          <div className="my-2">
-            <div className="text-3xl font-bold text-on-surface">{pendientes.length}</div>
-            <p className="mt-0.5 text-[11px] font-medium text-on-surface-variant">
-              {desglosePendientesPorRol || 'Sin solicitudes pendientes'}
-            </p>
-          </div>
-          <div className="flex items-center gap-1 border-t border-outline-variant pt-2 text-[11px] text-on-surface-variant">
-            <span aria-hidden="true" className="material-symbols-outlined text-[13px]">schedule</span>
-            <span>{tiempoPromedioEnColaHoras != null ? `Tiempo prom. en cola: ${tiempoPromedioEnColaHoras} horas` : 'Sin solicitudes en cola'}</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-on-surface-variant">
-            <span className="font-medium">Aprobadas Este Mes</span>
-            <span className="rounded-lg bg-primary-container p-1.5 text-on-primary-container">
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">check_circle</span>
-            </span>
-          </div>
-          <div className="my-2">
-            <div className="text-3xl font-bold text-on-surface">{aprobadasEsteMes.length}</div>
-            <p className="mt-0.5 text-[11px] font-medium text-on-surface-variant">Credenciales temporales despachadas</p>
-          </div>
-          {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
-              real del backend: no hay forma de saber si la persona ya
-              cambió su clave en el primer login (ni siquiera existe todavía
-              `debe_cambiar_clave`), así que no se muestra un % inventado. */}
-          <div className="border-t border-outline-variant pt-2 text-[11px] text-on-surface-variant">
-            <span>Cambio de clave forzado en el primer ingreso</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col justify-between rounded-xl border border-outline-variant bg-surface-container-lowest p-4 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-on-surface-variant">
-            <span className="font-medium">Rechazadas con Justificación</span>
-            <span className="rounded-lg bg-error-container p-1.5 text-on-error-container">
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">block</span>
-            </span>
-          </div>
-          <div className="my-2">
-            <div className="text-3xl font-bold text-on-surface">{rechazadas.length}</div>
-            <p className="mt-0.5 text-[11px] text-on-surface-variant">Todas con motivo formal registrado</p>
-          </div>
-          <div className="border-t border-outline-variant pt-2 text-[11px] text-on-surface-variant">
-            <span>Notificación remitida al solicitante</span>
-          </div>
-        </div>
-
-        {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
-            real del backend: es texto informativo estático sobre el
-            protocolo de seguridad, no una cifra derivada de datos. */}
-        <div className="flex flex-col justify-between rounded-xl border border-primary/30 bg-primary-container/40 p-4 shadow-sm">
-          <div className="flex items-center justify-between text-xs text-on-primary-container">
-            <span className="font-semibold">Protocolo de Seguridad</span>
-            <span className="rounded-lg bg-primary-container p-1.5 text-on-primary-container">
-              <span aria-hidden="true" className="material-symbols-outlined text-[18px]">verified_user</span>
-            </span>
-          </div>
-          <div className="my-2">
-            <div className="text-xs font-semibold text-on-primary-container">Autenticación Forzada 1er Ingreso</div>
-            <p className="mt-1 text-[11px] leading-snug text-on-primary-container">
-              Contraseña autogenerada de un solo uso, con cambio obligatorio antes de navegar el sistema.
-            </p>
-          </div>
-          <div className="border-t border-primary/20 pt-2 font-mono text-[10px] text-on-primary-container">
-            SMTP institucional — pendiente ticket de envío de credencial
-          </div>
-        </div>
-      </section>
+      <IndicadoresResumen titulo="Resumen de solicitudes de acceso" className="mb-6" items={[
+        {
+          etiqueta: 'Pendientes de aprobación', valor: pendientes.length, icono: 'pending_actions',
+          detalle: <><span>{desglosePendientesPorRol || 'Sin solicitudes pendientes'}</span>{tiempoPromedioEnColaHoras != null && <> · Promedio en cola: {tiempoPromedioEnColaHoras} h</>}</>,
+        },
+        { etiqueta: 'Aprobadas este mes', valor: aprobadasEsteMes.length, detalle: 'Credenciales temporales generadas', icono: 'check_circle' },
+        { etiqueta: 'Rechazadas con justificación', valor: rechazadas.length, detalle: 'Con motivo registrado', icono: 'block' },
+      ]} />
 
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         {/* Columna principal: tabs + lista de solicitudes */}
         <div className="space-y-4 lg:col-span-8">
           <div className="flex flex-col items-start justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-3 shadow-sm sm:flex-row sm:items-center">
-            <div className="inline-flex rounded-lg bg-surface-container p-1 text-xs font-medium">
+            <div className="flex flex-wrap rounded-lg bg-surface-container p-1 text-xs font-medium">
               {TABS.map((tab) => (
                 <button
                   key={tab.valor}
                   type="button"
                   onClick={() => setTabActivo(tab.valor)}
-                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-all ${
+                  aria-pressed={tabActivo === tab.valor}
+                  className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-colors ${
                     tabActivo === tab.valor
                       ? 'bg-surface-container-lowest font-bold text-primary shadow-sm'
                       : 'text-on-surface-variant hover:text-on-surface'
@@ -422,6 +354,7 @@ export function PanelAdministracion() {
             </div>
 
             <select
+              aria-label="Filtrar por rol solicitado"
               value={filtroRol}
               onChange={(evento) => setFiltroRol(evento.target.value === 'todos' ? 'todos' : Number(evento.target.value))}
               className="rounded-lg border border-outline-variant bg-surface-container-lowest px-2.5 py-1.5 text-xs text-on-surface"
@@ -533,7 +466,7 @@ export function PanelAdministracion() {
                             no simular que hace algo. */}
                         <select
                           disabled
-                          title="Aún no implementado en el backend"
+                          title="Esta opción aún no está disponible"
                           className="w-full cursor-not-allowed rounded-lg border border-outline-variant bg-surface-container px-3 py-2 text-xs font-medium text-on-surface-variant"
                         >
                           <option>Todas las sedes y jornadas</option>
@@ -600,9 +533,8 @@ export function PanelAdministracion() {
               <div className="flex items-start gap-2.5 rounded-lg border border-outline-variant bg-surface-container p-2">
                 <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-container text-[10px] font-bold text-on-primary-container">1</span>
                 <div>
-                  <span className="font-semibold text-on-surface">Ejecución del Endpoint:</span>
-                  <p className="mt-0.5 font-mono text-[11px] text-on-surface-variant">POST /usuario-rol/asignar</p>
-                  <p className="mt-0.5 text-[11px]">Vincula el usuario con el rol verificado en la base de datos central.</p>
+                  <span className="font-semibold text-on-surface">Asignación de rol</span>
+                  <p className="mt-0.5 text-[11px]">El usuario recibe el rol aprobado.</p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5 rounded-lg border border-outline-variant bg-surface-container p-2">
@@ -617,7 +549,7 @@ export function PanelAdministracion() {
                 <div>
                   <span className="font-semibold text-on-surface">Cambio Forzado en 1er Ingreso:</span>
                   <p className="mt-0.5 text-[11px]">
-                    <code className="rounded bg-surface-container-high px-1 text-[10px]">debe_cambiar_clave = true</code> impide navegar hasta establecer clave personal.
+                    La persona establece una contraseña personal antes de usar el sistema.
                   </p>
                 </div>
               </div>

@@ -582,7 +582,7 @@ export function AsistenteHorarios() {
   }
 
   return (
-    <AppShell activo="Crear horario">
+    <AppShell activo="Importar con IA">
       <div className="mx-auto max-w-5xl">
         <p className="text-xs font-semibold uppercase tracking-wide text-primary">Asistente de programación</p>
         <div className="mb-4 flex items-start justify-between gap-3">

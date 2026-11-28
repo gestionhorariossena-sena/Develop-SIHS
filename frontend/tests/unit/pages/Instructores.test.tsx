@@ -76,6 +76,36 @@ describe('Instructores', () => {
     expect(screen.getByText('1 de 1 instructores')).toBeInTheDocument()
   })
 
+  it('permite exportar la carga docente filtrada sin limitarse a la página visible', async () => {
+    mockeaUsuariosYPerfil(USUARIOS)
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const crearUrl = vi.fn(() => 'blob:carga-docente')
+    const revocarUrl = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: crearUrl })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revocarUrl })
+    const usuario = userEvent.setup()
+    renderConProviders(<Instructores />)
+    const boton = screen.getByRole('button', { name: 'Exportar carga docente (.csv)' })
+    await waitFor(() => expect(boton).toBeEnabled())
+    await usuario.click(boton)
+    expect(crearUrl).toHaveBeenCalledTimes(1)
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(revocarUrl).toHaveBeenCalledWith('blob:carga-docente')
+    click.mockRestore()
+  })
+
+  it('no permite exportar horas incompletas si el endpoint de horarios falla', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/instructores') return Promise.resolve(USUARIOS)
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/horarios/') return Promise.reject(new Error('Falló la API'))
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<Instructores />)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/No se pudieron cargar los horarios/)
+    expect(screen.getByRole('button', { name: 'Exportar carga docente (.csv)' })).toBeDisabled()
+  })
+
   it('muestra especialidad y tipo de contrato del instructor', async () => {
     mockeaUsuariosYPerfil(USUARIOS)
     renderConProviders(<Instructores />)

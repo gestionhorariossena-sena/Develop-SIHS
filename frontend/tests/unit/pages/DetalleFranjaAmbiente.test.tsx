@@ -68,7 +68,7 @@ describe('DetalleFranjaAmbiente', () => {
     )
     renderConProviders(<DetalleFranjaAmbiente />, ['/mi-horario/detalle-franja'])
 
-    expect(await screen.findByText('No encontramos esa franja.')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'No encontramos esa franja' })).toBeInTheDocument()
   })
 
   it('con datos reales completos, dibuja programa, ficha, ambiente, competencia y RAP', async () => {
@@ -89,8 +89,8 @@ describe('DetalleFranjaAmbiente', () => {
 
     await screen.findByText('Detalle de Sesión Formativa: Análisis y Desarrollo de Software')
 
-    expect(screen.getByText('Pendiente — depende del ticket de avance curricular.')).toBeInTheDocument()
-    expect(screen.getByText('Pendiente — depende del ticket de vocero/subvocero.')).toBeInTheDocument()
+    expect(screen.getByText('El avance curricular aún no está disponible.')).toBeInTheDocument()
+    expect(screen.getByText('La información de vocería aún no está disponible.')).toBeInTheDocument()
     expect(screen.getByText('*Dato Conceptual / En Evaluación')).toBeInTheDocument()
   })
 

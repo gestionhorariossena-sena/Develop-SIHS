@@ -16,6 +16,7 @@ from app.models.ambiente import Ambiente
 from app.models.competencia_formacion import CompetenciaFormacion
 from app.models.coordinacion import Coordinacion
 from app.models.ficha import Ficha
+from app.models.ficha_usuario import FichaUsuario
 from app.models.horario import Horario, horario_dia
 from app.models.programa import Programa
 from app.models.resultado_aprendizaje import ResultadoAprendizaje
@@ -34,6 +35,7 @@ def _crear_tablas_extra(db_session):
             Coordinacion.__table__, Programa.__table__, Trimestre.__table__, Sede.__table__,
             Ambiente.__table__, Ficha.__table__, CompetenciaFormacion.__table__,
             ResultadoAprendizaje.__table__, Horario.__table__, horario_dia,
+            FichaUsuario.__table__,
         ],
     )
 
@@ -55,6 +57,31 @@ def _catalogo_base(db_session, id_ficha=100, codigo_ficha=None):
     db_session.add(CompetenciaFormacion(idCompetencia=1, codigo="C1", descripcion="Competencia demo", idPrograma=1))
     db_session.add(ResultadoAprendizaje(idResultado=1, codigo="RA-1", descripcion="Resultado demo", idCompetencia=1, horasAsignadas=20))
     db_session.commit()
+
+
+def _generar_con_aprendices(db_session, *, id_trimestre, ids_ficha, jornada):
+    """Los casos existentes del solver parten de fichas con aprendices."""
+    FichaUsuario.__table__.create(bind=db_session.bind, checkfirst=True)
+    for id_ficha in ids_ficha:
+        if db_session.query(FichaUsuario).filter_by(idFicha=id_ficha).first():
+            continue
+        aprendiz_id = uuid.uuid4()
+        db_session.add(Usuario(idUsuario=aprendiz_id, nombre=f"Aprendiz {id_ficha}",
+                               email=f"aprendiz-{aprendiz_id}@test.local"))
+        db_session.flush()
+        db_session.add(FichaUsuario(idFicha=id_ficha, idUsuario=aprendiz_id))
+    db_session.commit()
+    return generar_propuesta(db_session, id_trimestre=id_trimestre, ids_ficha=ids_ficha, jornada=jornada)
+
+
+def test_generar_propuesta_no_programa_fichas_sin_aprendices(db_session):
+    _crear_tablas_extra(db_session)
+    _catalogo_base(db_session, id_ficha=100)
+    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
+    assert resultado.bloques == []
+    assert resultado.factible is False
+    assert resultado.fichasSinProgramar == ["100"]
+    assert "no tienen aprendices vinculados" in resultado.mensaje
 
 
 def _xlsx_con_encabezado(filas: list[list]) -> bytes:
@@ -315,7 +342,7 @@ def test_generar_propuesta_sin_resultados_pendientes(db_session):
     ))
     db_session.commit()
 
-    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
+    resultado = _generar_con_aprendices(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
 
     assert resultado.bloques == []
     assert resultado.factible is True
@@ -338,7 +365,7 @@ def test_generar_propuesta_programa_sin_resultados_definidos_da_mensaje_distinto
     db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana2@demo.sihs", tipoContrato="contrato", estado="activo"))
     db_session.commit()
 
-    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[200], jornada="MAÑANA")
+    resultado = _generar_con_aprendices(db_session, id_trimestre=1, ids_ficha=[200], jornada="MAÑANA")
 
     assert resultado.bloques == []
     assert resultado.factible is True
@@ -353,7 +380,7 @@ def test_generar_propuesta_genera_un_bloque_real(db_session):
     db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana@demo.sihs", tipoContrato="contrato", estado="activo"))
     db_session.commit()
 
-    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
+    resultado = _generar_con_aprendices(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
 
     assert resultado.factible is True
     assert len(resultado.bloques) == 1
@@ -391,7 +418,7 @@ def test_generar_propuesta_no_explota_con_catalogo_real_de_instructores_y_ambien
     db_session.commit()
 
     inicio = time_module.perf_counter()
-    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
+    resultado = _generar_con_aprendices(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
     duracion = time_module.perf_counter() - inicio
 
     assert duracion < 20.0, f"tardó {duracion:.1f}s -- _muestra_rotada dejó de acotar los candidatos"
@@ -442,7 +469,7 @@ def test_generar_propuesta_lote_grande_se_resuelve_ficha_por_ficha_sin_colgarse(
     monkeypatch.setattr("app.services.asistente_horario_service._PRESUPUESTO_TIEMPO_TOTAL_SEG", 120.0)
 
     inicio = time_module.perf_counter()
-    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=list(range(1, 51)), jornada="MAÑANA")
+    resultado = _generar_con_aprendices(db_session, id_trimestre=1, ids_ficha=list(range(1, 51)), jornada="MAÑANA")
     duracion = time_module.perf_counter() - inicio
 
     assert duracion < 60.0, f"tardó {duracion:.1f}s -- debería resolverse en segundos, no colgarse"
@@ -473,7 +500,7 @@ def test_generar_propuesta_reporta_fichas_sin_programar_cuando_faltan_recursos(d
     db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana@demo.sihs", tipoContrato="contratista", estado="activo"))
     db_session.commit()
 
-    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=list(range(1, 11)), jornada="MAÑANA")
+    resultado = _generar_con_aprendices(db_session, id_trimestre=1, ids_ficha=list(range(1, 11)), jornada="MAÑANA")
 
     assert resultado.factible is True
     assert len(resultado.bloques) > 0
@@ -495,7 +522,7 @@ def test_generar_propuesta_filtra_por_fase_actual_de_la_ficha(db_session):
     db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana@demo.sihs", tipoContrato="contrato", estado="activo"))
     db_session.commit()
 
-    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
+    resultado = _generar_con_aprendices(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
 
     assert resultado.factible is True
     assert len(resultado.bloques) == 1
@@ -526,7 +553,7 @@ def test_generar_propuesta_llena_la_semana_y_reporta_lo_que_no_cupo(db_session):
     db_session.add(Usuario(idUsuario=instructor_id, nombre="Ana", email="ana@demo.sihs", tipoContrato="contrato", estado="activo"))
     db_session.commit()
 
-    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
+    resultado = _generar_con_aprendices(db_session, id_trimestre=1, ids_ficha=[100], jornada="MAÑANA")
 
     # 3 franjas × 5 días = 15 slots en la semana para esta ficha.
     assert resultado.factible is True
@@ -551,7 +578,7 @@ def test_generar_propuesta_jornada_invalida_lanza_value_error(db_session):
     _catalogo_base(db_session, id_ficha=100)
 
     with pytest.raises(ValueError, match="no reconocida"):
-        generar_propuesta(db_session, id_trimestre=1, ids_ficha=[100], jornada="MADRUGADA")
+        _generar_con_aprendices(db_session, id_trimestre=1, ids_ficha=[100], jornada="MADRUGADA")
 
 
 def test_elegir_hoja_prefiere_la_hoja_con_mas_fichas_numericas():
@@ -756,7 +783,7 @@ def test_generar_propuesta_diez_fichas_pesadas_no_devuelve_cero_bloques(db_sessi
     db_session.commit()
 
     ids_ficha = list(range(101, 111))
-    resultado = generar_propuesta(db_session, id_trimestre=1, ids_ficha=ids_ficha, jornada="MAÑANA")
+    resultado = _generar_con_aprendices(db_session, id_trimestre=1, ids_ficha=ids_ficha, jornada="MAÑANA")
 
     assert resultado.factible is True
     assert resultado.bloques, "el lote completo no puede quedar sin ni un bloque"

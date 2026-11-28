@@ -178,7 +178,7 @@ export function DetalleFranjaAmbiente() {
     <AppShell activo="Mi horario">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
         <nav className="flex flex-wrap items-center gap-1.5 text-xs font-medium text-on-surface-variant">
-          <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+          <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
           <span>/</span>
           <Link to="/mi-horario" className="hover:text-primary">Mi Horario</Link>
           <span>/</span>
@@ -201,7 +201,7 @@ export function DetalleFranjaAmbiente() {
         <p className="py-16 text-center text-sm text-on-surface-variant">Cargando el detalle de la franja…</p>
       ) : !horario ? (
         <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-8 text-center">
-          <p className="text-sm font-semibold text-on-surface">No encontramos esa franja.</p>
+          <h1 className="text-lg font-semibold text-on-surface">No encontramos esa franja</h1>
           <p className="mt-1 text-sm text-on-surface-variant">
             Puede que el enlace esté vencido o incompleto. Volvé a Mi Horario y elegí "Detalle →" en el bloque que querés consultar.
           </p>
@@ -239,7 +239,7 @@ export function DetalleFranjaAmbiente() {
                 <button
                   type="button"
                   disabled
-                  title="Aún no implementado en el backend"
+                  title="Esta opción aún no está disponible"
                   className="inline-flex h-10 cursor-not-allowed items-center gap-1.5 rounded-xl bg-surface-container-low px-4 text-sm font-semibold text-on-surface-variant opacity-70"
                 >
                   <span className="material-symbols-outlined text-[18px]">description</span>
@@ -286,7 +286,7 @@ export function DetalleFranjaAmbiente() {
                       avance curricular, todavía no existe ese dato. */}
                   <div className="rounded-xl bg-surface p-3">
                     <p className="text-xs tracking-wide text-on-surface-variant uppercase">Fase del Proyecto Formativo</p>
-                    <p className="mt-1 text-sm text-on-surface-variant">Pendiente — depende del ticket de avance curricular.</p>
+                    <p className="mt-1 text-sm text-on-surface-variant">El avance curricular aún no está disponible.</p>
                   </div>
                 </div>
 
@@ -339,7 +339,7 @@ export function DetalleFranjaAmbiente() {
                     </span>
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-on-surface-variant">VOCERO DE FICHA</p>
-                      <p className="text-sm text-on-surface-variant">Pendiente — depende del ticket de vocero/subvocero.</p>
+                      <p className="text-sm text-on-surface-variant">La información de vocería aún no está disponible.</p>
                     </div>
                   </div>
                 </div>
@@ -457,7 +457,7 @@ export function DetalleFranjaAmbiente() {
                 <div>
                   <p className="text-sm font-bold text-on-tertiary-container">MÓDULO EXPLORATORIO / EN EVALUACIÓN UX</p>
                   <p className="text-xs text-on-surface-variant">
-                    El backend institucional SIHS actual no provee lista de aprendices por ficha en tiempo real (gestión descentralizada en SOFIA Plus). Depende del ticket del Módulo de Asistencia.
+                    La lista de aprendices de esta ficha aún no está disponible en SIHS. Consulta SOFIA Plus para obtener la información actualizada.
                   </p>
                 </div>
               </div>
@@ -492,7 +492,7 @@ export function DetalleFranjaAmbiente() {
               <button
                 type="button"
                 disabled
-                title="Aún no implementado en el backend"
+                title="Esta opción aún no está disponible"
                 className="inline-flex h-11 cursor-not-allowed items-center gap-1.5 rounded-xl bg-primary/50 px-5 text-sm font-semibold text-on-primary"
               >
                 <span className="material-symbols-outlined text-[18px]">check_circle</span>

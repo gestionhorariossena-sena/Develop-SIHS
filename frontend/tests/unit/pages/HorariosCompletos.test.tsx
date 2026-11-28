@@ -70,10 +70,8 @@ const HORARIO_BORRADOR: Horario = {
 }
 
 const apiGetMock = vi.fn()
-const apiPatchMock = vi.fn()
 vi.mock('../../../src/services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
-  apiPatch: (...args: unknown[]) => apiPatchMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -88,6 +86,8 @@ function mockeaBase(horarios: Horario[] = [HORARIO]) {
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
     if (path === '/horarios/auditoria-cruces') return Promise.resolve({ conflictos: [], resumen: { totalCruces: 0, tipos: [] } })
     if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA_SEMANAL)
+    if (path === '/resultados-aprendizaje/') return Promise.resolve([{ idResultado: 1, codigo: 'CPL18', descripcion: 'Gestión de inventarios', idCompetencia: 1, idGuia: null, horasAsignadas: null }])
+    if (path === '/jornadas/') return Promise.resolve([{ idJornada: 1, nombreJornada: 'Mañana' }])
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -215,7 +215,7 @@ describe('HorariosCompletos', () => {
     expect(screen.getByRole('link', { name: 'Calendario' })).toHaveAttribute('href', expect.stringContaining('idHorario=7'))
   })
 
-  it('clic en una fila abre el DrawerHorario a la derecha sin retirar la tabla', async () => {
+  it('clic en una fila abre una tarjeta central sin retirar la tabla', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
@@ -224,9 +224,9 @@ describe('HorariosCompletos', () => {
     await usuario.click(screen.getAllByText('3228973 B')[0])
 
     const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
-    expect(drawer).toHaveClass('fixed', 'right-0', 'top-0', 'h-screen', 'max-w-[460px]')
+    expect(drawer).toHaveClass('max-w-5xl', 'rounded-2xl')
     expect(within(drawer).getByText('Bloque #7 · Ficha 3228973 B')).toBeInTheDocument()
-    expect(within(drawer).getByRole('tab', { name: 'Información', selected: true })).toBeInTheDocument()
+    expect(within(drawer).getByRole('link', { name: 'Ver registro de cambios' })).toHaveAttribute('href', '/horarios/historial?idHorario=7')
     expect(within(drawer).getByText('Competencia')).toBeInTheDocument()
     expect(within(drawer).getByText('Resultado de aprendizaje (RAP)')).toBeInTheDocument()
     expect(within(drawer).getByText('Carga semanal')).toBeInTheDocument()
@@ -237,17 +237,15 @@ describe('HorariosCompletos', () => {
     expect(screen.getAllByRole('columnheader')).toHaveLength(8)
   })
 
-  it('muestra el motivo del error al despublicar en lugar de ignorar el fallo', async () => {
+  it('centraliza la publicación y edición del bloque en su tarjeta de gestión', async () => {
     mockeaBase()
-    apiPatchMock.mockRejectedValueOnce(new Error('El servidor rechazó el cambio de publicación.'))
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
-    await usuario.click(screen.getByRole('tab', { name: 'Publicación' }))
-    await usuario.click(await screen.findByRole('button', { name: 'Despublicar' }))
-    expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
-    expect(await screen.findByText('No se pudo cambiar la publicación. Intenta de nuevo.')).toBeInTheDocument()
-    expect(screen.getAllByText('Publicado').length).toBeGreaterThan(0)
+    const detalle = screen.getByRole('dialog', { name: 'Horario #7' })
+    expect(within(detalle).getByText('Visible para el instructor')).toBeInTheDocument()
+    expect(within(detalle).getByRole('button', { name: 'Retirar de publicación' })).toBeInTheDocument()
+    expect(within(detalle).getByRole('button', { name: 'Modificar bloque' })).toBeInTheDocument()
   })
 
   it('permite expandir un horario con el teclado y anuncia su estado', async () => {
@@ -263,7 +261,7 @@ describe('HorariosCompletos', () => {
     expect(boton).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('la pestaña Relaciones enlaza las perspectivas de ficha, instructor y ambiente', async () => {
+  it('enlaza las perspectivas de ficha, instructor y ambiente', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
@@ -271,7 +269,6 @@ describe('HorariosCompletos', () => {
 
     await usuario.click(screen.getAllByText('3228973 B')[0])
     await screen.findByRole('dialog', { name: 'Horario #7' })
-    await usuario.click(screen.getByRole('tab', { name: 'Relaciones' }))
 
     // SCRUM-204: construido con escribirGestionarHorariosQuery (el mismo
     // escritor canónico que usa toda la app), no con un string armado a
@@ -284,22 +281,12 @@ describe('HorariosCompletos', () => {
     expect(screen.getByText('Validación de cruces superada.')).toBeInTheDocument()
   })
 
-  it('muestra "Publicado" y permite despublicar un horario individual', async () => {
+  it('un horario publicado permite gestionarse desde su detalle', async () => {
     mockeaBase()
-    apiPatchMock.mockResolvedValue({ ...HORARIO, publicado: false })
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
-    await screen.findByText('3228973 B')
-
-    await usuario.click(screen.getAllByText('3228973 B')[0])
-    expect((await screen.findAllByText('Publicado')).length).toBeGreaterThan(0)
-
-    await usuario.click(screen.getByRole('tab', { name: 'Publicación' }))
-    await usuario.click(screen.getByRole('button', { name: 'Despublicar' }))
-
-    expect(apiPatchMock).toHaveBeenCalledWith('/horarios/7/estado', { publicado: false })
-    expect((await screen.findAllByText('Borrador')).length).toBeGreaterThan(0)
-    expect(screen.getByRole('button', { name: 'Publicar ahora' })).toBeInTheDocument()
+    await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+    expect(screen.getByRole('button', { name: 'Retirar de publicación' })).toBeInTheDocument()
   })
 
   it('cierra el drawer con X y con Escape', async () => {
@@ -324,16 +311,23 @@ describe('HorariosCompletos', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('las pestañas muestran su contenido y el footer conserva las acciones principales', async () => {
+  it('reúne edición y publicación en la tarjeta central', async () => {
     mockeaBase()
     const usuario = userEvent.setup()
     renderConProviders(<HorariosCompletos />)
     await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+    expect(screen.getByRole('button', { name: 'Modificar bloque' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Retirar de publicación' })).toBeInTheDocument()
+  })
 
-    await usuario.click(screen.getByRole('tab', { name: 'Relaciones' }))
-    expect(screen.getByRole('link', { name: 'Gestionar publicación' })).toHaveAttribute('href', '/horarios/publicaciones-programadas?idHorario=7')
-    await usuario.click(screen.getByRole('tab', { name: 'Acciones' }))
-    expect(screen.getAllByRole('link', { name: 'Editar bloque' })[0]).toHaveAttribute('href', '/horarios/historial?id=7')
+  it('muestra la cuadrícula del bloque importado y sus acciones en la tarjeta', async () => {
+    mockeaBase([{ ...HORARIO, horaInicio: '07:00:00', horaFin: '09:00:00', publicado: false }])
+    const usuario = userEvent.setup()
+    renderConProviders(<HorariosCompletos />)
+    await usuario.click(await screen.findByRole('button', { name: 'Ver detalle del horario de la ficha 3228973 B' }))
+    const tarjeta = screen.getByRole('dialog', { name: 'Horario #7' })
+    expect(within(tarjeta).getByRole('region', { name: 'Ubicación en la semana' })).toBeInTheDocument()
+    expect(within(tarjeta).getByRole('button', { name: 'Publicar bloque' })).toBeInTheDocument()
   })
 
   it('con ?id= en la URL, abre el drawer directo (deep link desde Calendario general)', async () => {
@@ -394,7 +388,7 @@ describe('HorariosCompletos', () => {
     // la tarjeta de detalle, si el grid lo hubiera perdido).
     await usuario.click(screen.getAllByText('3228973 B')[0])
     const drawer = await screen.findByRole('dialog', { name: 'Horario #7' })
-    expect(within(drawer).getAllByText('Gestión de inventarios').length).toBeGreaterThan(1)
+    expect(within(drawer).getByText(/CPL18 · Gestión de inventarios/)).toBeInTheDocument()
   })
 
   // SCRUM-196: "bloque creado aparece en la perspectiva correspondiente" —

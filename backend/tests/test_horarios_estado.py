@@ -5,6 +5,7 @@ from app.models.ambiente import Ambiente
 from app.models.coordinacion import Coordinacion
 from app.models.dia_semana import DiaSemana
 from app.models.ficha import Ficha
+from app.models.ficha_usuario import FichaUsuario
 from app.models.horario import Horario, horario_dia
 from app.models.jornada import Jornada
 from app.models.programa import Programa
@@ -26,6 +27,7 @@ def _crear_tablas_extra(db_session):
         Jornada.__table__,
         DiaSemana.__table__,
         Ficha.__table__,
+        FichaUsuario.__table__,
         ResultadoAprendizaje.__table__,
         Horario.__table__,
         horario_dia,
@@ -220,3 +222,57 @@ def test_mis_horarios_filtra_por_rango_de_fechas_del_trimestre(client, db_sessio
     assert fuera.status_code == 200
     assert fuera.json() == []
     assert rango_incompleto.status_code == 422
+
+
+def test_publicar_lote_de_instructor_publica_todos_los_borradores_del_periodo(
+    db_session, monkeypatch,
+):
+    from app.services.horario_service import HorarioService
+    from app.services.notificacion_service import NotificacionService
+    from app.services.auditoria_service import AuditoriaService
+
+    _crear_tablas_extra(db_session)
+    instructor, ficha = _catalogos_base(db_session)
+    otro = Usuario(idUsuario=uuid.uuid4(), nombre="Otra instructora", email="otra@example.com")
+    db_session.add(otro)
+    db_session.commit()
+
+    primer = _crear_horario(db_session, 301, instructor, ficha)
+    segundo = _crear_horario(db_session, 302, instructor, ficha, dias=(2,))
+    tercero = _crear_horario(db_session, 303, otro, ficha, dias=(3,))
+    for horario in (primer, segundo, tercero):
+        horario.publicado = False
+    db_session.commit()
+
+    monkeypatch.setattr(HorarioService, "_publicaciones_programadas", lambda *_args, **_kwargs: [])
+    monkeypatch.setattr(NotificacionService, "crear_agrupada_transaccional", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(AuditoriaService, "registrar_transaccional", lambda *_args, **_kwargs: None)
+
+    resultado = HorarioService.publicar_lote(
+        db_session, id_trimestre=1, id_instructor=instructor.idUsuario,
+    )
+
+    assert resultado == {"publicados": 2, "instructores": 1, "fichas": 1}
+    db_session.expire_all()
+    assert db_session.get(Horario, 301).publicado is True
+    assert db_session.get(Horario, 302).publicado is True
+    assert db_session.get(Horario, 303).publicado is False
+    assert HorarioService.publicar_lote(db_session, id_trimestre=1, id_instructor=instructor.idUsuario)["publicados"] == 0
+
+
+def test_publicar_lote_no_publica_nada_si_hay_programacion_pendiente(db_session, monkeypatch):
+    from app.services.horario_service import HorarioService, PublicacionProgramadaPendienteError
+    import pytest
+
+    _crear_tablas_extra(db_session)
+    instructor, ficha = _catalogos_base(db_session)
+    horario = _crear_horario(db_session, 400, instructor, ficha)
+    horario.publicado = False
+    db_session.commit()
+
+    monkeypatch.setattr(HorarioService, "_publicaciones_programadas", lambda *_args, **_kwargs: [object()])
+
+    with pytest.raises(PublicacionProgramadaPendienteError):
+        HorarioService.publicar_lote(db_session, id_trimestre=1)
+    db_session.expire_all()
+    assert db_session.get(Horario, 400).publicado is False

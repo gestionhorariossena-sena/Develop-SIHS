@@ -54,6 +54,7 @@ function mockearRespuestas({
   ficha,
   fichaError,
   horarios = [],
+  horarioError,
   asistencia,
   avisos = [],
   notificaciones = [],
@@ -61,6 +62,7 @@ function mockearRespuestas({
   ficha?: Ficha
   fichaError?: InstanceType<typeof ApiErrorMock>
   horarios?: Horario[]
+  horarioError?: Error
   asistencia?: MiAsistencia
   avisos?: Aviso[]
   notificaciones?: Notificacion[]
@@ -70,7 +72,7 @@ function mockearRespuestas({
     if (path === '/ficha-usuario/mi-ficha') {
       return fichaError ? Promise.reject(fichaError) : Promise.resolve(ficha)
     }
-    if (path === '/ficha-usuario/mi-horario') return Promise.resolve(horarios)
+    if (path === '/ficha-usuario/mi-horario') return horarioError ? Promise.reject(horarioError) : Promise.resolve(horarios)
     if (path === '/asistencias/mias') {
       return asistencia ? Promise.resolve(asistencia) : Promise.reject(new ApiErrorMock(404, 'Sin asistencia'))
     }
@@ -137,11 +139,11 @@ const NOTIFICACION: Notificacion = {
 }
 
 describe('DashboardAprendiz', () => {
-  it('saluda por el nombre de pila y muestra la ficha vinculada', async () => {
+  it('muestra la jornada y la ficha vinculada', async () => {
     mockearRespuestas({ ficha: FICHA })
     renderConProviders(<DashboardAprendiz />)
 
-    expect(await screen.findByText('Hola, Sara')).toBeInTheDocument()
+    expect(await screen.findByText('Mi jornada')).toBeInTheDocument()
     expect(await screen.findByText('Ficha 2874521')).toBeInTheDocument()
     expect(screen.getByText('Análisis y Desarrollo de Software')).toBeInTheDocument()
   })
@@ -150,15 +152,25 @@ describe('DashboardAprendiz', () => {
     mockearRespuestas({ fichaError: new ApiErrorMock(404, 'No tienes una ficha vinculada') })
     renderConProviders(<DashboardAprendiz />)
 
-    await screen.findByText('Hola, Sara')
+    await screen.findByText('Mi jornada')
     await waitFor(() => expect(screen.queryByText(/^Ficha /)).not.toBeInTheDocument())
+    expect(screen.getByRole('link', { name: 'Vincula tu ficha' })).toHaveAttribute('href', '/mi-horario-aprendiz')
+  })
+
+  it('distingue un fallo de carga de un horario sin clases', async () => {
+    mockearRespuestas({ ficha: FICHA, horarioError: new ApiErrorMock(503, 'Servicio no disponible') })
+    renderConProviders(<DashboardAprendiz />)
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar tu horario')
+    expect(screen.getByText('Horario temporalmente no disponible')).toBeInTheDocument()
+    expect(screen.queryByText('Todavía no tienes clases programadas.')).not.toBeInTheDocument()
   })
 
   it('enlaza a las 4 pantallas del Aprendiz', async () => {
     mockearRespuestas({ ficha: FICHA })
     renderConProviders(<DashboardAprendiz />)
 
-    await screen.findByText('Hola, Sara')
+    await screen.findByText('Mi jornada')
 
     // Se acota al <main> porque el sidebar (AppShell) también linkea a
     // estas mismas rutas dentro del grupo "MI TRABAJO".
@@ -185,11 +197,11 @@ describe('DashboardAprendiz', () => {
     })
     renderConProviders(<DashboardAprendiz />)
 
-    await screen.findByText('Hola, Sara')
+    await screen.findByText('Mi jornada')
 
     // Franja de asistencia.
     expect(await screen.findByText('92%')).toBeInTheDocument()
-    expect(screen.getByText('Al día')).toBeInTheDocument()
+    expect(screen.getByText(/Al día · mínimo 85%/)).toBeInTheDocument()
 
     // Preview de "Mi Horario": próxima clase.
     expect(screen.getByText('Programación Web')).toBeInTheDocument()

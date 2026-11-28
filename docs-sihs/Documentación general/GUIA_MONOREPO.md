@@ -2,6 +2,8 @@
 
 Documento para mantener coherencia en el desarrollo de un monorepo con Backend + Web + Móvil.
 
+> **Nota de vigencia (2026-11-21):** el esquema de ramas `feature/*`, `develop` y releases de abajo es una guía general/histórica, **no una instrucción para cambiar de rama en el trabajo actual**. Para el ciclo en curso, todas las ediciones y commits se hacen únicamente en `fixes-multiples-nicol`, sin checkout, merge ni push a `main` o `develop` salvo autorización expresa. Revisa [README raíz](../../README.md) antes de usar comandos de ejemplos históricos.
+
 ---
 
 ## 📋 Estructura de Ramas

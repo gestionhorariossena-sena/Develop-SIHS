@@ -53,11 +53,11 @@ def test_post_sesion_200_devuelve_exactamente_guardadas_corregidas_y_eraPrimeraV
     assert r.json() == {"guardadas": 1, "corregidas": 0, "eraPrimeraVez": True}
 
 
-def test_post_sesion_acepta_lista_vacia_de_marcas(client, escenario):
+def test_post_sesion_422_si_faltan_todas_las_marcas(client, escenario):
     r = client.post(f"{URL}/sesion", json=_cuerpo(escenario, marcas=[]), headers=escenario["headers"])
 
-    assert r.status_code == 200
-    assert r.json() == {"guardadas": 0, "corregidas": 0, "eraPrimeraVez": True}
+    assert r.status_code == 422
+    assert "Marca a todos" in r.json()["detail"]
 
 
 def test_get_mias_200_devuelve_exactamente_resumen_y_sesiones(client, escenario, fake_supabase):

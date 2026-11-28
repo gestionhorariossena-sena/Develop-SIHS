@@ -219,8 +219,8 @@ export function NotificacionesPanel({
   }
 
   return (
-    <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-xl border border-outline-variant bg-surface-container-lowest shadow-xl dark:border-slate-700 dark:bg-slate-800">
-      <span className="absolute -top-1 right-3 h-2 w-2 rotate-45 border-l border-t border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800" />
+    <div role="region" aria-label="Panel de notificaciones" className="fixed inset-x-2 top-16 z-50 mt-2 rounded-xl border border-outline-variant bg-surface-container-lowest shadow-lg sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:w-80 dark:border-slate-700 dark:bg-slate-800">
+      <span className="absolute -top-1 right-3 hidden h-2 w-2 rotate-45 sm:block border-l border-t border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800" />
 
       <div className="flex items-center justify-between gap-3 border-b border-outline-variant px-4 py-3 dark:border-slate-700">
         <div>

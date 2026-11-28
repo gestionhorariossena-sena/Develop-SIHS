@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { PanelCargaMasiva, TituloPasoCarga } from '../components/cargaMasiva/FlujoCargaMasiva'
+import { ejecutarCargaMasiva, botonConfirmarCarga, estiloArchivoCarga } from '../components/cargaMasiva/utilidadesCargaMasiva'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { apiGet, apiPost, apiPostForm, ApiError } from '../services/api'
 import type {
@@ -9,6 +11,7 @@ import type {
   Ficha,
   PreviewCurriculoResponse,
   Programa,
+  Usuario,
   ResultadoAprendizajeCreate,
 } from '../types/api'
 
@@ -21,6 +24,7 @@ export function Programas() {
   const [searchParams] = useSearchParams()
   const idDesdeUrl = searchParams.get('id')
   const [programas, setProgramas] = useState<Programa[]>([])
+  const [perfil, setPerfil] = useState<Usuario | null>(null)
   const [fichas, setFichas] = useState<Ficha[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [nivelFormacion, setNivelFormacion] = useState('todos')
@@ -62,6 +66,7 @@ export function Programas() {
     apiGet<Ficha[]>('/fichas/')
       .then(setFichas)
       .catch(() => {})
+    apiGet<Usuario>('/usuarios/me').then(setPerfil).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar; idDesdeUrl no cambia en la vida del componente.
   }, [])
 
@@ -109,14 +114,14 @@ export function Programas() {
     let resultadosCreados = 0
     const errores: string[] = []
 
-    for (const competencia of previewCurriculo.competencias) {
-      try {
+    const resumenCompetencias = await ejecutarCargaMasiva(
+      previewCurriculo.competencias,
+      async (competencia) => {
         const creada = await apiPost<CompetenciaFormacionResponse>('/competencias-formacion/', {
           descripcion: competencia.descripcion,
           idPrograma: seleccionado.idPrograma,
         } satisfies CompetenciaFormacionCreate)
         competenciasCreadas++
-
         for (const resultado of competencia.resultados) {
           try {
             await apiPost('/resultados-aprendizaje/', {
@@ -130,10 +135,15 @@ export function Programas() {
             errores.push(error instanceof ApiError ? error.message : 'No se pudo crear un resultado.')
           }
         }
-      } catch (error) {
-        errores.push(error instanceof ApiError ? error.message : 'No se pudo crear una competencia.')
-      }
+      },
+      (parciales) => setResultadoImportacion(`Procesadas ${parciales.length} de ${previewCurriculo.competencias.length} competencias…`),
+      competencia => competencia.descripcion.split('\n')[0],
+    )
+    for (const fallo of resumenCompetencias.filter(item => !item.ok)) {
+      errores.push(fallo.mensaje ?? 'No se pudo importar la competencia.')
     }
+
+
 
     setResultadoImportacion(
       `${competenciasCreadas} competencias y ${resultadosCreados} resultados creados.` +
@@ -165,7 +175,7 @@ export function Programas() {
   const visiblesPagina = visibles.slice(inicioPagina, inicioPagina + POR_PAGINA)
 
   return (
-    <AppShell activo="Programas">
+    <AppShell activo="Datos académicos">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="mb-1 text-2xl font-bold text-on-surface dark:text-slate-100">Programas</h1>
@@ -308,32 +318,33 @@ export function Programas() {
             <div><dt className="text-on-surface-variant dark:text-slate-400">Fichas asociadas</dt><dd className="mt-1 font-medium text-on-surface dark:text-slate-100">{fichasDelSeleccionado.length}</dd></div>
           </dl>
 
+          <div className="flex flex-wrap gap-2 border-t border-outline-variant pt-4">
+            <Link to={`/tematicas?idPrograma=${seleccionado.idPrograma}`} className="rounded-md border border-outline px-3 py-2 text-sm font-medium text-on-surface hover:bg-surface-container">Ver temáticas del programa</Link>
+            {perfil?.roles.some((rol) => rol.nombre === 'Administrador') && <Link to={`/fichas?crear=1&idPrograma=${seleccionado.idPrograma}`} className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-on-primary hover:bg-on-primary-container">Crear ficha para este programa</Link>}
+          </div>
+
           <SeccionDrawer titulo="Competencias y resultados de aprendizaje">
-            <p className="mb-3 text-sm text-on-surface-variant dark:text-slate-400">
-              Sube el Formato de Planeación Pedagógica de este programa (Excel real de SENA, columnas "COMPETENCIA" /
-              "RESULTADOS DE APRENDIZAJE") para cargar su contenido curricular -- sin esto, el asistente de
-              programación no tiene qué programar en las fichas de este programa. Requiere rol Administrador.
-            </p>
+            <PanelCargaMasiva
+              titulo="Carga masiva del plan curricular"
+              descripcion={`Importa competencias y resultados desde el Excel de planeación pedagógica para ${seleccionado.nombrePrograma}. Solo Administrador puede confirmar.`}
+              columnas="COMPETENCIA, RESULTADOS DE APRENDIZAJE"
+              error={errorCurriculo}
+              mensaje={resultadoImportacion}
+            >
+              <TituloPasoCarga numero={1} titulo="Seleccionar archivo" detalle="Formato de Planeación Pedagógica SENA · Excel." />
             <input
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx"
               onChange={(e) => void subirCurriculo(e)}
               disabled={subiendoCurriculo}
               aria-label="Seleccionar archivo de plan curricular"
-              className="block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-sena-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sena-700 dark:text-slate-300 dark:file:bg-sena-950/50 dark:file:text-sena-400"
+              className={estiloArchivoCarga}
             />
             {subiendoCurriculo && <p className="mt-2 text-sm text-on-surface-variant dark:text-slate-400">Leyendo el archivo…</p>}
-            {errorCurriculo && (
-              <p className="mt-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{errorCurriculo}</p>
-            )}
-            {resultadoImportacion && (
-              <p className="mt-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300">
-                {resultadoImportacion}
-              </p>
-            )}
 
             {previewCurriculo && (
-              <div className="mt-3 rounded-xl border border-outline-variant p-3 dark:border-slate-700">
+              <div className="mt-3 space-y-3 border-t border-outline-variant pt-4">
+                <TituloPasoCarga numero={2} titulo="Revisar datos" detalle="Aún no se han guardado competencias ni resultados. Confirma el contenido antes de importar." />
                 <p className="mb-2 text-sm font-semibold text-on-surface dark:text-slate-100">
                   Se encontraron {previewCurriculo.totalCompetencias} competencias y {previewCurriculo.totalResultados}{' '}
                   resultados de aprendizaje -- nada se ha guardado todavía.
@@ -360,12 +371,18 @@ export function Programas() {
                   type="button"
                   disabled={importandoCurriculo}
                   onClick={() => void confirmarImportacionCurriculo()}
-                  className="mt-3 rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className={botonConfirmarCarga}
                 >
                   {importandoCurriculo ? 'Creando…' : `Confirmar e importar a ${seleccionado.nombrePrograma}`}
                 </button>
               </div>
             )}
+            {!previewCurriculo && resultadoImportacion && !importandoCurriculo && (
+              <div className="border-t border-outline-variant pt-4">
+                <TituloPasoCarga numero={3} titulo="Resultado de la importación" detalle={resultadoImportacion} />
+              </div>
+            )}
+              </PanelCargaMasiva>
           </SeccionDrawer>
 
           <SeccionDrawer titulo="Fichas y períodos académicos">

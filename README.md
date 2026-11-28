@@ -1,4 +1,172 @@
-# 🧪 SIHS · Semana 4 — El API desde cuatro ángulos
+# SIHS — Sistema Integral de Horarios SENA
+
+Monorepositorio de gestión de programación académica. Contiene API FastAPI, aplicación web React/TypeScript, cliente Flutter y recursos para pruebas y demostraciones locales.
+
+> **Estado de esta guía (22 de noviembre de 2026):** describe la implementación presente en `fixes-multiples-nicol`, el objetivo de la demo y las comprobaciones pendientes. El informe de Codex del 22/11 identificó un desajuste **entre Compose declarado y los contenedores activos**: no equivale a una prueba de funcionamiento superada. El equipo/Codex puede estar corrigiendo el entorno simultáneamente; antes de actuar, volver a inspeccionar el estado real.
+
+> **Cambio del 22/11/2026 — CSV exclusivo para instructores:** el importador `/instructores/alta/importar` ya **no** recibe XLSX. La primera fila canónica es `nombre,correo,documento,contrato,horas,sigla` (sigla opcional; las otras cinco obligatorias). Admite coma o punto y coma, BOM UTF-8, Windows-1252/Latin-1, comillas y saltos de línea CSV válidos. Acepta encabezados equivalentes `tipoContrato`/`tipo_contrato`, `horasContratadasSemana`/`horas_contratadas_semana`, `email`. Convierte internamente a `tipoContrato` y `horasContratadasSemana`. Límite: **2 MB y 200 instructores**. El archivo del kit ahora es **`01_instructores_alta_masiva.csv`**. El registro individual sigue disponible. **No se cambiaron los formatos de Aprendices/Currículo/IA (XLSX) ni Fichas/Ambientes (CSV).**
+
+## Objetivo de este ciclo: prueba integral antes de la sustentación
+
+Queremos demostrar con **datos piloto coherentes y reemplazables** el recorrido de SIHS: preparar catálogos académicos → importar instructores, aprendices, fichas, ambientes y plan curricular → comprobar cuentas y vínculos → generar, revisar, guardar y publicar horarios (manual o asistido con IA) → consultar los resultados según cada rol. Esta fase usa **Docker + Supabase Auth + PostgreSQL locales**: los Excel son de prueba, no registros institucionales oficiales. La IA **no reemplaza** la carga de los catálogos de referencia.
+
+No confundir los tres conceptos:
+
+- **Carga masiva de instructores:** crea cuentas de Instructor y sus datos contractuales a partir de un `.csv`, con invitación de acceso. **No importa horas docentes asignadas**.
+- **Carga masiva de aprendices:** crea cuentas de Aprendiz y las vincula por `codigoFicha` a fichas **ya existentes**. No importar contraseñas provenientes del archivo.
+- **Exportar carga docente:** desde Instructores descarga un **CSV de salida**, calculado a partir de horarios existentes. **No recibe Excel ni asigna clases**.
+
+### Vistas actuales y permisos
+
+| Entrada desde la web | Ruta / archivo principal | Archivo que recibe o función | Permisos |
+| --- | --- | --- | --- |
+| Datos académicos → **Aprendices** | `/aprendices` · `frontend/src/pages/Aprendices.tsx` | Directorio de nombre, correo, documento, ficha, programa, estado, acceso; búsqueda, filtro y paginación | Administrador / Coordinador |
+| Aprendices → **Carga masiva** | `/aprendices/carga-masiva` · `frontend/src/pages/CargaAprendices.tsx` | Excel `.xlsx` → revisión de filas → confirmación individual → reporte | Administrador / Coordinador |
+| Instructores → **Cargar desde CSV** | `/instructores/registrar?modo=excel` · `frontend/src/pages/AltaInstructores.tsx` | CSV `.csv` con `nombre,correo,documento,contrato,horas` obligatorios y `sigla` opcional | Administrador / Coordinador |
+| Instructores → **Exportar carga docente** | `/instructores` · `frontend/src/utils/exportarCargaDocente.ts` | Descarga `.csv` con horas calculadas; **no es importador** | Gestión |
+| Fichas → **Carga masiva** | `/fichas` · `frontend/src/pages/Fichas.tsx` | CSV: `codigoFicha,codigoPrograma,trimestre,sede` (sede opcional) | Creación según permiso real de API |
+| Ambientes → **Carga masiva** | `/ambientes` · `frontend/src/pages/Ambientes.tsx` | CSV: `numeroAmbiente,nombreAmbiente,tipoAmbiente,sede,estadoAmbiente` | Según permisos de API |
+| Programas → plan curricular | `/programas` · `frontend/src/pages/Programas.tsx` | Excel pedagógico con competencias y resultados de aprendizaje | Administrador |
+| Temáticas → **Carga masiva** | `/tematicas` · `frontend/src/components/tematicas/CargaMasivaTematicas.tsx` | **El mismo Excel curricular que Programas**; seleccionar programa; reutiliza competencias/resultados coincidentes por descripción | Administrador |
+| Programación → **Importar con IA** | `/horarios/asistente-ia` · `frontend/src/pages/AsistenteHorarios.tsx` | Maestro de fichas para generar propuesta; wizard propio, distinto del componente genérico de cargas | Administrador / Coordinador |
+
+**Importante:** Programas y Temáticas son **dos entradas al mismo modelo curricular** (competencia → resultado → fase/horas). Importar el mismo contenido **una sola vez**; no son catálogos independientes. Para la IA, el programa, las fichas, los resultados, los instructores y los ambientes deben existir antes de generar la propuesta. La fase (`numeroFase`) afecta qué resultados se seleccionan para una ficha.
+
+Los cargadores estándar comparten `frontend/src/components/cargaMasiva/FlujoCargaMasiva.tsx`: selección, **vista previa sin escritura**, confirmación, resultados por registro. El parser curricular reside en `backend/app/services/curriculo_service.py`; la creación de cuentas en `backend/app/api/v1/alta_instructores.py` y `backend/app/api/v1/alta_aprendices.py`. El asistente de IA **no** se unificó con los cargadores de catálogo.
+
+### Archivos piloto usados para probar el flujo
+
+Los siguientes son **artefactos de prueba compartidos por separado en la conversación**, no archivos que deban suponerse versionados en GitHub. Conservarlos fuera del repositorio si incluyen correos personales:
+
+| Orden | Nombre del archivo piloto | Dónde cargarlo |
+| --- | --- | --- |
+| 01 | `01_instructores_alta_masiva.csv` | Instructores → Cargar desde Excel |
+| 02 | `02_ambientes_importar.csv` | Ambientes → Carga masiva |
+| 03 | `03_fichas_importar.csv` | Fichas → Carga masiva |
+| 04 | `04_curriculo_programa_DEMO_ADSO.xlsx` | **Temáticas → Carga masiva** seleccionando `DEMO-ADSO`, **o** Programas → plan curricular (no ambos) |
+| 05 | `05_maestro_fichas_para_asistente_IA.xlsx` | Programación → Importar con IA |
+| 06 | `06_maestro_piloto_adaptado_2_fichas_4_instructores.xlsx` | Referencia de coordinación con varias hojas; **no** sustituye la importación separada de catálogos |
+| 07 | `SIHS_aprendices_desde_semilla_importable.xlsx` | Aprendices → Carga masiva (sustituye el archivo antiguo llamado `07_aprendices_datos_de_prueba_NO_IMPORTABLE.xlsx`) |
+| 08 | `08_aprendices_semilla_local.sql` | Alternativa **opcional** de prueba directa en DB; **no ejecutarla si se utilizó el Excel de aprendices** |
+| — | `00_LEEME_ORDEN_DE_PRUEBAS.md` | Guía del paquete externo; usar junto a esta guía vigente |
+
+El lote piloto usa fichas `3407178` y `3407179`, programa `DEMO-ADSO`, período `Demo vigente`, sede `Sede Demo SIHS`, cuatro instructores de prueba y cuatro aprendices sintéticos. Un instructor puede tener un correo real de pruebas: **no subir ese dato al repositorio**. Los `@example.com` no entregan mensajes reales; se revisan **en el buzón local**, si SMTP funciona. Los correos `@sihs.local` de una semilla SQL pueden no superar la validación `EmailStr` del cargador: para el Excel importable usar direcciones `@example.com`.
+
+### Arquitectura local y función del SMTP
+
+```text
+Navegador (http://127.0.0.1:5173)
+  ├─ React/Vite → FastAPI (http://127.0.0.1:8000/api/v1)
+  └─ supabase-js → Supabase API/Auth (http://127.0.0.1:54321)
+
+SIHS Compose (red sihs-demo_default):
+  backend (FastAPI) ── host.docker.internal:54322 ── PostgreSQL local Supabase
+                   ├─ host.docker.internal:54321 ──── Supabase Auth/API
+                   └─ mailpit:1025 ───────────────── Mailpit dedicado (solo demo)
+
+Supabase CLI (red supabase_network_sihs):
+  PostgreSQL, Auth, REST, Studio (54323), su buzón nativo (UI 54324)
+```
+
+**SMTP es Simple Mail Transfer Protocol**: el backend lo usa para enviar el correo con la **contraseña temporal generada en servidor** a las cuentas nuevas de instructores y aprendices. **Supabase Auth** crea/autentica la identidad, **PostgreSQL** registra perfil/rol/ficha, **SMTP/Mailpit** captura la invitación. Las contraseñas **no** se importan desde Excel ni se muestran en la vista previa; el usuario debe cambiarlas en el primer ingreso. Si el envío falla después de crear la identidad, puede quedar una cuenta con correo pendiente: verificar el resultado por fila antes de repetir.
+
+**Configuración deseada del Compose actual (`compose.demo.yml`):** `APP_ENV=demo`, `SMTP_HOST=mailpit`, `SMTP_PORT=1025`, `SMTP_USER=""`, `SMTP_PASSWORD=""`. En esa topología `EmailService.correo_demo_local()` omite STARTTLS y autenticación **solo en modo demo**. Su interfaz está en **http://127.0.0.1:8025**. Los correos nativos del Supabase CLI se inspeccionan **por separado** en **http://127.0.0.1:54324**. No son el mismo buzón. En otros entornos se requiere SMTP con credenciales y STARTTLS según `backend/app/services/email_service.py`; no usar el SMTP anónimo de demo en producción.
+
+**Hallazgo reproducido por diagnóstico local de Codex (22/11/2026):** frontend, FastAPI, PostgreSQL y Supabase están operativos; pero en los contenedores observados **no existía el Mailpit dedicado**, no figuraban las variables SMTP de Compose y FastAPI usaba los valores por defecto `smtp.gmail.com:587` sin credenciales. Esto explica el aviso **«No es posible crear cuentas todavía: el correo SMTP no está configurado»**. Se confirmó la deriva entre **configuración declarada y contenedores activos**, no la resolución posterior de ella. La conectividad con Supabase local estaba disponible; eso **no demuestra** que todos los intentos de alta funcionen hasta probar la petición real.
+
+### Arranque y verificación para el equipo / Codex
+
+Usar desde la raíz del repositorio:
+
+```bash
+git branch --show-current
+# Verifica que estés en fixes-multiples-nicol antes de modificar archivos.
+make demo-up
+make demo-info
+docker compose -f compose.demo.yml ps
+curl -I http://127.0.0.1:8025
+```
+
+`make demo-up` invoca **`scripts/demo-up.sh`**, que arranca/verifica Supabase CLI, obtiene `API_URL`, `DB_URL`, `ANON_KEY` y `SERVICE_ROLE_KEY` a través de `supabase status -o env` y las inyecta como variables `DEMO_*` antes de lanzar Compose. **No ejecutar `docker compose -f compose.demo.yml up` aisladamente** si esas variables no están presentes: el diagnóstico detectó que pueden quedar vacías y desconectar FastAPI de la BD o de Auth. No imprimir ni copiar los valores de claves en informes o logs.
+
+Para verificar SMTP **sin mostrar secretos**:
+
+```bash
+docker exec sihs-demo-backend-1 python -c "from app.core.config import settings; from app.services.email_service import EmailService; print('APP_ENV:', settings.app_env); print('SMTP:', settings.smtp_host, settings.smtp_port); print('Configurado:', EmailService.smtp_configurado())"
+```
+
+En la configuración esperada, la salida incluye `APP_ENV: demo`, `SMTP: mailpit 1025` y `Configurado: True`. Comprobar también que el servicio `mailpit` aparece en `docker compose -f compose.demo.yml ps` y que la UI responde. **No hacer `make demo-reset` para reparar el SMTP:** ese comando elimina datos locales de prueba. Evitar modificar/detener el stack ajeno `brota-demo`.
+
+Secuencia de aceptación antes de la sustentación:
+
+1. **Revisar conectividad:** inicio de sesión con Administrador, salud de API, SMTP efectivo y Mailpit.
+2. **Instructores:** cargar archivo 01 CSV con los encabezados `nombre,correo,documento,contrato,horas,sigla`; validar 4 filas; confirmar; comprobar cuentas/roles y 4 invitaciones o estados específicos; ensayo de primer inicio y cambio de clave. Un 503 puede indicar SMTP o Supabase Admin; revisar el diagnóstico de la pantalla y los logs de backend.
+3. **Ambientes y Fichas:** cargar archivos 02 y 03; verificar programa `DEMO-ADSO`, período `Demo vigente` y sede `Sede Demo SIHS` existentes. Probar duplicados y mensajes de error por fila.
+4. **Aprendices:** usar el Excel 07 desde Aprendices → Carga masiva; ficha obligatoria; confirmar, comprobar listado por ficha, rol Aprendiz, correo y acceso.
+5. **Currículo:** cargar archivo 04 **en Temáticas o Programas**; verificar competencias, resultados, horas y fase 1. No duplicarlo.
+6. **Programación:** subir 05 al asistente con IA, revisar propuesta, conflictos y disponibilidad de instructores/ambientes; guardar/publicar; verificar desde Instructor y Aprendiz.
+
+**Estado de pruebas:** se incorporaron archivos de tests y comprobaciones de UI/API, pero no hay evidencia de que todo este circuito se haya ejecutado satisfactoriamente en Docker. Ejemplos de suites para ejecutar, desde sus respectivas carpetas:
+
+```bash
+cd backend
+python -m pytest tests/test_alta_instructores.py tests/test_alta_aprendices.py tests/test_email_demo.py -q
+cd ../frontend
+pnpm exec vitest run tests/unit/pages/AltaInstructores.test.tsx tests/unit/pages/CargaAprendices.test.tsx tests/unit/pages/Tematicas.test.tsx tests/unit/pages/Fichas.test.tsx
+pnpm lint
+pnpm build
+```
+
+Si alguna prueba falla, registrar **comando, salida sin secretos, ruta, estado HTTP, caso y corrección**; no marcar «resuelto» solamente por haber hecho commit. Los errores 500/503 requieren consultar `docker compose -f compose.demo.yml logs --tail=100 backend mailpit` sin compartir contraseñas.
+
+### Coordinación de trabajo paralelo
+
+En este ciclo los cambios GitHub deben hacerse desde la cuenta **Nicol (`nicolneira07-tech`) exclusivamente en `fixes-multiples-nicol`**. Codex está investigando/reparando el entorno de Docker simultáneamente: **antes de editar Compose, scripts de arranque, EmailService o README, comparar los cambios recientes y evitar sobrescribir trabajo no integrado**. No hacer `pull` destructivo, `reset`, `down -v`, cambios a `main/develop` ni despliegues sin coordinar. El archivo diagnóstico `DIAGNOSTICO_DOCKER_SIHS.md` fue aportado fuera del repositorio; documenta el estado observado el 22/11, que debe **revalidarse**, no asumirse permanente.
+
+Fuentes de detalle: [guía de cargas masivas](docs/GUIA_CARGAS_MASIVAS.md), [demo local](DEMO_LOCAL.md) y [frontend](frontend/README.md). Si estas guías anteriores discrepan sobre el SMTP, **la configuración efectiva debe compararse con `compose.demo.yml` y `EmailService`; nunca aplicar instrucciones históricas ciegamente**.
+
+---
+
+## Dónde empezar
+
+| Área | Documentación |
+| --- | --- |
+| Web (React, Vite, TypeScript y Tailwind v4) | [frontend/README.md](frontend/README.md) y [estructura](frontend/ESTRUCTURA.md) |
+| API (FastAPI, SQLAlchemy, Supabase Auth) | [backend/README.md](backend/README.md) |
+| App Flutter (instructor y aprendiz) | [mobile/README.md](mobile/README.md) |
+| Base de datos y migraciones | [database/README.md](database/README.md) |
+| Demo local desechable | [DEMO_LOCAL.md](DEMO_LOCAL.md) |
+| Guía visual vigente | [Guía de marca v3](docs-sihs/Diseño/GUIA_DE_MARCA.md) |
+| Arquitectura y requisitos | [Índice documental](docs-sihs/README.md) |
+| Testing | [docs-testing/README.md](docs-testing/README.md) |
+
+## Funcionamiento actual
+
+- **Gestión:** administrador y coordinador pueden consultar programación, crear horarios manualmente en `/horarios/nuevo`, consultar importación con IA en `/horarios/asistente-ia`, revisar horarios, calendario, conflictos, historial y publicaciones programadas.
+- **Datos académicos:** fichas, programas, temáticas, instructores, **aprendices**, ambientes y sedes.
+- **Autoservicio:** instructor y aprendiz cuentan con pantallas de horario y asistencia acordes a sus permisos; Flutter ofrece la consulta y las operaciones móviles descritas en su propia guía.
+- **Autorización:** Supabase Auth autentica; la API valida permisos por rol. Ocultar una ruta o menú en React no reemplaza los controles de backend.
+- **Carga inicial:** `AppRouter.tsx` usa importaciones diferidas de páginas y `App.tsx` muestra un fallback mediante `Suspense`.
+- **Horario:** el generador valida solapamientos de intervalos, incluidos cruces parciales. La prueba local con PostgreSQL está separada de las pruebas ordinarias.
+
+## Trabajar en la rama de este ciclo
+
+Las actualizaciones de este ciclo se hacen exclusivamente en `fixes-multiples-nicol`. No se debe cambiar de rama ni integrar en `main` o `develop` sin una instrucción explícita.
+
+```bash
+git branch --show-current
+git pull origin fixes-multiples-nicol
+```
+
+## Nota sobre documentación histórica
+
+El material de **Semana 4** que sigue fue redactado para el bootcamp de testing y conserva su valor como consigna histórica. **No describe el estado ni el flujo de ramas vigente de SIHS.**
+
+---
+
+## Archivo histórico: Semana 4
+
+### SIHS · Semana 4 — El API desde cuatro ángulos
 
 > **Rama base:** `semana-4` · **Equipo:** Nicol, David, Dayana y Edith · **Reto:** ≥4 tests nuevos de API por persona + 1 mutante detectado por persona · **Tiempo estimado:** 3 h · **Piso de cobertura:** 50 % en frontend y backend, **sin reducir umbrales heredados superiores**.
 
@@ -263,3 +431,5 @@ Proyecto académico desarrollado en el programa de formación ADSO del SENA.
 ## Pruebas de Semana 3
 
 Los tests de componentes de la Semana 3 (Login, Registro, NotificacionesPanel y RecuperarContrasena), su evidencia de mutación y la matriz de revisión están documentados en la [guía completa de Semana 3](./docs-testing/SEMANA_3_GUIA.md), los [informes de pruebas](./docs-testing/reportes/) y la [matriz de rotación](./docs/matriz-rotacion.md).
+
+La [colección Postman de la API](./postman/README.md) reúne pruebas de salud, validación y permisos para la demo local.

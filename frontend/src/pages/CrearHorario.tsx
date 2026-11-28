@@ -15,8 +15,8 @@ interface TareaBorrador {
 const NAVEGACION = [
   { etiqueta: 'Crear horario', ruta: '/horarios/crear', icono: 'add_circle' },
   { etiqueta: 'Gestionar horarios', ruta: '/horarios/completos', icono: 'calendar_month' },
-  { etiqueta: 'Historial y borradores', ruta: '/horarios/historial', icono: 'inventory_2' },
-  { etiqueta: 'Calendario y cruces', ruta: '/horarios/auditoria', icono: 'verified_user' },
+  { etiqueta: 'Registro y versiones', ruta: '/horarios/historial', icono: 'inventory_2' },
+  { etiqueta: 'Conflictos de horarios', ruta: '/horarios/auditoria', icono: 'verified_user' },
 ]
 
 const PASOS = [
@@ -90,7 +90,7 @@ export function CrearHorario() {
 
   return (
     <AppShell activo="Crear horario">
-      <div className="-mx-4 -mt-4 min-h-[calc(100vh-4rem)] bg-surface px-4 py-4 sm:-mx-6 sm:-mt-6 sm:px-6 lg:-mx-8 lg:-mt-8 lg:px-8">
+      <div className="bg-surface">
         <div className="mx-auto max-w-[1500px]">
           <div className="mb-4 flex items-center justify-between gap-3 border-b border-outline-variant pb-3 dark:border-slate-700">
             <div className="flex min-w-0 items-center gap-2 text-sm text-on-surface-variant dark:text-slate-400">
@@ -118,7 +118,7 @@ export function CrearHorario() {
               aria-label="Navegación de programación"
               className={`${menuMovilAbierto ? 'block' : 'hidden'} mb-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-3 shadow-sm lg:mb-0 lg:block lg:self-start dark:border-slate-700 dark:bg-slate-800`}
             >
-              <p className="px-3 pb-2 pt-1 text-xs font-bold uppercase tracking-wide text-on-surface-variant dark:text-slate-400">Programación</p>
+              <p className="px-3 pb-2 pt-1 text-xs font-medium text-on-surface-variant dark:text-slate-400">Programación</p>
               <nav className="space-y-1">
                 {NAVEGACION.map((item) => {
                   const activo = item.ruta === '/horarios/crear'
@@ -142,7 +142,7 @@ export function CrearHorario() {
               </nav>
             </aside>
 
-            <main className="min-w-0 pb-8">
+            <div className="min-w-0 pb-8">
               <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <h1 className="text-2xl font-bold text-on-surface dark:text-slate-100">Crear horario</h1>
@@ -205,12 +205,12 @@ export function CrearHorario() {
               </section>
 
               <section aria-labelledby="tareas-pendientes" className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800">
-                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant px-5 py-4 dark:border-slate-700"><div><h2 id="tareas-pendientes" className="font-bold text-on-surface dark:text-slate-100">Borradores y tareas pendientes</h2><p className="text-sm text-on-surface-variant dark:text-slate-400">Ordenados por urgencia de validación.</p></div><Link to="/horarios/historial" className="text-sm font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary">Ver historial</Link></div>
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-outline-variant px-5 py-4 dark:border-slate-700"><div><h2 id="tareas-pendientes" className="font-bold text-on-surface dark:text-slate-100">Borradores y tareas pendientes</h2><p className="text-sm text-on-surface-variant dark:text-slate-400">Ordenados por urgencia de validación.</p></div><Link to="/horarios/historial" className="text-sm font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary">Ver registro</Link></div>
                 {cargando ? <p className="px-5 py-8 text-sm text-on-surface-variant dark:text-slate-400">Cargando borradores…</p> : tareas.length === 0 ? <p className="px-5 py-8 text-sm text-on-surface-variant dark:text-slate-400">No hay horarios guardados para revisar.</p> : <div className="overflow-x-auto"><table className="w-full min-w-[680px] text-left text-sm"><thead className="bg-surface-container-low text-xs uppercase tracking-wide text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-5 py-3">Ficha</th><th className="px-5 py-3">Última edición</th><th className="px-5 py-3">Estado</th><th className="px-5 py-3 text-right">Acción</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{tareas.map((tarea) => <tr key={tarea.guardado.idHorarioGuardado}><td className="px-5 py-4"><strong className="block text-on-surface dark:text-slate-100">{tarea.guardado.ficha}</strong><span className="text-xs text-on-surface-variant dark:text-slate-400">{tarea.guardado.programaNombre ?? 'Programa sin registrar'}</span></td><td className="px-5 py-4 text-on-surface-variant dark:text-slate-300">{formatearFecha(tarea.guardado.fechaCreacion)}</td><td className="px-5 py-4"><span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${clasesNivel(tarea.nivel)}`}>{tarea.texto}</span></td><td className="px-5 py-4 text-right"><Link to={`/horarios/nuevo?editar=${tarea.guardado.idHorarioGuardado}`} className="rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-on-primary hover:bg-on-primary-container focus-visible:outline-2 focus-visible:outline-primary">{tarea.nivel === 'critica' ? 'Resolver conflicto' : 'Continuar'}</Link></td></tr>)}</tbody></table></div>}
               </section>
 
               <section aria-label="Resumen de auditoría" className="mt-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary-container/40 px-4 py-3 dark:bg-sena-950/30"><div className="flex items-center gap-3"><span className="material-symbols-outlined rounded-lg bg-surface-container-lowest p-2 text-primary dark:bg-slate-800" aria-hidden="true">shield</span><p className="text-sm text-on-surface dark:text-slate-200"><strong>Auditoría preventiva:</strong> {cargando ? 'verificando horarios guardados…' : conflictosActivos === 0 ? 'no hay cruces activos en la auditoría actual.' : `${conflictosActivos} cruce${conflictosActivos === 1 ? '' : 's'} activo${conflictosActivos === 1 ? '' : 's'} requiere${conflictosActivos === 1 ? '' : 'n'} revisión.`}</p></div><Link to="/horarios/auditoria" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline focus-visible:outline-2 focus-visible:outline-primary">Abrir auditoría <span className="material-symbols-outlined text-[18px]" aria-hidden="true">arrow_forward</span></Link></section>
-            </main>
+            </div>
           </div>
         </div>
       </div>

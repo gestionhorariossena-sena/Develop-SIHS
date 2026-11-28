@@ -103,7 +103,7 @@ describe('PanelAdministracion', () => {
     expect(await screen.findByText('Maritza Benítez Cardona')).toBeInTheDocument()
     expect(screen.getByText('Solicita: Coordinador')).toBeInTheDocument()
     expect(screen.getByText('Coordinador (1)')).toBeInTheDocument()
-    expect(screen.getByTitle('Aún no implementado en el backend')).toBeDisabled()
+    expect(screen.getByTitle('Esta opción aún no está disponible')).toBeDisabled()
   })
 
   it('aprobadas del mes en curso se calculan sobre fechaResolucion real, no un dato inventado', async () => {
@@ -113,7 +113,7 @@ describe('PanelAdministracion', () => {
     expect(await screen.findByText('Maritza Benítez Cardona')).toBeInTheDocument()
     // SOLICITUD_APROBADA se resolvió "ahora" (mismo mes) — cuenta como
     // "Aprobadas Este Mes"; SOLICITUD_RECHAZADA no cuenta acá.
-    const tarjetaAprobadas = screen.getByText('Aprobadas Este Mes').closest('div')!.parentElement!
+    const tarjetaAprobadas = screen.getByText('Aprobadas este mes').closest('div')!.parentElement!
     expect(within(tarjetaAprobadas).getByText('1')).toBeInTheDocument()
   })
 

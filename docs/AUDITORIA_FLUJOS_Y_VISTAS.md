@@ -1,3 +1,5 @@
+> **Actualización del 21-11-2026 (`fixes-multiples-nicol`):** este documento describe una auditoría histórica. Se eliminó el flujo de códigos de instructor: `/codigo-instructor` y los endpoints de generar/validar ya no existen; `/registro` no requiere código `INS-*`. El alta de Instructor se completa con Supabase Auth y aprobación administrativa del rol. Las referencias históricas que siguen se conservan como diagnóstico de la implementación anterior.
+
 # Auditoría funcional de flujos y vistas de SIHS
 
 Fecha de revisión: 2026-11-14
