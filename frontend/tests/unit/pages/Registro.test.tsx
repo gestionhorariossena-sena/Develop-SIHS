@@ -44,8 +44,6 @@ async function completarFormularioAprendiz(
   usuario: ReturnType<typeof userEvent.setup>,
   confirmarPassword = 'ClaveSegura123',
 ) {
-  await usuario.click(screen.getByRole('radio', { name: /Aprendiz/ }))
-  await usuario.click(screen.getByRole('button', { name: 'Continuar como aprendiz' }))
   await usuario.type(screen.getByLabelText('Nombres'), 'Laura Camila')
   await usuario.type(screen.getByLabelText('Apellidos'), 'Restrepo Duarte')
   await usuario.type(screen.getByLabelText('Número de documento'), '123456789')
@@ -146,26 +144,12 @@ describe('Registro', () => {
     expect(await screen.findByText('Formulario de inicio de sesión')).toBeInTheDocument()
   })
 
-  it('el selector de rol ya no ofrece "Coordinador" — solo Instructor y Aprendiz', () => {
+  it('reserva el registro público para aprendices y no ofrece alta de instructores', () => {
     renderPagina()
-
-    expect(screen.getByRole('radio', { name: /Instructor/ })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /Aprendiz/ })).toBeInTheDocument()
-    expect(screen.queryByRole('radio', { name: /Coordinador/ })).not.toBeInTheDocument()
-  })
-
-  it('muestra solo los campos del rol elegido y permite volver a cambiarlo', async () => {
-    const usuario = userEvent.setup()
-    renderPagina()
-
-    expect(screen.queryByLabelText('Nombres')).not.toBeInTheDocument()
-    await usuario.click(screen.getByRole('radio', { name: /Aprendiz/ }))
-    await usuario.click(screen.getByRole('button', { name: 'Continuar como aprendiz' }))
+    expect(screen.getByText('Registro para aprendices')).toBeInTheDocument()
     expect(screen.getByLabelText('Código de ficha')).toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: /Instructor/ })).not.toBeInTheDocument()
     expect(screen.queryByLabelText('Código de instructor')).not.toBeInTheDocument()
-
-    await usuario.click(screen.getByRole('button', { name: 'Cambiar rol' }))
-    expect(screen.getByRole('radio', { name: /Aprendiz/ })).toHaveAttribute('aria-checked', 'true')
   })
 
   it('"¿Eres coordinador? Solicita acceso" abre el formulario corto y, al enviarlo, llama a POST /solicitudes-acceso/ y muestra confirmación', async () => {

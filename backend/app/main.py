@@ -10,6 +10,8 @@ from app.api.v1.health import router as health_router
 from app.api.v1.roles import router as roles_router
 from app.api.v1.usuario_rol import router as usuario_rol_router
 from app.api.v1.usuarios import router as usuarios_router
+from app.api.v1.alta_instructores import router as alta_instructores_router
+from app.api.v1.alta_aprendices import router as alta_aprendices_router
 from app.core.config import settings
 from app.workers.publicacion_programada_worker import run_worker
 from app.api.v1.dias_semana import router as dias_semana_router
@@ -39,6 +41,8 @@ from app.api.v1.solicitudes_acceso import router as solicitudes_acceso_router
 from app.api.v1.publicaciones_programadas import router as publicaciones_programadas_router
 from app.api.v1.solicitudes_cambio_horario import router as solicitudes_cambio_horario_router
 from app.api.v1.solicitudes_acceso import router as solicitudes_acceso_router
+from app.api.v1.demo_reset import router as demo_reset_router
+from app.api.v1.eliminacion_segura import router as eliminacion_segura_router
 
 
 _worker_stop_event = Event()
@@ -147,6 +151,8 @@ app.add_middleware(
 
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(usuarios_router, prefix="/api/v1")
+app.include_router(alta_instructores_router, prefix="/api/v1")
+app.include_router(alta_aprendices_router, prefix="/api/v1")
 app.include_router(roles_router, prefix="/api/v1")
 app.include_router(usuario_rol_router, prefix="/api/v1")
 app.include_router(dias_semana_router, prefix="/api/v1")
@@ -175,3 +181,5 @@ app.include_router(avisos_router, prefix="/api/v1")
 app.include_router(solicitudes_cambio_horario_router, prefix="/api/v1")
 app.include_router(solicitudes_acceso_router, prefix="/api/v1")
 app.include_router(publicaciones_programadas_router, prefix="/api/v1")
+app.include_router(demo_reset_router, prefix="/api/v1")
+app.include_router(eliminacion_segura_router, prefix="/api/v1")

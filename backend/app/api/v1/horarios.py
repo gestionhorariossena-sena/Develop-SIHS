@@ -1,4 +1,7 @@
 import logging
+from uuid import UUID
+
+from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile
 from fastapi.encoders import jsonable_encoder
@@ -350,6 +353,28 @@ def actualizar_horario(
         HorarioService.notificar_cruce_forzado(db, horario, conflictos, usuario.idUsuario)
 
     return HorarioService.a_response(db, horario)
+
+
+class PublicarLoteRequest(BaseModel):
+    idTrimestre: int
+    idInstructor: UUID | None = None
+
+
+@router.post("/publicar-lote")
+def publicar_lote_horarios(
+    data: PublicarLoteRequest,
+    db: Session = Depends(get_db),
+    usuario=Depends(require_puede_programar),
+):
+    """Publicación atómica de un instructor o de todos los instructores del período."""
+    try:
+        return HorarioService.publicar_lote(
+            db, id_trimestre=data.idTrimestre,
+            id_instructor=data.idInstructor, usuario=usuario,
+        )
+    except PublicacionProgramadaPendienteError as error:
+        db.rollback()
+        raise HTTPException(status_code=409, detail=str(error)) from error
 
 
 @router.patch("/{id_horario}/estado", response_model=HorarioResponse)

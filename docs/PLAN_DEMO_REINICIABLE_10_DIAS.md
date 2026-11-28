@@ -1,5 +1,7 @@
 # Plan de demo reiniciable SIHS — 10 días
 
+> **Actualización documental (2026-11-21, `fixes-multiples-nicol`):** este informe de 2026-11-15 es una auditoría histórica y conserva sus conclusiones a esa fecha. Desde el commit `e4024b2` existen `DEMO_LOCAL.md`, `Makefile`, `compose.demo.yml`, `scripts/demo-{up,reset,down}.sh`, `supabase/config.toml`, una migración SQL y `supabase/seed.sql` con datos sintéticos. Por tanto, las afirmaciones más abajo sobre ausencia de manifiestos o inexistencia de reset/seed están **desfasadas respecto del repositorio actual**. No se ha demostrado aquí que las migraciones, la demo integral o las pruebas móviles pasen; validar antes de considerar resueltos los P0. Guía operativa actual: [DEMO_LOCAL.md](../DEMO_LOCAL.md).
+
 **Auditoría:** 2026-11-15; decisión de entorno demo actualizada después de la auditoría. **Rama auditada:** `fixes-multiples-nicol` (HEAD inicial `aaa7fcf`, `feat: agregar perspectivas a gestionar horarios`). Este documento describe el estado observable del repositorio; no certifica una base compartida ni un despliegue sin ejecutar las verificaciones indicadas.
 
 ## Resultado ejecutivo
@@ -79,7 +81,7 @@ La transacción **no abarca Supabase Auth**. Por diseño, no se crea, altera ni 
 |---|---|---|
 | P0: reset inexistente | No hay router/modelo/servicio demo; CRUD borra recursos individuales. | Implementar solo contra Supabase DEMO aislado, con `DEMO_MODE=true`, allow-list explícita de URL/base y seed transaccional. |
 | P0: instructores no administrables de punta a punta | `usuarios.py` solo expone GET, especialidades y códigos; no POST/import. | Definir creación de Auth + perfil + rol + especialidades en un servicio compensable/administrado, e importador con preview/errores por fila. |
-| P0: Flutter rojo | `flutter test` falla compilando `mobile/test/screens/asistencia_screen_test.dart`: `AsistenciaFalsa` no implementa `AsistenciaGateway.registrarSesion`. | Corregir el doble de prueba y ejecutar toda la suite; no modificar producción para “hacer pasar” el test. |
+| P0: Flutter rojo corregido | `flutter test` compilaba `mobile/test/screens/asistencia_screen_test.dart` con `AsistenciaFalsa` desactualizado respecto de `AsistenciaGateway.registrarSesion`. | Se corrigieron los dobles de prueba y se ejecutó la suite completa. Falta cerrar un fallo independiente de selección duplicada en `asistencia_instructor_screen_test.dart:173`. |
 | P0: E2E no reproducible | `login.spec.ts` exige variables; `horarios-flujos.spec.ts` exige credenciales e IDs `E2E_TEST_*`; no cubre reset. | Hacerlos depender del escenario demo y CI efímero. |
 | P1: IA dependiente de proveedor | `horarios.py:168-229` traduce `AIServiceError` a 503; `api.ts` lo contempla. | Health/readiness de IA, timeout y archivo sintético; plan B manual preensayado. |
 | P0: entorno DEMO aún no confirmado | El repositorio solo contiene `.env.example`; no hay manifiesto de plataforma ni proyecto DEMO versionado. | Crear proyecto Supabase DEMO, configurar URL/base permitida, secretos, healthcheck y cuatro cuentas Auth demo preaprovisionadas antes del reset. |
@@ -94,7 +96,7 @@ La transacción **no abarca Supabase Auth**. Por diseño, no se crea, altera ni 
 
 | Día | Prioridad, responsable sugerido | Entregable y criterio de salida |
 |---:|---|---|
-| 1 | P0 — móvil | Corregir `AsistenciaFalsa.registrarSesion` en el doble de prueba y ejecutar `flutter test` completo en verde. |
+| 1 | P0 — móvil | Corregido el contrato de `AsistenciaFalsa.registrarSesion` y ejecutadas las pruebas relacionadas. El cierre completo queda pendiente del fallo independiente documentado en la asistencia del instructor. |
 | 2 | P0 — DevOps + autenticación | Crear/confirmar proyecto Supabase DEMO aislado; configurar variables, allow-list URL/base, healthcheck y cuatro cuentas Auth demo preaprovisionadas. |
 | 3 | P0 — DBA + backend | Inventario real de FKs/on-delete de la base DEMO, orden de limpieza validado y prueba contra PostgreSQL desechable. |
 | 4 | P0 — backend | Guardas `DEMO_MODE`/URL-base permitida, servicio reset+seed transaccional, exclusión mutua, confirmación e idempotencia. |

@@ -1,165 +1,103 @@
-import { useState } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import { parsearCsv, type FilaCsv } from '../utils/csv'
+import { PanelCargaMasiva, ResumenCargaMasiva, TituloPasoCarga } from './cargaMasiva/FlujoCargaMasiva'
+import { ejecutarCargaMasiva, botonConfirmarCarga, estiloArchivoCarga, type ResultadoCargaMasiva } from './cargaMasiva/utilidadesCargaMasiva'
 
 export interface ColumnaImportar {
   clave: string
   encabezado: string
-  /** default true — si no está en el CSV, se bloquea el archivo antes de
-   * mostrar la previsualización. */
   requerido?: boolean
 }
-
-interface ResultadoFila {
-  fila: number
-  etiqueta: string
-  ok: boolean
-  mensaje?: string
-}
-
 interface ImportarArchivoProps {
   columnas: ColumnaImportar[]
-  /** Crea una fila (ya validada/resuelta por el caller). Debe lanzar un
-   * Error con mensaje legible si falla — cada fila es independiente, igual
-   * que guardarHorario() en NuevoHorario.tsx: si una falla, las demás
-   * igual se intentan. */
+  entidad?: string
   onImportarFila: (fila: FilaCsv) => Promise<void>
   onTerminado?: () => void
   onCerrar: () => void
 }
 
-/** SCRUM-89: carga masiva de catálogos por archivo CSV. Genérico a
- * propósito — Fichas.tsx y Ambientes.tsx lo usan con sus propias columnas
- * y su propia lógica de creación (reusan POST /fichas/ y POST /ambientes,
- * no hay endpoint de "importación masiva" nuevo). */
-export function ImportarArchivo({ columnas, onImportarFila, onTerminado, onCerrar }: ImportarArchivoProps) {
+/** Catálogos Fichas y Ambientes: mismo flujo que el alta masiva y currículo.
+ * CSV es el formato de estos dos catálogos, no un importador distinto.
+ */
+export function ImportarArchivo({ columnas, entidad = 'registros', onImportarFila, onTerminado, onCerrar }: ImportarArchivoProps) {
   const [filas, setFilas] = useState<FilaCsv[] | null>(null)
   const [errorArchivo, setErrorArchivo] = useState<string | null>(null)
   const [importando, setImportando] = useState(false)
-  const [resultados, setResultados] = useState<ResultadoFila[] | null>(null)
+  const [resultados, setResultados] = useState<ResultadoCargaMasiva[] | null>(null)
+  const filasInvalidas = filas?.map((fila, indice) => ({ indice, campos: columnas.filter(c => c.requerido !== false && !fila[c.encabezado]?.trim()).map(c => c.encabezado) })).filter(fila => fila.campos.length > 0) ?? []
 
-  async function manejarArchivo(evento: React.ChangeEvent<HTMLInputElement>) {
+  async function manejarArchivo(evento: ChangeEvent<HTMLInputElement>) {
     const archivo = evento.target.files?.[0]
     evento.target.value = ''
     if (!archivo) return
-
     setResultados(null)
     setErrorArchivo(null)
     setFilas(null)
-
-    const texto = await archivo.text()
-    const { encabezados, filas: filasParseadas } = parsearCsv(texto)
-
-    const faltantes = columnas.filter((columna) => columna.requerido !== false && !encabezados.includes(columna.encabezado))
-    if (faltantes.length > 0) {
-      setErrorArchivo(`Al archivo le faltan estas columnas: ${faltantes.map((columna) => columna.encabezado).join(', ')}.`)
+    if (!archivo.name.toLowerCase().endsWith('.csv')) {
+      setErrorArchivo('Selecciona un archivo CSV.')
       return
     }
-    if (filasParseadas.length === 0) {
-      setErrorArchivo('El archivo no tiene filas para importar.')
+    if (archivo.size > 2 * 1024 * 1024) {
+      setErrorArchivo('El archivo supera el límite de 2 MB.')
       return
     }
-
-    setFilas(filasParseadas)
+    try {
+      const { encabezados, filas: parseadas } = parsearCsv(await archivo.text())
+      const faltantes = columnas.filter(c => c.requerido !== false && !encabezados.includes(c.encabezado))
+      if (faltantes.length > 0) {
+        setErrorArchivo(`Al archivo le faltan estas columnas: ${faltantes.map(c => c.encabezado).join(', ')}.`)
+      } else if (parseadas.length === 0) {
+        setErrorArchivo('El archivo no tiene filas para importar.')
+      } else if (parseadas.length > 200) {
+        setErrorArchivo('El máximo por archivo es 200 registros.')
+      } else {
+        setFilas(parseadas)
+      }
+    } catch {
+      setErrorArchivo('No se pudo leer el archivo CSV.')
+    }
   }
 
   async function confirmarImportacion() {
-    if (!filas) return
+    if (!filas || importando || filasInvalidas.length > 0) return
     setImportando(true)
-
-    const acumulados: ResultadoFila[] = []
-    for (let indice = 0; indice < filas.length; indice++) {
-      const fila = filas[indice]
-      const etiqueta = fila[columnas[0].encabezado] || `Fila ${indice + 2}`
-      try {
-        await onImportarFila(fila)
-        acumulados.push({ fila: indice + 2, etiqueta, ok: true })
-      } catch (error) {
-        acumulados.push({ fila: indice + 2, etiqueta, ok: false, mensaje: error instanceof Error ? error.message : 'No se pudo crear.' })
-      }
-      // Se refleja fila por fila a medida que van terminando, no recién al final.
-      setResultados([...acumulados])
+    try {
+      await ejecutarCargaMasiva(
+        filas, onImportarFila, setResultados,
+        (fila, indice) => fila[columnas[0].encabezado] || `Fila ${indice + 2}`,
+      )
+      onTerminado?.()
+    } finally {
+      setImportando(false)
     }
-
-    setImportando(false)
-    onTerminado?.()
   }
 
-  return (
-    <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800" aria-label="Cargar archivo">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-on-surface dark:text-slate-100">Cargar archivo (CSV)</p>
-          <p className="text-xs text-on-surface-variant dark:text-slate-400">Columnas esperadas: {columnas.map((columna) => columna.encabezado).join(', ')}</p>
-        </div>
-        <button type="button" onClick={onCerrar} className="text-sm font-medium text-on-surface-variant hover:text-on-surface-variant dark:text-slate-400 dark:hover:text-slate-200">
-          Cerrar
-        </button>
+  return <PanelCargaMasiva
+    titulo={`Carga masiva de ${entidad}`}
+    descripcion="Selecciona el archivo, revisa su contenido y confirma antes de crear registros."
+    columnas={columnas.map(c => c.encabezado).join(', ')}
+    error={errorArchivo}
+    onCerrar={onCerrar}
+  >
+    <div className="space-y-2">
+      <TituloPasoCarga numero={1} titulo="Seleccionar archivo" detalle="Formato CSV · máximo 2 MB y 200 registros." />
+      <input type="file" accept=".csv,text/csv" onChange={(e) => void manejarArchivo(e)} aria-label="Seleccionar archivo CSV" className={estiloArchivoCarga} disabled={importando} />
+    </div>
+    {filas && !resultados && <section className="space-y-3 border-t border-outline-variant pt-4">
+      <TituloPasoCarga numero={2} titulo="Revisar datos" detalle={`Se encontraron ${filas.length} filas. Aún no se ha guardado ninguna.`} />
+      <p className="text-sm text-on-surface-variant">Vista previa de <strong>{filas.length}</strong> filas para importar.{filasInvalidas.length > 0 && ` ${filasInvalidas.length} requieren corrección antes de confirmar.`}</p>
+      <div className="max-h-64 overflow-auto rounded-md border border-outline-variant">
+        <table className="min-w-full text-left text-xs">
+          <thead className="sticky top-0 bg-surface-container-low font-semibold text-on-surface-variant"><tr>{columnas.map(c => <th key={c.clave} className="px-3 py-2">{c.encabezado}</th>)}</tr></thead>
+          <tbody className="divide-y divide-outline-variant">{filas.map((fila, i) =>
+            <tr key={i}>{columnas.map(c => <td key={c.clave} className={`px-3 py-2 ${c.requerido !== false && !fila[c.encabezado]?.trim() ? 'font-semibold text-error' : 'text-on-surface-variant'}`}>{fila[c.encabezado] || 'Falta dato'}</td>)}</tr>,
+          )}</tbody>
+        </table>
       </div>
-
-      <input
-        type="file"
-        accept=".csv,text/csv"
-        onChange={(evento) => void manejarArchivo(evento)}
-        aria-label="Seleccionar archivo CSV"
-        className="block w-full text-sm text-on-surface-variant file:mr-3 file:rounded-xl file:border-0 file:bg-sena-50 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-sena-700 dark:text-slate-300 dark:file:bg-sena-950/50 dark:file:text-sena-400"
-      />
-
-      {errorArchivo && <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{errorArchivo}</p>}
-
-      {filas && !resultados && (
-        <div className="mt-4">
-          <p className="mb-2 text-sm text-on-surface-variant dark:text-slate-300">
-            Se encontraron <strong>{filas.length}</strong> fila{filas.length === 1 ? '' : 's'}. Revisá antes de confirmar — todavía no se creó nada.
-          </p>
-          <div className="max-h-64 overflow-auto rounded-xl border border-outline-variant dark:border-slate-700">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-surface font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400">
-                <tr>
-                  {columnas.map((columna) => (
-                    <th key={columna.clave} className="px-3 py-2">
-                      {columna.encabezado}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant dark:divide-slate-700">
-                {filas.map((fila, indice) => (
-                  <tr key={indice}>
-                    {columnas.map((columna) => (
-                      <td key={columna.clave} className="px-3 py-2 text-on-surface-variant dark:text-slate-300">
-                        {fila[columna.encabezado] || '—'}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <button
-            type="button"
-            onClick={() => void confirmarImportacion()}
-            disabled={importando}
-            className="mt-3 rounded-xl bg-sena-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sena-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {importando ? 'Importando…' : `Confirmar importación de ${filas.length} fila${filas.length === 1 ? '' : 's'}`}
-          </button>
-        </div>
-      )}
-
-      {resultados && (
-        <div className="mt-4">
-          <p className="mb-2 text-sm font-medium text-on-surface-variant dark:text-slate-300">
-            {resultados.filter((resultado) => resultado.ok).length} de {filas?.length ?? resultados.length} filas creadas{importando ? ' (importando…)' : '.'}
-          </p>
-          <ul className="max-h-64 space-y-1 overflow-auto text-sm">
-            {resultados.map((resultado) => (
-              <li key={resultado.fila} className={resultado.ok ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'}>
-                Fila {resultado.fila} — {resultado.etiqueta}: {resultado.ok ? 'creada' : resultado.mensaje}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-    </section>
-  )
+      <button type="button" onClick={() => void confirmarImportacion()} disabled={importando || filasInvalidas.length > 0} className={botonConfirmarCarga}>
+        {importando ? 'Importando…' : `Confirmar importación de ${filas.length} fila${filas.length === 1 ? '' : 's'}`}
+      </button>
+    </section>}
+    {resultados && <ResumenCargaMasiva resultados={resultados} total={filas?.length ?? resultados.length} />}
+  </PanelCargaMasiva>
 }

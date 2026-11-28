@@ -9,28 +9,6 @@ from app.schemas.especialidad import EspecialidadResponse
 from app.schemas.rol import RolResponse
 
 
-class UsuarioCodigoInstructorRequest(BaseModel):
-    idUsuario: UUID
-
-
-class UsuarioCodigoInstructorValidacionRequest(BaseModel):
-    codigo: str
-
-
-class UsuarioCodigoInstructorResponse(BaseModel):
-    idUsuario: UUID
-    codigo: str
-    idTrimestre: int | None = None
-
-
-class UsuarioCodigoInstructorValidacionResponse(BaseModel):
-    """Respuesta pública (sin sesión): solo dice si el código sirve, no a
-    quién pertenece."""
-
-    valido: bool
-    codigo: str | None = None
-
-
 class UsuarioLoginDocumentoRequest(BaseModel):
     numeroDocumento: str
     password: str

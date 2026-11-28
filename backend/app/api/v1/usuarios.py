@@ -2,7 +2,7 @@ from uuid import UUID
 from datetime import date
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, status
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
@@ -20,10 +20,6 @@ from app.schemas.trimestre import TrimestreResponse
 from app.schemas.usuario import (
     CargaSemanalResponse,
     UsuarioEspecialidadesUpdate,
-    UsuarioCodigoInstructorRequest,
-    UsuarioCodigoInstructorResponse,
-    UsuarioCodigoInstructorValidacionRequest,
-    UsuarioCodigoInstructorValidacionResponse,
     UsuarioLoginDocumentoRequest,
     UsuarioLoginDocumentoResponse,
     UsuarioPreferenciasUpdate,
@@ -32,14 +28,52 @@ from app.schemas.usuario import (
 from app.services.auditoria_service import AuditoriaService
 from app.services.horario_service import HorarioService
 from app.services.instructor_service import (
-    CodigoNoDisponibleError,
     InstructorService,
     NoEsInstructorError,
 )
 from app.services.pdf_service import PdfService
 from app.services.usuario_service import UsuarioService
+from app.services.importacion_instructores_service import ImportacionInstructoresService
+from app.schemas.importacion_instructores import (
+    LoteImportacionInstructorResponse,
+    PrevisualizacionImportacionInstructores,
+    ResultadoEliminacionLoteInstructores,
+    ResultadoImportacionInstructores,
+)
 
 router = APIRouter(prefix="/usuarios", tags=["usuarios"])
+
+
+@router.post("/instructores/importar/previsualizar", response_model=PrevisualizacionImportacionInstructores)
+async def previsualizar_importacion_instructores(archivo: UploadFile, db: Session = Depends(get_db), usuario=Depends(require_admin)):
+    if not (archivo.filename or "").lower().endswith(".csv"):
+        raise HTTPException(status_code=422, detail="Selecciona un archivo CSV.")
+    validos, errores = ImportacionInstructoresService.leer_csv(await archivo.read())
+    validos, existentes = ImportacionInstructoresService.excluir_existentes(db, validos)
+    errores.extend(existentes)
+    return {"validos": validos, "errores": errores}
+
+
+@router.post("/instructores/importar", response_model=ResultadoImportacionInstructores)
+async def importar_instructores(archivo: UploadFile, db: Session = Depends(get_db), usuario=Depends(require_admin)):
+    if not (archivo.filename or "").lower().endswith(".csv"):
+        raise HTTPException(status_code=422, detail="Selecciona un archivo CSV.")
+    return ImportacionInstructoresService.importar(db, await archivo.read(), usuario.idUsuario)
+
+
+@router.get("/instructores/importar/lotes", response_model=list[LoteImportacionInstructorResponse])
+def listar_lotes_importacion_instructores(db: Session = Depends(get_db), usuario=Depends(require_admin)):
+    return ImportacionInstructoresService.listar_lotes(db)
+
+
+@router.delete("/instructores/importar/lotes/{id_lote}", response_model=ResultadoEliminacionLoteInstructores)
+def eliminar_lote_importacion_instructores(id_lote: UUID, db: Session = Depends(get_db), usuario=Depends(require_admin)):
+    try:
+        return ImportacionInstructoresService.eliminar_lote(db, id_lote)
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from None
+    except RuntimeError as error:
+        raise HTTPException(status_code=503, detail=str(error)) from None
 
 
 @router.get("/me", response_model=UsuarioResponse)
@@ -195,7 +229,7 @@ def listar_instructores(
     usuario=Depends(require_lectura_catalogo),
 ):
     """Solo usuarios con rol Instructor, ordenados por nombre. Antes cada
-    pantalla (Instructores, Vista por instructores, Código de instructor)
+    pantalla (Instructores, Vista por instructores)
     pedía /usuarios/ completo y filtraba el rol en el navegador. Va antes
     de /{id_usuario} para que "instructores" no se lea como un UUID."""
     return InstructorService.listar(db, busqueda=busqueda, id_especialidad=id_especialidad)
@@ -294,32 +328,3 @@ def actualizar_especialidades_instructor(
     return actualizado
 
 
-@router.post("/instructor/codigo/generar", response_model=UsuarioCodigoInstructorResponse)
-def generar_codigo_instructor(
-    data: UsuarioCodigoInstructorRequest,
-    db: Session = Depends(get_db),
-    usuario=Depends(require_admin_o_coordinador),
-):
-    try:
-        generado = InstructorService.generar_codigo(db, data.idUsuario)
-    except NoEsInstructorError:
-        raise _no_es_instructor() from None
-    except CodigoNoDisponibleError:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="No se pudo generar un código único. Inténtalo de nuevo.",
-        ) from None
-
-    if generado is None:
-        raise HTTPException(status_code=404, detail="Usuario no encontrado")
-
-    return generado
-
-
-@router.post("/instructor/codigo/validar", response_model=UsuarioCodigoInstructorValidacionResponse)
-def validar_codigo_instructor(
-    data: UsuarioCodigoInstructorValidacionRequest,
-    db: Session = Depends(get_db),
-):
-    """Pública a propósito: el registro la usa antes de que exista sesión."""
-    return InstructorService.validar_codigo(db, data.codigo)

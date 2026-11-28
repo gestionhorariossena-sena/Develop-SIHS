@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { EliminacionSegura } from '../components/EliminacionSegura'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { SeccionAmbientesAsignados, SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
 import { indexarPorInstructor, opcionesFichaAmbiente } from '../components/horario/indexarHorarios'
+import { descargarCsvCargaDocente, horasDeInstructor, limiteInstructor } from '../utils/exportarCargaDocente'
 import { apiGet, ApiError } from '../services/api'
 import type { CargaSemanal, DiaSemana, Horario, Usuario } from '../types/api'
 
@@ -27,31 +30,6 @@ function colorBarraCarga(horasAsignadas: number, horasMaximas: number) {
   return 'bg-emerald-600 dark:bg-emerald-500'
 }
 
-/** Tope semanal por tipo de contrato (RF-011: 32h planta / 40h contrato —
- * mismo umbral que HORAS_MAX_PLANTA/HORAS_MAX_CONTRATO en
- * backend/app/services/horario_service.py). Se replica acá SOLO para
- * poder pintar la barra de carga en cada fila de la tabla sin pedir
- * /usuarios/{id}/carga-semanal 92 veces (esa llamada real sigue siendo la
- * fuente de verdad y es la que se usa en el drawer). */
-function horasMaximasPara(instructor: Usuario) {
-  return instructor.tipoContrato?.trim().toLocaleLowerCase('es-CO') === 'planta' ? 32 : 40
-}
-
-/** Horas ya asignadas por semana, derivadas de los mismos `todosLosHorarios`
- * que la página ya carga para los filtros de ficha/ambiente — mismo cálculo
- * que `_duracion_horas` del backend (horaFin - horaInicio, por cada día que
- * se repite), sin pedir nada nuevo al backend. */
-function horasAsignadasPara(idInstructor: string, horarios: Horario[]) {
-  let total = 0
-  for (const horario of horarios) {
-    if (horario.idInstructor !== idInstructor) continue
-    const [hi, mi] = horario.horaInicio.split(':').map(Number)
-    const [hf, mf] = horario.horaFin.split(':').map(Number)
-    total += ((hf * 60 + mf) - (hi * 60 + mi)) / 60 * horario.dias.length
-  }
-  return total
-}
-
 export function Instructores() {
   const [searchParams] = useSearchParams()
   const idDesdeUrl = searchParams.get('id')
@@ -63,10 +41,16 @@ export function Instructores() {
   const [ambiente, setAmbiente] = useState('todos')
   const [orden, setOrden] = useState<Orden>('nombre')
   const [todosLosHorarios, setTodosLosHorarios] = useState<Horario[]>([])
+  const [horariosDisponibles, setHorariosDisponibles] = useState(false)
+  const [errorExportacion, setErrorExportacion] = useState<string | null>(null)
   const [paginaActual, setPaginaActual] = useState(1)
   const [seleccionado, setSeleccionado] = useState<Usuario | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // SCRUM-198: mismo patrón que Fichas.tsx/Ambientes.tsx -- el borrado
+  // seguro es solo de Administrador en el backend (require_admin).
+  const [perfil, setPerfil] = useState<Usuario | null>(null)
+  const puedeGestionar = perfil?.roles.some((rol) => rol.nombre === 'Administrador') ?? false
 
   const [cargaSemanal, setCargaSemanal] = useState<CargaSemanal | null>(null)
   const [errorCarga, setErrorCarga] = useState(false)
@@ -81,6 +65,7 @@ export function Instructores() {
   const [diasPorId, setDiasPorId] = useState<Record<number, string>>({})
 
   useEffect(() => {
+    apiGet<Usuario>('/usuarios/me').then(setPerfil).catch(() => {})
     // El backend ya devuelve solo rol Instructor y ordenados por nombre.
     apiGet<Usuario[]>('/usuarios/instructores')
       .then((soloInstructores) => {
@@ -111,8 +96,8 @@ export function Instructores() {
     // los horarios de cada instructor uno por uno. Sin .catch dedicado los
     // filtros de ficha/ambiente simplemente quedan vacíos si esto falla.
     apiGet<Horario[]>('/horarios/')
-      .then(setTodosLosHorarios)
-      .catch(() => {})
+      .then((horarios) => { setTodosLosHorarios(horarios); setHorariosDisponibles(true) })
+      .catch(() => { setHorariosDisponibles(false); setErrorExportacion('No se pudieron cargar los horarios. Reintenta la página antes de exportar la carga docente.') })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo al montar, igual que el resto del archivo; idDesdeUrl no cambia en la vida del componente.
   }, [])
 
@@ -183,8 +168,8 @@ export function Instructores() {
   // carga-semanal de cada instructor una por una.
   const cargaPorInstructor = instructores.map((item) => ({
     idUsuario: item.idUsuario,
-    asignadas: horasAsignadasPara(item.idUsuario, todosLosHorarios),
-    maximas: horasMaximasPara(item),
+    asignadas: horasDeInstructor(item.idUsuario, todosLosHorarios),
+    maximas: limiteInstructor(item),
   }))
   const conCargaCompleta = cargaPorInstructor.filter((item) => item.asignadas >= item.maximas).length
   const disponibles = cargaPorInstructor.filter((item) => item.asignadas === 0).length
@@ -192,9 +177,9 @@ export function Instructores() {
   const horasMaximasTotales = cargaPorInstructor.reduce((suma, item) => suma + item.maximas, 0)
 
   return (
-    <AppShell activo="Instructores">
+    <AppShell activo="Datos académicos">
       <nav className="mb-2 text-xs text-on-surface-variant">
-        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
         <span className="mx-1.5 text-outline">/</span>
         <span className="font-semibold text-on-surface">Instructores</span>
       </nav>
@@ -206,48 +191,41 @@ export function Instructores() {
           </h1>
           <p className="text-sm text-on-surface-variant dark:text-slate-400">Planta de instructores y especialidades asignadas.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            to="/instructores/registrar?modo=csv"
+            className="inline-flex min-h-10 items-center rounded-md border border-primary px-4 py-2 text-sm font-semibold text-primary hover:bg-primary-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          >
+            Cargar instructores desde CSV
+          </Link>
           <button
             type="button"
-            disabled
-            title="Aún no implementado en el backend"
-            className="cursor-not-allowed rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant opacity-60 dark:border-slate-700"
+            disabled={cargando || !horariosDisponibles || visibles.length === 0}
+            title={!horariosDisponibles ? 'Esperando horarios para calcular la carga' : 'Descarga los instructores filtrados, no solo la página visible'}
+            onClick={() => {
+              try {
+                descargarCsvCargaDocente(visibles, todosLosHorarios)
+                setErrorExportacion(null)
+              } catch {
+                setErrorExportacion('No se pudo generar el archivo. Inténtalo nuevamente.')
+              }
+            }}
+            className="inline-flex min-h-10 items-center rounded-md border border-outline px-4 py-2 text-sm font-medium text-on-surface hover:bg-surface-container focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Exportar carga docente
+            Exportar carga docente (.csv)
           </button>
-          <button
-            type="button"
-            disabled
-            title="Aún no implementado en el backend"
-            className="cursor-not-allowed rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary opacity-60"
-          >
-            + Registrar instructor
-          </button>
+          <Link to="/instructores/registrar" className="inline-flex min-h-10 items-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container">
+            Registrar instructor
+          </Link>
         </div>
       </div>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Total instructores</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{instructores.length}</p>
-          <p className="mt-1 text-xs text-on-surface-variant">{activos} activos</p>
-        </div>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Con carga completa</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{conCargaCompleta}</p>
-          <p className="mt-1 text-xs text-on-surface-variant">{instructores.length ? Math.round((conCargaCompleta / instructores.length) * 100) : 0}% asignados</p>
-        </div>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Disponibles asignación</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{disponibles}</p>
-          <p className="mt-1 text-xs text-on-surface-variant">sin horario asignado en este período académico</p>
-        </div>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4 dark:border-slate-700 dark:bg-slate-800">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Horas semanales totales</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface dark:text-slate-100">{horasAsignadasTotales.toLocaleString('es-CO')} h</p>
-          <p className="mt-1 text-xs text-on-surface-variant">Capacidad {horasMaximasTotales.toLocaleString('es-CO')} h · contratadas {horasContratadasTotales.toLocaleString('es-CO')} h</p>
-        </div>
-      </div>
+      <IndicadoresResumen titulo="Resumen de instructores" className="mb-4" items={[
+        { etiqueta: 'Instructores', valor: instructores.length, detalle: `${activos} activos`, icono: 'groups' },
+        { etiqueta: 'Con carga completa', valor: conCargaCompleta, detalle: `${instructores.length ? Math.round((conCargaCompleta / instructores.length) * 100) : 0}% asignados`, icono: 'assignment_turned_in' },
+        { etiqueta: 'Disponibles para asignación', valor: disponibles, detalle: 'Sin horario en este período', icono: 'person_add' },
+        { etiqueta: 'Horas semanales', valor: `${horasAsignadasTotales.toLocaleString('es-CO')} h`, detalle: `Capacidad ${horasMaximasTotales.toLocaleString('es-CO')} h · contratadas ${horasContratadasTotales.toLocaleString('es-CO')} h`, icono: 'schedule' },
+      ]} />
 
       <p className="mb-3 text-sm text-on-surface-variant">{visibles.length} de {instructores.length} instructores</p>
 
@@ -269,8 +247,9 @@ export function Instructores() {
         </div>
       </section>
 
+      {errorExportacion && <p role="alert" className="mb-4 rounded-md border border-error/30 bg-error-container p-3 text-sm text-on-error-container">{errorExportacion}</p>}
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Carga horaria</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Horas contratadas</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((item) => { const asignadas = horasAsignadasPara(item.idUsuario, todosLosHorarios); const maximas = horasMaximasPara(item); return <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-on-surface dark:text-slate-100">{item.nombre}</p><p className="text-xs text-on-surface-variant dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="min-w-[140px] px-4 py-3"><div className="mb-1 flex items-center justify-between text-xs font-medium text-on-surface-variant dark:text-slate-300"><span>{asignadas}h / {maximas}h</span><span>{Math.round((asignadas / maximas) * 100)}%</span></div><div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high dark:bg-slate-700"><div className={`h-full rounded-full ${colorBarraCarga(asignadas, maximas)}`} style={{ width: `${Math.min(100, Math.round((asignadas / maximas) * 100))}%` }} /></div></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr> })}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando instructores...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Instructor</th><th className="px-4 py-3">Especialidades</th><th className="px-4 py-3">Carga horaria</th><th className="px-4 py-3">Contrato</th><th className="px-4 py-3">Horas contratadas</th><th className="px-4 py-3">Estado</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((item) => { const asignadas = horasDeInstructor(item.idUsuario, todosLosHorarios); const maximas = limiteInstructor(item); return <tr key={item.idUsuario} onClick={() => setSeleccionado(item)} className="cursor-pointer hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3"><div className="flex items-center gap-3"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sena-100 text-xs font-bold text-sena-700 dark:bg-sena-950/50">{iniciales(item.nombre)}</span><div><p className="font-semibold text-on-surface dark:text-slate-100">{item.nombre}</p><p className="text-xs text-on-surface-variant dark:text-slate-400">{item.email}</p></div></div></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.especialidades.length ? item.especialidades.map((especialidad) => especialidad.nombre).join(', ') : 'Sin asignar'}</td><td className="min-w-[140px] px-4 py-3"><div className="mb-1 flex items-center justify-between text-xs font-medium text-on-surface-variant dark:text-slate-300"><span>{asignadas}h / {maximas}h</span><span>{Math.round((asignadas / maximas) * 100)}%</span></div><div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-container-high dark:bg-slate-700"><div className={`h-full rounded-full ${colorBarraCarga(asignadas, maximas)}`} style={{ width: `${Math.min(100, Math.round((asignadas / maximas) * 100))}%` }} /></div></td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{contrato(item)}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300">{item.horasContratadasSemana ? `${item.horasContratadasSemana} h` : 'Sin definir'}</td><td className="px-4 py-3"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.estado === 'activo' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-surface-container text-on-surface-variant dark:bg-slate-700 dark:text-slate-300'}`}>{item.estado}</span></td></tr> })}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay instructores que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (
           <div className="flex items-center justify-between border-t border-outline-variant px-4 py-3 dark:border-slate-700">
@@ -328,7 +307,7 @@ export function Instructores() {
                   />
                 </div>
                 {cargaVigente.horasAsignadas > cargaVigente.horasMaximas && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">Supera el máximo de RF-011.</p>
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">Supera el límite de carga docente.</p>
                 )}
                 {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato
                     real del backend. CargaSemanal solo trae horasAsignadas/
@@ -350,7 +329,7 @@ export function Instructores() {
                 </div>
               </>
             ) : (
-              <p className="text-xs text-on-surface-variant dark:text-slate-400">Sin tipo de contrato definido — no se puede calcular el tope de RF-011.</p>
+              <p className="text-xs text-on-surface-variant dark:text-slate-400">Falta el tipo de contrato para calcular el límite de carga docente.</p>
             )}
           </SeccionDrawer>
 
@@ -399,19 +378,30 @@ export function Instructores() {
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-semibold text-on-tertiary-container dark:text-amber-200">Alerta de solicitud de cambio (ejemplo)</p>
                   <p className="text-xs text-on-tertiary-container/80 dark:text-amber-300/80">
-                    Un instructor solicita permuta de ambiente por cruce técnico detectado — así se vería cuando el flujo esté conectado al backend.
+                    Las solicitudes de cambio de ambiente aparecerán aquí cuando estén disponibles.
                   </p>
                 </div>
                 <button
                   type="button"
                   disabled
-                  title="Aún no implementado en el backend"
+                  title="Esta opción aún no está disponible"
                   className="shrink-0 cursor-not-allowed rounded-lg border border-outline px-2.5 py-1 text-xs font-semibold text-on-surface-variant opacity-60 dark:border-slate-700"
                 >
                   Revisar
                 </button>
               </div>
             </>
+          )}
+
+          {puedeGestionar && (
+            <div className="mt-3 border-t border-outline-variant pt-3 dark:border-slate-700">
+              <EliminacionSegura
+                tipo="instructor"
+                id={seleccionado.idUsuario}
+                nombre={seleccionado.nombre}
+                onEliminado={() => { setInstructores((previo) => previo.filter((item) => item.idUsuario !== seleccionado.idUsuario)); setSeleccionado(null) }}
+              />
+            </div>
           )}
         </DrawerRelacionados>
       )}

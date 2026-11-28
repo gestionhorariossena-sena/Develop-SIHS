@@ -64,6 +64,15 @@ const FONDO_JORNADA: Record<string, string> = {
   Noche: 'bg-indigo-100 dark:bg-indigo-950/30',
 }
 
+function horaLegible(hora: string) {
+  const [horas, minutos] = hora.split(':').map(Number)
+  return `${horas % 12 || 12}:${String(minutos).padStart(2, '0')} ${horas < 12 ? 'a.m' : 'p.m'}`
+}
+
+function jornadaDeHora(hora: string): 'Mañana' | 'Tarde' | 'Noche' {
+  return hora < '12:00:00' ? 'Mañana' : hora < '18:00:00' ? 'Tarde' : 'Noche'
+}
+
 /** Lo que el Aprendiz anotó sobre uno de sus bloques — lo justo para
  * pintarlo en la celda, no el registro entero. */
 export interface MarcaDeCelda {
@@ -82,6 +91,8 @@ export interface MarcaDeCelda {
 
 interface GridAsistenteProps {
   celdas: CeldaAsistente[]
+  /** Reduce la vista de detalle a las franjas que contienen clases. */
+  soloFranjasOcupadas?: boolean
   /** Si viene, cada celda "nueva" muestra un botón "Quitar" -- para
    * excluir ese bloque propuesto de lo que se va a confirmar sin tener
    * que regenerar toda la propuesta. Las celdas "existentes" (ya
@@ -99,10 +110,21 @@ interface GridAsistenteProps {
 /** Grid semanal de solo lectura (con opción de quitar bloques nuevos) que
  * combina lo que ya estaba guardado para estas fichas con lo que el
  * asistente propone -- para verlo todo junto antes de confirmar. */
-export function GridAsistente({ celdas, onQuitarNuevo, marcas, onElegirCelda }: GridAsistenteProps) {
+export function GridAsistente({ celdas, soloFranjasOcupadas = false, onQuitarNuevo, marcas, onElegirCelda }: GridAsistenteProps) {
+  const franjas = [...FRANJAS]
+  for (const celda of celdas) {
+    if (franjas.some((franja) => franja.horaInicio24 === celda.horaInicio)) continue
+    franjas.push({
+      jornada: jornadaDeHora(celda.horaInicio),
+      horaInicio: horaLegible(celda.horaInicio),
+      horaFin: horaLegible(celda.horaFin ?? celda.horaInicio),
+      horaInicio24: celda.horaInicio,
+    })
+  }
+  franjas.sort((a, b) => ORDEN_JORNADA[a.jornada] - ORDEN_JORNADA[b.jornada] || a.horaInicio24.localeCompare(b.horaInicio24))
   const porCelda = new Map<string, CeldaAsistente[]>()
   for (const celda of celdas) {
-    const idxFranja = FRANJAS.findIndex((f) => f.horaInicio24 === celda.horaInicio)
+    const idxFranja = franjas.findIndex((f) => f.horaInicio24 === celda.horaInicio)
     if (idxFranja === -1) continue
     for (const idDia of celda.dias) {
       const idxDia = DIAS.findIndex((d) => d.idDia === idDia)
@@ -113,6 +135,10 @@ export function GridAsistente({ celdas, onQuitarNuevo, marcas, onElegirCelda }: 
       porCelda.set(clave, lista)
     }
   }
+
+  const franjasVisibles = franjas.map((franja, indice) => ({ franja, indice })).filter(({ indice }) =>
+    !soloFranjasOcupadas || DIAS.some((_, indiceDia) => porCelda.has(`${indice}-${indiceDia}`)),
+  )
 
   return (
     <div className="overflow-x-auto rounded-xl border border-outline-variant dark:border-slate-700">
@@ -129,11 +155,12 @@ export function GridAsistente({ celdas, onQuitarNuevo, marcas, onElegirCelda }: 
           </div>
         ))}
 
-        {FRANJAS.map((franja, idxFranja) => (
+        {franjasVisibles.map(({ franja, indice }, posicion) => (
           <FragmentoFila
-            key={idxFranja}
+            key={indice}
             franja={franja}
-            idxFranja={idxFranja}
+            idxFranja={indice}
+            mostrarEncabezadoJornada={posicion === 0 || franjasVisibles[posicion - 1].franja.jornada !== franja.jornada}
             porCelda={porCelda}
             onQuitarNuevo={onQuitarNuevo}
             marcas={marcas}
@@ -148,6 +175,7 @@ export function GridAsistente({ celdas, onQuitarNuevo, marcas, onElegirCelda }: 
 function FragmentoFila({
   franja,
   idxFranja,
+  mostrarEncabezadoJornada,
   porCelda,
   onQuitarNuevo,
   marcas,
@@ -155,13 +183,12 @@ function FragmentoFila({
 }: {
   franja: (typeof FRANJAS)[number]
   idxFranja: number
+  mostrarEncabezadoJornada: boolean
   porCelda: Map<string, CeldaAsistente[]>
   onQuitarNuevo?: (id: string) => void
   marcas?: Record<string, MarcaDeCelda>
   onElegirCelda?: (celda: CeldaAsistente) => void
 }) {
-  const mostrarEncabezadoJornada = idxFranja === 0 || FRANJAS[idxFranja - 1].jornada !== franja.jornada
-
   return (
     <>
       {mostrarEncabezadoJornada && (

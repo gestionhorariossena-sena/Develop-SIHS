@@ -17,7 +17,7 @@ const TITULO_POR_TIPO: Record<TipoConflictoHorario, string> = {
   cruce_instructor: 'Instructor ocupado',
   cruce_ambiente: 'Ambiente ocupado',
   resultado_repetido: 'Resultado repetido',
-  regla_instructor: 'Regla institucional (RF-011)',
+  regla_instructor: 'Límite de carga docente',
   fortaleza_instructor: 'Fortaleza del instructor',
   ficha_trimestre: 'Ficha fuera de su trimestre',
 }

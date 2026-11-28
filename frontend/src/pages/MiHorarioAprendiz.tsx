@@ -13,10 +13,8 @@ import {
 const ACTUALIZACION_RELOJ_MS = 30_000
 const DIAS_NOMBRE = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
-// Colores del mockup mi_horario_rol_aprendiz_sihs_sena (Organizador
-// Personal): Examen=rojo, Entrega=ámbar, Importante=violeta. "Normal" no
-// está en el mockup pero es un valor válido del schema (etiqueta por
-// defecto de una nota sin categoría particular).
+// Las etiquetas distinguen el tipo de nota con la paleta de SIHS:
+// examen=alerta, entrega=ámbar, importante=bosque y normal=piedra.
 const ETIQUETAS: EtiquetaAnotacion[] = ['Normal', 'Examen', 'Entrega', 'Importante']
 
 const COLOR_ETIQUETA: Record<EtiquetaAnotacion, { dot: string; badge: string; badgeActiva: string }> = {
@@ -31,14 +29,14 @@ const COLOR_ETIQUETA: Record<EtiquetaAnotacion, { dot: string; badge: string; ba
     badgeActiva: 'bg-amber-600 text-white',
   },
   Importante: {
-    dot: 'bg-violet-500',
-    badge: 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
-    badgeActiva: 'bg-violet-600 text-white',
+    dot: 'bg-primary',
+    badge: 'bg-primary-container text-on-primary-container',
+    badgeActiva: 'bg-primary text-on-primary',
   },
   Normal: {
-    dot: 'bg-slate-400',
-    badge: 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300',
-    badgeActiva: 'bg-slate-600 text-white',
+    dot: 'bg-outline',
+    badge: 'bg-surface-container text-on-surface-variant',
+    badgeActiva: 'bg-on-surface-variant text-surface-container-lowest',
   },
 }
 
@@ -133,12 +131,13 @@ export function MiHorarioAprendiz() {
   }, [])
 
   async function seleccionarTrimestre(idTrimestre: number) {
-    if (idTrimestre === trimestreSeleccionado || cargandoTrimestre) return
-    setTrimestreSeleccionado(idTrimestre)
+    if (idTrimestre === trimestreSeleccionado || cargandoTrimestre || actualizandoHorario) return
     setCargandoTrimestre(true)
     setError(null)
     try {
-      setHorarios(await apiGet<Horario[]>(`/ficha-usuario/mi-horario?idTrimestre=${idTrimestre}`))
+      const datos = await apiGet<Horario[]>(`/ficha-usuario/mi-horario?idTrimestre=${idTrimestre}`)
+      setHorarios(datos)
+      setTrimestreSeleccionado(idTrimestre)
     } catch (err: unknown) {
       setError(err instanceof ApiError ? err.message : 'No se pudo cargar ese trimestre.')
     } finally {
@@ -147,11 +146,14 @@ export function MiHorarioAprendiz() {
   }
 
   async function actualizarHorario() {
-    if (actualizandoHorario || cargando || sinFicha) return
+    if (actualizandoHorario || cargandoTrimestre || cargando || sinFicha) return
     setActualizandoHorario(true)
     setError(null)
     try {
-      setHorarios(await apiGet<Horario[]>('/ficha-usuario/mi-horario'))
+      const ruta = trimestreSeleccionado == null || trimestreSeleccionado === ficha?.idTrimestre
+        ? '/ficha-usuario/mi-horario'
+        : `/ficha-usuario/mi-horario?idTrimestre=${trimestreSeleccionado}`
+      setHorarios(await apiGet<Horario[]>(ruta))
     } catch (err: unknown) {
       setError(err instanceof ApiError ? err.message : 'No se pudo actualizar tu horario.')
     } finally {
@@ -317,7 +319,7 @@ export function MiHorarioAprendiz() {
   )
 
   return (
-    <AppShell activo="Mi Horario">
+    <AppShell activo="Mi horario">
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="mb-1.5 flex flex-wrap items-center gap-2">
@@ -353,20 +355,12 @@ export function MiHorarioAprendiz() {
             <span className="rounded-md bg-surface-container-lowest px-3 py-1.5 font-semibold text-primary shadow-sm">
               Grilla Semanal
             </span>
-            <button
-              type="button"
-              disabled
-              title="Vista Agenda: contenido de mockup (Stitch) — pendiente de conectar a un dato real del backend"
-              className="cursor-not-allowed rounded-md px-3 py-1.5 font-medium text-on-surface-variant/50"
-            >
-              Vista Agenda
-            </button>
           </div>
 
           <button
             type="button"
             onClick={actualizarHorario}
-            disabled={actualizandoHorario || cargando || sinFicha}
+            disabled={actualizandoHorario || cargandoTrimestre || cargando || sinFicha}
             aria-label="Actualizar horario"
             className="inline-flex items-center gap-1.5 rounded-xl border border-outline bg-surface-container-lowest px-3 py-2 text-sm font-semibold text-on-surface hover:bg-surface-container-high disabled:cursor-wait disabled:opacity-50"
           >
@@ -374,14 +368,6 @@ export function MiHorarioAprendiz() {
             {actualizandoHorario ? 'Actualizando…' : 'Actualizar horario'}
           </button>
 
-          <button
-            type="button"
-            disabled
-            title="Contenido de mockup (Stitch) — pendiente de conectar a un dato real del backend"
-            className="cursor-not-allowed rounded-xl border border-outline px-4 py-2 text-sm font-semibold text-on-surface-variant/50"
-          >
-            Descargar Horario PDF
-          </button>
         </div>
       </div>
 
@@ -397,7 +383,7 @@ export function MiHorarioAprendiz() {
                   key={trimestre.idTrimestre}
                   type="button"
                   onClick={() => void seleccionarTrimestre(trimestre.idTrimestre)}
-                  disabled={cargandoTrimestre}
+                  disabled={cargandoTrimestre || actualizandoHorario}
                   className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition disabled:cursor-wait ${
                     esSeleccionado
                       ? 'bg-primary text-on-primary'
@@ -498,7 +484,7 @@ export function MiHorarioAprendiz() {
               <button
                 type="button"
                 disabled
-                title="Contenido de mockup (Stitch) — pendiente de conectar a un dato real del backend"
+                title="Esta opción aún no está disponible"
                 className="cursor-not-allowed font-medium text-on-surface-variant/50"
               >
                 Reportar novedad de asistencia
@@ -554,7 +540,7 @@ export function MiHorarioAprendiz() {
 
           <aside className="flex flex-col gap-4 lg:col-span-4">
             {proxima && (
-              <div className="rounded-xl bg-gradient-to-br from-primary to-on-primary-container p-4 text-on-primary shadow-sm">
+              <div className="rounded-xl bg-primary p-4 text-on-primary shadow-sm">
                 <div className="mb-2 flex items-center justify-between">
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-on-primary">
                     Próxima clase
@@ -715,8 +701,7 @@ export function MiHorarioAprendiz() {
                 onChange={(evento) => setRecordatorioBorrador(evento.target.checked)}
                 className="h-4 w-4"
               />
-              Recordarme antes de esta clase (guarda la preferencia; el envío del recordatorio en sí todavía no está
-              implementado).
+              Guardar preferencia de recordatorio (los avisos aún no están disponibles)
             </label>
 
             <div className="flex items-center justify-between gap-2">

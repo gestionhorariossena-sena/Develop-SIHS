@@ -69,14 +69,10 @@ export function quitarBloqueDeGrid(grid: GridAsignaciones, bloqueId: string): Gr
 
 /** Paleta de colores para distinguir bloques de clase en el grid (independiente del color de jornada). */
 const PALETA_BLOQUES = [
-  { fondo: 'bg-violet-100', borde: 'border-violet-300', texto: 'text-violet-800' },
-  { fondo: 'bg-amber-100', borde: 'border-amber-300', texto: 'text-amber-800' },
-  { fondo: 'bg-rose-100', borde: 'border-rose-300', texto: 'text-rose-800' },
-  { fondo: 'bg-cyan-100', borde: 'border-cyan-300', texto: 'text-cyan-800' },
-  { fondo: 'bg-lime-100', borde: 'border-lime-300', texto: 'text-lime-800' },
-  { fondo: 'bg-fuchsia-100', borde: 'border-fuchsia-300', texto: 'text-fuchsia-800' },
-  { fondo: 'bg-orange-100', borde: 'border-orange-300', texto: 'text-orange-800' },
-  { fondo: 'bg-teal-100', borde: 'border-teal-300', texto: 'text-teal-800' },
+  { fondo: 'bg-primary-container', borde: 'border-primary', texto: 'text-on-primary-container' },
+  { fondo: 'bg-tertiary-container', borde: 'border-tertiary', texto: 'text-on-tertiary-container' },
+  { fondo: 'bg-secondary-container', borde: 'border-secondary', texto: 'text-on-secondary-container' },
+  { fondo: 'bg-surface-container', borde: 'border-outline', texto: 'text-on-surface' },
 ] as const
 
 export type ColorBloque = (typeof PALETA_BLOQUES)[number]

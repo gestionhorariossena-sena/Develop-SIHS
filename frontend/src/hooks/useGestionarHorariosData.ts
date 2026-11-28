@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { apiGet, ApiError } from '../services/api'
 import type { Ambiente, AuditoriaCrucesResponse, DiaSemana, Ficha, Horario, Sede, Trimestre, Usuario } from '../types/api'
 
-interface GestionarHorariosData { horarios: Horario[]; fichas: Ficha[]; instructores: Usuario[]; ambientes: Ambiente[]; sedes: Sede[]; trimestres: Trimestre[]; diasSemana: DiaSemana[]; auditoria: AuditoriaCrucesResponse | null; cargandoAuditoria: boolean; errorAuditoria: string | null; cargando: boolean; error: string | null; erroresCatalogos: string[]; actualizarHorario: (horario: Horario) => void; recargarAuditoria: () => void }
-const VACIO: GestionarHorariosData = { horarios: [], fichas: [], instructores: [], ambientes: [], sedes: [], trimestres: [], diasSemana: [], auditoria: null, cargandoAuditoria: true, errorAuditoria: null, cargando: true, error: null, erroresCatalogos: [], actualizarHorario: () => {}, recargarAuditoria: () => {} }
+interface GestionarHorariosData { horarios: Horario[]; fichas: Ficha[]; instructores: Usuario[]; ambientes: Ambiente[]; sedes: Sede[]; trimestres: Trimestre[]; diasSemana: DiaSemana[]; auditoria: AuditoriaCrucesResponse | null; cargandoAuditoria: boolean; errorAuditoria: string | null; cargando: boolean; error: string | null; erroresCatalogos: string[]; actualizarHorario: (horario: Horario) => void; marcarLotePublicado: (idTrimestre: number, idInstructor?: string) => void }
+const VACIO: GestionarHorariosData = { horarios: [], fichas: [], instructores: [], ambientes: [], sedes: [], trimestres: [], diasSemana: [], auditoria: null, cargandoAuditoria: true, errorAuditoria: null, cargando: true, error: null, erroresCatalogos: [], actualizarHorario: () => {}, marcarLotePublicado: () => {} }
 
 /** Carga en paralelo los recursos independientes de la vista global. */
 export function useGestionarHorariosData(): GestionarHorariosData {
@@ -42,18 +42,16 @@ export function useGestionarHorariosData(): GestionarHorariosData {
     obtenerAuditoria(() => activo)
     return () => { activo = false }
   }, [])
-
   return {
     ...datos,
-    actualizarHorario: (actualizado) => setDatos((anterior) => ({ ...anterior, horarios: anterior.horarios.map((horario) => horario.idHorario === actualizado.idHorario ? actualizado : horario) })),
-    // SCRUM-199: se llama desde el drawer tras publicar/despublicar, que
-    // resuelve un conflicto -- sin esto la tarjeta de conflicto seguía
-    // mostrando el cruce ya resuelto hasta recargar la pantalla entera.
-    // Es un manejador de evento, no el cuerpo de un efecto: el setState
-    // síncrono acá sí es el patrón correcto.
-    recargarAuditoria: () => {
-      setDatos((anterior) => ({ ...anterior, cargandoAuditoria: true, errorAuditoria: null }))
-      obtenerAuditoria(() => true)
-    },
+    actualizarHorario: (actualizado) => setDatos((anterior) => ({
+      ...anterior, horarios: anterior.horarios.map((horario) => horario.idHorario === actualizado.idHorario ? actualizado : horario),
+    })),
+    marcarLotePublicado: (idTrimestre, idInstructor) => setDatos((anterior) => ({
+      ...anterior,
+      horarios: anterior.horarios.map((horario) =>
+        horario.idTrimestre === idTrimestre && (!idInstructor || horario.idInstructor === idInstructor)
+          && horario.activo && !horario.publicado ? { ...horario, publicado: true } : horario),
+    })),
   }
 }

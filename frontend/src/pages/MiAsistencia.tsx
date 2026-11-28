@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { apiGet, ApiError } from '../services/api'
 import type { AsistenciaDeAprendiz, EstadoAsistencia, MiAsistencia as MiAsistenciaDatos } from '../types/api'
 
@@ -133,56 +134,24 @@ export function MiAsistencia() {
         )}
 
         {resumen && resumen.registradas > 0 && (
-          <div className="mb-5 rounded-xl border border-outline-variant bg-surface-container-lowest p-5 dark:border-slate-700 dark:bg-slate-800">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-4xl font-bold text-on-surface">{resumen.porcentaje}%</p>
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-bold ${
-                  bajoUmbral ? 'bg-error-container text-on-error-container' : 'bg-primary-container text-on-primary-container'
-                }`}
-              >
-                {bajoUmbral ? 'Por debajo del mínimo' : 'Al día'} · mínimo {UMBRAL}%
-              </span>
-            </div>
-
-            <div className="mt-2 h-2.5 overflow-hidden rounded-full bg-surface-container">
-              <span
-                className={`block h-full rounded-full ${bajoUmbral ? 'bg-error' : 'bg-primary'}`}
-                style={{ width: `${Math.min(100, resumen.porcentaje)}%` }}
-              />
-            </div>
-
-            <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-4">
-              <div>
-                <dt className="text-xs text-on-surface-variant">Presente</dt>
-                <dd className="text-lg font-bold text-primary">{resumen.presente}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-on-surface-variant">Tardanza</dt>
-                <dd className="text-lg font-bold text-tertiary">{resumen.tardanza}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-on-surface-variant">Excusa</dt>
-                <dd className="text-lg font-bold text-on-surface-variant">{resumen.excusa}</dd>
-              </div>
-              <div>
-                <dt className="text-xs text-on-surface-variant">Ausente</dt>
-                <dd className="text-lg font-bold text-error">{resumen.ausente}</dd>
-              </div>
-            </div>
-
+          <>
+            <IndicadoresResumen titulo="Resumen de mi asistencia" className="mb-4" items={[
+              { etiqueta: 'Asistencia', valor: `${resumen.porcentaje}%`, icono: 'fact_check', progreso: resumen.porcentaje,
+                detalle: `${bajoUmbral ? 'Por debajo del mínimo' : 'Al día'} · mínimo ${UMBRAL}%` },
+              { etiqueta: 'Presente', valor: resumen.presente },
+              { etiqueta: 'Tardanza', valor: resumen.tardanza },
+              { etiqueta: 'Excusa', valor: resumen.excusa },
+              { etiqueta: 'Ausente', valor: resumen.ausente },
+            ]} />
             {bajoUmbral && (
-              <p className="mt-4 rounded-xl border border-tertiary/30 bg-tertiary-container px-3 py-2 text-sm text-on-tertiary-container">
-                Tu asistencia está por debajo del {UMBRAL}% que pide el reglamento del aprendiz. Habla
-                con tu instructor o con coordinación.
+              <p className="mb-4 rounded-xl border border-tertiary/30 bg-tertiary-container px-3 py-2 text-sm text-on-tertiary-container">
+                Tu asistencia está por debajo del {UMBRAL}% que pide el reglamento del aprendiz. Habla con tu instructor o con coordinación.
               </p>
             )}
-
-            <p className="mt-3 text-xs text-on-surface-variant dark:text-slate-400">
-              Sobre {resumen.registradas} sesiones registradas (no sobre el total programado del
-              trimestre). Las excusas no cuentan en contra.
+            <p className="mb-5 text-xs text-on-surface-variant">
+              Sobre {resumen.registradas} sesiones registradas, no sobre el total programado del trimestre. Las excusas no cuentan en contra.
             </p>
-          </div>
+          </>
         )}
 
         {datos && datos.sesiones.length > 0 && (

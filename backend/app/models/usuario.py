@@ -19,6 +19,17 @@ class Usuario(Base):
     nombre = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, nullable=False)
     numeroDocumento = Column(String(30), unique=True, nullable=True)
+    # Solo se llena para perfiles creados por una carga masiva de instructores.
+    # Así el lote puede deshacerse sin tocar cuentas creadas manualmente.
+    idLoteImportacionInstructor = Column(
+        UUID(as_uuid=True),
+        ForeignKey("lotes_importacion_instructores.idLote", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    # Si Auth ya tenía el correo, el lote creó solo el perfil local: nunca se
+    # debe borrar esa identidad externa al revertir el lote.
+    creadoAuthPorLote = Column(Boolean, server_default=false(), nullable=False)
     # SCRUM-103: cuando el panel de aprobación crea la cuenta con una
     # contraseña temporal generada por el sistema (en vez de la que eligió
     # la propia persona), esto queda en True y el frontend debe bloquear la
@@ -37,9 +48,8 @@ class Usuario(Base):
     tipoContrato = Column(String(20))
     horasContratadasSemana = Column(Integer)
     codigoInstructor = Column(String(20), unique=True, nullable=True)
-    # Trimestre en el que se generó codigoInstructor. El código queda fijo
-    # una vez creado (no se regenera) — no es un historial de códigos por
-    # trimestre, solo registra en cuál se emitió el único código vigente.
+    # Campo histórico: trimestre asociado al código antiguo de instructor.
+    # El alta actual no emite códigos ni depende de este campo.
     idTrimestre = Column(Integer, ForeignKey("trimestres.idTrimestre"), nullable=True)
     # Sigla/iniciales cortas (ej. "DC", "LM") — así referencian instructores
     # ambas coordinaciones en sus horarios reales, distinto de

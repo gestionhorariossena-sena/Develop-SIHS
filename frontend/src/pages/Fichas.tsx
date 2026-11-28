@@ -78,6 +78,7 @@ function iconoEtapa(etapa: Etapa) {
 export function Fichas() {
   const [searchParams] = useSearchParams()
   const idDesdeUrl = searchParams.get('id')
+  const idProgramaDesdeUrl = searchParams.get('idPrograma')
   const [fichas, setFichas] = useState<Ficha[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [sede, setSede] = useState('todas')
@@ -94,9 +95,9 @@ export function Fichas() {
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [perfil, setPerfil] = useState<Usuario | null>(null)
-  const [modalAbierto, setModalAbierto] = useState(false)
+  const [modalAbierto, setModalAbierto] = useState(searchParams.get('crear') === '1')
   const [editandoId, setEditandoId] = useState<number | null>(null)
-  const [form, setForm] = useState<FichaForm>(FORM_VACIO)
+  const [form, setForm] = useState<FichaForm>(() => ({ ...FORM_VACIO, idPrograma: idProgramaDesdeUrl && Number.isInteger(Number(idProgramaDesdeUrl)) && Number(idProgramaDesdeUrl) > 0 ? idProgramaDesdeUrl : '' }))
   const [guardando, setGuardando] = useState(false)
   const [pestanaDrawer, setPestanaDrawer] = useState<PestanaFicha>('informacion')
   const [accionesAbiertasPara, setAccionesAbiertasPara] = useState<number | null>(null)
@@ -257,7 +258,7 @@ export function Fichas() {
 
   function abrirCrear() {
     setEditandoId(null)
-    setForm(FORM_VACIO)
+    setForm({ ...FORM_VACIO, idPrograma: idProgramaDesdeUrl && Number.isInteger(Number(idProgramaDesdeUrl)) && Number(idProgramaDesdeUrl) > 0 ? idProgramaDesdeUrl : '' })
     setError(null)
     setModalAbierto(true)
   }
@@ -310,9 +311,9 @@ export function Fichas() {
   if (etapa !== 'todas') chips.push({ etiqueta: etapa, quitar: () => setEtapa('todas') })
 
   return (
-    <AppShell activo="Fichas">
+    <AppShell activo="Datos académicos">
       <nav className="mb-2 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant dark:text-slate-400">
-        <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+        <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
         <span className="text-outline">/</span>
         <span className="text-primary">Fichas</span>
       </nav>
@@ -330,12 +331,14 @@ export function Fichas() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {puedeGestionar && <button type="button" onClick={abrirCrear} className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-on-primary-container focus-visible:outline-2 focus-visible:outline-primary"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">add</span>Crear ficha</button>}
-          <button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="inline-flex items-center gap-2 rounded-xl border border-outline px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">{mostrarImportar ? 'Ocultar CSV' : 'Importar CSV'}</button>
+          <Link to="/aprendices" className="inline-flex items-center gap-2 rounded-md border border-outline px-3 py-2 text-sm font-medium text-on-surface hover:bg-surface-container">Ver aprendices</Link>
+          {puedeGestionar && <button type="button" onClick={() => setMostrarImportar((valor) => !valor)} className="inline-flex items-center gap-2 rounded-xl border border-outline px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">{mostrarImportar ? 'Ocultar carga masiva' : 'Carga masiva'}</button>}
         </div>
       </div>
 
-      {mostrarImportar && (
+      {puedeGestionar && mostrarImportar && (
         <ImportarArchivo
+          entidad="fichas"
           columnas={COLUMNAS_IMPORTAR_FICHA}
           onImportarFila={importarFilaFicha}
           onTerminado={refrescarFichasTrasImportar}
@@ -399,7 +402,7 @@ export function Fichas() {
       )}
 
       {error && <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">{error}</p>}
-      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Código</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Estado</th><th className="px-4 py-3 text-right">Acción</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((ficha) => <tr key={ficha.idFicha} onClick={() => abrirDetalleFicha(ficha)} className="cursor-pointer border-l-4 border-l-transparent hover:border-l-primary hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-on-surface dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-on-surface-variant/70">{ficha.programa.codigoPrograma} · {ficha.trimestre.nombre}</p></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{jornadasVisibles(ficha).length ? jornadasVisibles(ficha).map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-on-surface-variant/70">Sin jornada</span>}</div></td><td className="px-4 py-3"><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${ETAPA_BADGE[etapaFicha(ficha)]}`}><span className="material-symbols-outlined text-[15px]" aria-hidden="true">{iconoEtapa(etapaFicha(ficha))}</span>{etapaFicha(ficha)}</span></td><td className="px-4 py-3"><div className="flex justify-end gap-2"><button type="button" aria-label={`Ver detalle de la ficha ${ficha.codigoFicha}`} onClick={(evento) => { evento.stopPropagation(); abrirDetalleFicha(ficha) }} className="rounded-lg border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface dark:border-slate-700 dark:text-slate-200">Ver detalle</button><div className="relative">{puedeGestionar && <button type="button" aria-label={`Más acciones de la ficha ${ficha.codigoFicha}`} aria-expanded={accionesAbiertasPara === ficha.idFicha} onClick={(evento) => { evento.stopPropagation(); setAccionesAbiertasPara((actual) => actual === ficha.idFicha ? null : ficha.idFicha) }} className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface dark:text-slate-300 dark:hover:bg-slate-700"><span className="material-symbols-outlined text-[20px]" aria-hidden="true">more_vert</span></button>}{puedeGestionar && accionesAbiertasPara === ficha.idFicha && <div role="menu" aria-label={`Acciones de la ficha ${ficha.codigoFicha}`} onClick={(evento) => evento.stopPropagation()} className="absolute right-0 z-10 mt-1 w-44 rounded-lg border border-outline-variant bg-surface-container-lowest p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800"><button type="button" role="menuitem" onClick={() => { setAccionesAbiertasPara(null); abrirEditar(ficha) }} className="w-full rounded px-3 py-2 text-left text-sm text-on-surface hover:bg-surface dark:text-slate-200 dark:hover:bg-slate-700">Editar ficha</button><Link to="/horarios/crear" role="menuitem" onClick={() => setAccionesAbiertasPara(null)} className="block rounded px-3 py-2 text-sm text-on-surface hover:bg-surface dark:text-slate-200 dark:hover:bg-slate-700">Programar horario</Link></div>}</div></div></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}
+      {cargando ? <p className="py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">Cargando fichas...</p> : <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest dark:border-slate-700 dark:bg-slate-800"><div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="bg-surface text-xs font-semibold uppercase text-on-surface-variant dark:bg-slate-900 dark:text-slate-400"><tr><th className="px-4 py-3">Código</th><th className="px-4 py-3">Programa</th><th className="px-4 py-3">Jornada</th><th className="px-4 py-3">Estado</th><th className="px-4 py-3 text-right">Acción</th></tr></thead><tbody className="divide-y divide-outline-variant dark:divide-slate-700">{visiblesPagina.map((ficha) => <tr key={ficha.idFicha} onClick={() => abrirDetalleFicha(ficha)} className="cursor-pointer border-l-4 border-l-transparent hover:border-l-primary hover:bg-surface dark:hover:bg-slate-700/60"><td className="px-4 py-3 font-semibold text-on-surface dark:text-slate-100">{ficha.codigoFicha}</td><td className="px-4 py-3 text-on-surface-variant dark:text-slate-300"><p>{ficha.programa.nombrePrograma}</p><p className="text-xs text-on-surface-variant/70">{ficha.programa.codigoPrograma} · {ficha.trimestre.nombre}</p></td><td className="px-4 py-3"><div className="flex flex-wrap gap-1">{jornadasVisibles(ficha).length ? jornadasVisibles(ficha).map((item) => <span key={item} className="rounded-full bg-sky-50 px-2 py-0.5 text-xs font-semibold text-sky-700 dark:bg-sky-950/50 dark:text-sky-300">{item}</span>) : <span className="text-on-surface-variant/70">Sin jornada</span>}</div></td><td className="px-4 py-3"><span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${ETAPA_BADGE[etapaFicha(ficha)]}`}><span className="material-symbols-outlined text-[15px]" aria-hidden="true">{iconoEtapa(etapaFicha(ficha))}</span>{etapaFicha(ficha)}</span></td><td className="px-4 py-3"><div className="flex justify-end gap-2"><button type="button" aria-label={`Ver detalle de la ficha ${ficha.codigoFicha}`} onClick={(evento) => { evento.stopPropagation(); abrirDetalleFicha(ficha) }} className="rounded-lg border border-outline px-3 py-1.5 text-xs font-semibold text-on-surface hover:bg-surface dark:border-slate-700 dark:text-slate-200">Ver detalle</button><div className="relative">{puedeGestionar && <button type="button" aria-label={`Más acciones de la ficha ${ficha.codigoFicha}`} aria-expanded={accionesAbiertasPara === ficha.idFicha} onClick={(evento) => { evento.stopPropagation(); setAccionesAbiertasPara((actual) => actual === ficha.idFicha ? null : ficha.idFicha) }} className="rounded-lg p-1.5 text-on-surface-variant hover:bg-surface dark:text-slate-300 dark:hover:bg-slate-700"><span className="material-symbols-outlined text-[20px]" aria-hidden="true">more_vert</span></button>}{puedeGestionar && accionesAbiertasPara === ficha.idFicha && <div role="menu" aria-label={`Acciones de la ficha ${ficha.codigoFicha}`} onClick={(evento) => evento.stopPropagation()} className="absolute right-0 z-10 mt-1 w-44 rounded-lg border border-outline-variant bg-surface-container-lowest p-1 shadow-lg dark:border-slate-700 dark:bg-slate-800"><button type="button" role="menuitem" onClick={() => { setAccionesAbiertasPara(null); abrirEditar(ficha) }} className="w-full rounded px-3 py-2 text-left text-sm text-on-surface hover:bg-surface dark:text-slate-200 dark:hover:bg-slate-700">Editar ficha</button><Link to="/horarios/nuevo" role="menuitem" onClick={() => setAccionesAbiertasPara(null)} className="block rounded px-3 py-2 text-sm text-on-surface hover:bg-surface dark:text-slate-200 dark:hover:bg-slate-700">Programar horario</Link></div>}</div></div></td></tr>)}</tbody></table></div>{visibles.length === 0 && <p className="px-4 py-12 text-center text-sm text-on-surface-variant dark:text-slate-400">No hay fichas que coincidan con los filtros.</p>}
 
         {visibles.length > 0 && (
           <div className="flex items-center justify-between border-t border-outline-variant px-4 py-3 dark:border-slate-700">
@@ -453,7 +456,7 @@ export function Fichas() {
         <span className="material-symbols-outlined mt-0.5 text-[20px] text-primary">info</span>
         <p className="text-sm text-on-surface-variant dark:text-slate-400">
           Las fichas sin franja asignada o con cruces de horario se resuelven desde el{' '}
-          <Link to="/horarios/crear" className="font-semibold text-primary hover:text-on-primary-container dark:text-sena-400">Crear horario</Link>.
+          <Link to="/horarios/nuevo" className="font-semibold text-primary hover:text-on-primary-container dark:text-sena-400">Crear horario</Link>.
         </p>
       </div>
 
@@ -507,6 +510,12 @@ export function Fichas() {
             )}
           </dl>}
 
+          {pestanaDrawer === 'informacion' && <div className="flex flex-wrap gap-2 border-t border-outline-variant pt-4">
+            <Link to={`/programas?id=${seleccionada.idPrograma}`} className="rounded-md border border-outline px-3 py-2 text-sm font-medium text-on-surface hover:bg-surface-container">Ver programa</Link>
+            <Link to={`/aprendices?ficha=${encodeURIComponent(seleccionada.codigoFicha)}`} className="rounded-md border border-outline px-3 py-2 text-sm font-medium text-on-surface hover:bg-surface-container">Ver aprendices de esta ficha</Link>
+            <Link to={`/aprendices/carga-masiva?ficha=${encodeURIComponent(seleccionada.codigoFicha)}`} className="rounded-md bg-primary px-3 py-2 text-sm font-medium text-on-primary hover:bg-on-primary-container">Cargar aprendices</Link>
+          </div>}
+
           {pestanaDrawer === 'relacionados' && (cargandoHorarios ? (
             <p className="text-sm text-on-surface-variant dark:text-slate-400">Cargando relacionados…</p>
           ) : errorHorarios ? (
@@ -533,7 +542,7 @@ export function Fichas() {
             </>
           ))}
 
-          {pestanaDrawer === 'acciones' && <div className="space-y-3"><Link to="/horarios/crear" className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-on-primary-container"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit_calendar</span>Abrir en Crear horario</Link>{puedeGestionar && <button type="button" onClick={() => abrirEditar(seleccionada)} className="w-full rounded-xl border border-outline px-4 py-2.5 text-sm font-semibold text-on-surface hover:bg-surface dark:border-slate-700 dark:text-slate-200">Editar ficha</button>}<button type="button" disabled title="El detalle completo estará disponible en una fase posterior" className="w-full rounded-xl border border-outline px-4 py-2.5 text-sm font-semibold text-on-surface-variant/60">Abrir detalle completo</button></div>}
+          {pestanaDrawer === 'acciones' && <div className="space-y-3"><Link to="/horarios/nuevo" className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary hover:bg-on-primary-container"><span className="material-symbols-outlined text-[18px]" aria-hidden="true">edit_calendar</span>Abrir en Crear horario</Link>{puedeGestionar && <button type="button" onClick={() => abrirEditar(seleccionada)} className="w-full rounded-xl border border-outline px-4 py-2.5 text-sm font-semibold text-on-surface hover:bg-surface dark:border-slate-700 dark:text-slate-200">Editar ficha</button>}<button type="button" disabled title="El detalle completo estará disponible en una fase posterior" className="w-full rounded-xl border border-outline px-4 py-2.5 text-sm font-semibold text-on-surface-variant/60">Abrir detalle completo</button></div>}
         </DrawerRelacionados>
       )}
     </AppShell>

@@ -197,6 +197,21 @@ describe('MiHorarioAprendiz', () => {
       )
       expect(await screen.findByText(/Horario histórico/)).toBeInTheDocument()
     })
+
+    it('actualiza el trimestre seleccionado sin volver al vigente', async () => {
+      const usuario = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      mockearRespuestas({ horarios: [crearHorario()], horarioPorTrimestre: { 2: [] } })
+      renderConProviders(<MiHorarioAprendiz />)
+
+      await screen.findByText('Ficha 2874521')
+      await usuario.click(screen.getByRole('button', { name: 'Trimestre III' }))
+      await screen.findByText(/Horario histórico/)
+      apiGetMock.mockClear()
+      await usuario.click(screen.getByRole('button', { name: 'Actualizar horario' }))
+
+      await waitFor(() => expect(apiGetMock).toHaveBeenCalledWith('/ficha-usuario/mi-horario?idTrimestre=2'))
+      expect(apiGetMock).not.toHaveBeenCalledWith('/ficha-usuario/mi-horario')
+    })
   })
 
   it('pinta la clase en la grilla con instructor y ambiente', async () => {
@@ -259,8 +274,8 @@ describe('MiHorarioAprendiz', () => {
 
     await screen.findByText('Ficha 2874521')
 
-    expect(screen.getByRole('button', { name: 'Descargar Horario PDF' })).toBeDisabled()
-    expect(screen.getByRole('button', { name: 'Vista Agenda' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Descargar Horario PDF' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Vista Agenda' })).not.toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Reportar novedad de asistencia' })).toBeDisabled()
   })
 

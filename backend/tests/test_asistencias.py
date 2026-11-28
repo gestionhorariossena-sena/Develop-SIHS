@@ -129,6 +129,37 @@ def test_el_instructor_pasa_lista_y_queda_registrada(client, db_session, escenar
     assert guardada.horaMarcacion is not None
 
 
+def test_no_se_guarda_una_lista_incompleta(client, db_session, crear_usuario, crear_rol, escenario):
+    _matricular(db_session, crear_usuario, crear_rol, nombre="Camilo Vargas", documento="1014234567")
+
+    respuesta = client.post(
+        "/api/v1/asistencias/sesion",
+        json={
+            "idHorario": 100,
+            "fechaSesion": escenario["fecha"],
+            "marcas": [{"idUsuarioAprendiz": str(escenario["aprendiz"].idUsuario), "estado": "presente"}],
+        },
+        headers=escenario["headers"],
+    )
+
+    assert respuesta.status_code == 422
+    assert "Marca a todos" in respuesta.json()["detail"]
+    assert db_session.query(Asistencia).count() == 0
+
+
+def test_no_se_aceptan_marcas_duplicadas(client, db_session, escenario):
+    marca = {"idUsuarioAprendiz": str(escenario["aprendiz"].idUsuario), "estado": "presente"}
+    respuesta = client.post(
+        "/api/v1/asistencias/sesion",
+        json={"idHorario": 100, "fechaSesion": escenario["fecha"], "marcas": [marca, marca]},
+        headers=escenario["headers"],
+    )
+
+    assert respuesta.status_code == 422
+    assert "más de una vez" in respuesta.json()["detail"]
+    assert db_session.query(Asistencia).count() == 0
+
+
 def test_volver_a_pasar_lista_corrige_en_vez_de_duplicar(client, db_session, escenario):
     cuerpo = {
         "idHorario": 100,

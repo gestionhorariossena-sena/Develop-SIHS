@@ -46,12 +46,14 @@ const FICHAS: Ficha[] = [
   },
 ]
 
-const { apiGetMock, apiPostMock, apiPutMock } = vi.hoisted(() => ({ apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPutMock: vi.fn() }))
+const { apiGetMock, apiPostMock, apiPutMock, apiDeleteMock } = vi.hoisted(() => ({ apiGetMock: vi.fn(), apiPostMock: vi.fn(), apiPutMock: vi.fn(), apiDeleteMock: vi.fn() }))
 const PERFIL_ADMIN = { idUsuario: 'admin', nombre: 'Administrador', email: 'admin@test.com', estado: 'activo', fechaRegistro: '2026-01-01', roles: [{ idRol: 1, nombre: 'Administrador' }], especialidades: [] }
+const PERFIL_COORDINADOR = { ...PERFIL_ADMIN, idUsuario: 'coord', nombre: 'Ana', roles: [{ idRol: 2, nombre: 'Coordinador' }] }
 vi.mock('../../../src/services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
   apiPost: (...args: unknown[]) => apiPostMock(...args),
   apiPut: (...args: unknown[]) => apiPutMock(...args),
+  apiDelete: (...args: unknown[]) => apiDeleteMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
@@ -77,18 +79,25 @@ const HORARIOS: Horario[] = [
 
 const DIAS: DiaSemana[] = [{ idDia: 1, nombreDia: 'Lunes' }]
 
-function mockeaFichasConHorarios(fichas: unknown, todosLosHorarios: Horario[] = HORARIOS) {
+function mockeaFichasConHorarios(fichas: unknown, todosLosHorarios: Horario[] = HORARIOS, perfil: typeof PERFIL_ADMIN = PERFIL_ADMIN) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/fichas/') return Promise.resolve(fichas)
     if (path === '/fichas/1/horarios') return Promise.resolve(HORARIOS)
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
     if (path === '/horarios/') return Promise.resolve(todosLosHorarios)
-    if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
+    if (path === '/usuarios/me') return Promise.resolve(perfil)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
 
 describe('Fichas', () => {
+  beforeEach(() => { apiGetMock.mockClear() })
+  it('abre la creación con el programa seleccionado desde su detalle', async () => {
+    mockeaFichasYPerfil(FICHAS)
+    renderConProviders(<Fichas />, ['/fichas?crear=1&idPrograma=1'])
+    expect(await screen.findByRole('heading', { name: 'Nueva ficha' })).toBeInTheDocument()
+    expect(screen.getByLabelText('ID del programa')).toHaveValue(1)
+  })
   it('permite crear y editar desde la fila con el payload del schema y refresca la lista', async () => {
     mockeaFichasYPerfil(FICHAS)
     apiPostMock.mockResolvedValue({ ...FICHAS[0], idFicha: 3, codigoFicha: 'Nueva' })
@@ -204,11 +213,11 @@ describe('Fichas', () => {
     await usuario.click(screen.getByText('3228973 B'))
     const panel = screen.getByRole('dialog', { name: '3228973 B' })
     const cerrar = within(panel).getByRole('button', { name: 'Cerrar' })
-    const ultimaPestana = within(panel).getByRole('tab', { name: 'Acciones' })
+    const ultimoEnlace = within(panel).getByRole('link', { name: 'Cargar aprendices' })
 
     cerrar.focus()
     await usuario.keyboard('{Shift>}{Tab}{/Shift}')
-    expect(ultimaPestana).toHaveFocus()
+    expect(ultimoEnlace).toHaveFocus()
 
     await usuario.keyboard('{Tab}')
     expect(cerrar).toHaveFocus()
@@ -371,6 +380,7 @@ describe('Fichas', () => {
         if (path === '/programas/') return Promise.resolve([FICHAS[0].programa, FICHAS[1].programa])
         if (path === '/trimestres/') return Promise.resolve([FICHAS[0].trimestre, FICHAS[1].trimestre])
         if (path === '/sedes') return Promise.resolve([])
+        if (path === '/usuarios/me') return Promise.resolve(PERFIL_ADMIN)
         return Promise.reject(new Error('no mockeado en este test'))
       })
     }
@@ -383,17 +393,17 @@ describe('Fichas', () => {
       apiPostMock.mockClear()
     })
 
-    it('el botón "Importar CSV" abre y cierra el panel de importación', async () => {
+    it('el botón "Carga masiva" abre y cierra el panel de importación', async () => {
       mockeaFichasYPerfil(FICHAS)
       const usuario = userEvent.setup()
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
-      expect(screen.getByText(/Columnas esperadas/)).toBeInTheDocument()
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
+      expect(screen.getByText(/Columnas:/)).toBeInTheDocument()
 
       await usuario.click(screen.getByRole('button', { name: 'Cerrar' }))
-      expect(screen.queryByText(/Columnas esperadas/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/Columnas:/)).not.toBeInTheDocument()
     })
 
     it('sube un CSV, previsualiza las filas y al confirmar crea cada ficha resolviendo programa/trimestre a sus ids', async () => {
@@ -403,7 +413,7 @@ describe('Fichas', () => {
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
       const csv = 'codigoFicha,codigoPrograma,trimestre,sede\nFICHA-NUEVA,ADSO,Trimestre 3,'
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
 
@@ -418,7 +428,8 @@ describe('Fichas', () => {
         idTrimestre: 1,
         idSede: null,
       }))
-      expect(await screen.findByText(/FICHA-NUEVA: creada/)).toBeInTheDocument()
+      expect(await screen.findByText('Fila 2 · FICHA-NUEVA')).toBeInTheDocument()
+      expect(screen.getByText('Importado')).toBeInTheDocument()
     })
 
     it('si el CSV referencia un programa que no existe, reporta el error en esa fila sin romper las demás', async () => {
@@ -428,15 +439,15 @@ describe('Fichas', () => {
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
       const csv = 'codigoFicha,codigoPrograma,trimestre,sede\nFICHA-A,NOEXISTE,Trimestre 3,\nFICHA-B,ADSO,Trimestre 3,'
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv(csv))
       await screen.findByText(/Se encontraron/)
 
       await usuario.click(screen.getByRole('button', { name: 'Confirmar importación de 2 filas' }))
 
-      expect(await screen.findByText(/FICHA-A: No existe el programa "NOEXISTE"\./)).toBeInTheDocument()
-      expect(await screen.findByText(/FICHA-B: creada/)).toBeInTheDocument()
+      expect(await screen.findByText('No existe el programa "NOEXISTE".')).toBeInTheDocument()
+      expect(await screen.findByText('Fila 3 · FICHA-B')).toBeInTheDocument()
       expect(apiPostMock).toHaveBeenCalledTimes(1)
     })
 
@@ -446,11 +457,40 @@ describe('Fichas', () => {
       renderConProviders(<Fichas />)
       await screen.findByText('3228973 B')
 
-      await usuario.click(screen.getByRole('button', { name: 'Importar CSV' }))
+      await usuario.click(screen.getByRole('button', { name: 'Carga masiva' }))
       await usuario.upload(screen.getByLabelText('Seleccionar archivo CSV'), archivoCsv('codigoFicha,codigoPrograma\nFICHA-X,ADSO'))
 
       expect(await screen.findByText(/le faltan estas columnas: trimestre/)).toBeInTheDocument()
       expect(screen.queryByText(/Se encontraron/)).not.toBeInTheDocument()
+    })
+  })
+
+  // SCRUM-198: el borrado seguro de ficha es solo de Administrador.
+  describe('SCRUM-198: borrado seguro de ficha', () => {
+    it('un Administrador ve la opción de eliminar la ficha en la pestaña Acciones', async () => {
+      mockeaFichasConHorarios(FICHAS)
+      const usuario = userEvent.setup()
+      renderConProviders(<Fichas />)
+      await screen.findByText('3228973 B')
+      await usuario.click(screen.getByText('3228973 B'))
+
+      const panel = screen.getByRole('dialog', { name: '3228973 B' })
+      await usuario.click(within(panel).getByRole('tab', { name: 'Acciones' }))
+
+      expect(within(panel).getByRole('button', { name: /Eliminar ficha 3228973 B/ })).toBeInTheDocument()
+    })
+
+    it('un Coordinador no ve la opción de eliminar la ficha', async () => {
+      mockeaFichasConHorarios(FICHAS, HORARIOS, PERFIL_COORDINADOR)
+      const usuario = userEvent.setup()
+      renderConProviders(<Fichas />)
+      await screen.findByText('3228973 B')
+      await usuario.click(screen.getByText('3228973 B'))
+
+      const panel = screen.getByRole('dialog', { name: '3228973 B' })
+      await usuario.click(within(panel).getByRole('tab', { name: 'Acciones' }))
+
+      expect(within(panel).queryByRole('button', { name: /Eliminar ficha/ })).not.toBeInTheDocument()
     })
   })
 })

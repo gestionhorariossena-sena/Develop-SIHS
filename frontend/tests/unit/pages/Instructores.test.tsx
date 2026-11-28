@@ -37,22 +37,30 @@ const HORARIOS: Horario[] = [
   },
 ]
 
+const PERFIL_ADMIN = { idUsuario: 'admin', nombre: 'Administrador', email: 'admin@test.com', estado: 'activo', fechaRegistro: '2026-01-01', roles: [{ idRol: 1, nombre: 'Administrador' }], especialidades: [] }
+const PERFIL_COORDINADOR = { ...PERFIL_ADMIN, idUsuario: 'coord', nombre: 'Ana', roles: [{ idRol: 2, nombre: 'Coordinador' }] }
+
 const apiGetMock = vi.fn()
+const apiDeleteMock = vi.fn()
 vi.mock('../../../src/services/api', () => ({
   apiGet: (...args: unknown[]) => apiGetMock(...args),
+  apiDelete: (...args: unknown[]) => apiDeleteMock(...args),
   ApiError: class ApiError extends Error {},
 }))
 
 /** AppShell también llama a apiGet('/usuarios/me') al montar — el mock
  * tiene que distinguir por ruta o revienta leyendo `.roles` de lo que sea
- * que devuelva /usuarios/. */
-function mockeaUsuariosYPerfil(usuarios: unknown, todosLosHorarios: Horario[] = HORARIOS) {
+ * que devuelva /usuarios/. Sin `perfil`, /usuarios/me se deja sin mockear
+ * a propósito: ningún test previo a SCRUM-198 lo necesitaba, y el
+ * componente lo tolera (ver EliminacionSegura, gated por puedeGestionar). */
+function mockeaUsuariosYPerfil(usuarios: unknown, todosLosHorarios: Horario[] = HORARIOS, perfil?: typeof PERFIL_ADMIN) {
   apiGetMock.mockImplementation((path: string) => {
     if (path === '/usuarios/instructores') return Promise.resolve(usuarios)
     if (path === '/dias-semana/') return Promise.resolve(DIAS)
     if (path === '/usuarios/u1/carga-semanal') return Promise.resolve(CARGA)
     if (path === '/usuarios/u1/horarios') return Promise.resolve(HORARIOS)
     if (path === '/horarios/') return Promise.resolve(todosLosHorarios)
+    if (path === '/usuarios/me' && perfil) return Promise.resolve(perfil)
     return Promise.reject(new Error('no mockeado en este test'))
   })
 }
@@ -66,6 +74,36 @@ describe('Instructores', () => {
     expect(apiGetMock).toHaveBeenCalledWith('/usuarios/instructores')
     expect(apiGetMock).not.toHaveBeenCalledWith('/usuarios/')
     expect(screen.getByText('1 de 1 instructores')).toBeInTheDocument()
+  })
+
+  it('permite exportar la carga docente filtrada sin limitarse a la página visible', async () => {
+    mockeaUsuariosYPerfil(USUARIOS)
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    const crearUrl = vi.fn(() => 'blob:carga-docente')
+    const revocarUrl = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: crearUrl })
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: revocarUrl })
+    const usuario = userEvent.setup()
+    renderConProviders(<Instructores />)
+    const boton = screen.getByRole('button', { name: 'Exportar carga docente (.csv)' })
+    await waitFor(() => expect(boton).toBeEnabled())
+    await usuario.click(boton)
+    expect(crearUrl).toHaveBeenCalledTimes(1)
+    expect(click).toHaveBeenCalledTimes(1)
+    expect(revocarUrl).toHaveBeenCalledWith('blob:carga-docente')
+    click.mockRestore()
+  })
+
+  it('no permite exportar horas incompletas si el endpoint de horarios falla', async () => {
+    apiGetMock.mockImplementation((path: string) => {
+      if (path === '/usuarios/instructores') return Promise.resolve(USUARIOS)
+      if (path === '/dias-semana/') return Promise.resolve(DIAS)
+      if (path === '/horarios/') return Promise.reject(new Error('Falló la API'))
+      return Promise.reject(new Error('no mockeado'))
+    })
+    renderConProviders(<Instructores />)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/No se pudieron cargar los horarios/)
+    expect(screen.getByRole('button', { name: 'Exportar carga docente (.csv)' })).toBeDisabled()
   })
 
   it('muestra especialidad y tipo de contrato del instructor', async () => {
@@ -252,5 +290,31 @@ describe('Instructores', () => {
 
     expect(screen.queryByText('Erick Granados')).not.toBeInTheDocument()
     expect(screen.getByText('Fredy Ardila')).toBeInTheDocument()
+  })
+
+  // SCRUM-198: el borrado seguro de instructor es solo de Administrador.
+  describe('SCRUM-198: borrado seguro de instructor', () => {
+    it('un Administrador ve la opción de eliminar el instructor en su detalle', async () => {
+      mockeaUsuariosYPerfil(USUARIOS, HORARIOS, PERFIL_ADMIN)
+      const usuario = userEvent.setup()
+      renderConProviders(<Instructores />)
+      await screen.findByText('Erick Granados')
+      await usuario.click(screen.getByText('Erick Granados'))
+
+      const panel = await screen.findByRole('dialog', { name: 'Erick Granados' })
+      expect(await within(panel).findByRole('button', { name: /Eliminar instructor Erick Granados/ })).toBeInTheDocument()
+    })
+
+    it('sin rol Administrador (incluido un Coordinador), no ve la opción de eliminar', async () => {
+      mockeaUsuariosYPerfil(USUARIOS, HORARIOS, PERFIL_COORDINADOR)
+      const usuario = userEvent.setup()
+      renderConProviders(<Instructores />)
+      await screen.findByText('Erick Granados')
+      await usuario.click(screen.getByText('Erick Granados'))
+
+      const panel = await screen.findByRole('dialog', { name: 'Erick Granados' })
+      await waitFor(() => expect(within(panel).queryByText('Calculando…')).not.toBeInTheDocument())
+      expect(within(panel).queryByRole('button', { name: /Eliminar instructor/ })).not.toBeInTheDocument()
+    })
   })
 })

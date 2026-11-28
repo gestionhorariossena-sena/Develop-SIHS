@@ -33,8 +33,13 @@ class AmbienteService:
             data = data.model_copy(update={"nombre": "Ambiente"})
         try:
             return self.repository.create(db, data)
-        except IntegrityError:
+        except IntegrityError as exc:
             db.rollback()
+            if getattr(exc.orig, "diag", None) and exc.orig.diag.constraint_name == "uqAmbienteNumeroSede":
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Ya existe el ambiente {data.numero_ambiente} en esta sede.",
+                ) from None
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="No se pudo crear el ambiente.") from None
 
     def update(self, db: Session, ambiente_id: int, data: AmbienteUpdate):

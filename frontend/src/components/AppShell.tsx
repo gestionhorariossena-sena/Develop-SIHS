@@ -32,6 +32,10 @@ interface GrupoNav {
   items: ItemNav[]
 }
 
+interface DestinoRapido extends ItemNav {
+  grupo: string
+}
+
 /**
  * Navbar superior con menús desplegables por grupo — rediseño 2026-09-06
  * siguiendo los mockups Stitch al pie de la letra (ver GUIA_DE_MARCA.md).
@@ -77,31 +81,23 @@ const NAV: GrupoNav[] = [
   {
     grupo: 'Programación',
     items: [
-      { etiqueta: 'Crear horario', ruta: '/horarios/crear', soloGestion: true },
-      { etiqueta: 'Asistente IA', ruta: '/horarios/asistente-ia', soloGestion: true },
+      // `/horarios/nuevo` es el editor manual vigente. `/horarios/crear`
+      // permanece registrado solo para enlaces históricos.
+      { etiqueta: 'Crear horario', ruta: '/horarios/nuevo', soloGestion: true },
+      { etiqueta: 'Importar con IA', ruta: '/horarios/asistente-ia', soloGestion: true },
       { etiqueta: 'Gestionar horarios', ruta: '/horarios/completos', soloGestion: true },
       { etiqueta: 'Publicaciones programadas', ruta: '/horarios/publicaciones-programadas', soloGestion: true },
-      { etiqueta: 'Historial de horarios', ruta: '/horarios/historial', soloGestion: true },
+      { etiqueta: 'Registro y versiones', ruta: '/horarios/historial', soloGestion: true },
     ],
   },
   {
-    grupo: 'Formación',
+    grupo: 'Datos académicos',
     items: [
-      { etiqueta: 'Fichas', ruta: '/fichas', soloGestion: true },
-      { etiqueta: 'Programas', ruta: '/programas', soloGestion: true },
-      { etiqueta: 'Temáticas', ruta: '/tematicas', soloGestion: true },
+      { etiqueta: 'Datos académicos', ruta: '/datos-academicos', soloGestion: true },
     ],
   },
   {
-    grupo: 'Recursos',
-    items: [
-      { etiqueta: 'Instructores', ruta: '/instructores', soloGestion: true },
-      { etiqueta: 'Ambientes', ruta: '/ambientes', soloGestion: true },
-      { etiqueta: 'Sedes', ruta: '/sedes', soloGestion: true },
-    ],
-  },
-  {
-    grupo: 'Comunicaciones',
+    grupo: 'Operación',
     items: [
       { etiqueta: 'Solicitudes de cambio', ruta: '/cambios', soloGestion: true },
       { etiqueta: 'Mis solicitudes', ruta: '/mis-solicitudes-cambio', soloInstructor: true },
@@ -117,7 +113,6 @@ const NAV: GrupoNav[] = [
       // real es que repartir roles es del Administrador, y el menú ahora
       // dice lo mismo que el backend.
       { etiqueta: 'Usuarios', ruta: '/usuarios', soloAdmin: true },
-      { etiqueta: 'Código de instructor', ruta: '/codigo-instructor', soloGestion: true },
       { etiqueta: 'Roles', ruta: '/roles', soloAdmin: true },
       // Dos caminos de alta, cada uno con su caso (H-7):
       //  - "Solicitudes de acceso": gente SIN cuenta, que la pidió desde el
@@ -127,10 +122,13 @@ const NAV: GrupoNav[] = [
       //    puede usar nada. El Panel no los ve: no hay solicitud detrás.
       { etiqueta: 'Solicitudes de acceso', ruta: '/panel-administracion', soloAdmin: true },
       { etiqueta: 'Usuarios sin rol', ruta: '/aprobar-solicitudes', soloAdmin: true },
-      { etiqueta: 'Configuración', soloGestion: true },
     ],
   },
 ]
+
+function normalizarBusqueda(texto: string) {
+  return texto.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLocaleLowerCase('es-CO').trim()
+}
 
 function letraInicial(nombre: string) {
   return nombre.trim().charAt(0).toUpperCase()
@@ -144,7 +142,7 @@ function letraInicial(nombre: string) {
  * MensajesAprendiz.tsx, MiAsistencia.tsx, Notificaciones.tsx).
  */
 const APRENDIZ_SUBNAV = [
-  { etiqueta: 'Mi Horario', ruta: '/mi-horario-aprendiz', icono: 'calendar_month' },
+  { etiqueta: 'Mi horario', ruta: '/mi-horario-aprendiz', icono: 'calendar_month' },
   { etiqueta: 'Mis instructores', ruta: '/mensajes', icono: 'forum' },
   // Solo vocero/subvocero: ver dónde se arma esta lista más abajo (esVocero).
   { etiqueta: 'Mensajes', ruta: '/mensajes/chat', icono: 'chat', soloVocero: true },
@@ -182,6 +180,9 @@ export function AppShell({ activo, children }: AppShellProps) {
   // central aparece a partir de xl para dejar espacio suficiente a los grupos.
   const [menuCompactoAbierto, setMenuCompactoAbierto] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const dialogoBusquedaRef = useRef<HTMLDialogElement>(null)
+  const primerResultadoRef = useRef<HTMLAnchorElement>(null)
+  const [consultaNavegacion, setConsultaNavegacion] = useState('')
 
   const [notifAbiertas, setNotifAbiertas] = useState(false)
   const [notificaciones, setNotificaciones] = useState<Notificacion[]>([])
@@ -231,6 +232,28 @@ export function AppShell({ activo, children }: AppShellProps) {
     ),
   })).filter((grupo) => grupo.items.length > 0)
 
+  const destinosRapidos: DestinoRapido[] = [
+    { ...INICIO, grupo: 'General' },
+    ...nav.flatMap(({ grupo, items }) => items.map((item) => ({ ...item, grupo }))),
+    ...(esAprendiz && esVocero ? [{ etiqueta: 'Mensajes', ruta: '/mensajes/chat', grupo: 'Mi trabajo' }] : []),
+    ...(puedeGestionarUsuarios ? [
+      { etiqueta: 'Calendario de horarios', ruta: '/calendario', grupo: 'Programación' },
+      { etiqueta: 'Conflictos de horarios', ruta: '/horarios/auditoria', grupo: 'Programación' },
+    ] : []),
+  ]
+  const palabrasBusqueda = normalizarBusqueda(consultaNavegacion).split(/\s+/)
+  const resultadosNavegacion = destinosRapidos.filter(({ etiqueta, grupo }) => {
+    const texto = normalizarBusqueda(`${etiqueta} ${grupo}`)
+    return palabrasBusqueda.every((palabra) => texto.includes(palabra))
+  })
+
+  function abrirBuscador() {
+    const dialogo = dialogoBusquedaRef.current
+    if (!dialogo || dialogo.open) return
+    setConsultaNavegacion('')
+    dialogo.showModal()
+  }
+
   // Mismo perfil cacheado que consulta ProtectedRoute al entrar a la
   // pantalla: los dos corren siempre juntos, así que comparten el request.
   useEffect(() => {
@@ -254,6 +277,18 @@ export function AppShell({ activo, children }: AppShellProps) {
         setErrorPerfil(mensaje)
       })
   }, [idUsuario, setTema])
+
+  useEffect(() => {
+    function alAtajo(evento: KeyboardEvent) {
+      if ((evento.ctrlKey || evento.metaKey) && evento.key.toLowerCase() === 'k') {
+        evento.preventDefault()
+        abrirBuscador()
+      }
+    }
+
+    document.addEventListener('keydown', alAtajo)
+    return () => document.removeEventListener('keydown', alAtajo)
+  }, [])
 
   useEffect(() => {
     apiGet<Notificacion[]>('/notificaciones/')
@@ -339,8 +374,8 @@ export function AppShell({ activo, children }: AppShellProps) {
       return (
         <span
           key={item.etiqueta}
-          title="Módulo aún no implementado en el backend"
-          className="cursor-not-allowed rounded-full px-3.5 py-1.5 text-sm font-semibold text-on-surface-variant/50"
+          title="Esta sección aún no está disponible"
+          className="cursor-not-allowed rounded-lg px-3 py-1.5 text-sm text-on-surface-variant/50"
         >
           {item.etiqueta}
         </span>
@@ -349,9 +384,10 @@ export function AppShell({ activo, children }: AppShellProps) {
 
     return (
       <Link
-        key={item.etiqueta}
+        key={item.ruta}
         to={item.ruta}
-        className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all ${
+        aria-current={esActivo ? 'page' : undefined}
+        className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
           esActivo
             ? 'bg-primary-container text-on-primary-container'
             : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
@@ -368,8 +404,9 @@ export function AppShell({ activo, children }: AppShellProps) {
     if (item.ruta) {
       return (
         <Link
-          key={item.etiqueta}
+          key={item.ruta}
           to={item.ruta}
+          aria-current={esActivo ? 'page' : undefined}
           onClick={() => setGrupoAbierto(null)}
           className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition ${
             esActivo
@@ -385,7 +422,7 @@ export function AppShell({ activo, children }: AppShellProps) {
     return (
       <span
         key={item.etiqueta}
-        title="Módulo aún no implementado en el backend"
+        title="Esta sección aún no está disponible"
         className="flex cursor-not-allowed items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-on-surface-variant/50"
       >
         {item.etiqueta}
@@ -401,9 +438,9 @@ export function AppShell({ activo, children }: AppShellProps) {
 
   return (
     <div className="min-h-screen bg-surface">
-      <header className="fixed top-0 z-50 w-full border-b border-outline-variant/60 bg-surface-container-lowest/90 shadow-[0_1px_8px_rgba(0,0,0,0.04)] backdrop-blur-xl print:hidden">
-        <div className="flex h-16 w-full items-center justify-between gap-3 px-4 md:px-6">
-          <div className="flex shrink-0 items-center gap-3">
+      <header className="fixed top-0 z-50 w-full border-b border-outline-variant/60 bg-surface-container-lowest print:hidden">
+        <div className="flex h-16 w-full items-center justify-between gap-2 px-2 min-[360px]:px-3 sm:gap-3 sm:px-4 md:px-6">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
             <button
               type="button"
               onClick={() => setMenuCompactoAbierto((abierto) => !abierto)}
@@ -439,11 +476,13 @@ export function AppShell({ activo, children }: AppShellProps) {
           {/* Sin `overflow-hidden`: los desplegables se abren debajo de la barra. */}
           <nav
             ref={dropdownRef}
+            aria-label="Navegación principal"
             className="hidden min-w-0 flex-1 items-center justify-center gap-1 whitespace-nowrap xl:flex"
           >
             <Link
               to={INICIO.ruta!}
-              className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all ${
+              aria-current={activo === INICIO.etiqueta ? 'page' : undefined}
+              className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                 activo === INICIO.etiqueta
                   ? 'bg-primary-container text-on-primary-container'
                   : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
@@ -467,7 +506,7 @@ export function AppShell({ activo, children }: AppShellProps) {
                   onClick={() => setGrupoAbierto((actual) => (actual === grupo.grupo ? null : grupo.grupo))}
                   aria-haspopup="true"
                   aria-expanded={grupoAbierto === grupo.grupo}
-                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all ${
+                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                     grupoTieneActivo(grupo)
                       ? 'bg-primary-container text-on-primary-container'
                       : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
@@ -486,7 +525,19 @@ export function AppShell({ activo, children }: AppShellProps) {
             )}
           </nav>
 
-          <div className="flex shrink-0 items-center gap-2">
+          <div className="flex shrink-0 items-center gap-1 min-[360px]:gap-2">
+            <button
+              type="button"
+              onClick={abrirBuscador}
+              className="inline-flex h-9 w-9 items-center justify-center gap-2 rounded-lg border border-outline text-sm text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface lg:w-auto lg:px-3 dark:border-slate-700"
+              aria-label="Buscar módulo"
+              aria-haspopup="dialog"
+              aria-keyshortcuts="Control+K Meta+K"
+            >
+              <span className="material-symbols-outlined text-[19px]" aria-hidden="true">search</span>
+              <span className="hidden lg:inline">Buscar</span>
+              <kbd className="hidden rounded border border-outline-variant px-1 font-mono text-[10px] text-on-surface-variant 2xl:inline dark:border-slate-600">Ctrl K</kbd>
+            </button>
             <ThemeSelector
               alCambiar={(nuevo) => {
                 if (idUsuario) guardarPreferenciaTema(idUsuario, nuevo).catch(() => {})
@@ -512,7 +563,7 @@ export function AppShell({ activo, children }: AppShellProps) {
                 aria-label="Notificaciones"
                 aria-haspopup="true"
                 aria-expanded={notifAbiertas}
-                className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-surface text-on-surface-variant transition-all hover:bg-surface-container-high hover:text-on-surface dark:bg-slate-700"
+                className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-surface text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface dark:bg-slate-700"
               >
                 <span className="material-symbols-outlined text-[20px]">notifications</span>
                 {hayNoLeidas && (
@@ -550,7 +601,7 @@ export function AppShell({ activo, children }: AppShellProps) {
               onClick={() => void signOut()}
               title="Cerrar sesión"
               aria-label="Cerrar sesión"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-outline text-on-surface-variant transition-all hover:bg-surface-container-high hover:text-on-surface dark:border-slate-700"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface dark:border-slate-700"
             >
               <span className="material-symbols-outlined text-[20px]">logout</span>
             </button>
@@ -564,6 +615,7 @@ export function AppShell({ activo, children }: AppShellProps) {
           >
             <Link
               to={INICIO.ruta!}
+              aria-current={activo === INICIO.etiqueta ? 'page' : undefined}
               onClick={() => setMenuCompactoAbierto(false)}
               className={`block rounded-lg px-3 py-2 text-sm font-semibold ${
                 activo === INICIO.etiqueta
@@ -576,7 +628,7 @@ export function AppShell({ activo, children }: AppShellProps) {
 
             {nav.map((grupo) => (
               <div key={grupo.grupo} className="mt-3">
-                <p className="px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-on-surface-variant">
+                <p className="px-3 pb-1 text-[11px] font-medium text-on-surface-variant">
                   {grupo.grupo}
                 </p>
                 <div onClick={() => setMenuCompactoAbierto(false)}>
@@ -587,6 +639,65 @@ export function AppShell({ activo, children }: AppShellProps) {
           </nav>
         )}
       </header>
+
+      <dialog
+        ref={dialogoBusquedaRef}
+        aria-label="Buscar módulo"
+        className="fixed inset-x-0 top-12 mx-auto w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest text-on-surface shadow-lg backdrop:bg-slate-950/35 sm:top-24"
+        onClick={(evento) => {
+          if (evento.target === evento.currentTarget) evento.currentTarget.close()
+        }}
+        onKeyDown={(evento) => {
+          if (evento.key === 'Escape') {
+            evento.preventDefault()
+            evento.currentTarget.close()
+          }
+        }}
+      >
+        <div>
+          <form
+            className="flex items-center gap-3 border-b border-outline-variant px-4"
+            onSubmit={(evento) => {
+              evento.preventDefault()
+              primerResultadoRef.current?.click()
+            }}
+          >
+            <span className="material-symbols-outlined text-[18px] text-on-surface-variant" aria-hidden="true">search</span>
+            <input
+              autoFocus
+              type="search"
+              aria-label="Buscar módulo"
+              value={consultaNavegacion}
+              onChange={(evento) => setConsultaNavegacion(evento.target.value)}
+              onKeyDown={(evento) => {
+                if (evento.key === 'ArrowDown' && primerResultadoRef.current) {
+                  evento.preventDefault()
+                  primerResultadoRef.current.focus()
+                }
+              }}
+              placeholder="Buscar módulo"
+              className="h-12 min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-on-surface-variant"
+            />
+            <button type="button" onClick={() => dialogoBusquedaRef.current?.close()} className="rounded-md px-2 py-1 font-mono text-xs text-on-surface-variant hover:bg-surface-container" aria-label="Cerrar buscador">Esc</button>
+          </form>
+          <div className="max-h-[min(62dvh,440px)] overflow-y-auto p-2">
+            {resultadosNavegacion.map((destino, indice) => (
+              <Link
+                key={destino.ruta}
+                ref={indice === 0 ? primerResultadoRef : undefined}
+                to={destino.ruta!}
+                aria-label={destino.etiqueta}
+                onClick={() => dialogoBusquedaRef.current?.close()}
+                className="flex min-h-10 items-center justify-between gap-4 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-surface-container focus-visible:bg-surface-container"
+              >
+                <span>{destino.etiqueta}</span>
+                <span className="text-right text-xs text-on-surface-variant">{destino.grupo}</span>
+              </Link>
+            ))}
+            {resultadosNavegacion.length === 0 && <p role="status" className="px-3 py-8 text-center text-sm text-on-surface-variant">No hay módulos que coincidan</p>}
+          </div>
+        </div>
+      </dialog>
 
       {mostrarSubnavAprendiz && (
         <nav
@@ -599,7 +710,8 @@ export function AppShell({ activo, children }: AppShellProps) {
               <Link
                 key={item.ruta}
                 to={item.ruta}
-                className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-all ${
+                aria-current={esActivo ? 'page' : undefined}
+                className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                   esActivo
                     ? 'bg-primary text-on-primary'
                     : 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'
@@ -635,11 +747,11 @@ export function AppShell({ activo, children }: AppShellProps) {
       )}
 
       <main
-        className={`w-full bg-[radial-gradient(ellipse_at_top,_#eaf7ec_0%,_#f8fafc_60%,_#faf8ff_100%)] dark:bg-none ${
+        className={`w-full bg-surface ${
           mostrarSubnavAprendiz ? 'pt-28' : 'pt-16'
         }`}
       >
-        <div className="p-6">{children}</div>
+        <div className="min-w-0 p-4 sm:p-6">{children}</div>
       </main>
     </div>
   )

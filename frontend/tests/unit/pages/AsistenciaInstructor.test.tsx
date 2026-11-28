@@ -80,7 +80,8 @@ function mockear(datosSesion: SesionAsistencia | Error = sesion(), horarios: Hor
     if (path === '/usuarios/me') return Promise.resolve(INSTRUCTOR)
     if (path === '/notificaciones/') return Promise.resolve([])
     if (path.startsWith('/asistencias/sesion')) {
-      return datosSesion instanceof Error ? Promise.reject(datosSesion) : Promise.resolve(datosSesion)
+      const fecha = new URL(path, 'http://localhost').searchParams.get('fecha')
+      return datosSesion instanceof Error ? Promise.reject(datosSesion) : Promise.resolve({ ...datosSesion, fechaSesion: fecha })
     }
     return Promise.resolve([])
   })
@@ -136,12 +137,17 @@ describe('AsistenciaInstructor', () => {
 
     const campo = screen.getByLabelText('Número de radicado o referencia:')
     await usuario.type(campo, 'RAD-2026-0922-EPS-04')
+    const filaCamilo = screen.getByText('Camilo Vargas').closest('li')!
+    await usuario.click(within(filaCamilo).getByRole('button', { name: 'Presente' }))
     await usuario.click(screen.getByRole('button', { name: 'Guardar asistencia' }))
 
     expect(apiPostMock).toHaveBeenCalledWith(
       '/asistencias/sesion',
       expect.objectContaining({
-        marcas: [{ idUsuarioAprendiz: 'a-1', estado: 'excusa', referenciaExcusa: 'RAD-2026-0922-EPS-04' }],
+        marcas: [
+          { idUsuarioAprendiz: 'a-1', estado: 'excusa', referenciaExcusa: 'RAD-2026-0922-EPS-04' },
+          { idUsuarioAprendiz: 'a-2', estado: 'presente', referenciaExcusa: null },
+        ],
       }),
     )
   })
@@ -155,6 +161,36 @@ describe('AsistenciaInstructor', () => {
 
     expect(screen.getByText('Todos marcados')).toBeInTheDocument()
     expect(screen.getByText('Presentes: 2')).toBeInTheDocument()
+  })
+
+  it('impide guardar una lista con aprendices sin marcar', async () => {
+    mockear()
+    const usuario = userEvent.setup()
+    renderConProviders(<AsistenciaInstructor />)
+
+    const fila = (await screen.findByText('Sara Rodríguez')).closest('li')!
+    await usuario.click(within(fila).getByRole('button', { name: 'Presente' }))
+
+    expect(screen.getByRole('button', { name: 'Guardar asistencia' })).toBeDisabled()
+    expect(screen.getByText(/1 sin marcar · completa la lista/)).toBeInTheDocument()
+    expect(apiPostMock).not.toHaveBeenCalled()
+  })
+
+  it('permite elegir otro día de una clase que se dicta varias veces por semana', async () => {
+    mockear(sesion(), [{ ...HORARIO, dias: [1, 3] }])
+    const usuario = userEvent.setup()
+    renderConProviders(<AsistenciaInstructor />)
+
+    await screen.findByText('Sara Rodríguez')
+    await usuario.click(screen.getByRole('button', { name: 'Semana anterior' }))
+    await usuario.selectOptions(screen.getByLabelText('Día de clase'), '3')
+
+    const llamadas = apiGetMock.mock.calls
+      .map(([ruta]) => String(ruta))
+      .filter((ruta) => ruta.startsWith('/asistencias/sesion'))
+    await screen.findByText('Sara Rodríguez')
+    const fecha = new URL(llamadas.at(-1)!, 'http://localhost').searchParams.get('fecha')!
+    expect(new Date(`${fecha}T12:00:00`).getDay()).toBe(3)
   })
 
   // Lo ya registrado entra como estado inicial: pasar lista otra vez es

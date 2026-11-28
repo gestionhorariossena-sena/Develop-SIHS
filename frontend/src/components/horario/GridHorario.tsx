@@ -11,9 +11,9 @@ import { CeldaHorario } from './CeldaHorario'
 // blanco, no negro), sino un tono ya suficientemente saturado para que el
 // texto negro fijo tenga buen contraste en cualquier tema.
 const colorFondoJornada: Record<Jornada, { celda: string; celdaAlt: string }> = {
-  Mañana: { celda: 'bg-emerald-200', celdaAlt: 'bg-emerald-300/70' },
-  Tarde: { celda: 'bg-sky-200', celdaAlt: 'bg-sky-300/70' },
-  Noche: { celda: 'bg-emerald-200', celdaAlt: 'bg-emerald-300/70' },
+  Mañana: { celda: 'bg-[#ddeee2]', celdaAlt: 'bg-[#d0e6d6]' },
+  Tarde: { celda: 'bg-[#f7e9d8]', celdaAlt: 'bg-[#f1ddc6]' },
+  Noche: { celda: 'bg-[#e4e9e1]', celdaAlt: 'bg-[#d6dcd3]' },
 }
 
 // La columna de hora usa minmax en vez de un px fijo, y las columnas de día

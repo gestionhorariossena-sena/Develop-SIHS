@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { Link } from 'react-router-dom'
 import { apiDelete, apiGet, apiPatch, ApiError } from '../services/api'
 import type { Notificacion } from '../types/api'
@@ -148,20 +149,11 @@ export function Notificaciones() {
         </button>
       </div>
 
-      <section className={`mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3 ${sinPendientes ? 'opacity-55' : ''}`}>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Pendientes por revisar</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface">{noLeidas}</p>
-        </div>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Cambios de horario esta semana</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface">{cambiosEstaSemana}</p>
-        </div>
-        <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Avisos de coordinación</p>
-          <p className="mt-1 text-2xl font-bold text-on-surface">{avisosSistema}</p>
-        </div>
-      </section>
+      <IndicadoresResumen titulo="Resumen de notificaciones" className={`mb-6 ${sinPendientes ? 'opacity-55' : ''}`} items={[
+        { etiqueta: 'Pendientes por revisar', valor: noLeidas, icono: 'mark_email_unread' },
+        { etiqueta: 'Cambios de horario esta semana', valor: cambiosEstaSemana, icono: 'edit_calendar' },
+        { etiqueta: 'Avisos de coordinación', valor: avisosSistema, icono: 'campaign' },
+      ]} />
 
       <div className="mb-6 flex flex-wrap items-center gap-1.5 rounded-xl border border-outline-variant bg-surface-container-low p-1.5">
         {PILLS.map((pill) => (

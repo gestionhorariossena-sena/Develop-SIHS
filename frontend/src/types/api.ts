@@ -121,6 +121,34 @@ export interface Ambiente {
   idSede: number
 }
 
+// Espejo de EliminacionSeguraService (backend/app/services/eliminacion_segura_service.py)
+// -- GET/DELETE /eliminacion-segura/{tipo}/{identificador}, solo Administrador.
+export type TipoEliminable = 'instructor' | 'aprendiz' | 'ficha' | 'ambiente'
+
+export interface EliminacionSeguraAnalisis {
+  tipo: TipoEliminable
+  id: string
+  dependencias: {
+    horariosPublicados: number
+    horariosBorrador: number
+    asistencias: number
+    vinculosFicha: number
+  }
+  // "bloqueado": hay publicados o asistencias, no se ofrece eliminar.
+  // "eliminar_borradores_y_entidad": solo hay horarios en borrador, se
+  // avisa que también se borran. "eliminar_entidad": sin horarios.
+  // "eliminado": ya se ejecutó (resultado de DELETE, no de GET).
+  accion: 'bloqueado' | 'eliminar_borradores_y_entidad' | 'eliminar_entidad' | 'eliminado'
+  // Solo viene cuando accion === 'bloqueado', y solo en el detail del 409
+  // de DELETE (el GET de solo análisis no lo trae).
+  mensaje?: string
+}
+
+export interface EliminacionSeguraResultado extends EliminacionSeguraAnalisis {
+  accion: 'eliminado'
+  horariosEliminados: number
+}
+
 export interface ResultadoAprendizaje {
   idResultado: number
   codigo: string | null

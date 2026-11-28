@@ -1,0 +1,351 @@
+{
+  "info": {
+    "_postman_id": "79b09051-34e5-46df-9a88-5614e4311a13",
+    "name": "SIHS — API local",
+    "description": "Pruebas no destructivas para la API SIHS. Tokens opcionales; ejecutar solo contra demo o pruebas.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Salud y contrato público",
+      "item": [
+        {
+          "name": "Salud — 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/health",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Estado exacto\", function () { pm.expect(pm.response.json()).to.deep.eql({status: \"ok\"}); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OpenAPI — 200",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/openapi.json",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Rutas publicadas\", function () { pm.expect(body.openapi).to.be.a(\"string\"); pm.expect(body.paths).to.have.property(\"/api/v1/health\"); pm.expect(body.paths).to.have.property(\"/api/v1/programas/\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ruta inexistente — 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/no-existe",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "pm.test(\"HTTP 404\", function () { pm.response.to.have.status(404); });",
+                  "pm.test(\"Respuesta FastAPI\", function () { pm.expect(pm.response.json().detail).to.eql(\"Not Found\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Validación de entrada — sin escrituras",
+      "item": [
+        {
+          "name": "Solicitud incompleta — 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/solicitudes-acceso/",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "pm.test(\"HTTP 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Errores de campos obligatorios\", function () { const errors = pm.response.json().detail; pm.expect(errors).to.be.an(\"array\").that.is.not.empty; pm.expect(errors.map(e => e.loc[e.loc.length - 1])).to.include(\"email\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Correo inválido — 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/solicitudes-acceso/",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\":\"Prueba\",\"email\":\"correo-invalido\",\"numeroDocumento\":\"999999\",\"idRolSolicitado\":1,\"motivo\":\"Prueba de validación\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "pm.test(\"HTTP 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Error ubicado en email\", function () { const errors = pm.response.json().detail; pm.expect(errors).to.be.an(\"array\"); pm.expect(errors.some(e => e.loc.includes(\"email\"))).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "JSON mal formado — 422",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/solicitudes-acceso/",
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "pm.test(\"HTTP 422\", function () { pm.response.to.have.status(422); });",
+                  "pm.test(\"Error de parseo seguro\", function () { pm.expect(pm.response.json().detail).to.be.an(\"array\").that.is.not.empty; pm.expect(pm.response.text()).not.to.match(/Traceback|sqlalchemy|<pre>/i); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "JWT y permisos",
+      "item": [
+        {
+          "name": "Mi perfil sin token — 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/usuarios/me",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Autenticación obligatoria\", function () { pm.expect(pm.response.json().detail).to.eql(\"Not authenticated\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mi perfil con accessToken — 200 o 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/usuarios/me",
+            "description": "Con un token válido verifica autenticación y lectura del perfil."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "const hasToken = Boolean(pm.variables.get(\"accessToken\"));",
+                  "pm.test(\"Estado según token\", function () { pm.response.to.have.status(hasToken ? 200 : 401); });",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Contrato de perfil\", function () { if (hasToken) { pm.expect(body.idUsuario).to.be.a(\"string\"); pm.expect(body.email).to.be.a(\"string\"); } else { pm.expect(body.detail).to.eql(\"Not authenticated\"); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Roles sin token — 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/roles/",
+            "description": ""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "pm.test(\"HTTP 401\", function () { pm.response.to.have.status(401); });",
+                  "pm.test(\"Catálogo protegido\", function () { pm.expect(pm.response.json().detail).to.eql(\"Not authenticated\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Roles con studentToken — 403 o 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{studentToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/roles/",
+            "description": "Usa JWT válido de Aprendiz; roles solo admite Coordinador o Administrador."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "const hasToken = Boolean(pm.variables.get(\"studentToken\"));",
+                  "pm.test(\"Aprendiz sin permiso\", function () { pm.response.to.have.status(hasToken ? 403 : 401); });",
+                  "pm.test(\"Motivo\", function () { pm.expect(pm.response.json().detail).to.eql(hasToken ? \"No autorizado\" : \"Not authenticated\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Roles con adminToken — 200 o 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/roles/",
+            "description": "Configura un JWT válido de Administrador para comprobar acceso 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde JSON\", function () { pm.expect(pm.response.headers.get(\"Content-Type\") || \"\").to.match(/application\\/json/i); });",
+                  "const hasToken = Boolean(pm.variables.get(\"adminToken\"));",
+                  "pm.test(\"Estado según rol admin\", function () { pm.response.to.have.status(hasToken ? 200 : 401); });",
+                  "pm.test(\"Lista de roles\", function () { const body = pm.response.json(); if (hasToken) { pm.expect(body).to.be.an(\"array\"); } else { pm.expect(body.detail).to.eql(\"Not authenticated\"); } });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "studentToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

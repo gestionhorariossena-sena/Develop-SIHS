@@ -1,6 +1,6 @@
 # Guía de marca — SIHS (SENA CGMLTI)
 
-**Versión 2 (2026-09-06)** — reemplaza por completo la v1. Pedido explícito
+**Versión 3 (2026-11-21)** — paleta bosque, piedra cálida y arcilla/ámbar en web y móvil. Reemplaza los valores cromáticos de la v2; conserva la estructura y el logo institucional. La v2 (2026-09-06) reemplazó por completo la v1. Pedido explícito
 del usuario: adoptar el sistema visual de los mockups de Stitch
 (`stitch_sena_schedule_management_mockups/`) en toda la app, en vez del
 sistema anterior basado en sidebar + `sena-*`/`slate-*`. Si algo de acá
@@ -26,22 +26,22 @@ Tokens tipo Material Design 3, definidos en `frontend/src/index.css` con
 
 | Token | Hex | Uso |
 |---|---|---|
-| `surface` | `#f8fafc` | Fondo de página |
+| `surface` | `#f7f8f4` | Fondo de página, piedra cálida |
 | `surface-container-lowest` | `#ffffff` | Tarjetas, navbar, dropdowns |
-| `surface-container-low` / `surface-container` | `#f1f5f9` / `#e2e8f0` | Fondos alternos, hover de filas |
-| `surface-container-high` | `#cbd5e1` | Hover de botones/pills del nav |
-| `on-surface` | `#0f172a` | Texto principal |
-| `on-surface-variant` | `#475569` | Texto secundario, íconos neutros |
-| `outline` / `outline-variant` | `#cbd5e1` / `#e2e8f0` | Bordes |
-| `primary` | `#16a34a` | **Acción principal** — botón primario, navbar activo, avatar |
+| `surface-container-low` / `surface-container` | `#eef1ea` / `#e4e9e1` | Fondos alternos, hover de filas |
+| `surface-container-high` | `#d6dcd3` | Hover de botones/pills del nav |
+| `on-surface` | `#17221d` | Texto principal |
+| `on-surface-variant` | `#59655e` | Texto secundario, íconos neutros |
+| `outline` / `outline-variant` | `#b9c4b9` / `#d6dcd3` | Bordes |
+| `primary` | `#176b45` | **Acción principal** — botón primario, navbar activo, avatar |
 | `on-primary` | `#ffffff` | Texto/ícono sobre `primary` |
-| `primary-container` / `on-primary-container` | `#dcfce7` / `#14532d` | Fondo suave de ítem activo (nav, badges positivos) |
+| `primary-container` / `on-primary-container` | `#ddeee2` / `#17573a` | Fondo suave de ítem activo (nav, badges positivos) |
 | `secondary` | `#39a900` | Verde SENA "institucional" — chip "Trimestre · Sincronizado", acentos secundarios |
-| `secondary-container` / `on-secondary-container` | `#eaf7ec` / `#14532d` | Fondo suave de esos chips |
-| `tertiary` | `#d97706` | Alertas/advertencias (ámbar) |
-| `tertiary-container` / `on-tertiary-container` | `#fef3c7` / `#92400e` | Fondo suave de badges de alerta |
-| `error` | `#dc2626` | Errores, acciones destructivas |
-| `error-container` / `on-error-container` | `#fee2e2` / `#991b1b` | Fondo suave de badges de error/conteo |
+| `secondary-container` / `on-secondary-container` | `#eaf2df` / `#315a16` | Fondo suave de esos chips |
+| `tertiary` | `#a95c18` | Arcilla/ámbar: avisos, advertencias y detalles editoriales discretos |
+| `tertiary-container` / `on-tertiary-container` | `#f7e9d8` / `#79400f` | Fondo suave de badges de alerta |
+| `error` | `#b53a36` | Errores, acciones destructivas |
+| `error-container` / `on-error-container` | `#f9e6e2` / `#842c28` | Fondo suave de badges de error/conteo |
 
 Regla simple: `primary` es la acción/estado activo; `secondary` es un acento
 institucional de menor jerarquía (chips informativos); `tertiary` es
@@ -69,13 +69,13 @@ grid de horarios, no de la marca general:
 
 | Jornada | Clase de celda | Barra de encabezado |
 |---|---|---|
-| Mañana | `bg-emerald-200` / `bg-emerald-300/70` | `bg-slate-900` |
-| Tarde | `bg-blue-200` / `bg-blue-300/70` | `bg-slate-900` |
-| Noche | `bg-emerald-200` / `bg-emerald-300/70` | `bg-slate-900` |
+| Mañana | `#ddeee2` / `#d0e6d6` | `bg-slate-900` |
+| Tarde | `#f7e9d8` / `#f1ddc6` | `bg-slate-900` |
+| Noche | `#e4e9e1` / `#d6dcd3` | `bg-slate-900` |
 
 El texto del grid (`GridHorario.tsx`, `CeldaHorario.tsx`) es **siempre
 `text-slate-900` (negro), sin variante `dark:`**, y las celdas vacías son
-**siempre** `bg-emerald-200`/`bg-blue-200`, también sin `dark:`. Motivo (no
+**siempre** los tonos claros de la tabla, también sin `dark:`. Motivo (no
 tocar sin releer esto): antes el texto era claro pensado para fondo oscuro,
 pero la celda no tenía `dark:bg-*`, así que en modo oscuro quedaba texto
 claro sobre fondo claro, casi ilegible. La solución fue fijar fondo saturado

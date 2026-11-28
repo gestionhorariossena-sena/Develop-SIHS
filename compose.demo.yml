@@ -13,12 +13,29 @@ services:
       SUPABASE_ANON_KEY: ${DEMO_SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${DEMO_SUPABASE_SERVICE_ROLE_KEY}
       FRONTEND_URL: http://127.0.0.1:5173
+      # Correo de demo: SMTP local Supabase/Mailpit, no Gmail real.
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
     extra_hosts:
       - host.docker.internal:host-gateway
+    depends_on:
+      - mailpit
     ports:
       - 127.0.0.1:8000:8000
     volumes:
       - ./backend/app:/app/app
+      # Settings carga /app/.env al iniciar. El archivo local conserva las
+      # integraciones privadas, incluida GEMINI_API_KEY, fuera de la imagen
+      # y del repositorio.
+      - ./backend/.env:/app/.env:ro
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
 
   frontend:
     build:

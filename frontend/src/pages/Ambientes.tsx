@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { AppShell } from '../components/AppShell'
+import { IndicadoresResumen } from '../components/IndicadoresResumen'
 import { DrawerRelacionados, SeccionDrawer } from '../components/relacionados/DrawerRelacionados'
 import { GridHorario } from '../components/horario/GridHorario'
 import { convertirHorariosAGrid } from '../components/horario/convertirHorarios'
@@ -8,6 +9,7 @@ import { indexarPorAmbiente, opcionesFichaAmbiente, opcionesInstructor } from '.
 import { SeccionFichasAsignadas, SeccionTemasQueDicta } from '../components/relacionados/SeccionesInstructor'
 import { SeccionInstructoresAsignados } from '../components/relacionados/SeccionesFicha'
 import { ImportarArchivo, type ColumnaImportar } from '../components/ImportarArchivo'
+import { EliminacionSegura } from '../components/EliminacionSegura'
 import { apiGet, apiPost, apiPut, ApiError } from '../services/api'
 import type { AuditoriaConflicto, Ambiente, Coordinacion, DiaSemana, Ficha, Horario, Sede, Usuario } from '../types/api'
 import type { FilaCsv } from '../utils/csv'
@@ -140,6 +142,9 @@ export function Ambientes() {
  const sedeEncontrada = sedes.find((item) => item.nombreSede.toLocaleUpperCase('es-CO') === nombreSede.toLocaleUpperCase('es-CO'))
  if (!sedeEncontrada) throw new Error(`No existe la sede "${nombreSede}".`)
 
+ const existente = ambientes.find((item) => item.numeroAmbiente === numeroAmbiente && item.idSede === sedeEncontrada.idSede)
+ if (existente) throw new Error(`Ya existe el ambiente ${numeroAmbiente} en la sede "${nombreSede}".`)
+
  await apiPost('/ambientes', {
  numeroAmbiente,
  nombreAmbiente,
@@ -247,11 +252,11 @@ export function Ambientes() {
  }
 
  return (
- <AppShell activo="Ambientes">
+ <AppShell activo="Datos académicos">
  <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
  <div>
  <nav className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-on-surface-variant">
- <Link to="/dashboard" className="hover:text-primary">Dashboard</Link>
+ <Link to="/dashboard" className="hover:text-primary">Inicio</Link>
  <span>/</span>
  <span className="text-on-surface">Ambientes</span>
  </nav>
@@ -268,34 +273,20 @@ export function Ambientes() {
  <div className="flex items-center gap-2">
  {puedeGestionar && <button type="button"onClick={abrirCrear} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary hover:bg-on-primary-container">Nuevo ambiente</button>}
  <button type="button"onClick={() => setMostrarImportar((valor) => !valor)} className="rounded-xl border border-outline px-3 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container-low ">
- {mostrarImportar ? 'Ocultar carga de archivo': 'Cargar archivo'}
+ {mostrarImportar ? 'Ocultar carga masiva': 'Carga masiva'}
  </button>
  <p className="rounded-xl border border-outline-variant bg-surface-container-lowest px-3 py-2 text-sm text-on-surface-variant ">{visibles.length} de {ambientes.length} ambientes</p>
  </div>
  </div>
 
  {resumenPorTipo.length > 0 && !cargando && (
- <div className="mb-4 grid gap-3 sm:grid-cols-2">
- {resumenPorTipo.map((item) => (
- <div key={item.tipo} className="rounded-xl border border-outline-variant bg-surface-container-lowest p-4">
- <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant capitalize">Ambientes {item.tipo}s</p>
- <div className="mt-1 flex items-baseline justify-between">
- <p className="text-2xl font-bold text-on-surface">
- {item.disponibles}<span className="text-base font-medium text-on-surface-variant">/{item.total} disponibles</span>
- </p>
- <p className="text-sm font-semibold text-primary">{item.pctDisponible}%</p>
- </div>
- <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-container">
- <div className="h-full rounded-full bg-primary" style={{ width: `${item.pctDisponible}%` }} />
- </div>
- {item.primerDisponible && (
- <p className="mt-2 text-xs text-on-surface-variant">
- Disponible: <span className="font-semibold text-on-surface">{item.primerDisponible.nombreAmbiente} · {item.primerDisponible.numeroAmbiente}</span>
- </p>
- )}
- </div>
- ))}
- </div>
+ <IndicadoresResumen titulo="Disponibilidad por tipo de ambiente" className="mb-4" items={resumenPorTipo.map((item) => ({
+ etiqueta: `Ambientes ${item.tipo}s`,
+ valor: <>{item.disponibles}<span className="ml-1 text-base text-on-surface-variant">/ {item.total}</span></>,
+ detalle: `${item.pctDisponible}% disponibles${item.primerDisponible ? ` · ${item.primerDisponible.nombreAmbiente} ${item.primerDisponible.numeroAmbiente}` : ''}`,
+ progreso: item.pctDisponible,
+ icono: 'meeting_room',
+ }))} />
  )}
 
  {/* Contenido de mockup (Stitch) — pendiente de conectar a un dato real
@@ -326,6 +317,7 @@ export function Ambientes() {
 
  {mostrarImportar && (
  <ImportarArchivo
+ entidad="ambientes"
  columnas={COLUMNAS_IMPORTAR_AMBIENTE}
  onImportarFila={importarFilaAmbiente}
  onTerminado={refrescarAmbientesTrasImportar}
@@ -333,7 +325,7 @@ export function Ambientes() {
  />
  )}
 
- <section className="mb-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 "aria-label="Filtros de ambientes">
+ <section className="mb-4 rounded-lg border border-outline-variant bg-surface-container-lowest p-4" aria-label="Filtros de ambientes">
  <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
  <div className="flex items-center gap-2">
  <p className="text-sm font-semibold text-on-surface">Filtrar ambientes</p>
@@ -510,6 +502,17 @@ export function Ambientes() {
  <SeccionInstructoresAsignados horarios={horariosVigentes ?? []} diasPorId={diasPorId} />
  <SeccionTemasQueDicta horarios={horariosVigentes ?? []} />
  </>
+ )}
+
+ {puedeGestionar && (
+ <div className="mt-5 border-t border-outline-variant pt-4">
+ <EliminacionSegura
+ tipo="ambiente"
+ id={seleccionado.idAmbiente}
+ nombre={seleccionado.nombreAmbiente}
+ onEliminado={() => { setAmbientes((previo) => previo.filter((a) => a.idAmbiente !== seleccionado.idAmbiente)); setSeleccionado(null) }}
+ />
+ </div>
  )}
  </DrawerRelacionados>
  )}

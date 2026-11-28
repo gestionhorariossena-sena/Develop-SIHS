@@ -53,8 +53,8 @@ describe('PublicacionesProgramadas', () => {
     prepararApi(false)
     renderConProviders(<PublicacionesProgramadas />)
     expect(await screen.findByText('Publicación programada no disponible')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Guardar borrador' })).toHaveAttribute('href', '/horarios/nuevo')
-    expect(screen.getByRole('link', { name: 'Historial' })).toHaveAttribute('href', '/horarios/historial')
+    expect(screen.getByRole('link', { name: 'Crear horario' })).toHaveAttribute('href', '/horarios/nuevo')
+    expect(screen.getByRole('link', { name: 'Registro y versiones' })).toHaveAttribute('href', '/horarios/historial')
     await userEvent.selectOptions(screen.getByLabelText('Período académico'), '3')
     expect(screen.getByLabelText(/Ficha F-100/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Abrir calendario' })).toBeEnabled()
@@ -64,6 +64,20 @@ describe('PublicacionesProgramadas', () => {
     expect(screen.getByLabelText('Hora')).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Confirmar y programar' })).toBeDisabled()
     expect(apiPostMock).not.toHaveBeenCalled()
+  })
+
+  it('muestra al entrar los borradores del asistente sin obligar a elegir primero el período', async () => {
+    prepararApi(true)
+    renderConProviders(<PublicacionesProgramadas />)
+    expect(await screen.findByLabelText(/Ficha F-100/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Período académico')).toHaveValue('3')
+  })
+
+  it('preselecciona el bloque recibido desde su tarjeta', async () => {
+    prepararApi(true)
+    renderConProviders(<PublicacionesProgramadas />, ['/horarios/publicaciones-programadas?idHorario=27'])
+    expect(await screen.findByLabelText(/Ficha F-100/)).toBeChecked()
+    expect(screen.getByLabelText('Período académico')).toHaveValue('3')
   })
 
   it('el calendario propio permite navegar y escoger un día sin depender del selector nativo', async () => {
@@ -87,7 +101,7 @@ describe('PublicacionesProgramadas', () => {
     apiPostMock.mockResolvedValue({})
     const user = userEvent.setup()
     renderConProviders(<PublicacionesProgramadas />)
-    await screen.findByText('Worker disponible')
+    await screen.findByText('Servicio disponible')
     await user.selectOptions(screen.getByLabelText('Período académico'), '3')
     await user.click(screen.getByLabelText(/Ficha F-100/))
     fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-10-15' } })
@@ -106,14 +120,14 @@ describe('PublicacionesProgramadas', () => {
     apiPostMock.mockRejectedValue(new ApiError(422, 'Un horario ya tiene una publicación pendiente.'))
     const user = userEvent.setup()
     renderConProviders(<PublicacionesProgramadas />)
-    await screen.findByText('Worker disponible')
+    await screen.findByText('Servicio disponible')
     await user.selectOptions(screen.getByLabelText('Período académico'), '3')
     await user.click(screen.getByLabelText(/Ficha F-100/))
     fireEvent.change(screen.getByLabelText('Fecha'), { target: { value: '2026-10-15' } })
     fireEvent.change(screen.getByLabelText('Hora'), { target: { value: '10:30' } })
     await user.click(screen.getByRole('button', { name: 'Confirmar y programar' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('Un horario ya tiene una publicación pendiente.')
-    expect(screen.getByText(/esta pantalla no crea notificaciones locales/i)).toBeInTheDocument()
+    expect(screen.getByText(/recibirás un aviso en el centro de notificaciones/i)).toBeInTheDocument()
   })
 
   it('usa el endpoint de cancelación y muestra los estados exactos que entrega el backend', async () => {

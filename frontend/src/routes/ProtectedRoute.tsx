@@ -68,7 +68,8 @@ export function ProtectedRoute({ children, roles }: ProtectedRouteProps) {
   }
 
   if (!session) {
-    return <Navigate to="/login" replace />
+    const destino = location.pathname + location.search + location.hash
+    return <Navigate to="/login" replace state={{ destino }} />
   }
 
   const debeCambiarClave = perfil?.debeCambiarClave ?? false
